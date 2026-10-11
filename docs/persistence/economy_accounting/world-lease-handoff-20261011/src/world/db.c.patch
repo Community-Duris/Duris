@@ -1,0 +1,1232 @@
+--- a/src/world/db.c
++++ b/src/world/db.c
+@@ -7794,6 +7794,211 @@
+ 	       !critical_operation_id_is_zero(source_.source) &&
+ 	       !critical_operation_id_is_zero(source_.generation);
+ }
++
++// PRIVATE selected WORLD(scope) string COPY and raw owning shared_ptr path.
++// This is a declaration/family upper bound, not emitted stack or host ABI.
++// No std::string default/move assignment/append family is substituted for COPY.
++namespace
++{
++constexpr size_t world_string_copy_constructor_source =
++    // basic_string(copy), allocator hider(move-allocator overload), selected
++    // allocator object + allocator/new_allocator const copy, mutable local-data
++    // pointer_to chain, select_on_copy, forward _M_construct<char*> and its
++    // actual _Guard, distance/category and mutable-char _S_copy_chars.
++    38 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(std::ptrdiff_t) +
++    sizeof(std::forward_iterator_tag) + sizeof(std::random_access_iterator_tag) +
++    sizeof(std::allocator<char>);
++constexpr size_t world_string_copy_allocation_source =
++    // _M_create, _S_allocate, traits/allocator/new_allocator allocate,
++    // operator-new declaration, actual string/traits/new_allocator max_size.
++    // One declared is_constant_evaluated result; no bare intrinsic callee.
++    17 * sizeof(void *) + 9 * sizeof(size_t) + sizeof(bool);
++constexpr size_t world_string_copy_common_source =
++    // _S_copy/traits-copy5P2N+B and traits-assign2P+B; data/length/capacity
++    // setters, set_length, length/data/mutable allocator getters; use_local
++    // and init_local. Mutable local-data chain is in the constructor group.
++    // Two chars are the actual NUL and inherited conservative init carrier.
++    20 * sizeof(void *) + 7 * sizeof(size_t) + 2 * sizeof(char) + 3 * sizeof(bool);
++constexpr size_t world_string_cleanup_source =
++    // Actual nontrivial string -> dispose/islocal/destroy/hider/allocator
++    // cleanup; const-local pointer chain and typed deallocate/delete signature.
++    25 * sizeof(void *) + 5 * sizeof(size_t) + 2 * sizeof(bool);
++constexpr size_t world_string_copy_cleanup_source =
++    world_string_copy_constructor_source + world_string_copy_allocation_source +
++    world_string_copy_common_source + world_string_cleanup_source -
++    // Same data and mutable allocator getter families are already common.
++    4 * sizeof(void *);
++static_assert(world_string_copy_cleanup_source ==
++    96 * sizeof(void *) + 22 * sizeof(size_t) + 2 * sizeof(std::ptrdiff_t) +
++    sizeof(std::forward_iterator_tag) + sizeof(std::random_access_iterator_tag) +
++    sizeof(std::allocator<char>) + 2 * sizeof(char) + 6 * sizeof(bool));
++
++constexpr size_t world_raw_shared_construct_source =
++    // Public shared_ptr(raw), base raw, false_tag count, delegated pointer
++    // count, control new declaration, counted-pointer ctor, atomic base ctor,
++    // selected empty enable_shared_from_this helper. No weak_ptr branch.
++    14 * sizeof(void *) + sizeof(size_t) + sizeof(std::false_type);
++constexpr size_t world_raw_shared_assign_empty_source =
++    // Conservative actual occurrence sum: public move assignment3P+move2P,
++    // base move assignment3P+move2P, base move ctor2P/default countP/swap3P,
++    // base swap2P/raw pointer swap3P/move-pointer2P/count swap3P, then two
++    // empty temporary destructor chains5P. Only existing default count is a
++    // subobject; no third shared_ptr object or referred WORLD object is made.
++    31 * sizeof(void *) +
++    sizeof(std::shared_ptr<const quest_mobile_native_flat_factory_scope>) +
++    sizeof(std::__shared_ptr<const quest_mobile_native_flat_factory_scope,
++                             __gnu_cxx::_S_atomic>);
++constexpr size_t world_scope_copy_control_source =
++    // Generated nontrivial WORLD copy receiver/source; source_event is trivial.
++    2 * sizeof(void *) + world_string_copy_cleanup_source +
++    world_raw_shared_construct_source + world_raw_shared_assign_empty_source +
++    // Scope new declaration. Two genuine separate failure deallocation cuts:
++    // failed scope construction frees storage; failed control allocation
++    // deletes the constructed WORLD (actual nontrivial WORLD destructorP).
++    3 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(void *);
++}
++
++size_t quest_mobile_native_flat_factory_scope::copy_source_frames() noexcept
++{
++#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && \
++    defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI && \
++    defined(_GLIBCXX_HAS_GTHREADS) && defined(_GLIBCXX_ATOMIC_BUILTINS) && \
++    !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) && \
++    !defined(_GLIBCXX_CONCEPT_CHECKS) && !defined(_GLIBCXX_PARALLEL) && \
++    !defined(_GLIBCXX_TSAN) && defined(__cpp_sized_deallocation) && \
++    defined(__linux__) && defined(__GLIBC__) && defined(__x86_64__) && \
++    __cplusplus == 202002L
++    if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(std::ptrdiff_t) != 8 ||
++        sizeof(bool) != 1 || alignof(quest_mobile_native_flat_factory_scope) >
++            __STDCPP_DEFAULT_NEW_ALIGNMENT__)
++    {
++        errno = ENOTSUP;
++        return 0;
++    }
++    return world_scope_copy_control_source;
++#else
++    errno = ENOTSUP;
++    return 0;
++#endif
++}
++
++// Genuine two-argument WORLD(root, source), selected by the local unique
++// provenance owner before the factory. This is not the WORLD copy/raw-shared
++// constructor profile. Heap requests and the actual unique_ptr are outer-owned.
++size_t quest_mobile_native_flat_factory_scope::root_source_frames() noexcept
++{
++#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && \
++    defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI && \
++    !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) && \
++    !defined(_GLIBCXX_CONCEPT_CHECKS) && !defined(_GLIBCXX_PARALLEL) && \
++    defined(__linux__) && defined(__GLIBC__) && defined(__x86_64__) && \
++    __cplusplus == 202002L
++    if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(std::ptrdiff_t) != 8 ||
++        sizeof(bool) != 1 || alignof(quest_mobile_native_flat_factory_scope) >
++            __STDCPP_DEFAULT_NEW_ALIGNMENT__)
++    {
++        errno = ENOTSUP;
++        return 0;
++    }
++    // Constructor this/root/source3P and nontrivial WORLD destructorP.
++    // Scope new(P+N), but failed initialization chooses unsized delete(P).
++    // Economic-source/ID fields declare no generated trivial copy callees.
++    // String copy includes its real member cleanup; no default/move string.
++    return 6 * sizeof(void *) + sizeof(size_t) + world_string_copy_cleanup_source;
++#else
++    errno = ENOTSUP;
++    return 0;
++#endif
++}
++
++// Actual WORLD raw-owning shared_ptr<const WORLD> cleanup. This is distinct
++// from allocator-inplace authority projections and from empty assignment
++// temporaries. No retained WORLD/control heap is added by this Source row.
++namespace
++{
++constexpr size_t world_shared_source_max(size_t a, size_t b) noexcept
++{
++    return a > b ? a : b;
++}
++constexpr size_t world_shared_delete_signature_source = sizeof(void *) +
++#if __cpp_sized_deallocation
++    sizeof(size_t) +
++#endif
++    0;
++constexpr size_t world_shared_dispose_source =
++    // _Sp_counted_ptr::_M_dispose, real nontrivial WORLD destructor, selected
++    // string cleanup, completed-object ordinary delete signature.
++    2 * sizeof(void *) + world_string_cleanup_source +
++    world_shared_delete_signature_source;
++constexpr size_t world_shared_control_destroy_source =
++    // _M_destroy, generated nontrivial counted-pointer destructor and
++    // explicit virtual counted-base destructor, then actual control delete.
++    3 * sizeof(void *) + world_shared_delete_signature_source;
++constexpr size_t world_shared_exchange_source =
++    // Declared dispatch(ptr,int,word result) and actual single-threaded
++    // predicate or single/atomic branch. Bare atomics add no callable Source.
++    sizeof(void *) + sizeof(int) + sizeof(_Atomic_word) +
++    world_shared_source_max(sizeof(bool),
++        sizeof(void *) + sizeof(int) + 2 * sizeof(_Atomic_word));
++constexpr size_t world_shared_last_use_source =
++    sizeof(void *) + world_shared_source_max(world_shared_dispose_source,
++        world_shared_source_max(world_shared_exchange_source,
++            world_shared_control_destroy_source));
++constexpr size_t world_shared_release_source =
++    // _M_release receiver, actual __both_counts pointer, three named
++    // constexpr bools, two constexpr ints and actual unique_ref carrier.
++    2 * sizeof(void *) + 3 * sizeof(bool) + 2 * sizeof(int) + sizeof(long long) +
++    world_shared_source_max(world_shared_exchange_source,
++        world_shared_source_max(
++            world_shared_source_max(world_shared_dispose_source,
++                world_shared_control_destroy_source),
++            // Real cold wrapper before _M_release_last_use on the cold branch.
++            sizeof(void *) + world_shared_last_use_source));
++constexpr size_t world_shared_selected_cleanup_source =
++    // Public shared_ptr -> __shared_ptr -> actual __shared_count destructors.
++    3 * sizeof(void *) + world_shared_release_source;
++}
++
++size_t quest_mobile_native_flat_factory_scope::cleanup_source_frames() noexcept
++{
++#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && \
++    defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI && \
++    defined(_GLIBCXX_HAS_GTHREADS) && defined(_GLIBCXX_ATOMIC_BUILTINS) && \
++    !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) && \
++    !defined(_GLIBCXX_PARALLEL) && !defined(_GLIBCXX_TSAN) && \
++    defined(__linux__) && defined(__GLIBC__) && defined(__x86_64__) && \
++    __cplusplus == 202002L && __has_include(<sys/single_threaded.h>)
++    if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(int) != 4 ||
++        sizeof(_Atomic_word) != 4 || sizeof(long long) != 8 || sizeof(bool) != 1)
++    {
++        errno = ENOTSUP;
++        return 0;
++    }
++    return world_shared_selected_cleanup_source;
++#else
++    errno = ENOTSUP;
++    return 0;
++#endif
++}
++
++
++bool quest_mobile_native_flat_factory_scope::current_bounded(
++    bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) const noexcept
++{
++    if (!reserve)
++        return false;
++    size_t request = outer_live;
++    const size_t selected_source = current_source_frames();
++    // Existing exact WORLD current() closure plus these declared request/query
++    // carriers; no NPC owner/token/identity observer is selected by this body.
++    if (!selected_source || !cold_birth_add(request, sizeof(this) + sizeof(reserve) + sizeof(context) +
++                            sizeof(outer_live) + sizeof(request) + sizeof(selected_source) +
++                            sizeof(bool)) ||
++        !cold_birth_add(request, selected_source) || !reserve(request, context))
++        return false;
++    return current();
++}
++
+ size_t quest_mobile_native_flat_factory_scope::retained_heap_bytes() const noexcept
+ {
+ #if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+@@ -7856,6 +8061,30 @@
+ 	       retained.source_.generation.bytes == source.generation.bytes &&
+ 	       retained.source_.sequence == source.sequence && retained.source_.slot == source.slot;
+ }
++size_t quest_mobile_native_item_stage::world_factory_match_source_frames() noexcept
++{
++    const size_t current_source = quest_mobile_native_flat_factory_scope::current_source_frames();
++    if (!current_source)
++        return 0;
++    // Actual receiver, root/source references, retained scope reference and
++    // returned bool. Two byte16 equalities are distinct real occurrences.
++    // Shared bool/dereference/arrow has its declared assertion query; no
++    // implicit trivial ID/array copy or builtin memcmp callee is invented.
++    constexpr size_t selected =
++        4 * sizeof(void *) + sizeof(bool) +
++        9 * sizeof(void *) + 2 * sizeof(bool) +
++        15 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(int) + 2 * sizeof(bool) +
++        2 * (34 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(int) + 7 * sizeof(bool));
++    static_assert(selected == 96 * sizeof(void *) + 8 * sizeof(size_t) +
++                              3 * sizeof(int) + 19 * sizeof(bool));
++    if (current_source > SIZE_MAX - selected)
++    {
++        errno = EOVERFLOW;
++        return 0;
++    }
++    return selected + current_source;
++}
++
+ bool quest_mobile_native_item_stage::empty() const noexcept
+ {
+ 	return state_ == nullptr;
+@@ -9608,11 +9837,19 @@
+ void reset_zone(int zone, int force_item_repop)
+ {
+ 	const bool native_sql_reset = economic_gameplay_authority::active_regular_sql();
+-	if (economic_gameplay_authority::active() &&
+-	    !quest_mobile_native_birth_owner::begin_reset(zone, force_item_repop))
++	// The flat entry proves the installed projection itself before selecting
++	// any cursor. Inactive and SQL retain the original entry and locals.
++	const bool native_flat_reset = economic_gameplay_authority::active() &&
++		!persistence_mode_requires_mysql() &&
++		persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY;
++	const bool retained_reset = native_sql_reset || native_flat_reset;
++	if (native_flat_reset ?
++		!quest_mobile_native_birth_owner::begin_reset_flat(zone, force_item_repop) :
++		(economic_gameplay_authority::active() &&
++		 !quest_mobile_native_birth_owner::begin_reset(zone, force_item_repop)))
+ 		return;
+ 	quest_mobile_original_reset_locals inactive_locals;
+-	auto *retained = native_sql_reset ? quest_mobile_native_birth_owner::original_reset_locals(
++	auto *retained = retained_reset ? quest_mobile_native_birth_owner::original_reset_locals(
+ 						    zone, force_item_repop) :
+ 					    &inactive_locals;
+ 	if (!retained)
+@@ -9644,17 +9881,27 @@
+ 
+ 	for (;; cmd_no++)
+ 	{
+-		if (native_sql_reset)
++		if (retained_reset)
+ 			quest_mobile_native_birth_owner::observe_reset_command(cmd_no, last_cmd);
+ 		if (ZCMD.command == 'S')
+ 		{
+-			if (native_sql_reset)
++			if (retained_reset)
+ 			{
+ 				quest_mobile_native_birth_owner::observe_reset_stop(cmd_no,
+ 										    last_cmd);
+ 				zone_reset_item_owner::finish_warm_capture(cmd_no, last_cmd);
+ 			}
+ 			break;
++		}
++		// This WORLD dispatcher owns O, room-P and S only. Refuse unsupported
++		// mobile production before limits, RNG, UID or native callbacks; a held
++		// cursor cannot silently fall through the original inactive factory.
++		if (native_flat_reset && (ZCMD.command == 'M' || ZCMD.command == 'G' ||
++			ZCMD.command == 'E' ||
++			(ZCMD.command == 'P' && quest_mobile_native_birth_owner::owns(mob))))
++		{
++			quest_mobile_native_birth_owner::hold_reset(cmd_no, last_cmd, false);
++			return;
+ 		}
+ 		// Zone item commands lack a durable reset-generation identity. Refuse
+ 		// before read_object or any live placement during an accounting epoch.
+@@ -9662,10 +9909,11 @@
+ 		    reset_command_issues_item(ZCMD.command) &&
+ 		    !(native_sql_reset &&
+ 		      (ZCMD.command == 'G' || ZCMD.command == 'E' || ZCMD.command == 'P') &&
+-		      quest_mobile_native_birth_owner::owns(mob)))
++		      quest_mobile_native_birth_owner::owns(mob)) &&
++		    !(native_flat_reset && (ZCMD.command == 'O' || ZCMD.command == 'P')))
+ 		{
+ 			last_cmd = 0;
+-			if (native_sql_reset)
++			if (retained_reset)
+ 				quest_mobile_native_birth_owner::observe_reset_processed(cmd_no,
+ 											 last_cmd);
+ 			continue;
+@@ -9680,7 +9928,7 @@
+ 				quest_mobile_native_birth_owner::block_mobile();
+ 			mob = last_mob = tmp_mob = last_mob_followable = NULL;
+ 			last_cmd = last_mob_load = 0;
+-			if (native_sql_reset)
++			if (retained_reset)
+ 				quest_mobile_native_birth_owner::observe_reset_processed(cmd_no,
+ 											 last_cmd);
+ 			continue;
+@@ -9691,12 +9939,12 @@
+ 		   other equip, items, riders), and if the original mob loaded, let's
+ 		   let it all happen */
+ 
+-		if ((native_sql_reset && original.command_entered) || last_cmd || !ZCMD.if_flag ||
++		if ((retained_reset && original.command_entered) || last_cmd || !ZCMD.if_flag ||
+ 		    (last_mob_load &&
+ 		     ((ZCMD.command == 'G') || (ZCMD.command == 'E') || (ZCMD.command == 'R'))) ||
+ 		    (last_mob_followable && (ZCMD.command == 'F')))
+ 		{
+-			if (native_sql_reset)
++			if (retained_reset)
+ 				original.command_entered = true;
+ 			switch (ZCMD.command)
+ 			{
+@@ -10024,7 +10272,7 @@
+ 				break;
+ 
+ 			case 'O': /* load an object to room */
+-				if (native_sql_reset)
++				if (retained_reset)
+ 				{
+ 					auto &progress = original.o;
+ 					const auto hold = [&](bool pure) noexcept
+@@ -10239,7 +10487,7 @@
+ 				break;
+ 
+ 			case 'P': /* object to object */
+-				if (native_sql_reset &&
++				if (retained_reset &&
+ 				    (original.p.room_path ||
+ 				     (!original.p.begun &&
+ 				      !quest_mobile_native_birth_owner::owns(mob))))
+@@ -11051,11 +11299,13 @@
+ 		}
+ 		else
+ 			last_cmd = 0;
+-		if (native_sql_reset)
++		if (retained_reset)
+ 			quest_mobile_native_birth_owner::observe_reset_processed(cmd_no, last_cmd);
+ 	}
+ 
+-	if (native_sql_reset)
++	if (native_flat_reset)
++		quest_mobile_native_birth_owner::finish_reset_flat();
++	else if (native_sql_reset)
+ 		quest_mobile_native_birth_owner::finish_reset();
+ 
+ 	if (zone_table[zone].lifespan_min != zone_table[zone].lifespan_max)
+@@ -11687,6 +11937,24 @@
+ /*
+  * returns the real number of the monster with given virtual number
+  */
++
++// Passive declared-Source profile of the actual lookup, not a lookup or permit.
++// The ordinary production build leaves DB_NOTIFY disabled. Its diagnostics
++// branch needs a separate genuine logit profile if that configuration changes.
++bool real_mobile0_source_frame_bytes(size_t *output) noexcept
++{
++#if defined(DB_NOTIFY) && DB_NOTIFY
++    (void)output;
++    return false;
++#else
++    if (!output)
++        return false;
++    // virt, bot/top/mid, one actual returned int. Loop reuses these locals;
++    // raw mob_index arithmetic has no undeclared iterator/helper callees.
++    *output = 5 * sizeof(int);
++    return true;
++#endif
++}
+ 
+ int real_mobile0(const int virt)
+ {
+@@ -16287,6 +16555,836 @@
+ 		candidate.discard_unadmitted();
+ 		return false;
+ 	}
++#endif
++}
++
++// WORLD provenance uses its actual retained O/P scope. The genuine parser,
++// constructor, procedure and shell bodies below correspond literally to
++// the bounded native constructor; NPC provenance is never forged.
++bool quest_mobile_native_item_stage::prepare_impl_world_flat_bounded(
++	int nr, int type, uint64_t supplied_reserved_uid,
++	const quest_mobile_native_flat_factory_scope &source,
++	quest_mobile_native_item_stage *output, bool (*current_global)(size_t *, void *) noexcept,
++	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer,
++	bool *attempted) noexcept
++{
++	if (!attempted || *attempted || !nevent_is_game_thread() || !output ||
++	    output->state_ || !supplied_reserved_uid ||
++	    supplied_reserved_uid == UINT64_MAX || supplied_reserved_uid > ULONG_MAX ||
++	    !obj_index || !dead_obj_pool || dead_obj_pool->size != sizeof(obj_data) ||
++	    dead_obj_pool->next_off != offsetof(obj_data, next))
++		return false;
++	if (type == VIRTUAL)
++		nr = real_object(nr);
++	else if (type != REAL)
++		return false;
++	if (nr < 0 || nr > top_of_objt)
++		return false;
++	if (!current_global || !reserve)
++	{
++		errno = EINVAL;
++		return false;
++	}
++#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
++	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
++	errno = ENOTSUP;
++	return false;
++#else
++    const size_t world_observer_source = world_retained_observation_source_frames();
++    if (!world_observer_source)
++        return false;
++	const size_t frames =
++		sizeof(ordinary_item_constructor_budget) + sizeof(object_template) +
++		sizeof(ordinary_item_template_reader) + sizeof(quest_mobile_native_item_stage) +
++		sizeof(std::unique_ptr<implementation>) + MAX_STRING_LENGTH * sizeof(char) +
++		sizeof(object_template_description) + 28 * sizeof(void *) + 22 * sizeof(size_t) +
++		8 * sizeof(int) + 12 * sizeof(bool) + sizeof(obj_proc_type) +
++		4 * sizeof(std::ptrdiff_t) + 4 * sizeof(std::random_access_iterator_tag) +
++		sizeof(std::initializer_list<obj_proc_type>) + sizeof(attempted) +
++		ordinary_item_budget_source_frames +
++		ordinary_item_string_source_frames +
++		ordinary_item_vector_source_frames<object_template_description>() +
++		ordinary_item_vector_source_frames<size_t>() +
++		ordinary_item_vector_source_frames<extra_descr_data *>() +
++		ordinary_item_vector_source_frames<int>() + ordinary_item_bit_vector_source_frames +
++        // Retain the original historical partial allowance verbatim; the
++        // genuine WORLD stage observer is a separately named selected row.
++		quest_mobile_native_item_stage::npc_retained_observation_source_frames() +
++        world_observer_source + 2 * sizeof(size_t) +
++        sizeof(size_t) + // actual named conversion_heap declaration
++        // Four distinct lower-call sites own full/supplement/INITIAL/request
++        // values (4N each). Each site's
++        // two Source getters and one INITIAL getter have actual pure rows.
++        16 * sizeof(size_t) +
++        2 * quest_mobile_native_original_proclib::prepare_bounded_source_query_frame_bytes() +
++        quest_mobile_native_original_proclib::prepare_bounded_initial_query_frame_bytes() +
++        2 * quest_mobile_native_original_proclib::probe_bounded_source_query_frame_bytes() +
++        quest_mobile_native_original_proclib::probe_bounded_initial_query_frame_bytes() +
++        2 * quest_mobile_native_zombie_stage::prepare_bounded_source_query_frame_bytes() +
++        quest_mobile_native_zombie_stage::prepare_bounded_initial_query_frame_bytes() +
++        3 * native_mobile_birth_fill_master_spellbook_source_query_frame_bytes();
++	if (frames > SIZE_MAX - outer)
++	{
++		errno = EOVERFLOW;
++		return false;
++	}
++	ordinary_item_constructor_budget budget{ current_global, reserve, context };
++	if (!budget.init(outer + frames) ||
++	    !source.current_bounded(ordinary_item_constructor_budget::relay, &budget,
++				    outer + frames))
++		return false;
++	// All pure guards and first bounded admission have returned. Parsing
++	// advances the actual boot file and may populate shared catalogs; latch
++	// the real factory attempt now, before any such effect can occur.
++	*attempted = true;
++	quest_mobile_native_item_stage candidate;
++	budget.candidate = &candidate;
++	struct candidate_owner
++	{
++		ordinary_item_constructor_budget &budget;
++		~candidate_owner()
++		{
++			budget.candidate = nullptr;
++			budget.prototype = nullptr;
++			budget.description = nullptr;
++		}
++	} current_candidate{ budget };
++	// The original body owns its candidate until success. Retained callers
++	// also inherit an exact surviving candidate when original cleanup refuses;
++	// never report empty ownership merely because preparation returned false.
++	struct failure_retention
++	{
++		implementation *&candidate, *&output;
++		bool retain;
++		~failure_retention() noexcept
++		{
++			if (retain && candidate)
++			{
++				output = candidate;
++				candidate = nullptr;
++			}
++		}
++	} retention{ candidate.state_, output->state_, true };
++	try
++	{
++		ordinary_item_template_reader reader{ obj_f, budget };
++		const object_template prototype = parse_ordinary_item_template_bounded(nr, reader);
++		budget.prototype = &prototype;
++		if (prototype.R_num != nr ||
++		    prototype.descriptions.size() > PLAYER_SNAPSHOT_MAX_ROWS)
++			return false;
++		if (!budget.request(sizeof(implementation)))
++			return false;
++		auto state = std::make_unique<implementation>();
++		budget.pre_stage_inline = sizeof(implementation);
++		budget.pre_libraries = &state->libraries;
++		budget.pre_descriptions = &state->parsed_descriptions;
++		budget.pre_delays = &state->library_delays;
++		budget.pre_requested = &state->requested;
++		state->flat_factory = true;
++		state->index = obj_index;
++		state->pool = dead_obj_pool;
++		state->rnum = nr;
++		state->vnum = obj_index[nr].virtual_number;
++		state->position = obj_index[nr].pos;
++		state->original_proc = obj_index[nr].func.obj;
++		state->uid = supplied_reserved_uid;
++		const auto original_proc = state->original_proc;
++		const auto effective = [original_proc, nr](obj_proc_type function)
++		{
++			return original_proc == function ||
++			       (original_proc == proclib_obj_cmd_bridge &&
++				proclib_recovery_chain_stage::predecessor_matches(nr, function));
++		};
++		// REPOP can mutate literals and the world. It has no detached original
++		// trigger/source participant yet; refuse before any birth or publication.
++		if (effective(studioproc_obj))
++			return false;
++		// Only these actual original CMD_SET_PERIODIC branches are detached-safe.
++		// An unrecognized incumbent/predecessor is not a predicted probe result.
++		if (!effective(nullptr) && !effective(spell_pool) && !effective(super_cannon) &&
++		    !effective(vecna_deathportal) && !effective(blood_stains) &&
++		    !effective(zombies_game) && !effective(item_switch) &&
++		    !effective(proclib_obj_proc))
++			return false;
++		for (const auto function : { static_cast<obj_proc_type>(nullptr), spell_pool,
++					     super_cannon, vecna_deathportal, blood_stains,
++					     zombies_game, item_switch, proclib_obj_proc })
++			if (effective(function))
++			{
++				state->effective_proc = function;
++				break;
++			}
++		const size_t rows = prototype.descriptions.size();
++		if (rows > SIZE_MAX / sizeof(size_t))
++		{
++			budget.request_owner.fail(EOVERFLOW);
++			return false;
++		}
++		if (!budget.request(rows * sizeof(size_t)))
++			return false;
++		state->libraries.reserve(rows);
++		if (rows > SIZE_MAX / sizeof(extra_descr_data *))
++		{
++			budget.request_owner.fail(EOVERFLOW);
++			return false;
++		}
++		if (!budget.request(rows * sizeof(extra_descr_data *)))
++			return false;
++		state->parsed_descriptions.reserve(rows);
++		const size_t bits = sizeof(std::_Bit_type) * CHAR_BIT;
++		const size_t words = rows / bits + bool(rows % bits);
++		if (words > SIZE_MAX / sizeof(std::_Bit_type))
++		{
++			budget.request_owner.fail(EOVERFLOW);
++			return false;
++		}
++		if (!budget.request(words * sizeof(std::_Bit_type)))
++			return false;
++		state->requested.reserve(rows);
++		if (rows > SIZE_MAX / sizeof(int))
++		{
++			budget.request_owner.fail(EOVERFLOW);
++			return false;
++		}
++		if (!budget.request(rows * sizeof(int)))
++			return false;
++		state->library_delays.reserve(rows);
++		size_t pool_request = 0;
++		if (!dead_obj_pool->head)
++		{
++			if (dead_obj_pool->chunk_size <= 0)
++			{
++				errno = EINVAL;
++				return false;
++			}
++			if (static_cast<size_t>(dead_obj_pool->chunk_size) > SIZE_MAX / 4096)
++			{
++				errno = EOVERFLOW;
++				return false;
++			}
++			pool_request = static_cast<size_t>(dead_obj_pool->chunk_size) * 4096;
++		}
++		if (!budget.request(pool_request))
++			return false;
++		errno = 0;
++		if (!mm_try_reserve_free_slot(dead_obj_pool))
++		{
++			budget.request_owner.fail(errno ? errno : ENOMEM);
++			return false;
++		}
++		if (!budget.request())
++			return false;
++		errno = 0;
++		P_obj obj = static_cast<P_obj>(mm_try_get(dead_obj_pool));
++		if (!obj)
++		{
++			budget.request_owner.fail(errno ? errno : EIO);
++			return false;
++		}
++		memset(obj, 0, sizeof(*obj));
++		state->object = obj;
++		candidate.state_ = state.release();
++		budget.pre_stage_inline = 0;
++		budget.pre_libraries = nullptr;
++		budget.pre_descriptions = nullptr;
++		budget.pre_delays = nullptr;
++		budget.pre_requested = nullptr;
++		auto &s = *candidate.state_;
++		obj->R_num = prototype.R_num;
++		obj->type = prototype.type;
++		obj->material = prototype.material;
++		obj->craftsmanship = prototype.craftsmanship;
++		obj->extra_flags = prototype.extra_flags;
++		obj->wear_flags = prototype.wear_flags;
++		obj->extra2_flags = prototype.extra2_flags;
++		obj->anti_flags = prototype.anti_flags;
++		obj->anti2_flags = prototype.anti2_flags;
++		memcpy(&obj->value, &prototype.value, sizeof(obj->value));
++		obj->weight = prototype.weight;
++		obj->cost = prototype.cost;
++		obj->condition = prototype.condition;
++		obj->bitvector = prototype.bitvector;
++		obj->bitvector2 = prototype.bitvector2;
++		obj->bitvector3 = prototype.bitvector3;
++		obj->bitvector4 = prototype.bitvector4;
++		obj->bitvector5 = prototype.bitvector5;
++		memcpy(&obj->affected, &prototype.affected, sizeof(obj->affected));
++		obj->trap_eff = prototype.trap_eff;
++		obj->trap_dam = prototype.trap_dam;
++		obj->trap_charge = prototype.trap_charge;
++		obj->trap_level = prototype.trap_level;
++		obj->obj_uid = static_cast<unsigned long>(supplied_reserved_uid);
++		SET_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
++		obj->loc_p = LOC_NOWHERE;
++		obj->loc.room = NOWHERE;
++		if (!reset_order_detached(obj))
++		{
++			candidate.discard_unadmitted();
++			return false;
++		}
++		// Same immutable prototype string sharing; no index count/list enrollment.
++		if (!obj_index[nr].keys && !prototype.name.empty())
++		{
++			const size_t length = prototype.name.size();
++			if (length == SIZE_MAX ||
++			    length + 1 > SIZE_MAX - birth_mobile_malloc_header())
++			{
++				budget.request_owner.fail(EOVERFLOW);
++				return false;
++			}
++			if (!budget.request(length + 1 + birth_mobile_malloc_header()))
++				return false;
++			errno = 0;
++			char *text = static_cast<char *>(
++				__try_malloc(length + 1, MEM_TAG_STRING, __FILE__, __LINE__));
++			if (!text)
++			{
++				budget.request_owner.fail(errno ? errno : ENOMEM);
++				return false;
++			}
++			memcpy(text, prototype.name.c_str(), length + 1);
++			obj_index[nr].keys = text;
++		}
++		obj->name = obj_index[nr].keys;
++		s.shared[0] = obj->name;
++		if (!obj_index[nr].desc2 && !prototype.short_description.empty())
++		{
++			const size_t length = prototype.short_description.size();
++			if (length == SIZE_MAX ||
++			    length + 1 > SIZE_MAX - birth_mobile_malloc_header())
++			{
++				budget.request_owner.fail(EOVERFLOW);
++				return false;
++			}
++			if (!budget.request(length + 1 + birth_mobile_malloc_header()))
++				return false;
++			errno = 0;
++			char *text = static_cast<char *>(
++				__try_malloc(length + 1, MEM_TAG_STRING, __FILE__, __LINE__));
++			if (!text)
++			{
++				budget.request_owner.fail(errno ? errno : ENOMEM);
++				return false;
++			}
++			memcpy(text, prototype.short_description.c_str(), length + 1);
++			obj_index[nr].desc2 = text;
++		}
++		obj->short_description = obj_index[nr].desc2;
++		s.shared[1] = obj->short_description;
++		if (!obj_index[nr].desc1 && !prototype.description.empty())
++		{
++			const size_t length = prototype.description.size();
++			if (length == SIZE_MAX ||
++			    length + 1 > SIZE_MAX - birth_mobile_malloc_header())
++			{
++				budget.request_owner.fail(EOVERFLOW);
++				return false;
++			}
++			if (!budget.request(length + 1 + birth_mobile_malloc_header()))
++				return false;
++			errno = 0;
++			char *text = static_cast<char *>(
++				__try_malloc(length + 1, MEM_TAG_STRING, __FILE__, __LINE__));
++			if (!text)
++			{
++				budget.request_owner.fail(errno ? errno : ENOMEM);
++				return false;
++			}
++			memcpy(text, prototype.description.c_str(), length + 1);
++			obj_index[nr].desc1 = text;
++		}
++		obj->description = obj_index[nr].desc1;
++		s.shared[2] = obj->description;
++		if (!obj_index[nr].desc3 && !prototype.action_description.empty())
++		{
++			const size_t length = prototype.action_description.size();
++			if (length == SIZE_MAX ||
++			    length + 1 > SIZE_MAX - birth_mobile_malloc_header())
++			{
++				budget.request_owner.fail(EOVERFLOW);
++				return false;
++			}
++			if (!budget.request(length + 1 + birth_mobile_malloc_header()))
++				return false;
++			errno = 0;
++			char *text = static_cast<char *>(
++				__try_malloc(length + 1, MEM_TAG_STRING, __FILE__, __LINE__));
++			if (!text)
++			{
++				budget.request_owner.fail(errno ? errno : ENOMEM);
++				return false;
++			}
++			memcpy(text, prototype.action_description.c_str(), length + 1);
++			obj_index[nr].desc3 = text;
++		}
++		obj->action_description = obj_index[nr].desc3;
++		s.shared[3] = obj->action_description;
++		for (const auto &description : prototype.descriptions)
++		{
++			if (description.keyword.size() == SIZE_MAX ||
++			    description.description.size() == SIZE_MAX)
++			{
++				budget.request_owner.fail(EOVERFLOW);
++				return false;
++			}
++			const size_t keyword_bytes =
++				description.keyword.empty() ? 0 : description.keyword.size() + 1;
++			const size_t description_bytes = description.description.empty() ?
++								 0 :
++								 description.description.size() + 1;
++			if (keyword_bytes > SIZE_MAX - birth_mobile_malloc_header() ||
++			    description_bytes > SIZE_MAX - birth_mobile_malloc_header())
++			{
++				budget.request_owner.fail(EOVERFLOW);
++				return false;
++			}
++			size_t request = sizeof(extra_descr_data) + birth_mobile_malloc_header();
++			if ((keyword_bytes &&
++			     !ordinary_item_constructor_budget::add(
++				     request, keyword_bytes + birth_mobile_malloc_header())) ||
++			    (description_bytes &&
++			     !ordinary_item_constructor_budget::add(
++				     request, description_bytes + birth_mobile_malloc_header())) ||
++			    !budget.request(request))
++				return false;
++			struct description_owner
++			{
++				ordinary_item_constructor_budget &budget;
++				extra_descr_data *value = nullptr;
++				~description_owner()
++				{
++					if (value)
++					{
++						if (value->keyword)
++							FREE(value->keyword);
++						if (value->description)
++							FREE(value->description);
++						FREE(value);
++					}
++					budget.transient_heap = 0;
++				}
++			} pending{ budget };
++			errno = 0;
++			pending.value = static_cast<extra_descr_data *>(__try_malloc(
++				sizeof(extra_descr_data), MEM_TAG_EXDESCD, __FILE__, __LINE__));
++			if (!pending.value)
++			{
++				budget.request_owner.fail(errno ? errno : ENOMEM);
++				return false;
++			}
++			memset(pending.value, 0, sizeof(*pending.value));
++			extra_descr_data *new_descr = pending.value;
++			budget.transient_heap =
++				sizeof(extra_descr_data) + birth_mobile_malloc_header();
++			if (keyword_bytes)
++			{
++				if (!budget.request(keyword_bytes + birth_mobile_malloc_header()))
++					return false;
++				errno = 0;
++				new_descr->keyword = static_cast<char *>(__try_malloc(
++					keyword_bytes, MEM_TAG_STRING, __FILE__, __LINE__));
++				if (!new_descr->keyword)
++				{
++					budget.request_owner.fail(errno ? errno : ENOMEM);
++					return false;
++				}
++				memcpy(new_descr->keyword, description.keyword.c_str(),
++				       keyword_bytes);
++				if (!ordinary_item_constructor_budget::add(
++					    budget.transient_heap,
++					    keyword_bytes + birth_mobile_malloc_header()))
++					return false;
++			}
++			if (description_bytes)
++			{
++				if (!budget.request(description_bytes +
++						    birth_mobile_malloc_header()))
++					return false;
++				errno = 0;
++				new_descr->description = static_cast<char *>(__try_malloc(
++					description_bytes, MEM_TAG_STRING, __FILE__, __LINE__));
++				if (!new_descr->description)
++				{
++					budget.request_owner.fail(errno ? errno : ENOMEM);
++					return false;
++				}
++				memcpy(new_descr->description, description.description.c_str(),
++				       description_bytes);
++				if (!ordinary_item_constructor_budget::add(
++					    budget.transient_heap,
++					    description_bytes + birth_mobile_malloc_header()))
++					return false;
++			}
++			char empty_args[] = "";
++			size_t library = 0;
++			int parsed = -1;
++			if (new_descr->keyword && !strn_cmp("_proclib_", new_descr->keyword, 9))
++			{
++				size_t lower_outer = 0, globals = 0;
++				if (!budget.full_private_prefix(&lower_outer) ||
++				    !current_global(&globals, context) || globals > lower_outer)
++					return false;
++				lower_outer -= globals;
++				size_t lower_full = 0, lower_supplement = 0, lower_initial = 0;
++				size_t preentry = lower_outer;
++				if (!quest_mobile_native_original_proclib::prepare_bounded_source_frame_bytes(&lower_full) ||
++				    !quest_mobile_native_original_proclib::prepare_bounded_source_supplement_frame_bytes(&lower_supplement) ||
++				    !quest_mobile_native_original_proclib::prepare_bounded_initial_inline_bytes(&lower_initial) ||
++				    lower_supplement > lower_full ||
++				    !ordinary_item_constructor_budget::add(preentry, globals) ||
++				    !ordinary_item_constructor_budget::add(preentry, lower_full) ||
++				    !ordinary_item_constructor_budget::add(preentry, lower_initial) ||
++				    !reserve(preentry, context) ||
++				    !ordinary_item_constructor_budget::add(lower_outer, lower_supplement))
++				    return false;
++				// INITIAL covers pre-first-callback construction only. The unchanged
++				// child admits its original physical work/Source; retain only the
++				// genuine positive Source supplement through that child's callbacks.
++
++				ordinary_item_constructor_budget::lower_call lower(budget);
++				errno = 0;
++				parsed = quest_mobile_native_original_proclib::prepare_bounded(
++					obj, new_descr->keyword + 9,
++					new_descr->description ? new_descr->description :
++								 empty_args,
++					&library, ordinary_item_constructor_budget::global,
++					ordinary_item_constructor_budget::relay, &budget,
++					lower_outer);
++				if (parsed && errno && errno != EINVAL)
++				{
++					budget.request_owner.fail(errno);
++					return false;
++				}
++			}
++			if (!budget.request())
++				return false; // Fresh candidate and G before fallback/probe/RNG.
++			if (!parsed)
++			{
++				FREE(new_descr->keyword);
++				if (new_descr->description)
++					FREE(new_descr->description);
++				FREE(new_descr);
++				pending.value = nullptr;
++				budget.transient_heap = 0;
++				if (!budget.request())
++					return false;
++				s.libraries.push_back(library);
++				s.parsed_descriptions.push_back(obj->ex_description);
++				bool periodic = false;
++				if (!s.library_event_requested)
++				{
++					size_t lower_outer = 0, globals = 0;
++					if (!budget.full_private_prefix(&lower_outer) ||
++					    !current_global(&globals, context) ||
++					    globals > lower_outer)
++						return false;
++					lower_outer -= globals;
++					size_t lower_full = 0, lower_supplement = 0, lower_initial = 0;
++					size_t preentry = lower_outer;
++					if (!quest_mobile_native_original_proclib::probe_bounded_source_frame_bytes(&lower_full) ||
++					    !quest_mobile_native_original_proclib::probe_bounded_source_supplement_frame_bytes(&lower_supplement) ||
++					    !quest_mobile_native_original_proclib::probe_bounded_initial_inline_bytes(&lower_initial) ||
++					    lower_supplement > lower_full ||
++					    !ordinary_item_constructor_budget::add(preentry, globals) ||
++					    !ordinary_item_constructor_budget::add(preentry, lower_full) ||
++					    !ordinary_item_constructor_budget::add(preentry, lower_initial) ||
++					    !reserve(preentry, context) ||
++					    !ordinary_item_constructor_budget::add(lower_outer, lower_supplement))
++					    return false;
++					// INITIAL covers pre-first-callback construction only. The unchanged
++					// child admits its original physical work/Source; retain only the
++					// genuine positive Source supplement through that child's callbacks.
++
++					ordinary_item_constructor_budget::lower_call lower(budget);
++					if (!quest_mobile_native_original_proclib::probe_bounded(
++						    obj, library, &periodic,
++						    ordinary_item_constructor_budget::global,
++						    ordinary_item_constructor_budget::relay,
++						    &budget, lower_outer))
++					{
++						candidate.discard_unadmitted();
++						return false;
++					}
++				}
++				if (!budget.request())
++					return false;
++				s.requested.push_back(periodic);
++				s.library_delays.push_back(periodic ? PULSE_MOBILE + number(-4, 4) :
++								      0);
++				s.library_event_requested = s.library_event_requested || periodic;
++				s.parsed_proclib = true;
++				continue;
++			}
++			new_descr->next = obj->ex_description;
++			obj->ex_description = new_descr;
++			pending.value = nullptr;
++			budget.transient_heap = 0;
++		}
++		// Actual local initializer decisions precede spellbook filling/conversion.
++		// Library parsing is complete, and a bridge preserves the original incumbent.
++		if (effective(spell_pool))
++		{
++			s.general_periodic = native_birth_spell_pool_initialize(obj, number(0, 8),
++										time(nullptr));
++			s.general_initialized = true;
++		}
++		else if (effective(super_cannon))
++		{
++			s.general_periodic = native_birth_super_cannon_initialize(obj);
++			s.general_initialized = true;
++		}
++		else if (effective(vecna_deathportal))
++		{
++			s.general_periodic = native_birth_vecna_deathportal_initialize(obj);
++			s.general_initialized = true;
++		}
++		else if (effective(blood_stains))
++		{
++			s.general_periodic = blood_stains(obj, nullptr, CMD_SET_PERIODIC, nullptr);
++			s.general_initialized = true;
++		}
++		else if (effective(zombies_game))
++		{
++			size_t lower_outer = 0, globals = 0;
++			if (!budget.full_private_prefix(&lower_outer) ||
++			    !current_global(&globals, context) || globals > lower_outer)
++				return false;
++			lower_outer -= globals;
++			size_t lower_full = 0, lower_supplement = 0, lower_initial = 0;
++			size_t preentry = lower_outer;
++			if (!quest_mobile_native_zombie_stage::prepare_bounded_source_frame_bytes(&lower_full) ||
++			    !quest_mobile_native_zombie_stage::prepare_bounded_source_supplement_frame_bytes(&lower_supplement) ||
++			    !quest_mobile_native_zombie_stage::prepare_bounded_initial_inline_bytes(&lower_initial) ||
++			    lower_supplement > lower_full ||
++			    !ordinary_item_constructor_budget::add(preentry, globals) ||
++			    !ordinary_item_constructor_budget::add(preentry, lower_full) ||
++			    !ordinary_item_constructor_budget::add(preentry, lower_initial) ||
++			    !reserve(preentry, context) ||
++			    !ordinary_item_constructor_budget::add(lower_outer, lower_supplement))
++			    return false;
++			// INITIAL covers pre-first-callback construction only. The unchanged
++			// child admits its original physical work/Source; retain only the
++			// genuine positive Source supplement through that child's callbacks.
++
++			ordinary_item_constructor_budget::lower_call lower(budget);
++			if (!quest_mobile_native_zombie_stage::prepare_bounded(
++				    obj, s.zombie, ordinary_item_constructor_budget::global,
++				    ordinary_item_constructor_budget::relay, &budget, lower_outer))
++			{
++				candidate.discard_unadmitted();
++				return false;
++			}
++			s.general_periodic = true;
++			s.general_initialized = true;
++		}
++		// The remaining known dispatches have no literal/global initialization.
++		// Newly installed bridge with no incumbent ignores CMD_SET_PERIODIC;
++		// ITEM_SWITCH fallback is installed only if no successful library bound it.
++		else if (effective(item_switch) ||
++			 (effective(nullptr) && !s.parsed_proclib && obj->type == ITEM_SWITCH))
++		{
++			s.general_periodic = item_switch(obj, nullptr, CMD_SET_PERIODIC, nullptr);
++			s.general_initialized = true;
++		}
++		else if (effective(proclib_obj_proc))
++		{
++			s.general_periodic =
++				proclib_obj_proc(obj, nullptr, CMD_SET_PERIODIC, nullptr);
++			s.general_initialized = true;
++		}
++		else
++			s.general_initialized = true;
++		if (s.general_periodic)
++			s.general_delay = PULSE_MOBILE + number(-4, 4);
++		s.random_exit_requested = isname("random_exit", obj->name);
++		if (obj->type == ITEM_SPELLBOOK &&
++		    obj_index[nr].virtual_number == MASTER_SPELLBOOK_VNUM)
++		{
++			const bool had_spell_description = find_spell_description(obj) != nullptr;
++			size_t lower_outer = 0, globals = 0;
++			if (!budget.full_private_prefix(&lower_outer) ||
++			    !current_global(&globals, context) || globals > lower_outer)
++				return false;
++			lower_outer -= globals;
++			size_t lower_full = 0, lower_supplement = 0, lower_initial = 0;
++			size_t preentry = lower_outer;
++			if (!native_mobile_birth_fill_master_spellbook_source_frame_bytes(&lower_full) ||
++			    !native_mobile_birth_fill_master_spellbook_source_supplement_frame_bytes(&lower_supplement) ||
++			    !native_mobile_birth_fill_master_spellbook_initial_inline_bytes(&lower_initial) ||
++			    lower_supplement > lower_full ||
++			    !ordinary_item_constructor_budget::add(preentry, globals) ||
++			    !ordinary_item_constructor_budget::add(preentry, lower_full) ||
++			    !ordinary_item_constructor_budget::add(preentry, lower_initial) ||
++			    !reserve(preentry, context) ||
++			    !ordinary_item_constructor_budget::add(lower_outer, lower_supplement))
++			    return false;
++			// INITIAL covers pre-first-callback construction only. The unchanged
++			// child admits its original physical work/Source; retain only the
++			// genuine positive Source supplement through that child's callbacks.
++
++			int pages = 0;
++			bool filled = false;
++			{
++				ordinary_item_constructor_budget::lower_call lower(budget);
++				filled = native_mobile_birth_fill_master_spellbook_bounded(
++					obj, &pages, ordinary_item_constructor_budget::global,
++					ordinary_item_constructor_budget::relay, &budget,
++					lower_outer);
++			}
++			// Preserve actual descriptor ownership even when the provider refuses.
++			if (!had_spell_description)
++				s.allocated_spell_description = find_spell_description(obj);
++			if (!filled || !budget.request())
++				return false;
++		}
++        // convertObj's instrument/totem snprintf is bounded by its actual
++        // MAX_STRING_LENGTH buffer. str_dup can allocate at most that many
++        // bytes including NUL, plus the actual MEMCHK allocation header.
++        // The old shared name remains global-owned across replacement.
++        constexpr size_t conversion_heap =
++            MAX_STRING_LENGTH * sizeof(char) + birth_mobile_malloc_header();
++        if (!budget.request((obj->type == ITEM_INSTRUMENT || obj->type == ITEM_TOTEM) ?
++                                conversion_heap : 0))
++            return false;
++        convertObj(obj);
++        // The replacement now belongs to this candidate and its real header
++        // census. Drop the prospective bound before another native operation.
++        if (!budget.request())
++            return false;
++		if (obj_index != s.index || obj_index[nr].virtual_number != s.vnum ||
++		    obj_index[nr].pos != s.position || obj_index[nr].func.obj != s.original_proc)
++		{
++			candidate.discard_unadmitted();
++			return false;
++		}
++		s.preparation_completed = true;
++		obj->reset_order_state = 3;
++		output->state_ = candidate.state_;
++		candidate.state_ = nullptr;
++		return true;
++	}
++	catch (const template_read_failure &failure)
++	{
++		budget.request_owner.fail(static_cast<int>(failure.error));
++		candidate.discard_unadmitted();
++		return false;
++	}
++	catch (const std::bad_alloc &)
++	{
++		budget.request_owner.fail(ENOMEM);
++		candidate.discard_unadmitted();
++		return false;
++	}
++	catch (...)
++	{
++		candidate.discard_unadmitted();
++		return false;
++	}
++#endif
++}
++
++
++bool quest_mobile_native_item_stage::prepare_retaining_world_flat_bounded(
++    int nr, int type, uint64_t reserved_uid,
++    const quest_mobile_native_flat_factory_scope &scope,
++    quest_mobile_native_item_stage *output, bool (*current_global)(size_t *, void *) noexcept,
++    bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live,
++    bool *attempted) noexcept
++{
++    if (!output || output->state_ || !attempted || *attempted || !current_global || !reserve)
++    {
++        errno = EINVAL;
++        return false;
++    }
++#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
++    !_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
++    errno = ENOTSUP;
++    return false;
++#else
++    struct retained_transfer
++    {
++        implementation *&candidate, *&output;
++        ~retained_transfer() noexcept
++        {
++            if (candidate)
++            {
++                output = candidate;
++                candidate = nullptr;
++            }
++        }
++    };
++    // These are this wrapper's actual declaration/INLINE carriers. The
++    // existing constructor retains its original conservative admission. This
++    // working draft is not a complete Source export: the independent copy and
++    // constructor descendant maps are joined before final candidate sealing.
++    const size_t copy_source = scope.copy_source_frames();
++    const size_t scope_observer_source = scope.retained_source_frames();
++    const size_t stage_observer_source = world_retained_observation_source_frames();
++    const size_t match_source = world_factory_match_source_frames();
++    if (!copy_source || !scope_observer_source || !stage_observer_source || !match_source)
++        return false;
++    const size_t frames =
++        sizeof(nr) + sizeof(type) + sizeof(reserved_uid) + sizeof(&scope) +
++        sizeof(output) + sizeof(current_global) + sizeof(reserve) + sizeof(context) +
++        sizeof(outer_live) + sizeof(attempted) + sizeof(size_t) +
++        sizeof(ordinary_item_constructor_budget) + sizeof(quest_mobile_native_item_stage) +
++        sizeof(retained_transfer) + 3 * sizeof(size_t) + sizeof(bool) +
++        sizeof(void *) + sizeof(bool) +
++        // Actual passive-query locals/results and selected copy/census/match
++        // descendants. No whole NPC/current envelope is subtracted as credit.
++        // Four caller values plus four declared scalar getter results; the
++        // match getter additionally owns current_source/constexpr selected and
++        // the selected current getter's returned size_t: three more N.
++        11 * sizeof(size_t) + copy_source + scope_observer_source +
++        stage_observer_source + match_source +
++        sizeof(size_t *) + sizeof(size_t) + sizeof(bool);
++    size_t entry = outer_live;
++    if (!cold_birth_add(entry, frames) || !reserve(entry, context))
++        return false;
++    ordinary_item_constructor_budget budget{ current_global, reserve, context };
++    quest_mobile_native_item_stage candidate;
++    retained_transfer transfer{ candidate.state_, output->state_ };
++    budget.candidate = &candidate;
++    if (!budget.init(entry))
++        return false;
++    size_t live = 0;
++    if (!budget.full_private_prefix(&live) ||
++        !scope.current_bounded(reserve, context, live))
++        return false;
++    // During the lower call its private candidate is not in the registered
++    // ROOT census. The wrapper's empty stage has no heap to count there.
++    const bool prepared = prepare_impl_world_flat_bounded(
++        nr, type, reserved_uid, scope, &candidate, current_global, reserve, context,
++        live, attempted);
++    if (!candidate.state_)
++        return false;
++    candidate.state_->flat_factory = true;
++    // The inner controller has returned; the wrapper now owns the one real
++    // surviving candidate. The initially-empty registered output is populated
++    // only by transfer on exit, including every copy/admission refusal.
++    size_t copy_heap = scope.retained_heap_bytes();
++    if (!copy_heap || !budget.request(copy_heap))
++        return false;
++    try
++    {
++        candidate.state_->flat_scope =
++            std::shared_ptr<const quest_mobile_native_flat_factory_scope>(
++                new quest_mobile_native_flat_factory_scope(scope));
++    }
++    catch (const std::bad_alloc &)
++    {
++        errno = ENOMEM;
++        return false;
++    }
++    catch (...)
++    {
++        errno = EIO;
++        return false;
++    }
++    return prepared && budget.full_private_prefix(&live) &&
++           scope.current_bounded(reserve, context, live) &&
++           candidate.flat_factory_matches(scope.root_, scope.source_);
+ #endif
+ }
+ 

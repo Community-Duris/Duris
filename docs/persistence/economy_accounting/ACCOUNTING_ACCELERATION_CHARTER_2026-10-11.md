@@ -1,6 +1,79 @@
 # Accounting qualification coordination - 2026-10-11
 
-## Current human-approved arrangement
+## Current primary WORLD/SHOP lease acknowledgment - 2026-10-11
+
+The direct human instruction in the primary chat authorizes the exact WORLD3
+and SHOP5 implementation leases below. This amendment supersedes the earlier
+lease withdrawal and helper-parking restriction for these two bounded leases
+only. Preserve all other source ownership, independent audit and acceptance
+requirements; no earlier implementation or evidence is reverted.
+
+PRIMARY_ACK: ACKNOWLEDGED - primary accepts the exclusive paths below under
+current direct human authorization.
+
+PRIMARY_ACK_SOURCE: 7f1d766c068501427c099360bb4d1985240395a4 (implementation
+preimage source). The primary records the actual acknowledgment publication
+commit; a later doc/test-only HEAD does not silently change these source pins.
+
+WORLD_LEASE: src/world/db.c; src/world/quest_mobile_native_birth.c;
+src/world/quest_mobile_native_birth.h. Existing owner chat:
+01a129b4-a57a-76e0-baec-42b3dd2fe62f; branch codex/accounting-accel-world;
+reported handoff ref f7228f3fe733863784d8f9526efd2de4596d3000.
+
+SHOP_LEASE: src/economy/shop_trade_transaction.c;
+src/economy/shop_trade_transaction.h; src/sql/sql_player.c;
+src/flatfile/flatfile_item_repository.c; src/flatfile/flatfile_item_repository.h.
+Existing owner chat:01a129b4-a553-78e0-85c2-69e34d8e0d59;
+branch codex/accounting-accel-shop; no supplied delivery ref.
+
+PRIMARY_RETAINED: all undelegated/shared files and interfaces, including
+src/world/db.h, src/world/quest.c, src/world/zone_reset_item_owner.c/.h,
+coordinator, item movement, save pipeline, accounting contracts, registry,
+activation and final integration. Additional paths or extracted modules require
+an exact primary acknowledgment before editing. No concurrent owner edits an
+active leased path; final primary integration explicitly ends or renews its lease.
+
+PRIMARY_PROTECTED_WIP_AND_EXCLUSIONS: preserve the two existing dirty shop
+retention harnesses and the untracked restore-session qualification note with
+the exact protected identities in the current handoff. Those files are not leased.
+
+The primary can publish this acknowledgment and the compact unqualified WORLD
+handoff for delivery through the branches. This host cannot read either external
+chat: publication/delivery is not proof an owner received, resumed or started work.
+Obtain actual owner acknowledgment and source/finish/check handoff before claiming
+dispatch. The frozen incomplete WORLD implementation is not adopted or qualified.
+
+The current human authorization for up to ten agents persists. This amendment
+changes no model, heartbeat or resource settings. Earlier charter restrictions
+cannot override a later direct human instruction. Independent Plan5 ownership
+and existing resource/service protection remain unchanged. No activation,
+deployment, release waiver or protocol acceptance is granted.
+
+
+Acknowledgment publication parent: `9d2bdd74cbee176a1087fe3f15298c65f8e04ca5`. This milestone changes documentation only; the eight implementation preimages remain the published7f1 source. The commit containing this amendment is the primary acknowledgment publication. Authenticate its ancestry and these exact paths before selecting a worker candidate.
+
+[WORLD draft and interfaces](WORLD3_UNQUALIFIED_LEASE_HANDOFF_2026-10-11.md) preserve incomplete work and missing dependencies; the three attached patches are proposals, not an adopted source tree. No SHOP implementation payload is claimed.
+
+| Leased path | Current physical SHA256 | Canonical Git LF SHA256 |
+| --- | --- | --- |
+| `src/world/db.c` | `77dfda1700c1f61c8aa9a0be72199e5aa4367456784dcf15922120b058bd0d02` | `77dfda1700c1f61c8aa9a0be72199e5aa4367456784dcf15922120b058bd0d02` |
+| `src/world/quest_mobile_native_birth.c` | `2ccd06e664d13d4ba99fee561e8841eab5b9d6f093997ab875e247c8f75a1ed1` | `2ccd06e664d13d4ba99fee561e8841eab5b9d6f093997ab875e247c8f75a1ed1` |
+| `src/world/quest_mobile_native_birth.h` | `0dc4dcc275463f75a1da55861e28828060b85e7f5d26b28401edf490a294e345` | `0dc4dcc275463f75a1da55861e28828060b85e7f5d26b28401edf490a294e345` |
+| `src/economy/shop_trade_transaction.c` | `92693faedc9e37e0e70cd6306876ed04bb715eed80130af4cdccf222cf124a84` | `92693faedc9e37e0e70cd6306876ed04bb715eed80130af4cdccf222cf124a84` |
+| `src/economy/shop_trade_transaction.h` | `e3935244d6c41ac096b336b563a4d51380d25725bde469ac9475dff9a92a20f8` | `e3935244d6c41ac096b336b563a4d51380d25725bde469ac9475dff9a92a20f8` |
+| `src/sql/sql_player.c` | `d395dec3c0e7c8e777af5c024d5ae2208b75bee53fb9ff5a3c80d5988a78de77` | `d395dec3c0e7c8e777af5c024d5ae2208b75bee53fb9ff5a3c80d5988a78de77` |
+| `src/flatfile/flatfile_item_repository.c` | `79c850229acf0760fb4e190208d0b08e42f49f9420aa2f4f1def9cdcca035c7e` | `79c850229acf0760fb4e190208d0b08e42f49f9420aa2f4f1def9cdcca035c7e` |
+| `src/flatfile/flatfile_item_repository.h` | `60f6b16dbbb4de67b9290d8d5f1a5717ef6fb139f295ec19829f84593b6fae42` | `60f6b16dbbb4de67b9290d8d5f1a5717ef6fb139f295ec19829f84593b6fae42` |
+
+Protected work is outside both leases:
+
+- `tests/async/shop_trade_physical_retention_harness.cpp`: 27424 bytes; SHA256 `3884a11d93c1efc953e3361bcc3a219a7a5dda7cefacf5e9de56bad387506cb9`.
+- `tests/async/shop_trade_publication_retention_harness.cpp`: 24435 bytes; SHA256 `1e405a00c8081f4a2a5724aad03b3a42abc54d8dbe5cb73eed1634df8479347c`.
+- `docs/persistence/economy_accounting/PLAN5_RESTORE_SESSION_NATIVE_METADATA_QUALIFICATION_2026-10-05.md`: 8861 bytes; SHA256 `8e562fe3c24564bcd3710c4897c2a40cd92cfb501a8c6c9d9e23802d62f02f19`.
+
+The external WORLD and SHOP hosts were unavailable to this primary session. These leases are published for owner pickup; receipt and current execution are unconfirmed. Current native fixture qualification and shared quest temporary-admission work continue here without editing leased files.
+
+## Historical reduced arrangement - lease withdrawal superseded
 
 The human user approved "go with the useful parts" in launch-readiness chat
 01a104b8-0bcd-7863-b720-a15cad96df41 on 2026-10-11. This section supersedes the
@@ -153,15 +226,15 @@ commit. The orchestrator authenticates that primary-authored publication, the
 exact source pin and accepted paths, then grants the corresponding worker ticket.
 An orchestrator's observation is not a substitute for acknowledgment.
 
-PRIMARY_ACK: NOT_REQUIRED (runtime delegation proposal withdrawn)
+HISTORICAL_PRIMARY_ACK: NOT_REQUIRED (runtime delegation proposal withdrawn)
 
-PRIMARY_ACK_SOURCE: NOT_APPLICABLE (human-approved reduced arrangement)
+HISTORICAL_PRIMARY_ACK_SOURCE: NOT_APPLICABLE (human-approved reduced arrangement)
 
-WORLD_LEASE: WITHDRAWN, no runtime implementation grant
+HISTORICAL_WORLD_LEASE: WITHDRAWN, no runtime implementation grant
 
-SHOP_LEASE: WITHDRAWN, no runtime implementation grant
+HISTORICAL_SHOP_LEASE: WITHDRAWN, no runtime implementation grant
 
-PRIMARY_PROTECTED_WIP_AND_EXCLUSIONS: existing ownership retained; no delegation disclosure required
+HISTORICAL_PRIMARY_PROTECTED_WIP_AND_EXCLUSIONS: existing ownership retained; no delegation disclosure required
 
 ## Immediate work and executable evidence
 
