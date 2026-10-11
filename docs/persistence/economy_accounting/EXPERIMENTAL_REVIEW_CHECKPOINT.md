@@ -4411,3 +4411,8 @@ Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
 ## Central Plan5 test registration fixed - 2026-10-10
 
 [Registration evidence](PLAN5_CENTRAL_TEST_REGISTRATION_2026-10-10.md): the native captured binding case is mandatory by name; dedicated captured-item and Linux budget suites are registered. Independent exact-delta review and existing runner --list validation passed (114 rows). Actual fixture execution is pending for the major qualification batch; no full-plan completion is claimed. Inactive/CLOSED, release BLOCKED, goal ACTIVE.
+
+
+## Schema65 lifecycle source integrated - 2026-10-10
+
+[Source integration](PLAN5_SCHEMA65_LIFECYCLE_PRIMARY_INTEGRATION_2026-10-10.md): completed Plan5 lifecycle3 slice now protects reset birth-origin evidence and includes original0065 in the default inventory. Independent current-delta review and Source metadata validators pass (231 tables, destruction disabled). Default64 remains valid; unmeasured65 correctly refuses. Existing lifecycle fixtures and native/combined qualification remain in the major-plan batch. Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
