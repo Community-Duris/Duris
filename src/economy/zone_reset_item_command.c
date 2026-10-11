@@ -1042,3 +1042,1182 @@ economic_accounting_error zone_reset_item_command_decode_bounded(
 	}
 #endif
 }
+
+#include <type_traits>
+
+namespace
+{
+constexpr size_t room_value_P = sizeof(void *);
+constexpr size_t room_value_N = sizeof(size_t);
+template <class T> constexpr size_t room_value_vector_cleanup_source() noexcept
+{
+	using V = std::vector<T>;
+	using A = std::allocator<T>;
+	constexpr size_t destruction = sizeof(V *) + sizeof(V *) + sizeof(A *) + 2 * sizeof(T *) +
+				       sizeof(A *) + 2 * sizeof(T *) + 2 * sizeof(T *) +
+				       sizeof(bool);
+	constexpr size_t element = std::is_trivially_destructible_v<T> ? 0 : 4 * sizeof(T *);
+	constexpr size_t deallocation =
+		sizeof(void *) + sizeof(V *) + sizeof(T *) + sizeof(size_t) + sizeof(A *) +
+		sizeof(T *) + sizeof(size_t) + sizeof(A *) + sizeof(T *) + sizeof(size_t) +
+		sizeof(A *) + sizeof(T *) + sizeof(size_t) + sizeof(void *) + sizeof(size_t) +
+		sizeof(bool) + sizeof(A *);
+	// _Vector_base's member/base cleanup really reaches implicit ~_Vector_impl,
+	// ~_Vector_impl_data and ~__new_allocator, each with its own this carrier.
+	return destruction + element + deallocation + 3 * room_value_P;
+}
+
+template <class T> constexpr size_t room_value_vector_default_source() noexcept
+{
+	// vector, _Vector_base, _Vector_impl, allocator, __new_allocator and
+	// _Vector_impl_data default constructors: six genuine this carriers.
+	return 6 * room_value_P;
+}
+template <class T> constexpr size_t room_value_vector_get_allocator_source() noexcept
+{
+	// _Vector_base::get_allocator(this); _M_get_Tp_allocator(this,returned-ref);
+	// allocator(const&) and __new_allocator(const&): this/source for each.
+	// The returned allocator value is not a member of the caller vector.
+	return 7 * room_value_P + sizeof(std::allocator<T>);
+}
+template <class T> constexpr size_t room_value_vector_const_allocator_ctor_source() noexcept
+{
+	// vector(alloc), _Vector_base(alloc), _Vector_impl(alloc), allocator copy,
+	// new_allocator copy each this/source; _Vector_impl_data default this.
+	return 11 * room_value_P;
+}
+template <class T> constexpr size_t room_value_vector_data_swap_source() noexcept
+{
+	// _M_swap_data(this,source), its real three-pointer __tmp, data default
+	// ctor(this), three _M_copy_data(this,source) calls, implicit tmp dtor(this).
+	return 2 * room_value_P + 3 * sizeof(T *) + room_value_P + 3 * (2 * room_value_P) +
+	       room_value_P;
+}
+template <class T> constexpr size_t room_value_vector_move_constructor_source() noexcept
+{
+	// Defaulted vector/base moves, impl move, allocator/new_allocator const
+	// copies, data move: six this/source pairs. Impl makes two std::move calls
+	// (reference/result each); data move's pointer() null-reset result is real.
+	return 6 * (2 * room_value_P) + 2 * (2 * room_value_P) + sizeof(T *);
+}
+template <class T> constexpr size_t room_value_vector_move_assignment_source() noexcept
+{
+	// operator=(this,source,returned-ref), named constexpr __move_storage,
+	// _S_propagate_on_move_assign bool result (true short-circuits _S_always_equal),
+	// std::move(ref,result), _M_move_assign(this,source,actual true_type value),
+	// generated true_type ctor/dtor this. The actual __tmp vector is separate
+	// from input/output vectors. get_allocator's value dies via allocator and
+	// new_allocator dtors after __tmp's const-allocator construction.
+	constexpr size_t entry = 3 * room_value_P + 2 * sizeof(bool) + 2 * room_value_P +
+				 2 * room_value_P + sizeof(std::true_type) + 2 * room_value_P;
+	// C++20 __alloc_on_move(one,two), std::move(ref,result), generated allocator
+	// assignment(this,source,returned-ref), generated new_allocator assignment
+	// (this,source,returned-ref):10P, plus both _M_get_Tp_allocator(this,ref):4P.
+	constexpr size_t allocator_move = 10 * room_value_P + 2 * (2 * room_value_P);
+	return entry + sizeof(std::vector<T>) + room_value_vector_get_allocator_source<T>() +
+	       2 * room_value_P + room_value_vector_const_allocator_ctor_source<T>() +
+	       2 * room_value_vector_data_swap_source<T>() + allocator_move +
+	       room_value_vector_cleanup_source<T>();
+}
+
+bool room_value_source_add(size_t &total, size_t amount) noexcept
+{
+	if (amount > SIZE_MAX - total)
+		return false;
+	total += amount;
+	return true;
+}
+} // namespace
+
+bool zone_reset_item_image_lifetime_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output)
+		return false;
+	// Exact genuine selected GNU13 value closure. Heap/capacities and actual
+	// image/old-output inline objects are separately owned by the caller.
+	static_assert(std::is_trivially_destructible_v<zone_reset_coin_output>);
+	static_assert(std::is_trivially_copy_constructible_v<zone_reset_room_placement_recipe>);
+	static_assert(std::is_trivially_move_assignable_v<zone_reset_room_placement_recipe>);
+	static_assert(std::is_trivially_destructible_v<zone_reset_room_placement_recipe>);
+	size_t items = 0, recipes = 0,
+	       total =
+		       // Generated image/scalar aggregate and trivial optional receiver graph:
+	       // default9P, move-assignment45P, cleanup15P; no row moves or active
+	       // Recipe/_Empty_byte destructor from the trivial optional union.
+	       69 * room_value_P + room_value_vector_default_source<zone_reset_coin_output>() +
+	       room_value_vector_move_assignment_source<zone_reset_coin_output>() +
+	       room_value_vector_cleanup_source<zone_reset_coin_output>();
+	if (!player_item_snapshot_list_lifetime_source_frame_bytes(&items) ||
+	    !native_mobile_birth_recipe_value_lifecycle_source_frame_bytes(&recipes) ||
+	    sizeof(std::allocator<zone_reset_coin_output>) != 1 ||
+	    sizeof(std::vector<zone_reset_coin_output>) != 3 * sizeof(void *) ||
+	    !room_value_source_add(total, items) || !room_value_source_add(total, recipes))
+		return false;
+	*output = total;
+	return true;
+}
+
+namespace
+{
+constexpr size_t room_fixed_P = sizeof(void *);
+constexpr size_t room_fixed_N = sizeof(size_t);
+constexpr size_t room_fixed_B = sizeof(bool);
+constexpr size_t room_fixed_E = sizeof(economic_accounting_error);
+using room_fixed_source_query = bool (*)(size_t *) noexcept;
+constexpr size_t room_fixed_child_preflight_frames =
+	// Its actual parameters/locals/returned error only. The shared checked
+	// add/admit leaves already belong to the retained ROOM control envelope.
+	6 * sizeof(void *) + 6 * sizeof(size_t) + sizeof(economic_accounting_error);
+constexpr size_t room_fixed_freeze_wrapper_source =
+	5 * sizeof(void *) + 4 * sizeof(size_t) + 2 * sizeof(economic_accounting_error);
+constexpr size_t room_fixed_verify_wrapper_source =
+	4 * sizeof(void *) + 4 * sizeof(size_t) + 2 * sizeof(economic_accounting_error);
+template <class T> constexpr size_t room_fixed_reserved_push_source() noexcept
+{
+	// push_back(this,rvalue-ref) -> std::move(ref,result); emplace_back(this,
+	// arg-ref,returned-ref) -> forward(ref,result); allocator_traits::construct
+	// (allocator-ref,location,arg-ref) -> forward; construct_at(location,arg-ref,
+	// returned-pointer) -> forward; actual placement-new(size,where,result).
+	constexpr size_t construction = 2 * room_fixed_P + 2 * room_fixed_P + 3 * room_fixed_P +
+					2 * room_fixed_P + 3 * room_fixed_P + 2 * room_fixed_P +
+					3 * room_fixed_P + 2 * room_fixed_P + room_fixed_N +
+					2 * room_fixed_P;
+	// C++20 emplace return -> back(this,returned-ref) -> end(this,iterator)
+	// + normal ctor(this,pointer-ref), iterator::operator-(this,difference,
+	// returned-iterator) + normal ctor; dereference(this,returned-ref). Both
+	// actual iterator temporaries have generated destructors(this). Capacity
+	// was genuinely reserved for all rows, so _M_realloc_insert is not selected.
+	constexpr size_t back =
+		2 * room_fixed_P + 2 * room_fixed_P + 2 * room_fixed_P + 2 * room_fixed_P +
+		sizeof(std::ptrdiff_t) + 2 * room_fixed_P + 2 * room_fixed_P + 2 * room_fixed_P +
+		// operator-(n) constructs the returned iterator from pointer subtraction:
+		// a distinct pointer temporary binds its const-reference ctor argument.
+		room_fixed_P;
+	return construction + back;
+}
+
+constexpr size_t room_fixed_byte_fill_source =
+	// allocator-specialized __uninitialized_fill_n_a(first,n,value-ref,alloc-ref,
+	// returned-first), genuine is_constant_evaluated result; public
+	// uninitialized_fill_n(first,n,value-ref,returned-first,__can_fill).
+	(4 * room_fixed_P + room_fixed_N + sizeof(bool)) +
+	(3 * room_fixed_P + room_fixed_N + sizeof(bool)) +
+	// __uninitialized_fill_n<true>::__uninit_fill_n and fill_n each
+	// first/n/value-ref/result. fill_n owns both returned size integer and tag.
+	2 * (3 * room_fixed_P + room_fixed_N) +
+	2 * room_fixed_N + // __size_to_integer(unsigned long input,returned size)
+	room_fixed_P + sizeof(std::random_access_iterator_tag) + // category input/result
+	// random_access -> bidirectional -> forward -> input tag ctor/dtor chains.
+	8 * room_fixed_P +
+	// __fill_n_a(first,n,value-ref,random tag,returned-first), then
+	// __fill_a(first,last,value-ref), then byte __fill_a1(first,last,value-ref,
+	// __tmp,__len,is_constant_evaluated result), actual memset arguments/result.
+	3 * room_fixed_P + room_fixed_N + sizeof(std::random_access_iterator_tag) +
+	3 * room_fixed_P + 3 * room_fixed_P + sizeof(uint8_t) + room_fixed_N + sizeof(bool) +
+	2 * room_fixed_P + sizeof(int) + room_fixed_N;
+
+template <class T> constexpr size_t room_fixed_count_value_vector_ctor_source() noexcept
+{
+	// Real default allocator argument: allocator/new_allocator ctor and dtor.
+	// vector(this,count,value-ref,allocator-ref); _Vector_base(this,n,alloc-ref)
+	// plus its full impl/allocator/data const-copy chain; _M_create_storage(this,n).
+	// _S_check_init_len(n,alloc-ref,returned-n) owns actual temporary allocator
+	// copy (allocator/new_allocator this/source), value, and both destructors;
+	// _S_max_size's exact descendant scalar graph stays room_fixed_allocation_source.
+	return sizeof(std::allocator<T>) + 4 * room_fixed_P + 3 * room_fixed_P + room_fixed_N +
+	       2 * room_fixed_P + room_fixed_N +
+	       (2 * room_fixed_P + 2 * room_fixed_P + 2 * room_fixed_P + room_fixed_P) +
+	       room_fixed_P + room_fixed_N + room_fixed_P + 2 * room_fixed_N + 4 * room_fixed_P +
+	       sizeof(std::allocator<T>) + 2 * room_fixed_P +
+	       // _M_fill_initialize(this,n,value-ref) and _M_get_Tp_allocator(this,ref).
+	       2 * room_fixed_P + room_fixed_N + 2 * room_fixed_P;
+}
+
+constexpr size_t room_fixed_max_size_source =
+	// _S_max_size(allocator-ref,__diffmax,__allocmax,returned size), allocator
+	// traits max_size(allocator-ref,returned size), min(two refs,returned ref,bool).
+	(room_fixed_P + 3 * room_fixed_N) + (room_fixed_P + room_fixed_N) + 3 * room_fixed_P +
+	sizeof(bool);
+constexpr size_t room_fixed_allocation_source =
+	// _M_allocate(this,n,returned pointer); allocator_traits::allocate(alloc-ref,
+	// n,returned pointer); allocator::allocate(this,n,returned pointer,actual
+	// constant-evaluation result); new_allocator::allocate(this,n,hint,result),
+	// its _M_max_size(this,result), then ordinary operator new(n,result).
+	3 * (2 * room_fixed_P + room_fixed_N) + sizeof(bool) + (3 * room_fixed_P + room_fixed_N) +
+	(room_fixed_P + room_fixed_N) + (room_fixed_N + room_fixed_P);
+
+template <typename T, typename Comparator>
+[[maybe_unused]] constexpr size_t room_fixed_sort_leaf_frames()
+{
+	// Same real GCC13 sort/partition/insertion/heap/copy/adjacent call scopes
+	// as UID sorting. Values and comparator carriers use their genuine types.
+	// Original key less/equal this-free argument/result scopes and revision
+	// lambda this/left/right/result plus its nested key less call.
+	return 3 * (2 * sizeof(void *) + sizeof(bool)) + 3 * sizeof(void *) + sizeof(bool) +
+	       18 * sizeof(void *) + 7 * sizeof(Comparator) + sizeof(T) + 16 * sizeof(void *) +
+	       6 * sizeof(Comparator) + 2 * sizeof(T) + 23 * sizeof(void *) +
+	       11 * sizeof(std::ptrdiff_t) + 7 * sizeof(Comparator) + 4 * sizeof(T) +
+	       8 * sizeof(void *) + 5 * sizeof(Comparator) + 4 * sizeof(bool) +
+	       5 * (4 * sizeof(void *)) + 2 * (2 * sizeof(void *)) + 3 * (2 * sizeof(void *)) +
+	       2 * sizeof(void *) + sizeof(void *) + 2 * sizeof(void *) + 3 * sizeof(void *) +
+	       sizeof(size_t) + sizeof(std::ptrdiff_t) + 9 * sizeof(void *) +
+	       2 * sizeof(Comparator) + sizeof(bool);
+}
+
+using room_fixed_revision_comparator =
+	decltype([](const critical_expected_revision &a, const critical_expected_revision &b)
+		 { return critical_entity_key_less(a.key, b.key); });
+[[maybe_unused]] constexpr size_t room_fixed_sort_depth(size_t count) noexcept
+{
+	size_t depth = 0;
+	while (count > 1)
+	{
+		count >>= 1;
+		++depth;
+	}
+	return 2 * depth + 1;
+}
+template <typename T, typename C>
+[[maybe_unused]] constexpr size_t room_fixed_sort_complete() noexcept
+{
+	// The actual sort is reached only after both key vectors pass MAX_KEYS.
+	// __introsort_loop preserves iterator/length/comparator at every nested
+	// level; heap/insertion/partition source is the identical typed leaf map.
+	return room_fixed_sort_leaf_frames<T, C>() +
+	       room_fixed_sort_depth(CRITICAL_COMMAND_MAX_KEYS) *
+		       (3 * sizeof(void *) + sizeof(std::ptrdiff_t) + sizeof(C));
+}
+[[maybe_unused]] constexpr size_t room_fixed_sorts =
+	room_fixed_sort_complete<critical_entity_key, decltype(&critical_entity_key_less)>() +
+	room_fixed_sort_complete<critical_expected_revision, room_fixed_revision_comparator>();
+
+template <class T> constexpr size_t room_fixed_fresh_reserve_source() noexcept
+{
+	// Actual three reserves are fresh and empty: coin (nontrivial default),
+	// key and revision (trivial). No per-row relocation or memmove executes
+	// on that empty domain. Every selected runtime controller is still real.
+	constexpr size_t relocate = 5 * room_fixed_P + 5 * room_fixed_P + 3 * (2 * room_fixed_P) +
+				    (std::is_trivial_v<T> ?
+					     5 * room_fixed_P + sizeof(std::ptrdiff_t) :
+					     6 * room_fixed_P) +
+				    2 * room_fixed_P;
+	// reserve(this,n,old_size,tmp), max_size/get_allocator/S_max/traits/min;
+	// capacity/size; constexpr _S_use_relocate/_S_nothrow_relocate results;
+	// exact allocation call chain; null _M_deallocate(this,p,n) is entered,
+	// but no delete/deallocator body is called for the old null allocation.
+	return 2 * room_fixed_P + 2 * room_fixed_N + room_fixed_P + room_fixed_N +
+	       2 * room_fixed_P + room_fixed_max_size_source + 2 * (room_fixed_P + room_fixed_N) +
+	       2 * room_fixed_B + room_fixed_allocation_source + relocate + 2 * room_fixed_P +
+	       room_fixed_N;
+}
+
+constexpr size_t room_fixed_coin_const_push_source =
+	// push_back(this,const value&), then direct traits::construct; no
+	// emplace/back/iterator/std::move or allocating reallocation branch.
+	2 * room_fixed_P + 3 * room_fixed_P + 2 * room_fixed_P + 3 * room_fixed_P +
+	2 * room_fixed_P + room_fixed_N + 2 * room_fixed_P +
+	// Trivial coin copy constructor and its std::array copy constructor.
+	4 * room_fixed_P;
+
+constexpr size_t room_fixed_owned_vector_source =
+	room_fixed_fresh_reserve_source<zone_reset_coin_output>() +
+	room_fixed_fresh_reserve_source<critical_entity_key>() +
+	room_fixed_fresh_reserve_source<critical_expected_revision>() +
+	room_fixed_coin_const_push_source + room_fixed_reserved_push_source<critical_entity_key>() +
+	room_fixed_reserved_push_source<critical_expected_revision>() +
+	// Key and revision genuine trivial move construction; revision's key
+	// member and its temporary aggregate key copy/cleanup also execute.
+	2 * room_fixed_P + 4 * room_fixed_P + 2 * room_fixed_P + 3 * room_fixed_P +
+	// Actual payload byte constructor, value argument and final output move.
+	sizeof(uint8_t) + room_fixed_count_value_vector_ctor_source<uint8_t>() +
+	room_fixed_max_size_source + room_fixed_allocation_source + room_fixed_byte_fill_source +
+	room_value_vector_cleanup_source<uint8_t>() +
+	room_value_vector_move_assignment_source<uint8_t>();
+
+// Each function retains its actual scalar/call/reference/result carriers;
+// complete existing named DTO objects and fresh capacity requests stay with
+// genuine original/bounded request owners. These are source declarations,
+// never an emitted-stack or cached workspace proxy.
+constexpr size_t room_fixed_entry_source =
+	// Public command/output/callback/context, outer/full/retained/initial/live,
+	// returned error; typed bad_alloc catch reference and both codec returns.
+	4 * room_fixed_P + 5 * room_fixed_N + room_fixed_E + room_fixed_P +
+	2 * sizeof(critical_command_codec_result);
+constexpr size_t room_fixed_decode_remaining_source =
+	// Successful top decoder: keys/revisions and status; work's named scalar
+	// members belong to the actual work DTO. No old EVP peak helper is called.
+	2 * room_fixed_N + room_fixed_E + 2 * (2 * room_fixed_P);
+constexpr size_t room_fixed_payload_decode_scalar_source =
+	// Five pointer/ref parameters, outer; has_placement; six wire sizes;
+	// live/preliminary/scan/peak/item_heap/recipe_working/coins_heap/result_heap/
+	// value_working/offset/i/denomination. Named image/profile/coin/placement
+	// inline values stay in original request phases, not this source sum.
+	5 * room_fixed_P + 22 * room_fixed_N + room_fixed_B + room_fixed_E +
+	sizeof(player_snapshot_codec_result) +
+	// Real coin and array default/destruction, local placement default/dtor.
+	3 * room_fixed_P + 2 * room_fixed_P;
+constexpr size_t room_fixed_payload_encode_scalar_source =
+	// Four pointer/ref parameters; outer/live/size/offset/denomination;
+	// returned+status, hidden coin range/begin/end and coin+placement refs.
+	4 * room_fixed_P + 5 * room_fixed_N + 2 * room_fixed_E + 5 * room_fixed_P;
+constexpr size_t room_fixed_build_scalar_source =
+	// Six pointer/ref parameters (metadata,image,out,reserve,context), actual
+	// timestamp/outer/live/preliminary/keys/revisions/request/heap and status.
+	5 * room_fixed_P + sizeof(uint64_t) + 7 * room_fixed_N + 2 * room_fixed_E + room_fixed_P +
+	4 * room_fixed_P +
+	// Genuine key/revision aggregate temporary values. Sequential initial
+	// and loop occurrences are one typed family; no item-count multiplier.
+	sizeof(critical_entity_key) + sizeof(critical_expected_revision);
+constexpr size_t room_fixed_recipe_wrapper_scalar_source =
+	// items/recipes/out/callback/context; outer, all three named constexpr
+	// size carriers, scan/validation/encoded/live and max result/query result;
+	// checked/returned error and actual profile ctor/cleanup receiver.
+	5 * room_fixed_P + 9 * room_fixed_N + 2 * room_fixed_E + 2 * room_fixed_P;
+constexpr size_t room_fixed_controls_source =
+	// add(ref,amount)->bool; array(count,width,out)->bool;
+	// admit(base,extra,reserve,context)->bool; heap(command,out,keys,revs,heap).
+	room_fixed_P + room_fixed_N + room_fixed_B + room_fixed_P + 2 * room_fixed_N +
+	room_fixed_B + 2 * room_fixed_P + 2 * room_fixed_N + room_fixed_B + 2 * room_fixed_P +
+	3 * room_fixed_N + room_fixed_B +
+	// Genuine max(two references,returned ref,comparison) and codec mapper.
+	3 * room_fixed_P + room_fixed_B + sizeof(player_snapshot_codec_result) + room_fixed_E;
+constexpr size_t room_fixed_wire_scalar_source =
+	// put(output,value,count,i), get(input,count,value,i,returned value).
+	2 * room_fixed_P + 4 * room_fixed_N + 3 * sizeof(uint64_t) +
+	// Actual two bit_cast instantiations: const source-ref and returned scalar.
+	2 * room_fixed_P + sizeof(int32_t) + sizeof(int64_t) +
+	// Original decoder's intermediate uint32_t binds bit_cast const ref.
+	sizeof(uint32_t);
+
+constexpr size_t room_fixed_optional_placement_assign_source =
+	// Actual disengaged value assignment optional=(Recipe&). Default image
+	// already owns empty optional; no optional copy/move construction here.
+	3 * room_fixed_P + // this/value/returned reference
+	room_fixed_P + room_fixed_B + // _M_is_engaged
+	2 * room_fixed_P + // outer forward
+	2 * room_fixed_P + 2 * room_fixed_P + // base_impl construct + forward
+	2 * room_fixed_P + 2 * room_fixed_P +
+	2 * room_fixed_P + // payload construct/addressof/forward
+	2 * room_fixed_P + room_fixed_B + 2 * room_fixed_P + // runtime _Construct + forward
+	room_fixed_N + 2 * room_fixed_P + // placement new(size,where,returned pointer)
+	2 * room_fixed_P; // trivial Recipe copy construction
+
+constexpr size_t room_fixed_metadata_default_source = 9 * room_fixed_P;
+constexpr size_t room_fixed_metadata_cleanup_source = 16 * room_fixed_P;
+constexpr size_t room_fixed_metadata_assignment_source = 48 * room_fixed_P;
+// Metadata default: own receiver + eight disengaged optional receivers. Four
+// IDs/arrays use aggregate brace initialization. Cleanup: metadata, four IDs,
+// four arrays and seven trivial optional receiver destructors. Assignment:
+// metadata/four IDs/four arrays (9*3P) plus seven optional assignments (21P).
+constexpr size_t room_fixed_facts_value_source = room_fixed_P + room_fixed_metadata_default_source +
+						 room_value_vector_default_source<uint8_t>() +
+						 room_fixed_P + room_fixed_metadata_cleanup_source +
+						 room_value_vector_cleanup_source<uint8_t>();
+constexpr size_t room_fixed_intent_value_source =
+	// Generated frozen intent constructor/destructor and both digest-array
+	// destructor receivers; digest brace initialization has no ctor call.
+	4 * room_fixed_P + room_fixed_facts_value_source;
+constexpr size_t room_fixed_command_value_source =
+	// Actual command default/cleanup and operation-id/array cleanup plus four
+	// vector empty defaults/cleanup. Its selected output move assignment owns
+	// command/operation/array three receiver/source/returned-ref scopes.
+	6 * room_fixed_P +
+	2 * (room_value_vector_default_source<uint8_t>() +
+	     room_value_vector_cleanup_source<uint8_t>()) +
+	room_value_vector_default_source<critical_entity_key>() +
+	room_value_vector_cleanup_source<critical_entity_key>() +
+	room_value_vector_default_source<critical_expected_revision>() +
+	room_value_vector_cleanup_source<critical_expected_revision>() + 9 * room_fixed_P +
+	2 * room_value_vector_move_assignment_source<uint8_t>() +
+	room_value_vector_move_assignment_source<critical_entity_key>() +
+	room_value_vector_move_assignment_source<critical_expected_revision>() +
+	// candidate.operation_id=image.operation_id: ID and array assignment.
+	6 * room_fixed_P;
+constexpr size_t room_fixed_value_lifetime_source =
+	// Actual room workspace receiver default/cleanup and span default/cleanup.
+	2 * room_fixed_P + 4 * room_fixed_P + room_fixed_intent_value_source +
+	room_fixed_facts_value_source + room_fixed_command_value_source +
+	// Parent’s expected command is default/cleaned but never moved as a
+	// whole command by the codec; same typed command closure covers its value.
+	2 * (room_value_vector_default_source<uint8_t>() +
+	     room_value_vector_cleanup_source<uint8_t>()) +
+	// Two payload locals are empty byte vectors; count/value candidate has
+	// its separate constructor/cleanup above. std::array source cleanup this.
+	2 * (room_value_vector_default_source<uint8_t>() +
+	     room_value_vector_cleanup_source<uint8_t>()) +
+	room_fixed_P + room_fixed_metadata_assignment_source +
+	// Four genuine caller std::move instantiations at the original assignment
+	// cuts: decoded candidate/image, final workspace/image, payload byte
+	// candidate and rebuilt command candidate. Ref/result2P per call, outside
+	// the selected vector/generated assignment lifetimes they invoke.
+	8 * room_fixed_P;
+
+template <bool Data, bool Index, bool Empty>
+constexpr size_t room_fixed_vector_access_source() noexcept
+{
+	// size/capacity/empty/data:_M_data_ptr, const [] and begin/end. Four actual
+	// public data/index/begin/end pointer/ref returns are distinct from the
+	// owning vector, along with the generated normal-iterator lifetimes.
+	return 2 * (room_fixed_P + room_fixed_N) + (Empty ? room_fixed_P + room_fixed_B : 0) +
+	       (Data ? 4 * room_fixed_P : 0) + (Index ? 2 * room_fixed_P + room_fixed_N : 0) +
+	       2 * (4 * room_fixed_P + room_fixed_P) +
+	       // Ordinary range iterator comparison/base/increment/dereference.
+	       // rvalue push's back graph is already in the exact push controller;
+	       // direct key.back uses that same selected closure. Byte/coin push
+	       // reaches no unrelated front/back overload in this private graph.
+	       2 * room_fixed_P + room_fixed_B + 2 * (2 * room_fixed_P) + 2 * room_fixed_P +
+	       2 * room_fixed_P;
+}
+
+constexpr size_t room_fixed_direct_pointer_copy_source =
+	// Public copy, __copy_move_a/a1/a2/copy_m: three iterators and returned
+	// iterator each. Runtime constant-evaluation bool, actual _Num, memmove
+	// formal/result scopes, and scalar __assign_one on one-byte input.
+	5 * (4 * room_fixed_P) + room_fixed_B + sizeof(std::ptrdiff_t) + 3 * room_fixed_P +
+	room_fixed_N + 2 * room_fixed_P +
+	// __miter_base input/returned iterator twice; __niter_base three times;
+	// raw __niter_wrap(from,result,return). The normal-output overload needs
+	// difference/operator+ and its genuine pointer temporary/ctor lifetime.
+	2 * (2 * room_fixed_P) + 3 * (2 * room_fixed_P) + 3 * room_fixed_P + 2 * room_fixed_P +
+	sizeof(std::ptrdiff_t) + 3 * room_fixed_P + room_fixed_P +
+	// Genuine two normal byte iterator types (vector mutable, span const):
+	// generated copy(this,source), move(this,source), cleanup(this). Formal
+	// and returned iterator values themselves were counted above.
+	2 * (5 * room_fixed_P) +
+	// copy_n(first,n,result,__n2,return), size_to_integer(n,result), actual
+	// category(first,returned tag), __copy_n(first,n,result,tag,return), normal
+	// input+count’s pointer temp/ctor and its returned iterator destructor.
+	3 * room_fixed_P + 2 * room_fixed_N + 2 * room_fixed_N + room_fixed_P +
+	sizeof(std::random_access_iterator_tag) + 3 * room_fixed_P + room_fixed_N +
+	sizeof(std::random_access_iterator_tag) + 2 * room_fixed_P + sizeof(std::ptrdiff_t) +
+	4 * room_fixed_P;
+
+constexpr size_t room_fixed_byte_vector_compare_source =
+	// vector==(two refs,returned bool), size(this,returnedN) twice, four
+	// begin/end normal iterator constructor/destructor paths. std::equal,
+	// equal_aux/aux1/equal<true> each3 params/returned bool, actual __simple,
+	// length/niter/memcmp first/second/count/returned int. No three-way compare.
+	2 * room_fixed_P + room_fixed_B + 2 * (room_fixed_P + room_fixed_N) +
+	4 * (5 * room_fixed_P) + 4 * (3 * room_fixed_P + room_fixed_B) + room_fixed_B +
+	room_fixed_N + 3 * (2 * room_fixed_P) +
+	// __memcmp owns its pointer/count/int result, then the one bool
+	// std::is_constant_evaluated result (compiler intrinsic has no
+	// second bool carrier), then a distinct builtin memcmp boundary.
+	2 * room_fixed_P + room_fixed_N + sizeof(int) + room_fixed_B + 2 * room_fixed_P +
+	room_fixed_N + sizeof(int) +
+	// Actual const-vector-byte normal iterator generated copy/move/cleanup
+	// type family. Mutable iterator/source comparisons have no three-way path.
+	5 * room_fixed_P;
+
+constexpr size_t room_fixed_dynamic_span_source =
+	// range constructor(this,range); data/size CPO(this,range,result),
+	// vector data/size, extent(this,n); actual subspan(this,offset,count)
+	// creates span(this,pointer,count) and extent(this,count); data/size/index
+	// wrappers and normal begin/end constructor/destructor identities.
+	2 * room_fixed_P + 3 * room_fixed_P + 2 * room_fixed_P + 2 * room_fixed_P + room_fixed_N +
+	room_fixed_P + room_fixed_N + room_fixed_P + room_fixed_N + room_fixed_P +
+	2 * room_fixed_N + 2 * room_fixed_P + room_fixed_N + room_fixed_P + room_fixed_N +
+	// Pointer/count constructor selects raw-pointer to_address and
+	// __to_address: each actual pointer formal and returned pointer.
+	2 * (2 * room_fixed_P) + 2 * room_fixed_P + 2 * (room_fixed_P + room_fixed_N) +
+	2 * room_fixed_P + room_fixed_N + 2 * (5 * room_fixed_P) +
+	// Returned subspans and implicit vector-to-span actual value storage;
+	// the work payload span is already named inside its actual workspace.
+	2 * sizeof(std::span<const uint8_t>) +
+	sizeof(std::span<const native_mobile_birth_item_recipe>) +
+	// Three actual const-byte/player-item/recipe span families each
+	// select generated span+dynamic-extent copy constructors (4P)
+	// and cleanup receivers (2P); these are not pointer forwarding.
+	3 * (4 * room_fixed_P + 2 * room_fixed_P) +
+	// work.payload_bytes assignment selects defaulted span and
+	// dynamic-extent copy assignment: receiver/source/returned-ref
+	// 3P each. This distinct closure is not ctor/cleanup credit.
+	2 * (3 * room_fixed_P);
+
+// Direct iterator/span/byte-copy/compare and generated aggregate scope families
+// are owned here; validation leaves and pure profile composition follow below.
+// Native/emitted/host qualification is separate from this Source inventory.
+} // namespace
+
+namespace
+{
+constexpr size_t room_fixed_image_validation_scalar_source =
+	// Original image-ref; total/rows/recipe_libraries/i/j/matches/denomination;
+	// item/recipe/description aliases, money, returned+local status.
+	room_fixed_P + 7 * room_fixed_N + 3 * room_fixed_P + room_fixed_B + 2 * room_fixed_E +
+	// Three genuine range families: extra-descriptions, coin-match loop,
+	// final coin existence loop. Each range/begin/end/current alias is real.
+	3 * (4 * room_fixed_P) +
+	// delta{} and economic_coin_delta's temporary zero BEFORE are distinct
+	// physical arrays not present in the old recipe/item inline credit.
+	2 * sizeof(economic_coin_vector) +
+	// Both actual caller array cleanup receivers, separate from the nested
+	// delta helper's local result-array cleanup already owned below.
+	2 * room_fixed_P;
+constexpr size_t room_fixed_placement_validation_source = room_fixed_P + 4 * room_fixed_B;
+constexpr size_t room_fixed_string_nul_source =
+	// add_bytes(count,total-ref,result), add_string(value,total-ref,result),
+	// actual basic_string::size(this,returned N), find(char,default-pos):
+	// this,c,pos,__ret,__size,__n,returnedN,__data,__p; char_traits::find
+	// pointer/count/character-ref/returned-pointer, constant-eval bool and
+	// actual memchr(input,c,n,returned-pointer). No substring or strlen.
+	room_fixed_N + room_fixed_P + room_fixed_B + 2 * room_fixed_P + room_fixed_B +
+	room_fixed_P + room_fixed_N + room_fixed_P + sizeof(char) + 5 * room_fixed_N +
+	2 * room_fixed_P + 2 * room_fixed_P + // _M_data(this,returned pointer)
+	3 * room_fixed_P + room_fixed_N + room_fixed_B + 2 * room_fixed_P + sizeof(int) +
+	room_fixed_N;
+
+constexpr size_t room_fixed_coin_nonnegative_source =
+	// nonnegative(value-ref,returned bool), empty lambda temporary value.
+	room_fixed_P + room_fixed_B + sizeof(char) +
+	// all_of,find_if_not,__find_if_not,RA __find_if: actual first/last/
+	// return pointers, predicate values, trip count and RA category value.
+	11 * room_fixed_P + 4 * sizeof(char) + room_fixed_B + sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) +
+	// __pred_iter(returned/passed predicate), _Iter_pred(this,pred), move;
+	// __negate(returned/passed adapter), _Iter_negate(this,pred), move.
+	6 * sizeof(char) + 6 * room_fixed_P +
+	// Negation callback(this,iterator,result) and empty predicate's genuine
+	// operator(this,int64,result); actual category(first,returned tag).
+	3 * room_fixed_P + sizeof(int64_t) + 2 * room_fixed_B + room_fixed_P +
+	sizeof(std::random_access_iterator_tag) +
+	// RA tag default/destroy four-base receiver chain. Lambda, positive
+	// adapter and negating adapter generated copy/move/cleanup type families.
+	8 * room_fixed_P + 5 * room_fixed_P + 10 * room_fixed_P + 10 * room_fixed_P;
+constexpr size_t room_fixed_item_none_of_source =
+	// Captured coin-reference lambda temporary: a real pointer, never an
+	// empty lambda. none_of/find_if/3arg_find_if/RA_find_if use this exact
+	// positive predicate; no negation or find_if_not branch executes.
+	room_fixed_P + 11 * room_fixed_P + 4 * room_fixed_P + room_fixed_B +
+	sizeof(std::ptrdiff_t) + sizeof(std::random_access_iterator_tag) +
+	// __pred_iter+_Iter_pred constructor/move and real callback's operator
+	// this/iterator/result, lambda this/item-reference/result.
+	3 * room_fixed_P + 3 * room_fixed_P + 4 * room_fixed_P + 2 * room_fixed_B + room_fixed_P +
+	sizeof(std::random_access_iterator_tag) + 8 * room_fixed_P + 5 * room_fixed_P +
+	10 * room_fixed_P +
+	// Normal const-item iterator generated copy/move/cleanup, subtract+two
+	// base calls, equality+two base calls, increment and dereference.
+	5 * room_fixed_P + 2 * room_fixed_P + sizeof(std::ptrdiff_t) + 4 * room_fixed_P +
+	2 * room_fixed_P + room_fixed_B + 4 * room_fixed_P + 2 * room_fixed_P + 2 * room_fixed_P;
+constexpr size_t room_fixed_coin_delta_source =
+	// delta(before,after,out), ignored, actual result, index, error return.
+	3 * room_fixed_P + sizeof(int64_t) + sizeof(economic_coin_vector) + room_fixed_N +
+	room_fixed_E +
+	// coin_value(vector,out,total128,index,error), narrow(wide,out,bool),
+	// actual numeric_limits int64 min/max returned values.
+	2 * room_fixed_P + sizeof(__int128_t) + room_fixed_N + room_fixed_E + sizeof(__int128_t) +
+	room_fixed_P + room_fixed_B + 2 * sizeof(int64_t) + room_fixed_coin_nonnegative_source +
+	// Actual coin array begin/end each call direct data; size and both
+	// const/mutable subscripts are direct (this,index,returned reference).
+	// Generated result assignment and local result cleanup are separate.
+	2 * (4 * room_fixed_P) + room_fixed_P + room_fixed_N +
+	2 * (2 * room_fixed_P + room_fixed_N) + 4 * room_fixed_P;
+
+constexpr size_t room_fixed_byte_array_equal_source =
+	// array==(left,right,result), exactly three begin/end direct-data wrappers,
+	// equal/equal_aux/equal_aux1/equal<true>, __simple, actual length,
+	// raw niter three input/results, __memcmp(first,second,n,returned int).
+	2 * room_fixed_P + room_fixed_B + 3 * (4 * room_fixed_P) +
+	4 * (3 * room_fixed_P + room_fixed_B) + room_fixed_B + room_fixed_N +
+	3 * (2 * room_fixed_P) +
+	// Own __memcmp scope, its single constant-evaluation query bool,
+	// and the distinct builtin memcmp boundary. This conservative
+	// family includes its own leaf; no vector margin is borrowed.
+	2 * room_fixed_P + room_fixed_N + sizeof(int) + room_fixed_B + 2 * room_fixed_P +
+	room_fixed_N + sizeof(int);
+constexpr size_t room_fixed_source_encode_scalar_source =
+	// event/output, actual local result array48, kind, two lexical byte-loop
+	// values, returned error. Source validity/zero-ID graph is in the genuine
+	// metadata validator Source export, which is actually called by this codec.
+	2 * room_fixed_P + sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>) +
+	sizeof(uint16_t) + 2 * room_fixed_N + room_fixed_E +
+	// Actual array result assignment(this,source,returned-ref), cleanup(this).
+	4 * room_fixed_P;
+constexpr size_t room_fixed_source_decode_scalar_source =
+	// Original source decoder's by-value formal span is in the old actual
+	// decode-object+span phase. Reader/result/two IDs/two spans are real old
+	// DTO credit, not source substitutes. These remaining call/results are new.
+	room_fixed_P + room_fixed_E +
+	// take(this,count), integer<uint16,uint32,uint64>(this,value,i,return);
+	// id(this), block16(this,array-ref). The unsigned returned T carriers are
+	// real, distinct from uint64 value and returned identity/span objects.
+	room_fixed_P + room_fixed_N + 3 * (room_fixed_P + sizeof(uint64_t) + room_fixed_N) +
+	sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint64_t) + room_fixed_P + 2 * room_fixed_P +
+	// Reader's span copy/extent-copy and generated reader/span/extent cleanup;
+	// ID return generated move/copy and local cleanup; source event result
+	// final copy assignment and result cleanup, both IDs/arrays included.
+	7 * room_fixed_P + 6 * room_fixed_P + 6 * room_fixed_P + 15 * room_fixed_P +
+	5 * room_fixed_P;
+constexpr size_t room_fixed_metadata_check_scalar_source =
+	2 * room_fixed_P + 2 * room_fixed_E +
+	// Actual local actual/expected source48 arrays are already pre-admitted
+	// by the builder; their trivial generated cleanup receiver scopes are not.
+	2 * room_fixed_P;
+constexpr size_t room_fixed_optional_access_source =
+	// Both actual optional types: bool(this,result)->is_engaged(this,result),
+	// const dereference(this,resultref)->base_get(this,resultref)->payload_get
+	// (this,resultref). Source/placement caller values remain input-owned.
+	2 * (2 * (room_fixed_P + room_fixed_B) + 3 * (2 * room_fixed_P)) +
+	// Placement's actual const arrow(this,returned-pointer) -> addressof,
+	// whose _M_get chain is already the same genuine dereference leaf above.
+	4 * room_fixed_P;
+constexpr size_t room_fixed_item_vector_access_source =
+	// Actual const item vector: size, index, empty, front, and data/_M_data_ptr
+	// for the real vector-to-span recipe call. Its begin/end constructors and
+	// range comparison/base/inc/deref generated families really execute.
+	room_fixed_P + room_fixed_N + 2 * room_fixed_P + room_fixed_N + room_fixed_P +
+	room_fixed_B + 2 * room_fixed_P + 4 * room_fixed_P + 2 * (5 * room_fixed_P) +
+	2 * room_fixed_P + room_fixed_B + 2 * (2 * room_fixed_P) + 2 * room_fixed_P +
+	2 * room_fixed_P + 5 * room_fixed_P;
+constexpr size_t room_fixed_recipe_vector_access_source =
+	// Real recipe vector size/index and vector-to-span data/_M_data_ptr. No
+	// recipe-vector range iteration/empty/front is reached by the parent.
+	room_fixed_P + room_fixed_N + 2 * room_fixed_P + room_fixed_N + 4 * room_fixed_P;
+constexpr size_t room_fixed_description_vector_access_source =
+	// Actual extra-description size/range, with const normal iterator family.
+	// No data/index/empty/front branch is selected for this type.
+	room_fixed_P + room_fixed_N + 2 * (5 * room_fixed_P) + 2 * room_fixed_P + room_fixed_B +
+	2 * (2 * room_fixed_P) + 2 * room_fixed_P + 2 * room_fixed_P + 5 * room_fixed_P;
+constexpr size_t room_fixed_leaf_validation_source =
+	room_fixed_image_validation_scalar_source + room_fixed_placement_validation_source +
+	room_fixed_string_nul_source + room_fixed_item_none_of_source +
+	room_fixed_coin_delta_source + room_fixed_byte_array_equal_source +
+	room_fixed_source_encode_scalar_source + room_fixed_source_decode_scalar_source +
+	room_fixed_metadata_check_scalar_source + room_fixed_optional_access_source +
+	room_fixed_item_vector_access_source + room_fixed_recipe_vector_access_source +
+	room_fixed_description_vector_access_source +
+	// Distinct genuine dynamic-affect, spell-ID and recipe-library vector
+	// types only reach size in the parent. Their lower codec internals keep
+	// their own complete Source profiles; no uncalled range/index is lent.
+	3 * (room_fixed_P + room_fixed_N) +
+	// Actual const item.values int32 and mutable byte-array direct
+	// subscripts:2P+N each. Operation-ID byte size owns this/result P+N.
+	// Byte-array begin/end/direct-data descendants are already the same
+	// selected wrappers above; no nonexistent _S_ref/_S_ptr is charged.
+	// Coin int64 array access is separately owned above.
+	2 * (2 * room_fixed_P + room_fixed_N) + room_fixed_P + room_fixed_N;
+} // namespace
+
+namespace
+{
+bool room_fixed_source_supported() noexcept
+{
+#if defined(__linux__) && defined(__x86_64__) && defined(__GNUC__) && __GNUC__ == 13 && \
+	!defined(__clang__) && __cplusplus == 202002L && defined(_GLIBCXX_RELEASE) &&   \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&                    \
+	_GLIBCXX_USE_CXX11_ABI == 1 && !defined(_GLIBCXX_DEBUG) &&                      \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                 \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&              \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0)
+	return sizeof(void *) == 8 && sizeof(size_t) == 8 && sizeof(std::ptrdiff_t) == 8 &&
+	       sizeof(unsigned long) == 8 && sizeof(std::allocator<zone_reset_coin_output>) == 1 &&
+	       sizeof(std::vector<zone_reset_coin_output>) == 3 * sizeof(void *);
+#else
+	return false;
+#endif
+}
+
+// Actual selected ROOM graph and genuine named lower pure Source laws. This
+// private candidate requires Source review and native qualification separately.
+constexpr size_t room_fixed_decoder_owned_source =
+	room_fixed_decode_remaining_source + room_fixed_payload_decode_scalar_source +
+	room_fixed_payload_encode_scalar_source + room_fixed_build_scalar_source +
+	room_fixed_recipe_wrapper_scalar_source + room_fixed_controls_source +
+	room_fixed_wire_scalar_source + room_fixed_optional_placement_assign_source +
+	room_fixed_owned_vector_source + room_fixed_value_lifetime_source + room_fixed_sorts +
+	room_fixed_direct_pointer_copy_source + room_fixed_byte_vector_compare_source +
+	room_fixed_dynamic_span_source +
+	room_fixed_vector_access_source<true, true, true>() + // byte vectors
+	room_fixed_vector_access_source<false, false, false>() + // key vectors
+	room_fixed_vector_access_source<false, false, false>() + // revision vectors
+	room_fixed_vector_access_source<false, false, false>() + // coin vectors
+	room_fixed_leaf_validation_source;
+
+bool room_fixed_decode_profile(size_t *full_output, size_t *retained_output) noexcept
+{
+	if (!full_output || !retained_output || !room_fixed_source_supported())
+		return false;
+	size_t item_encode = 0, item_decode = 0, item_preflight = 0, recipe_encode = 0,
+	       recipe_decode = 0, recipe_valid = 0, image_lifetime = 0, metadata = 0,
+	       intent_decode = 0, intent_supplement = 0, freeze = 0, verify = 0, codec = 0,
+	       full = room_fixed_decoder_owned_source, retained = room_fixed_decoder_owned_source;
+	if (!player_item_snapshot_list_encode_source_frame_bytes(&item_encode) ||
+	    !player_item_snapshot_list_decode_source_frame_bytes(&item_decode) ||
+	    !player_item_snapshot_list_preflight_source_frame_bytes(&item_preflight) ||
+	    !native_mobile_birth_recipe_encode_source_frame_bytes(&recipe_encode) ||
+	    !native_mobile_birth_recipe_decode_source_frame_bytes(&recipe_decode) ||
+	    !native_mobile_birth_recipe_valid_source_frame_bytes(&recipe_valid) ||
+	    !zone_reset_item_image_lifetime_source_frame_bytes(&image_lifetime) ||
+	    !economic_operation_metadata_validate_source_frame_bytes(&metadata) ||
+	    !economic_intent_decode_source_frame_bytes(&intent_decode) ||
+	    !economic_intent_decode_source_supplement_frame_bytes(&intent_supplement) ||
+	    !economic_intent_freeze_fixed_source_frame_bytes(&freeze) ||
+	    !economic_intent_verify_binding_fixed_source_frame_bytes(&verify) ||
+	    !critical_command_startup_codec_complete_source_frame_bytes(&codec))
+		return false;
+	// Original item/recipe stages run sequentially. These named complete lower
+	// Source laws use a genuine maximum, with physical DTO/request lifetimes
+	// remaining in the real child/old payload controller; no cached admission.
+	if (!room_bound_add(full, std::max(item_encode, std::max(item_decode, item_preflight))) ||
+	    !room_bound_add(full, std::max(recipe_encode, std::max(recipe_decode, recipe_valid))) ||
+	    !room_bound_add(full, image_lifetime) || !room_bound_add(full, metadata) ||
+	    !room_bound_add(full, codec) ||
+	    !room_bound_add(full, critical_command_valid_frame_bytes()))
+		return false;
+	retained = full;
+	// Decode's original bounded child lacks only its named supplement. Fixed
+	// verify owns its Source. The freeze wrapper retains only freeze's named
+	// supplement returned by the genuine lower getter. Both wrappers and the
+	// child preflight own/admit their actual scope independently; include them
+	// in the full query envelope, never a second retained baseline.
+	if (!room_bound_add(retained, intent_supplement) || !room_bound_add(full, intent_decode) ||
+	    !room_bound_add(full, freeze) || !room_bound_add(full, verify) ||
+	    !room_bound_add(full, room_fixed_child_preflight_frames) ||
+	    !room_bound_add(full, room_fixed_freeze_wrapper_source) ||
+	    !room_bound_add(full, room_fixed_verify_wrapper_source) ||
+	    !room_bound_add(full, room_fixed_entry_source) ||
+	    !room_bound_add(full, zone_reset_item_command_decode_source_query_frame_bytes()))
+		return false;
+	*full_output = full;
+	*retained_output = retained;
+	return true;
+}
+} // namespace
+
+bool zone_reset_item_command_decode_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output)
+		return false;
+	size_t full = 0, retained = 0;
+	if (!room_fixed_decode_profile(&full, &retained))
+		return false;
+	*output = full;
+	return true;
+}
+bool zone_reset_item_command_decode_source_supplement_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !room_fixed_source_supported())
+		return false;
+	*output = 0;
+	return true;
+}
+bool zone_reset_item_command_decode_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !room_fixed_source_supported())
+		return false;
+	// Actual private workspace is constructed after the admitted source query.
+	// Caller image/output/prior capacities remain caller-owned.
+	*output = sizeof(room_decode_workspace);
+	return true;
+}
+
+namespace
+{
+
+using room_fixed_reserve_fn = bool (*)(size_t, void *) noexcept;
+bool room_fixed_admit(size_t base, size_t extra, room_fixed_reserve_fn reserve,
+		      void *context) noexcept
+{
+	return extra <= SIZE_MAX - base && reserve && reserve(base + extra, context);
+}
+bool room_fixed_command_heap(const critical_command &command, size_t *output) noexcept
+{
+	if (!output)
+		return false;
+	size_t keys = 0, revisions = 0, heap = command.payload.capacity();
+	if (!room_bound_array(command.keys.capacity(), sizeof(critical_entity_key), &keys) ||
+	    !room_bound_array(command.expected_revisions.capacity(),
+			      sizeof(critical_expected_revision), &revisions) ||
+	    !room_bound_add(heap, command.accounting_intent.capacity()) ||
+	    !room_bound_add(heap, keys) || !room_bound_add(heap, revisions))
+		return false;
+	*output = heap;
+	return true;
+}
+
+error room_fixed_child_preflight(room_fixed_source_query full, room_fixed_source_query initial,
+				 room_fixed_source_query supplement, size_t query_frames,
+				 size_t outer, bool (*reserve)(size_t, void *) noexcept,
+				 void *context, size_t *child_outer) noexcept
+{
+	size_t source = 0, entry = 0, retained = 0, request = outer;
+	if (!room_bound_add(request, room_fixed_child_preflight_frames) ||
+	    !room_bound_add(request, query_frames) || !room_bound_add(request, sizeof(size_t)) ||
+	    !room_fixed_admit(request, 0, reserve, context))
+		return error::capacity;
+	if (!full || !child_outer || !full(&source) || (initial && !initial(&entry)) ||
+	    (supplement && !supplement(&retained)))
+		return error::unresolved;
+	request = outer;
+	if (!room_bound_add(request, room_fixed_child_preflight_frames) ||
+	    !room_bound_add(request, source) || !room_bound_add(request, entry) ||
+	    !room_fixed_admit(request, 0, reserve, context))
+		return error::capacity;
+	request = outer;
+	if (!room_bound_add(request, retained))
+		return error::capacity;
+	*child_outer = request;
+	return error::ok;
+}
+
+error room_fixed_intent_freeze(const critical_command &command,
+			       const economic_admission_facts &facts, std::vector<uint8_t> *output,
+			       bool (*reserve)(size_t, void *) noexcept, void *context,
+			       size_t outer) noexcept
+{
+	// Actual pointer arguments, outer/base/child/query size_t values and
+	// checked/result, plus add/return boolean source. Inputs/prior outputs
+	// remain caller-owned. The wrapper holds no private codec candidate.
+
+	size_t base = outer, child = 0;
+	if (!room_bound_add(base, room_fixed_freeze_wrapper_source))
+		return error::capacity;
+	const auto checked = room_fixed_child_preflight(
+		economic_intent_freeze_fixed_source_frame_bytes,
+		economic_intent_freeze_fixed_initial_inline_bytes,
+		economic_intent_freeze_fixed_source_supplement_frame_bytes,
+		economic_intent_freeze_fixed_source_query_frame_bytes(), base, reserve, context,
+		&child);
+	if (checked != error::ok)
+		return checked;
+	return economic_intent_freeze_fixed_bounded(command, facts, output, reserve, context,
+						    child);
+}
+
+error room_fixed_intent_verify(const critical_command &command,
+			       const economic_frozen_intent &intent,
+			       bool (*reserve)(size_t, void *) noexcept, void *context,
+			       size_t outer) noexcept
+{
+	// Actual pointer arguments, outer/base/child/query size_t values and
+	// checked/result, plus add/return boolean source. Inputs/prior outputs
+	// remain caller-owned. The wrapper holds no private codec candidate.
+
+	size_t base = outer, child = 0;
+	if (!room_bound_add(base, room_fixed_verify_wrapper_source))
+		return error::capacity;
+	const auto checked = room_fixed_child_preflight(
+		economic_intent_verify_binding_fixed_source_frame_bytes,
+		economic_intent_verify_binding_fixed_initial_inline_bytes, nullptr,
+		economic_intent_verify_binding_fixed_source_query_frame_bytes(), base, reserve,
+		context, &child);
+	if (checked != error::ok)
+		return checked;
+	return economic_intent_verify_binding_fixed_bounded(command, intent, reserve, context,
+							    child);
+}
+
+error room_fixed_recipe_encode(const std::vector<player_item_snapshot> &items,
+			       const std::span<const native_mobile_birth_item_recipe> &recipes,
+			       std::vector<uint8_t> *output, room_fixed_reserve_fn reserve,
+			       void *context, size_t outer) noexcept
+{
+	if (!output || !reserve)
+		return error::corrupt_evidence;
+	constexpr size_t profile_object = sizeof(native_mobile_birth_recipe_allocation_profile);
+	constexpr size_t item_span = sizeof(std::span<const player_item_snapshot>);
+	constexpr size_t recipe_span = sizeof(std::span<const native_mobile_birth_item_recipe>);
+	size_t scan = outer;
+	if (!room_bound_add(scan, profile_object) ||
+	    !room_bound_add(scan, native_mobile_birth_recipe_profile_inline_storage_bytes()) ||
+	    !room_bound_add(scan, 2 * item_span + 2 * recipe_span) ||
+	    !room_fixed_admit(scan, 0, reserve, context))
+		return error::capacity;
+	native_mobile_birth_recipe_allocation_profile profile;
+	const auto checked = native_mobile_birth_recipe_encode_profile(items, recipes, &profile);
+	if (checked != error::ok)
+		return checked;
+	if (!profile.fresh_encode_storage_policy_supported)
+		return error::unresolved;
+	size_t validation = item_span + recipe_span, encoded = profile.encoder_inline_storage_bytes;
+	if (!room_bound_add(validation, profile.validation_inline_storage_bytes) ||
+	    !room_bound_add(encoded, profile.encoded_capacity_bytes))
+		return error::capacity;
+	size_t live = outer;
+	if (!room_bound_add(live, profile_object) ||
+	    !room_bound_add(live, item_span + recipe_span) ||
+	    !room_bound_add(live, std::max(validation, encoded)) ||
+	    !room_fixed_admit(live, 0, reserve, context))
+		return error::capacity;
+	return native_mobile_birth_recipe_encode(items, recipes, output);
+}
+
+error room_fixed_payload_encode(const zone_reset_item_image &image, std::vector<uint8_t> *output,
+				room_fixed_reserve_fn reserve, void *context, size_t outer)
+{
+	size_t live = outer;
+	// Real local vectors/source-array exist in this selected original payload.
+	// Count them before construction; prior output belongs to the caller.
+	if (!room_bound_add(live, 3 * sizeof(std::vector<uint8_t>)) ||
+	    !room_bound_add(live, sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>)) ||
+	    !room_fixed_admit(live, 0, reserve, context))
+		return error::capacity;
+	std::vector<uint8_t> items, recipes;
+	auto status = codec_error(player_item_snapshot_list_encode_bounded(image.items, &items,
+									   reserve, context, live));
+	if (status != error::ok)
+		return status;
+	if (!room_bound_add(live, items.capacity()))
+		return error::capacity;
+	status = room_fixed_recipe_encode(image.items, image.recipes, &recipes, reserve, context,
+					  live);
+	if (status != error::ok)
+		return status;
+	size_t size = HEADER_BYTES;
+	if (!add_bytes(items.size(), &size) || !add_bytes(recipes.size(), &size) ||
+	    !add_bytes(image.coins.size() * COIN_BYTES, &size) ||
+	    (image.placement && !add_bytes(PLACEMENT_BYTES, &size)))
+		return error::capacity;
+	std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES> source{};
+	status = economic_source_event_encode(image.reset_source, &source);
+	if (status != error::ok)
+		return status;
+	if (!room_bound_add(live, recipes.capacity()) ||
+	    !room_fixed_admit(live, size, reserve, context))
+		return error::capacity;
+	std::vector<uint8_t> candidate(size, 0);
+	std::copy(MAGIC.begin(), MAGIC.end(), candidate.begin());
+	put(candidate.data() + 4,
+	    image.placement ? ZONE_RESET_ITEM_PLACEMENT_PAYLOAD_VERSION :
+			      ZONE_RESET_ITEM_PAYLOAD_VERSION,
+	    2);
+	std::copy(image.operation_id.bytes.begin(), image.operation_id.bytes.end(),
+		  candidate.begin() + 8);
+	std::copy(source.begin(), source.end(), candidate.begin() + 24);
+	put(candidate.data() + 72, static_cast<uint32_t>(image.zone_vnum), 4);
+	put(candidate.data() + 76, static_cast<uint32_t>(image.room_vnum), 4);
+	put(candidate.data() + 80, image.season_epoch, 8);
+	put(candidate.data() + 88, image.expected_room_revision, 8);
+	put(candidate.data() + 96, items.size(), 4);
+	put(candidate.data() + 100, recipes.size(), 4);
+	put(candidate.data() + 104, image.coins.size(), 4);
+	std::copy(items.begin(), items.end(), candidate.begin() + HEADER_BYTES);
+	std::copy(recipes.begin(), recipes.end(), candidate.begin() + HEADER_BYTES + items.size());
+	size_t offset = HEADER_BYTES + items.size() + recipes.size();
+	for (const auto &coin : image.coins)
+	{
+		put(candidate.data() + offset, coin.item_uid, 8);
+		for (size_t denomination = 0; denomination < 4; ++denomination)
+			put(candidate.data() + offset + 8 + denomination * 8,
+			    static_cast<uint64_t>(coin.denominations[denomination]), 8);
+		offset += COIN_BYTES;
+	}
+	if (image.placement)
+	{
+		const auto &p = *image.placement;
+		put(candidate.data() + offset, p.root_uid, 8);
+		put(candidate.data() + offset + 8, static_cast<uint32_t>(p.room_vnum), 4);
+		put(candidate.data() + offset + 12, static_cast<uint32_t>(p.original_sector_type),
+		    4);
+		put(candidate.data() + offset + 16, static_cast<uint32_t>(p.original_chance_fall),
+		    4);
+		put(candidate.data() + offset + 20, static_cast<uint32_t>(p.original_z_cord), 4);
+		put(candidate.data() + offset + 24, p.fall_roll, 4);
+		candidate[offset + 28] = p.original_levitates;
+		candidate[offset + 29] = p.fall_roll_drawn;
+		candidate[offset + 30] = p.fall_selected;
+	}
+	*output = std::move(candidate);
+	return error::ok;
+}
+
+economic_accounting_error room_fixed_build(const economic_operation_metadata &metadata,
+					   const zone_reset_item_image &image,
+					   uint64_t accepted_at_usec, critical_command *output,
+					   room_fixed_reserve_fn reserve, void *context,
+					   size_t outer) noexcept
+{
+	if (!output || !accepted_at_usec)
+		return error::invalid_identity;
+	try
+	{
+		size_t live = outer, preliminary = outer;
+		// Genuine local candidate/facts and native validation objects only;
+		// all input/image/old-output storage remains in outer.
+		if (!room_bound_add(live, sizeof(critical_command)) ||
+		    !room_bound_add(live, sizeof(economic_admission_facts)) ||
+		    !room_bound_add(preliminary,
+				    native_mobile_birth_recipe_profile_inline_storage_bytes()) ||
+		    !room_bound_add(preliminary,
+				    2 * sizeof(std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES>)) ||
+		    !room_fixed_admit(std::max(live, preliminary), 0, reserve, context))
+			return error::capacity;
+		auto status = image_preflight(image);
+		if (status != error::ok)
+			return status;
+		status = metadata_check(metadata, image);
+		if (status != error::ok)
+			return status;
+		critical_command candidate{};
+		candidate.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
+		candidate.operation_id = image.operation_id;
+		candidate.type = critical_command_type::zone_reset_item_birth;
+		candidate.payload_version = image.placement ?
+						    ZONE_RESET_ITEM_PLACEMENT_PAYLOAD_VERSION :
+						    ZONE_RESET_ITEM_PAYLOAD_VERSION;
+		candidate.source_site = critical_source_site::zone_event;
+		candidate.deadline_class = critical_deadline_class::background;
+		candidate.accepted_at_usec = accepted_at_usec;
+		status = room_fixed_payload_encode(image, &candidate.payload, reserve, context,
+						   live);
+		if (status != error::ok)
+			return status;
+		size_t keys = 0, revisions = 0, request = live;
+		if (!room_bound_array(image.items.size() + 2, sizeof(critical_entity_key), &keys) ||
+		    !room_bound_array(image.items.size() + 1, sizeof(critical_expected_revision),
+				      &revisions) ||
+		    !room_bound_add(request, candidate.payload.capacity()) ||
+		    !room_bound_add(request, keys) || !room_bound_add(request, revisions) ||
+		    !room_fixed_admit(request, 0, reserve, context))
+			return error::capacity;
+		candidate.keys.reserve(image.items.size() + 2);
+		candidate.expected_revisions.reserve(image.items.size() + 1);
+		candidate.keys.push_back(
+			{ critical_entity_type::zone, static_cast<uint64_t>(image.zone_vnum) + 1 });
+		candidate.keys.push_back(
+			{ critical_entity_type::room, static_cast<uint64_t>(image.room_vnum) });
+		candidate.expected_revisions.push_back(
+			{ candidate.keys.back(), image.expected_room_revision });
+		for (const auto &item : image.items)
+		{
+			candidate.keys.push_back({ critical_entity_type::item, item.object_uid });
+			candidate.expected_revisions.push_back({ candidate.keys.back(), 0 });
+		}
+		std::sort(candidate.keys.begin(), candidate.keys.end(), critical_entity_key_less);
+		std::sort(candidate.expected_revisions.begin(), candidate.expected_revisions.end(),
+			  [](const auto &a, const auto &b)
+			  { return critical_entity_key_less(a.key, b.key); });
+		economic_admission_facts facts;
+		facts.metadata = metadata;
+		size_t heap = 0;
+		if (!room_fixed_command_heap(candidate, &heap) || !room_bound_add(live, heap))
+			return error::capacity;
+		status = room_fixed_intent_freeze(candidate, facts, &candidate.accounting_intent,
+						  reserve, context, live);
+		if (status != error::ok)
+			return status;
+		candidate.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+		candidate.publication_required = true;
+		if (!critical_command_envelope_valid(candidate))
+			return error::corrupt_evidence;
+		*output = std::move(candidate);
+		return error::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+	catch (...)
+	{
+		return error::corrupt_evidence;
+	}
+}
+} // namespace
+
+economic_accounting_error
+zone_reset_item_command_decode_fixed_bounded(const critical_command &command,
+					     zone_reset_item_image *output,
+					     bool (*reserve_scratch_peak)(size_t, void *) noexcept,
+					     void *context, size_t outer_live_scratch) noexcept
+{
+	if (!output)
+		return error::invalid_identity;
+	if (!reserve_scratch_peak)
+		return error::capacity;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	(void)command;
+	(void)context;
+	(void)outer_live_scratch;
+	return error::capacity;
+#else
+	size_t full = 0, retained = 0, initial = 0, live = outer_live_scratch;
+	// Query and actual entry carriers are admitted before pure getter entry.
+	if (!room_bound_add(live, room_fixed_entry_source) ||
+	    !room_fixed_admit(live,
+			      zone_reset_item_command_decode_source_query_frame_bytes() +
+				      sizeof(size_t),
+			      reserve_scratch_peak, context))
+		return error::capacity;
+	if (!room_fixed_decode_profile(&full, &retained) ||
+	    !zone_reset_item_command_decode_initial_inline_bytes(&initial) ||
+	    !room_bound_add(full, initial) ||
+	    !room_fixed_admit(live, full, reserve_scratch_peak, context) ||
+	    !room_bound_add(live, retained) || !room_bound_add(live, initial) ||
+	    !room_fixed_admit(live, 0, reserve_scratch_peak, context))
+		return error::capacity;
+	try
+	{
+		if (command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+		    command.type != critical_command_type::zone_reset_item_birth ||
+		    (command.payload_version != ZONE_RESET_ITEM_PAYLOAD_VERSION &&
+		     command.payload_version != ZONE_RESET_ITEM_PLACEMENT_PAYLOAD_VERSION) ||
+		    !command.publication_required || !critical_command_envelope_valid(command))
+			return error::corrupt_evidence;
+		room_decode_workspace work;
+		work.payload_bytes = command.payload;
+		auto status = payload_decode_bounded(work.payload_bytes, &work.image,
+						     reserve_scratch_peak, context, live,
+						     &work.image_heap);
+		if (status != error::ok)
+			return status;
+		if (!room_bound_add(live, work.image_heap))
+			return error::capacity;
+		work.payload_bytes = command.accounting_intent;
+		status = economic_intent_decode_bounded(work.payload_bytes, &work.intent,
+							reserve_scratch_peak, context, live);
+		work.payload_bytes = command.payload;
+		if (status != error::ok)
+			return status;
+		if (work.intent.admission.facts_version != 1 ||
+		    !work.intent.admission.facts.empty())
+			return error::payload_conflict;
+		status = room_fixed_intent_verify(command, work.intent, reserve_scratch_peak,
+						  context, live);
+		if (status != error::ok)
+			return status;
+		// Canonical original compiler order and wire with genuine fixed
+		// binding/freezing at the original cuts; no EVP body receives a stamp.
+		status = room_fixed_build(work.intent.admission.metadata, work.image,
+					  command.accepted_at_usec, &work.expected,
+					  reserve_scratch_peak, context, live);
+		if (status != error::ok)
+			return status;
+		size_t keys = 0, revisions = 0;
+		if (!room_bound_array(work.expected.keys.capacity(), sizeof(critical_entity_key),
+				      &keys) ||
+		    !room_bound_array(work.expected.expected_revisions.capacity(),
+				      sizeof(critical_expected_revision), &revisions))
+			return error::capacity;
+		work.expected_heap = work.expected.payload.capacity();
+		if (!room_bound_add(work.expected_heap,
+				    work.expected.accounting_intent.capacity()) ||
+		    !room_bound_add(work.expected_heap, keys) ||
+		    !room_bound_add(work.expected_heap, revisions) ||
+		    !room_bound_add(live, work.expected_heap))
+			return error::capacity;
+		if (critical_command_encode_bounded(command, &work.actual_bytes,
+						    reserve_scratch_peak, context,
+						    live) != critical_command_codec_result::ok)
+			return error::capacity;
+		if (!room_bound_add(live, work.actual_bytes.capacity()))
+			return error::capacity;
+		if (critical_command_encode_bounded(work.expected, &work.expected_bytes,
+						    reserve_scratch_peak, context,
+						    live) != critical_command_codec_result::ok)
+			return error::capacity;
+		if (work.actual_bytes != work.expected_bytes)
+			return error::payload_conflict;
+		*output = std::move(work.image);
+		return error::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+	catch (...)
+	{
+		return error::corrupt_evidence;
+	}
+#endif
+}

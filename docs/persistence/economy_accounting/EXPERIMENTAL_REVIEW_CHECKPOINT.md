@@ -4346,3 +4346,13 @@ and protected WIP remain preserved. Inventory478/931/2911/2853,0new/unmapped
 does not establish completion. Full host/native/gameplay/persistence/recovery/
 R1-R8/release stay OPEN; targeted compiler proof is recorded above.
 Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Integrate complete ROOM decoder Source provider implemented - 2026-10-10
+
+[Source checkpoint](ROOM_COMPLETE_DECODER_SOURCE_INTEGRATION_2026-10-10.md) Complete ROOM decoder provider integrated and compiled both modes; all-family admission and qualification remain open.
+Independent RAW and actual formatted source reviews passed; original behavior
+and protected WIP remain preserved. Inventory478/931/2911/2853,0new/unmapped
+does not establish completion. Full host/native/gameplay/persistence/recovery/
+R1-R8/release stay OPEN; targeted compiler proof is recorded above.
+Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
