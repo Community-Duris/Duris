@@ -2411,6 +2411,36 @@ struct native_quest_original_branch
 	std::vector<goal_data> give, receive;
 	std::string message, disappear_message, definition_id;
 };
+
+using quest_cost_prepare_reserve = bool (*)(size_t, void *) noexcept;
+
+struct quest_selected_encode_live
+{
+	size_t caller_inline;
+	const std::vector<player_item_snapshot> &native_items;
+	const std::vector<native_quest_cost_requirement> &attempted_costs;
+	const std::vector<uint64_t> &ordered_roots;
+	const std::unordered_set<uint64_t> &consumed;
+	const std::vector<player_item_snapshot> &selected;
+	const std::vector<int32_t> &indexes;
+	const std::vector<uint64_t> &roots;
+	const std::vector<uint8_t> &selected_bytes;
+};
+
+struct quest_cost_prepare_live
+{
+	size_t caller_inline;
+	size_t caller_source;
+	const std::vector<player_item_snapshot> &native_items;
+	const std::vector<native_quest_cost_requirement> &attempted_costs;
+	const std::vector<uint64_t> &ordered_roots;
+	const std::unordered_set<uint64_t> &consumed;
+	const std::vector<player_item_snapshot> &selected;
+	const std::vector<int32_t> &indexes;
+	const std::vector<uint64_t> &roots;
+	const std::vector<uint8_t> &selected_bytes;
+	const item_transfer_payload &payload;
+};
 }
 class quest_native_gameplay_owner;
 class quest_native_completion_owner final
@@ -2422,6 +2452,13 @@ class quest_native_completion_owner final
 
     private:
 	friend class quest_native_gameplay_owner;
+	static bool reserve_cost_projection(size_t, void *) noexcept;
+	[[maybe_unused]] static player_snapshot_codec_result
+	encode_selected_items(std::vector<uint8_t> *, const quest_selected_encode_live &) noexcept;
+	[[maybe_unused]] static native_quest_cost_projection_result
+	project_cost_projection(const quest_mobile_native_cash_reference &,
+				native_quest_cost_projection *,
+				const quest_cost_prepare_live &) noexcept;
 	static item_native_quest_preparation_state
 	prepare_original(P_char, P_char, int, int, const native_quest_original_branch *,
 			 const critical_operation_id *, item_native_quest_preparation_token *,
@@ -2623,7 +2660,26 @@ item_native_quest_preparation_state quest_native_completion_owner::prepare_origi
 		std::vector<uint8_t> selected_bytes;
 		if (selected_roots != consumed.size() || (!fee_only && selected.empty()) ||
 		    selected.size() > ITEM_TRANSFER_MAX_ITEMS ||
-		    player_item_snapshot_list_encode(selected, &selected_bytes) !=
+		    encode_selected_items(
+			    &selected_bytes,
+			    quest_selected_encode_live{
+				    // Parent parameters/result and actual still-live locals. The table
+				    // census owns consumed once. No later payload/fee/command exists yet.
+				    sizeof(mob) + sizeof(player) + sizeof(quester_id) +
+					    sizeof(completion_index) + sizeof(original_branch) +
+					    sizeof(original_child) + sizeof(output) +
+					    sizeof(triggering_acceptance) +
+					    sizeof(triggering_receipt) + sizeof(state) +
+					    sizeof(completion) + sizeof(reference) +
+					    sizeof(native_items) + sizeof(cash) +
+					    sizeof(cash_observed) + sizeof(attempted_costs) +
+					    sizeof(ordered_roots) + sizeof(success) +
+					    sizeof(invalid_cost_slot) + sizeof(select_pass) +
+					    sizeof(fee_only) + sizeof(fee_operation) +
+					    sizeof(selected) + sizeof(indexes) + sizeof(roots) +
+					    sizeof(selected_roots) + sizeof(selected_bytes),
+				    native_items, attempted_costs, ordered_roots, consumed,
+				    selected, indexes, roots, selected_bytes }) !=
 			    player_snapshot_codec_result::ok ||
 		    selected_bytes.size() > ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES)
 			return state::refused;
@@ -2688,9 +2744,30 @@ item_native_quest_preparation_state quest_native_completion_owner::prepare_origi
 			payload.native_cost.completion_slot =
 				fee_only ? static_cast<uint32_t>(completion_index) : 0;
 			payload.native_cost.wallet_mapping_id = cash.wallet_mapping_id;
-			if (native_quest_cost_project(cash.denominations, cash.cash_revision,
-						      attempted_costs,
-						      &payload.native_cost.projection) !=
+			const quest_cost_prepare_live cost_live{
+				// Actual live parent parameters/locals. The consumed object is owned
+				// once by the real table census; future fee/command terms are not live.
+				sizeof(mob) + sizeof(player) + sizeof(quester_id) +
+					sizeof(completion_index) + sizeof(original_branch) +
+					sizeof(original_child) + sizeof(output) +
+					sizeof(triggering_acceptance) + sizeof(triggering_receipt) +
+					sizeof(state) + sizeof(completion) + sizeof(reference) +
+					sizeof(native_items) + sizeof(cash) +
+					sizeof(cash_observed) + sizeof(attempted_costs) +
+					sizeof(ordered_roots) + sizeof(success) +
+					sizeof(invalid_cost_slot) + sizeof(select_pass) +
+					sizeof(fee_only) + sizeof(fee_operation) +
+					sizeof(selected) + sizeof(indexes) + sizeof(roots) +
+					sizeof(selected_roots) + sizeof(selected_bytes) +
+					sizeof(payload) + sizeof(native_owner_revision),
+				// Span range constructed in project_cost_projection; its destination
+				// is the adapter formal, not an additional caller span DTO.
+				20 * sizeof(void *) + 4 * sizeof(size_t), native_items,
+				attempted_costs, ordered_roots, consumed, selected, indexes, roots,
+				selected_bytes, payload
+			};
+			if (project_cost_projection(cash, &payload.native_cost.projection,
+						    cost_live) !=
 			    native_quest_cost_projection_result::ok)
 				return state::refused;
 		}
@@ -5971,6 +6048,226 @@ size_t quest_native_current_source_profile_query_frames() noexcept
 	       item_native_quest_retained_command_allocation_owned_source_profile_query_frames() +
 	       sizeof(size_t *) + sizeof(bool) + 19 * sizeof(size_t) + sizeof(void *) +
 	       sizeof(size_t) + sizeof(bool);
+}
+
+// Bounded final nonempty cost edge only; earlier preparation and the legacy
+// Item builder remain separate unresolved producer cuts.
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && __cplusplus == 202002L &&       \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && !defined(__NO_MYSQL__)
+bool quest_cost_prepare_current(const quest_cost_prepare_live &live, size_t &bytes) noexcept
+{
+	size_t heap = 0;
+	// caller_inline excludes the consumed object: nq_world_table owns that
+	// object, its real GNU13 cached/noncached nodes and allocated bucket array.
+	if (!nq_world_add(bytes, live.caller_inline) || !nq_world_add(bytes, live.caller_source) ||
+	    !nq_world_table(bytes, live.consumed) ||
+	    !player_item_snapshot_list_current_heap_bytes(live.native_items, &heap) ||
+	    !nq_world_add(bytes, heap) ||
+	    !player_item_snapshot_list_current_heap_bytes(live.selected, &heap) ||
+	    !nq_world_add(bytes, heap) ||
+	    !nq_world_rows(bytes, live.attempted_costs.capacity(),
+			   sizeof(native_quest_cost_requirement)) ||
+	    !nq_world_rows(bytes, live.ordered_roots.capacity(), sizeof(uint64_t)) ||
+	    !nq_world_rows(bytes, live.indexes.capacity(), sizeof(int32_t)) ||
+	    !nq_world_rows(bytes, live.roots.capacity(), sizeof(uint64_t)) ||
+	    !nq_world_rows(bytes, live.selected_bytes.capacity(), sizeof(uint8_t)) ||
+	    !item_transfer_payload_current_heap_bytes(live.payload, &heap) ||
+	    !nq_world_add(bytes, heap))
+		return false;
+	return true;
+}
+#endif
+
+[[maybe_unused]] native_quest_cost_projection_result
+quest_cost_prepare_project(const quest_mobile_native_cash_reference &cash,
+			   std::span<const native_quest_cost_requirement> requirements,
+			   native_quest_cost_projection *output,
+			   const quest_cost_prepare_live &live, quest_cost_prepare_reserve reserve,
+			   void *context, size_t outer, size_t callback_source) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && __cplusplus == 202002L &&       \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && !defined(__NO_MYSQL__)
+	using result = native_quest_cost_projection_result;
+	if (!output || !reserve)
+		return result::invalid;
+	size_t observer = 0, source = 0, initial = 0, supplement = 0;
+	if (!player_item_snapshot_list_current_heap_source_frame_bytes(&observer))
+		return result::allocation_failure;
+	// Actual adapter parameters/result and nine named N objects; its named
+	// span is copied once onward (2P) and has one explicit destructor (P).
+	// CURRENT own 2P+N+B; nq_world_table own 2P+B, three bucket_count and
+	// one size calls, each wrapper+hashtable 2P+2N; rows/add shared P2NB+PNB;
+	// five actual vector capacity calls PN (two are distinct u64 occurrences).
+	// Preserve two genuine list observer calls, not a whole codec umbrella.
+	size_t caller_source =
+		4 * sizeof(void *) + sizeof(quest_cost_prepare_reserve) + 2 * sizeof(size_t) +
+		sizeof(std::span<const native_quest_cost_requirement>) + sizeof(result) +
+		9 * sizeof(size_t) + 3 * sizeof(void *) + 19 * sizeof(void *) +
+		17 * sizeof(size_t) + 4 * sizeof(bool) +
+		player_item_snapshot_list_current_heap_source_query_frame_bytes() + sizeof(size_t) +
+		item_transfer_payload_current_heap_observer_frame_bytes();
+	if (!nq_world_add(caller_source, observer) || !nq_world_add(caller_source, observer) ||
+	    !nq_world_add(caller_source, callback_source) ||
+	    !nq_world_add(caller_source, sizeof(live)))
+		return result::allocation_failure;
+	size_t bytes = outer;
+	if (!quest_cost_prepare_current(live, bytes) || !nq_world_add(bytes, caller_source))
+		return result::allocation_failure;
+	constexpr size_t query = 3 * native_quest_cost_project_source_query_frame_bytes();
+	size_t request = bytes;
+	if (!nq_world_add(request, query) || !reserve(request, context) ||
+	    !native_quest_cost_project_source_frame_bytes(&source) ||
+	    !native_quest_cost_project_initial_inline_bytes(&initial) ||
+	    !native_quest_cost_project_source_supplement_frame_bytes(&supplement))
+		return result::allocation_failure;
+	request = bytes;
+	if (!nq_world_add(request, source) || !nq_world_add(request, initial) ||
+	    !reserve(request, context))
+		return result::allocation_failure;
+	size_t child_outer = bytes;
+	if (!nq_world_add(child_outer, supplement))
+		return result::allocation_failure;
+	// Complete child Source+INITIAL was transient. Only its real supplement
+	// survives through the unchanged bounded projector and final-only move.
+	return native_quest_cost_project_bounded(cash.denominations, cash.cash_revision,
+						 requirements, output, reserve, context,
+						 child_outer);
+#else
+	(void)cash;
+	(void)requirements;
+	(void)output;
+	(void)live;
+	(void)reserve;
+	(void)context;
+	(void)outer;
+	(void)callback_source;
+	return native_quest_cost_projection_result::invalid;
+#endif
+}
+}
+
+bool quest_native_completion_owner::reserve_cost_projection(size_t bytes, void *context) noexcept
+{
+	(void)context;
+	return item_native_quest_temporary_budget_owner::admit(bytes);
+}
+
+native_quest_cost_projection_result quest_native_completion_owner::project_cost_projection(
+	const quest_mobile_native_cash_reference &cash, native_quest_cost_projection *output,
+	const quest_cost_prepare_live &live) noexcept
+{
+	using result = native_quest_cost_projection_result;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && __cplusplus == 202002L &&       \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && !defined(__NO_MYSQL__)
+	size_t callback_source = 0, initial = 0;
+	// Allocation-free bootstrap metadata, not a previously reserved loan.
+	// These exact getter/query/output scopes are retained below before the
+	// first real admission and before any cost-projector allocation.
+	if (!item_native_quest_temporary_budget_owner::source_frame_bytes(&callback_source) ||
+	    !item_native_quest_temporary_budget_owner::initial_inline_bytes(&initial))
+		return result::allocation_failure;
+	// This admitted method self-admits no Source: authenticated full==supp.
+	// Retain that actual callback Source once, plus its real relay/formals,
+	// this method and both bootstrap queries. No persistent driver is added.
+	constexpr size_t relay_source = sizeof(size_t) + sizeof(void *) + sizeof(bool);
+	constexpr size_t caller_source =
+		3 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(result) +
+		item_native_quest_temporary_budget_owner::source_query_frame_bytes() +
+		item_native_quest_temporary_budget_owner::initial_query_frame_bytes();
+	if (!nq_world_add(callback_source, initial) ||
+	    !nq_world_add(callback_source, relay_source) ||
+	    !nq_world_add(callback_source, caller_source))
+		return result::allocation_failure;
+	return quest_cost_prepare_project(
+		cash, std::span<const native_quest_cost_requirement>{ live.attempted_costs },
+		output, live, &quest_native_completion_owner::reserve_cost_projection, nullptr, 0,
+		callback_source);
+#else
+	(void)cash;
+	(void)output;
+	(void)live;
+	return result::allocation_failure;
+#endif
+}
+
+player_snapshot_codec_result quest_native_completion_owner::encode_selected_items(
+	std::vector<uint8_t> *output, const quest_selected_encode_live &live) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && __cplusplus == 202002L &&       \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && !defined(__NO_MYSQL__)
+	using result = player_snapshot_codec_result;
+	if (!output)
+		return result::invalid_value;
+	// These pure bootstrap queries allocate nothing. Their actual carriers and
+	// outputs are included below; no earlier reservation or loan is claimed.
+	size_t callback_source = 0, callback_initial = 0, observer = 0;
+	size_t source = 0, initial = 0, bytes = 0, heap = 0, request = 0, child_outer = 0;
+	constexpr size_t relay_source = sizeof(size_t) + sizeof(void *) + sizeof(bool);
+	// Actual table own2P+B; three bucket_count plus one size wrapper/hashtable
+	// pairs8P+8N; completed rows/addP2NB+PNB; five const capacities5P+5N.
+	// There is no separate CURRENT helper frame at this direct census.
+	constexpr size_t current_source =
+		17 * sizeof(void *) + 16 * sizeof(size_t) + 3 * sizeof(bool);
+	// output/live references2P, scalar return E, nine named N locals and four
+	// constexpr N objects. Both private bootstrap and observer query scopes are
+	// genuine declared getter carriers, not prior reserved or builtin callees.
+	constexpr size_t caller_source =
+		2 * sizeof(void *) + 13 * sizeof(size_t) + sizeof(result) + current_source +
+		item_native_quest_temporary_budget_owner::source_query_frame_bytes() +
+		item_native_quest_temporary_budget_owner::initial_query_frame_bytes() +
+		player_item_snapshot_list_current_heap_source_query_frame_bytes();
+	constexpr size_t query = 2 * player_item_snapshot_list_encode_source_query_frame_bytes();
+	if (!item_native_quest_temporary_budget_owner::source_frame_bytes(&callback_source) ||
+	    !item_native_quest_temporary_budget_owner::initial_inline_bytes(&callback_initial) ||
+	    !player_item_snapshot_list_current_heap_source_frame_bytes(&observer))
+		return result::limit_exceeded;
+	// Retain the actual private admission full==supplement once. Capacity
+	// includes its persistent driver/birth exactly once; no scalar assignment.
+	if (!nq_world_add(bytes, live.caller_inline) || !nq_world_add(bytes, sizeof(live)) ||
+	    !nq_world_add(bytes, caller_source) || !nq_world_add(bytes, relay_source) ||
+	    !nq_world_add(bytes, callback_source) || !nq_world_add(bytes, callback_initial) ||
+	    !nq_world_add(bytes, observer) || !nq_world_add(bytes, observer) ||
+	    !nq_world_table(bytes, live.consumed) ||
+	    !player_item_snapshot_list_current_heap_bytes(live.native_items, &heap) ||
+	    !nq_world_add(bytes, heap) ||
+	    !player_item_snapshot_list_current_heap_bytes(live.selected, &heap) ||
+	    !nq_world_add(bytes, heap) ||
+	    !nq_world_rows(bytes, live.attempted_costs.capacity(),
+			   sizeof(native_quest_cost_requirement)) ||
+	    !nq_world_rows(bytes, live.ordered_roots.capacity(), sizeof(uint64_t)) ||
+	    !nq_world_rows(bytes, live.indexes.capacity(), sizeof(int32_t)) ||
+	    !nq_world_rows(bytes, live.roots.capacity(), sizeof(uint64_t)) ||
+	    !nq_world_rows(bytes, live.selected_bytes.capacity(), sizeof(uint8_t)))
+		return result::limit_exceeded;
+	request = bytes;
+	if (!nq_world_add(request, query) || !reserve_cost_projection(request, nullptr) ||
+	    !player_item_snapshot_list_encode_source_frame_bytes(&source) ||
+	    !player_item_snapshot_list_encode_initial_inline_bytes(&initial))
+		return result::limit_exceeded;
+	request = bytes;
+	if (!nq_world_add(request, source) || !nq_world_add(request, initial) ||
+	    !reserve_cost_projection(request, nullptr))
+		return result::limit_exceeded;
+	child_outer = bytes;
+	// This encoder owns no self-retained Source: its full Source survives in
+	// outer through every child allocation/callback; INITIAL alone is transient.
+	// Do not invent an encoder supplement getter or borrow ended cost frames.
+	if (!nq_world_add(child_outer, source))
+		return result::limit_exceeded;
+	return player_item_snapshot_list_encode_bounded(
+		live.selected, output, &quest_native_completion_owner::reserve_cost_projection,
+		nullptr, child_outer);
+#else
+	(void)output;
+	(void)live;
+	return player_snapshot_codec_result::limit_exceeded;
+#endif
 }
 
 namespace

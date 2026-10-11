@@ -409,8 +409,8 @@
       "src/item/item_actions.h": "8de94240e7d314dd87dc01f3ec23dca24d5731a8e18771a644e84661a802c2fc",
       "src/item/item_command_policy.c": "50a3706763988cc5f4b73dd4219607b984a060b912ad07f9d0c47d7b1b88b82b",
       "src/item/item_movement_state_internal.h": "48582b82577bddb801749bd46df6f201adde09f935e69aa762f0f081a279ea74",
-      "src/item/item_movement_transaction.c": "d364528af832ffcda36d8c7cf23a7cd9a87a6fcbdd2f870f136d2bca2ebf96a6",
-      "src/item/item_movement_transaction.h": "7bc490625f82791421be800b326ffd4c7240ecc2171d6d7de2664194d667ccca",
+      "src/item/item_movement_transaction.c": "b438ec892f10b1f1b7e5370685a4ecba5504f978b654be596b34dc24d803c4a0",
+      "src/item/item_movement_transaction.h": "e020c4ef0235bfc732cf5876008daa643ccf84fcc17e0335f36dc593e6a2a136",
       "src/item/item_ownership_runtime.c": "425338b74818c740fa4ff177b238199843f670f2fe65ca57a2f501d8d107eff9",
       "src/item/item_ownership_runtime.h": "166de0a1b87e026e7e925f6312187bd128ceef3e2e77e7a1e636b3cefeb62423",
       "src/item/item_transfer_command.c": "44680bcc866da68bab361c40fdb25b6cd32335f5f3690547fbc365e7de615b2f",
@@ -560,7 +560,7 @@
       "src/world/new_events.c": "d2e380a15479823f47a2709f5060cebe85aaa0b1dd4caa0daf97e606449981f8",
       "src/world/object_template.h": "d9ffc85894b08eeb13e1a626fc4f3beb9d35dc041758c660de4cff0cd92f54be",
       "src/world/properties.c": "2a69861d72b4795c973f2796f777e265661d3579cddf3c08165a91f620032de0",
-      "src/world/quest.c": "4887b36475dd639c7bca78babb1fa8f44313f193bb6b262044eebe7a4d8fcf7d",
+      "src/world/quest.c": "11707b182503809560299e0228f3bdce0bcd8123536cd8faa36a0e4ae081a883",
       "src/world/quest_mobile_native.c": "0335382dea0cda046239d8cf080bddf30ae4f36e2086febf8007040d307323fd",
       "src/world/quest_mobile_native.h": "1db1575e5f27f476198bbb909c6303c03d43496ebff96e85907d0c646a9684f7",
       "src/world/quest_mobile_native_binding.c": "028824588cfcdffd7efd81bd543afd86cf0ec9d8dce6f3ece7877e2e80626343",
@@ -605,6 +605,8 @@
       "tests/async/native_quest_publication_mysql_harness.cpp": "4d057cb6d61a7c389156a82ab8160970a7bcd19a36a61008c00e559f38c2fabb",
       "tests/async/original_logit_source_profile_test.cpp": "4b653b73384835d1f2738e1639c88843d52a21cfcd6df6a4faa0a8221addb8c3",
       "tests/async/physical_provider_union_cases.inc": "ee051a6cd3797de2752e4c5c5e0468fab27eaa31d17373ec3b52ddf4b26b72a7",
+      "tests/async/quest_accounting_prep/test_native_selectors.py": "0a5b25cbddd639a969affd37f1a97fc00f80d41eb06db7e5667a0f3559f78191",
+      "tests/async/quest_cost_admission_cases.cpp.in": "961f037371009ccbcc2a122733c575e2ea35404be02e730c136552aba5791fb9",
       "tests/async/run_economic_sql_audit_snapshot_mysql.py": "f59e9f70e73b4a579bc46f8181c762b951bcf22ef0765383a2cef6c7091487e0",
       "tests/async/run_economic_sql_lifecycle_owner_mysql.sh": "b263e73a3bb64cde0fcd797a33fccb626e53d89a68a22e36f1f379959e41b460",
       "tests/async/run_native_quest_publication_mysql.sh": "e40f4872184927c3f1818b506183b4e44000d55195c74cddca808f4ec9578fc3",
@@ -635,13 +637,14 @@
       "tests/async/test_player_save_journal.py": "52cfe3a4c6ac0998d7546b55d362817fa3309f4818e7478775d749bef26325d5",
       "tests/async/test_publication_ack_checkpoint.py": "c9d34251986e5e4cbe72bf9396e882b7451a85acfe4bb5b6dd622b17f322d0ef",
       "tests/async/test_publication_retention_runtime.py": "6b6582f9511e4b375caef046c9f8b1321fa8debcbabe65ef768f07e14645367b",
+      "tests/async/test_quest_cost_admission.py": "65517d8d9c3e4cddd861fcaf9c891eea83e9a3b2b816848ab751f2259893ae0c",
       "tests/async/test_reconcile_economy_accounting.py": "ba7cb643673bf445c625c243313ec4e498213d3a52e73d909cbad6ebbca3c9c9",
       "tests/async/test_spell_component_retirement_publication.py": "dbb84c30138984db14db13a695ea5d7130937c0dc7b7339085955136897ef0b8",
       "tests/async/test_staging_migration_fork_mysql.py": "908ab9a227cf732b86bd3503aa0d3ccec07e0d2f35998568ea41d56543ba723d",
       "tests/async/test_test_entry_main_outcome.py": "3175efa87cf0a2f287b80491787554d9cd45fe109b93807a46de83dee6b1314c",
       "tests/async/test_txn_publication_copyover_drain.py": "64d323b2b5041115c0f70602d6f51bbdc83ac337d9309838095391baa745a843",
-      "tests/integration_manifest.json": "268f2921125a4b9b47607c28ed12dcf42ad8c4e29e08d6a29fbf1640946b4dc2",
-      "tests/regression_manifest.json": "cbecb543f0cdd33690cb3ab62fec622990cfd802139fe4e52da0119d938a19a7",
+      "tests/integration_manifest.json": "2a35ab74e55e30bfce5d086be7e3619a27984db88e3c3721770ea798c629457d",
+      "tests/regression_manifest.json": "20ca5110df2513a4c0cae0ab585c35cb3bb2af1f559fe07452e7eafec21ada32",
       "tests/run_test_entry.py": "bdfbc6eb466ddbb3887dbc639530cf76bff50142e86d11c79dc99d5ac45cc07d"
     },
     "status": "source_integrated_unqualified"
@@ -17657,7 +17660,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          914
+          915
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_craft",
@@ -17707,7 +17710,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          979
+          980
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_craft_outputs",
@@ -17795,7 +17798,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3601
+          3602
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit_craft",
@@ -18233,8 +18236,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3960,
-          3972
+          3961,
+          3973
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_submit_to_player_with_completion",
@@ -18296,7 +18299,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1507
+          1508
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_batch_completion",
@@ -18358,7 +18361,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1407
+          1408
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_completion",
@@ -18543,7 +18546,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1288
+          1289
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_creation_queue",
@@ -19665,7 +19668,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1129
+          1130
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_creation_roots",
@@ -19727,7 +19730,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1136
+          1137
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_displaced_creation_objects",
@@ -20800,7 +20803,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4208
+          4209
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_cancel_batch_before_entry",
@@ -20862,7 +20865,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4020
+          4021
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_prepare_pulse",
@@ -21848,7 +21851,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2857
+          2858
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit",
@@ -22626,7 +22629,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1783
+          1784
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_corpse_batch",
@@ -22688,7 +22691,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1339
+          1340
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_creation_grant",
@@ -23056,7 +23059,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1194
+          1195
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "reconcile_creation_grant_batch",
@@ -54922,7 +54925,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7828
+          7829
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_native_quest_publication_owner::native_publish",

@@ -18,6 +18,7 @@
 #include "economy/collector_transaction.h"
 #include "classes/necromancy.h"
 #include "persistence/persistence_checkpoint.h"
+#include "persistence/persistence_mode.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
 #include "player/inert_item_stage.h"
@@ -8589,6 +8590,26 @@ bool item_native_quest_gameplay_publication_owner::observe_give(
 	}
 }
 
+bool item_native_quest_temporary_budget_owner::admit(size_t actual_temporary_bytes) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)actual_temporary_bytes;
+	return false;
+#else
+	// Both observers persist beyond their guards. Refuse the whole registered
+	// flat/loan state explicitly; do not presume SQL makes their bodies absent.
+	if (!nevent_is_game_thread() || !persistence_mode_requires_mysql() ||
+	    native_quest_flat_global_observer || native_quest_flat_global_scope ||
+	    native_quest_flat_literal_pool_owned || native_quest_coordinator_observer ||
+	    native_quest_coordinator_reserve || native_quest_coordinator_lender ||
+	    native_quest_coordinator_guard || native_quest_coordinator_borrowed_bytes)
+		return false;
+	// This is temporary scratch, not a replacement driver/birth baseline. Both
+	// persistent owners remain in the original aggregate once and are unchanged.
+	return native_quest_preparation_capacity(actual_temporary_bytes, true, true);
+#endif
+}
+
 bool item_native_quest_birth_budget_owner::retained_budget(size_t actual_birth_bytes) noexcept
 {
 	if (!nevent_is_game_thread() ||
@@ -10926,9 +10947,10 @@ namespace
 // This does not observe a registry, lend a scope, or charge physical storage.
 constexpr size_t birth_keeper_local_thread_source =
 	// nevent bool, comparator two by-value IDs/bool; get_id returns directly
-	// into that argument. Declared ID(handle) receiver/handle, gthread_self
-	// handle and declared pthread_self handle. No implicit trivial calls.
-	sizeof(void *) + 2 * sizeof(std::thread::id) + 3 * sizeof(std::thread::native_handle_type) +
+	// into that argument. Declared ID(handle) receiver/handle and direct
+	// pthread_self handle; installed native macro bypasses __gthread_self.
+	// No implicit trivial calls.
+	sizeof(void *) + 2 * sizeof(std::thread::id) + 2 * sizeof(std::thread::native_handle_type) +
 	2 * sizeof(bool);
 constexpr size_t birth_keeper_local_journal_source =
 	// Either original size_t journal wrapper; atomic_base::load receiver,
@@ -10959,8 +10981,11 @@ bool item_native_quest_birth_retained_budget_local_source_frame_bytes(size_t *ou
 {
 #if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
 	_GLIBCXX_USE_CXX11_ABI && defined(_GLIBCXX_HAS_GTHREADS) &&                           \
-	!defined(_GLIBCXX_NATIVE_THREAD_ID) && !defined(_GLIBCXX_DEBUG) &&                    \
-	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L
+	defined(_GLIBCXX_NATIVE_THREAD_ID) && defined(__linux__) && defined(__GLIBC__) &&     \
+	defined(__GLIBC_MINOR__) &&                                                           \
+	(__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 27)) &&                       \
+	!defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&                          \
+	!defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L
 	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 ||
 	    __gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic)
 	{
@@ -10981,8 +11006,11 @@ bool item_native_quest_birth_retained_budget_local_source_supplement_frame_bytes
 {
 #if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
 	_GLIBCXX_USE_CXX11_ABI && defined(_GLIBCXX_HAS_GTHREADS) &&                           \
-	!defined(_GLIBCXX_NATIVE_THREAD_ID) && !defined(_GLIBCXX_DEBUG) &&                    \
-	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L
+	defined(_GLIBCXX_NATIVE_THREAD_ID) && defined(__linux__) && defined(__GLIBC__) &&     \
+	defined(__GLIBC_MINOR__) &&                                                           \
+	(__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 27)) &&                       \
+	!defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&                          \
+	!defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L
 	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 ||
 	    __gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic)
 	{
@@ -11002,8 +11030,89 @@ bool item_native_quest_birth_retained_budget_local_initial_inline_bytes(size_t *
 {
 #if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
 	_GLIBCXX_USE_CXX11_ABI && defined(_GLIBCXX_HAS_GTHREADS) &&                           \
-	!defined(_GLIBCXX_NATIVE_THREAD_ID) && !defined(_GLIBCXX_DEBUG) &&                    \
-	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L
+	defined(_GLIBCXX_NATIVE_THREAD_ID) && defined(__linux__) && defined(__GLIBC__) &&     \
+	defined(__GLIBC_MINOR__) &&                                                           \
+	(__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 27)) &&                       \
+	!defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&                          \
+	!defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 ||
+	    __gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	*output = 0;
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
+
+// The guarded temporary call has exactly the original birth keeper's
+// incoming/result, game-thread, capacity, range/vector-size and atomic-journal
+// Source, plus the genuine persistence_mode_requires_mysql() bool-return leaf.
+// The capacity still owns its declared globals/coordinator/slots locals, but
+// no registered outside target can be reached after the explicit guard above.
+// No synthetic callback allowance, memory cap adjustment or dynamic query.
+bool item_native_quest_temporary_budget_owner::source_frame_bytes(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && defined(_GLIBCXX_HAS_GTHREADS) &&                           \
+	defined(_GLIBCXX_NATIVE_THREAD_ID) && defined(__linux__) && defined(__GLIBC__) &&     \
+	defined(__GLIBC_MINOR__) &&                                                           \
+	(__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 27)) &&                       \
+	!defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&                          \
+	!defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L && !defined(__NO_MYSQL__)
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 ||
+	    __gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	*output = birth_keeper_local_source + sizeof(bool);
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
+
+bool item_native_quest_temporary_budget_owner::source_supplement_frame_bytes(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && defined(_GLIBCXX_HAS_GTHREADS) &&                           \
+	defined(_GLIBCXX_NATIVE_THREAD_ID) && defined(__linux__) && defined(__GLIBC__) &&     \
+	defined(__GLIBC_MINOR__) &&                                                           \
+	(__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 27)) &&                       \
+	!defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&                          \
+	!defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L && !defined(__NO_MYSQL__)
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 ||
+	    __gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	*output = birth_keeper_local_source + sizeof(bool);
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
+
+bool item_native_quest_temporary_budget_owner::initial_inline_bytes(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && defined(_GLIBCXX_HAS_GTHREADS) &&                           \
+	defined(_GLIBCXX_NATIVE_THREAD_ID) && defined(__linux__) && defined(__GLIBC__) &&     \
+	defined(__GLIBC_MINOR__) &&                                                           \
+	(__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 27)) &&                       \
+	!defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&                          \
+	!defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L && !defined(__NO_MYSQL__)
 	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 ||
 	    __gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic)
 	{
