@@ -3682,3 +3682,25 @@ interface/schema/runtime/registry/contract change. Producerbase5bc90a239c145d671
 result/verifiedremote in delivery/publication.json afterpublish. Additivecuratorinput/
 no primary/notebook adoption. FullPlan5/R8/nativeallholding/UID/realjourneys/bothbackend/
 schema/restore/retention/erasure/fault/load/recovery/release OPEN, inactive/CLOSED/fullgoalACTIVE.
+
+## 2026-10-11 — Independent current held-policy acceptance rejection verified
+
+[Held-policy acceptance review](PLAN5_HELD_POLICY_ACCEPTANCE_REVIEW_2026-10-11.md)
+verifies coordinator ACC07 native source97ded8571375f3fdc6168487a13120f65caedbec /
+tree0ae109dc0c8daa3f35ebd988f0d35995e089278e. Actual original entry0/15.478887963s,
+both SQL-header/flat markers, cases=[script passed], called=[main], complete=true.
+Original unchanged outcome_contract with actual original TestResult independently
+rejects missing required cases: main. Original outer1/collector missing skipped_checks
+separate; original cohort source-contracts NOT_RUN after exception. No native rerun.
+
+All3718 original Git/tar inputs and3748 seal files/213498189bytes verified; producer
+sealbae974ab1b2138757c41bda61bb049af72e94dfce0cb0dbf725750f3f609e20e unchanged.
+Plan5 independent review6f0dee3f9af32b32bb010fdd505017aeec452c9890f2993d82876c96610befb3;
+first review JSON-object indexing failure preserved separately, corrected parser0.
+Owned report+additivefollowup only; exact existing required_cases field/consumer/
+invariant/primary adoption and negative acceptance checks handed off, no shared edit.
+Producerbasee9225b07ba745cc7d73961b9d018f39ad7e723c7; result/remote in separate
+delivery receipt after publication. QA absent, exact image/grant/release/D mounts
+verified,7unrelated IDs preserved; reviewer resources0. No SQL service/journal/locks/
+host/coldrestore/fullrelease inference or retrospective acceptance. Additive curator
+input/no primary/notebook adoption; full Plan5/R6–R8 OPEN, inactive/CLOSED/fullgoalACTIVE.
