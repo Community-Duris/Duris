@@ -5241,3 +5241,8 @@ Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
 ## Retention native fixture dependency repair - 2026-10-11
 
 [Issue report](RETENTION_NATIVE_FIXTURE_DEPENDENCY_REPAIR_2026-10-11.md) records the original ASan/UBSan SQL-header and flat native fixture PASS against published7f1 source, two original1040-byte streams agreeing, and unchanged1424 production inputs/protected3. Add only three real linked providers to the existing compile list; add its genuine source pin (497 total, all496 existing preserved) and preserve all931 policies/2911 census/2853 sites. Full retention journeys/schema61/database/gameplay/recovery/architecture/R1-R8/release remain open. Inactive/CLOSED, incomplete coverage, BLOCKED release; goal ACTIVE.
+
+
+## Integration manifest source-pin repair - 2026-10-11
+
+[Provenance repair](INTEGRATION_MANIFEST_SOURCE_PIN_REPAIR_2026-10-11.md) fixes the one actual stale manifest hash in both maps:497 pins,496 preserved, all931 policies/2911 census/2853 sites unchanged. Root checks every pin including mechanical LF aliases; original nonrelease validator success alone did not verify hashes. The independent registered Item missing-main refusal remains a separate repair. No qualification promotion: inactive/CLOSED, incomplete coverage, release BLOCKED, goal ACTIVE.
