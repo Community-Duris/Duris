@@ -152,13 +152,14 @@ sites,13 changed pins verified/481 preserved. Sole1GiB/CPU1 QA removed/lease
 RELEASED;7 unrelated services/4 passive volumes preserved. Report:
 `HELD_RETIREMENT_POLICY_REGISTERED_GATE_2026-10-11.md`. Primary compatible case
 observation/registration repair required; no acceptance deletion, full-matrix,
-SQL durability, cold restore, host or release qualification. Proposed one-field
-required_cases=[script] retains original mandatory main invocation and both mode
-assertions/markers: original checker accepts retained native receipt;6 checker
-negative controls and2 actual original-adapter main refusal controls reject.
-No registration applied or native repeated; primary compatible repair decision
-and adopted-source receipt remain required. Independent Plan5 report imported
-from77dec0864 without broad follow-up.
+SQL durability, cold restore, host or release qualification. An in-memory
+required_cases=[script] alternative and6 checker/2 actual original-adapter main
+refusal controls are preserved only as protocol diagnostics. Removing required
+main is WITHDRAWN from the active handoff; preserve [script,main] with genuine
+main outcome observation. No registration applied or native repeated; primary
+repair decision/adopted-source receipt required. Independent report correction
+eaa43822 supersedes77dec0864's optional field-removal suggestion; no broad follow-up
+import.
 
 Plan5 producere9225b07 publishes source-only restore-coin12-to15 recipe export.
 Reviewed whole-AST inverse and exact three real providers; report/portable patch
@@ -180,7 +181,7 @@ original "do it", superseding "go with the useful parts". Local model GPT-6.1 So
 | --- | --- | --- |
 | Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | ACC-07 native policy PASS/registered-case rejection reviewed; source contracts0, exact primary repair handoff; ACC-05/06 and9c release refusal preserved; no active grant |
 | Remote primary | Non-connected RGitGoin; private session/WIP inaccessible; published `experimental-accounting` | Existing Plans1-4/shared runtime/final integration ownership retained; no delegation ACK required; architecture/toolchain/storage/32MiB proof queue |
-| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Published77dec0864 independent ACC-07 review, proposede922 restore-coin source-only report/patch; preserved5bc/ACC-05/06 proofs; finite wait, no next native grant |
+| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Publishedeaa43822 corrected independent ACC-07 review; e922 restore-coin source-only report/patch; preserved5bc/ACC-05/06 proofs; finite wait, no next native grant |
 | World/quest (parked) | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | IDLE/clean f7228f3fe; original failure and component PASS handoffs preserved; proposed runtime allocation WITHDRAWN, no resources |
 | Shop/backend (parked) | `01a129b4-a553-78e0-85c2-69e34d8e0d59`; `C:/Users/alexa/.codex/worktrees/969b/NewDuris Max`; `codex/accounting-accel-shop` | IDLE/clean6022; parked handoff preserved; ACC-04-TX unstarted possible future ticket only, no grant; allocation WITHDRAWN |
 
