@@ -148,6 +148,55 @@ class zone_reset_item_owner final
 		void *original_context = nullptr;
 		bool active = false;
 	};
+	// The same actual aggregate formerly local to reserve_flat_common_budget.
+	// Its layout, field order and initializer remain the callback's own INLINE.
+	struct flat_common_dispatch_workspace
+	{
+		flat_common_budget_guard *guard;
+		size_t exclusive, live, globals;
+		bool accepted;
+	};
+
+    public:
+	// Admit this first object before entering the registered ROOT callback.
+	// SOURCE formals/predicates, children and persistent globals are separate.
+	// Strong output; no callback, current observation or admission follows.
+	static bool flat_common_budget_initial_inline_bytes(size_t *) noexcept;
+	static constexpr size_t flat_common_budget_initial_query_frame_bytes() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+
+	// Complete selected declared HEADER Source for the original ten-global
+	// observer or its original fifteen-global literal/mobile/catalog extension.
+	// Original observers self-admit none of this Source: caller retains the
+	// complete result throughout that exact observation. It excludes CURRENT G
+	// heap values, registered ROOT guard/charge and external implementation/native
+	// frames. Only the captured ordinary GNU13/Linux LP64 configuration succeeds.
+	// Strong scalar outputs; these getters never execute the observed functions.
+	static bool flat_global_current_header_source_frame_bytes(size_t *) noexcept;
+	static bool flat_global_literal_current_header_source_frame_bytes(size_t *) noexcept;
+	static bool flat_global_current_initial_inline_bytes(size_t *) noexcept;
+	static bool flat_global_literal_current_initial_inline_bytes(size_t *) noexcept;
+	static constexpr size_t flat_global_current_header_source_query_frame_bytes() noexcept
+	{
+		return sizeof(void *) + sizeof(size_t) + sizeof(bool);
+	}
+	static constexpr size_t
+	flat_global_literal_current_header_source_query_frame_bytes() noexcept
+	{
+		return sizeof(void *) + sizeof(size_t) + sizeof(bool);
+	}
+	static constexpr size_t flat_global_current_initial_query_frame_bytes() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+	static constexpr size_t flat_global_literal_current_initial_query_frame_bytes() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+
+    private:
 	static bool reserve_flat_common_budget(size_t, void *) noexcept;
 	// Only the genuine birth owner may construct this stack guard. Its callback
 	// context outlives it; its actual lifetime encloses the complete submit call,
