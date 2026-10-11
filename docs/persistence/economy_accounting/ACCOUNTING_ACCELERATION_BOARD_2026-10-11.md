@@ -129,6 +129,18 @@ matching lease RELEASED11:42:14Z/global lock absent. Reviewed narrow recipe and
 linked reports imported from Plan5 `02898093fa20cce30d48f057bce684dab7d9a98c`.
 Full retention/schema/deletion/claims/database/game/host/release remain unqualified.
 
+Original current release check on frozen9c871c875: contract validation0
+(14fixtures/931routes/2911occurrences), --release1 with exact missing-executable-
+evidence refusal. Source-derived first row account.item_reward belongs to
+primary/#481; no runtime defect or route name inferred from the generic error.
+Independent3724-member/141703264-byte seal and3709 exact Git inputs verified;
+2853 unique lexical sites exactly mapped, but795 eligible declared rows include
+772 without executable evidence/788 without eligible coverage/791 without
+qualifying all-backend evidence. Metadata gaps, not runtime failure counts.
+Reviewed report from Plan5 `5bc90a239c145d6719baa7b2756d9815cf676179` imported;
+collector41260 KeyError/unknown original command exits and corrected33679
+terminal receipts preserved. No native/job/container/grant/shared-file change.
+
 Accounting inactive; admission CLOSED; final release BLOCKED. This board records
 execution, not inventory-based completion. Original Plans 1-5 and R1-R8 evidence
 keeps its exact historical scope. Architecture work follows the first checkpoint.
@@ -140,9 +152,9 @@ original "do it", superseding "go with the useful parts". Local model GPT-6.1 So
 
 | Lane | Chat / worktree / branch | Current ticket |
 | --- | --- | --- |
-| Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | Reviewed ACC-05 and ACC-06 component PASS/seals/releases; exact qualified evidence and narrow recipe handoffs for primary; newer9c871 source observation only, no active grant |
+| Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | ACC-05/06 component proofs and current9c source-contract PASS/release refusal reviewed; exact narrow primary handoffs; current runtime unqualified, no active grant |
 | Remote primary | Non-connected RGitGoin; private session/WIP inaccessible; published `experimental-accounting` | Existing Plans1-4/shared runtime/final integration ownership retained; no delegation ACK required; architecture/toolchain/storage/32MiB proof queue |
-| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Published02898093f terminal ACC-06 report; original linker defect/exact+3 repair SQL+flat structural fixture PASS on frozen055, sealed/RELEASED; prior ACC-05 preserved; finite wait, no next native grant |
+| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Published5bc90a239 current original release refusal/source-contract report; ACC-05/06 exact proofs and released resources preserved; finite acceptance queue, no next native grant |
 | World/quest (parked) | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | IDLE/clean f7228f3fe; original failure and component PASS handoffs preserved; proposed runtime allocation WITHDRAWN, no resources |
 | Shop/backend (parked) | `01a129b4-a553-78e0-85c2-69e34d8e0d59`; `C:/Users/alexa/.codex/worktrees/969b/NewDuris Max`; `codex/accounting-accel-shop` | IDLE/clean6022; parked handoff preserved; ACC-04-TX unstarted possible future ticket only, no grant; allocation WITHDRAWN |
 
@@ -211,6 +223,7 @@ override availability or invent tokens/receipts for accepting tests.
 | ACC-04-TX | Existing `test_shop_trade_transaction.py` component or exact first failure, then retention/repository gates | Parked unstarted preparation only; no standing dispatch/grant; current private capability aborts remain unqualified |
 | ACC-05-AUDIT-BUDGET-01 | Two existing Linux near-limit price/mapping audit-budget methods, no skips; original limits0/1/100, clean/conflict/corrupt/oversized controls, 30s/256MiB child bounds, input unchanged | Terminal original session57445/exit0,2/0skips/12records and both oversized controls PASS_SYNTHETIC_COMPONENT_ONLY on exact primary055; independently76-member seal verified/RELEASED; no full matrix or release-host promotion |
 | ACC-06-RETENTION-LINK-01 | Original11-TU native_fixture actual SQL link failure followed by exact+3-TU repair with unchanged fixture/flags/asserts and SQL/flat ASan/UBSan execution/frame decoding | Terminal session36030/exit0 on frozen055+3; originalSQL1/11symbols/originalflat NOT_RUN, both candidate builds/runtimes/decode/bytes PASS_LINK_STRUCTURAL_COMPONENT_ONLY; independently1472-member seal verified/RELEASED; reviewed narrow repair imported, broad Plan5 work excluded; no full retention or newer9c871 proof |
+| RELEASE-9c871c875 | Original validate_economy_accounting.py default and --release, exact source/evidence/source-derived row handoff | Default0, release1 missing executable evidence; source-only packet verified/imported, first primary/#481 account.item_reward; no native/backend/game/release qualification and no repeated unchanged audit |
 | PRIMARY-01 | Connected save/coordinator/item lifecycle map then verified boundary/caller/admission closure | Existing primary implementation ownership; no withdrawn delegation dependency |
 | PRIMARY-02 | Supported toolchain/runtime/library correspondence, complete storage/frame/transitive proof, aggregate 32MiB accept/refuse | Remains explicit; object compile/source packets do not close it |
 | FINAL | Gameplay/persistence/schema/backup/restore/recovery/fault/load/resource/R1-R8 gates agree on one frozen candidate | Reviewed implementation batches and per-slice architecture evidence |
@@ -717,6 +730,22 @@ pin adoption stays PRIMARY-owned; no head substitution, waiver or current
 combined-checkout qualification. Finite queue is primary adoption/coherent
 schema/stake/restore acceptance and a meaningful owned next executable slice;
 wait while those prerequisites remain unchanged.
+
+Current release refusal handoff: `PLAN5_CURRENT_RELEASE_GATE_AUDIT_2026-10-11.md`
+SHA34308fcbeba33af589bb1522a633f09cfa67768621dc50960250aea2a7e52875.
+Primary owns account.item_reward/summon_one and its accepted-source/native-
+revision/receipt-before-publication invariant. Supply actual current same-root
+and applicable backend/player/replay/refusal proof before updating existing
+evidence/coverage/backend fields and generated route; test-candidate presence
+is not that proof. No new field or shared ownership transfer requested.
+Evidence `D:/Dev/Tests/Duris/accounting-plan5/Plan5-current-release-check-9c871c875-20261011`;
+seal24235710ad9e000ae45729ca095f3985d7491a4adf39dd14881bdd9a63d47a66.
+Independent review `D:/Dev/Tests/Duris/accounting-accel-integration/RELEASE-GATE-9c871c875-review/terminal-packet-review.json`
+SHAee996660e4f96322252b6b34374f766b051136cfbe06f30566b53797f24af034;
+exact lexical-map review SHA7d441f7df59372086cd55c94e15a27b12245fb7c14d48842a8227c96aec9d385.
+Do not repeat this source/release audit on unchanged9c or open standing helper
+research; wait for meaningful source/evidence or an exact independently owned
+executable slice. Full Work1-5/R6-R8 acceptance remains open.
 
 Exact PRIMARY handoff for the native recipe: adopt only the three `SOURCES`
 entries from integration `6bfa0f7ebdd5f2f46841047fdd10522e4d27dfea` in
