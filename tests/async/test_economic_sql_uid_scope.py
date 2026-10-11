@@ -438,5 +438,63 @@ class UidScopeTests(unittest.TestCase):
             read_pending_claim_consumers(cursor, lineage)
 
 
+class SnapshotCliTests(unittest.TestCase):
+    def test_output_byte_limit_includes_final_newline_before_file_creation(self):
+        import contextlib
+        import io
+        import os
+        import tempfile
+        import types
+        import economic_sql_audit_snapshot as exporter
+
+        limit = 512
+        snapshot = dict(schema_version=1, lineage="11" * 16, epoch="22" * 16,
+                        backend="sql_partial", complete=False, quiescent=True, padding="")
+        base = len(json.dumps(snapshot, sort_keys=True, separators=(",", ":")).encode())
+        with tempfile.TemporaryDirectory(prefix="duris-audit-output-") as directory:
+            for body_bytes in (limit - 2, limit - 1, limit, limit + 1):
+                for existing in (False, True):
+                    with self.subTest(body_bytes=body_bytes, existing=existing):
+                        packet = dict(snapshot, padding="x" * (body_bytes - base))
+                        encoded = (json.dumps(packet, sort_keys=True, separators=(",", ":")) + "\n").encode()
+                        path = Path(directory) / f"{body_bytes}-{existing}.json"
+                        if existing:
+                            path.write_bytes(b"preserve existing audit output")
+                        connection = mock.Mock()
+                        client = types.SimpleNamespace(
+                            connect=mock.Mock(return_value=connection),
+                            cursors=types.SimpleNamespace(DictCursor=object),
+                            MySQLError=type("ClientError", (Exception,), {}))
+                        arguments = ["economic_sql_audit_snapshot.py", "--host", "fixture",
+                                     "--user", "fixture", "--database", "fixture", "--lineage",
+                                     snapshot["lineage"], "--epoch", snapshot["epoch"], "--output", str(path)]
+                        with mock.patch.object(sys, "argv", arguments), \
+                             mock.patch.dict(sys.modules, pymysql=client), \
+                             mock.patch.dict(os.environ, DB_PASSWORD="disposable-unit-only"), \
+                             mock.patch.object(exporter, "MAX_INPUT_BYTES", limit), \
+                             mock.patch.object(exporter, "capture", return_value=packet) as capture, \
+                             mock.patch.object(exporter.os, "open", wraps=os.open) as create, \
+                             contextlib.redirect_stderr(io.StringIO()) as stderr:
+                            result = exporter.main()
+                        capture.assert_called_once_with(connection, bytes.fromhex(snapshot["lineage"]),
+                                                        bytes.fromhex(snapshot["epoch"]))
+                        connection.close.assert_called_once_with()
+                        self.assertEqual(result, 0 if not existing and len(encoded) <= limit else 2)
+                        if len(encoded) > limit:
+                            create.assert_not_called()
+                            self.assertIn("SQL audit snapshot exceeds input limit", stderr.getvalue())
+                        else:
+                            create.assert_called_once_with(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+                        if existing:
+                            self.assertEqual(path.read_bytes(), b"preserve existing audit output")
+                        elif len(encoded) <= limit:
+                            self.assertEqual(path.read_bytes(), encoded)
+                            self.assertEqual(json.loads(path.read_bytes()), packet)
+                            if os.name == "posix":
+                                self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+                        else:
+                            self.assertFalse(path.exists())
+
+
 if __name__ == "__main__":
     unittest.main()
