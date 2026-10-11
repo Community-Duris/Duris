@@ -1,0 +1,206 @@
+#include "item/item_movement_transaction.c"
+#include <cassert>
+#include <iostream>
+#include <thread>
+
+// Generated exact Quest descriptor/helpers/adapter follow here. This fixture TU
+// includes the actual Item implementation, so its genuine private registries and
+// retained scalars can be controlled without adding production test hooks.
+namespace { @QUEST_DESCRIPTOR@ }
+
+class quest_native_completion_owner
+{
+public:
+    static bool reserve_cost_projection(size_t, void *) noexcept;
+    static native_quest_cost_projection_result project_cost_projection(
+        const quest_mobile_native_cash_reference &, native_quest_cost_projection *,
+        const quest_cost_prepare_live &) noexcept;
+    static bool profile(size_t *value) noexcept
+    { return item_native_quest_temporary_budget_owner::source_frame_bytes(value); }
+    static bool initial(size_t *value) noexcept
+    { return item_native_quest_temporary_budget_owner::initial_inline_bytes(value); }
+};
+
+namespace
+{
+@QUEST_CENSUS_HELPERS@
+}
+@QUEST_ADAPTER@
+@QUEST_COMPLETION_METHODS@
+
+namespace
+{
+[[maybe_unused]] bool forbidden_observer(size_t *) noexcept { assert(false); return false; }
+[[maybe_unused]] bool forbidden_reserve(size_t, void *) noexcept { assert(false); return false; }
+
+struct recorded_admission
+{
+    size_t ordinal=0, refuse_at=0;
+    std::array<size_t,128> requests{};
+};
+
+[[maybe_unused]] bool real_recording_reserve(size_t request, void *opaque) noexcept
+{
+    auto &record=*static_cast<recorded_admission *>(opaque);
+    ++record.ordinal;
+    // Test-controlled persistent input forces the real aggregate cap to refuse.
+    // The callback always invokes the genuine accepted temporary seam.
+    if (record.ordinal==record.refuse_at)
+        native_quest_birth_retained_bytes=PLAYER_SAVE_PIPELINE_MAX_BYTES;
+    const size_t driver=native_quest_gameplay_retained_bytes;
+    const size_t birth=native_quest_birth_retained_bytes;
+    const bool accepted=quest_native_completion_owner::reserve_cost_projection(request,nullptr);
+    assert(native_quest_gameplay_retained_bytes==driver);
+    assert(native_quest_birth_retained_bytes==birth);
+    assert(record.ordinal<=record.requests.size());
+    record.requests[record.ordinal-1]=request;
+    return accepted;
+}
+
+void clear_inputs()
+{
+    native_quest_acceptances.clear();
+    native_quest_gameplay_retained_bytes=0;
+    native_quest_birth_retained_bytes=0;
+    native_quest_flat_global_observer=nullptr;
+    native_quest_flat_global_scope=nullptr;
+    native_quest_flat_literal_pool_owned=false;
+    native_quest_coordinator_observer=nullptr;
+    native_quest_coordinator_reserve=nullptr;
+    native_quest_coordinator_lender=nullptr;
+    native_quest_coordinator_guard=nullptr;
+    native_quest_coordinator_borrowed_bytes=0;
+}
+}
+
+int main()
+{
+    using result=native_quest_cost_projection_result;
+    clear_inputs();
+    nevent_bind_game_thread();
+    size_t callback_source=SIZE_MAX, initial=SIZE_MAX;
+    native_quest_cost_projection prior;
+    prior.before_revision=prior.after_revision=777;
+    prior.attempts.reserve(32);
+    prior.attempts.push_back({{99,1},native_quest_cost_attempt_outcome::nonpositive,{},{}});
+    const auto untouched=prior;
+    quest_mobile_native_cash_reference cash;
+    cash.denominations={100,0,0,0}; cash.cash_revision=31;
+    std::vector<player_item_snapshot> native_items,selected;
+    native_items.reserve(4); native_items.emplace_back();
+    native_items[0].name=std::string(64,'n');
+    native_items[0].short_description=std::string(48,'s');
+    native_items[0].dynamic_affects.resize(3);
+    native_items[0].extra_descriptions.resize(2);
+    native_items[0].extra_descriptions[0].description=std::string(80,'d');
+    native_items[0].extra_descriptions[0].spell_ids.resize(4);
+    selected=native_items; selected.reserve(5);
+    std::vector<native_quest_cost_requirement> requirements={{0,1},{2,0},{4,500}};
+    std::vector<uint64_t> ordered_roots,roots;
+    std::unordered_set<uint64_t> consumed;
+    consumed.reserve(16); consumed.insert(100); consumed.insert(200);
+    std::vector<int32_t> indexes;
+    std::vector<uint8_t> selected_bytes;
+    item_transfer_payload payload{};
+    payload.native_cost.projection=prior;
+    const quest_cost_prepare_live live{
+        sizeof(cash)+sizeof(native_items)+sizeof(selected)+sizeof(requirements)+
+        sizeof(ordered_roots)+sizeof(roots)+sizeof(indexes)+sizeof(selected_bytes)+sizeof(payload),
+        20*sizeof(void*)+4*sizeof(size_t),native_items,requirements,ordered_roots,consumed,
+        selected,indexes,roots,selected_bytes,payload
+    };
+#if defined(__NO_MYSQL__) || defined(_GLIBCXX_ASSERTIONS) || defined(_GLIBCXX_PARALLEL) || defined(_GLIBCXX_DEBUG)
+    assert(!quest_native_completion_owner::profile(&callback_source) && callback_source==SIZE_MAX);
+    assert(!quest_native_completion_owner::initial(&initial) && initial==SIZE_MAX);
+    assert(quest_native_completion_owner::project_cost_projection(
+        cash,&payload.native_cost.projection,live)==result::allocation_failure);
+    assert(payload.native_cost.projection==untouched);
+#ifdef __NO_MYSQL__
+    assert(!quest_native_completion_owner::reserve_cost_projection(0,nullptr));
+#endif
+    assert(native_quest_gameplay_retained_bytes==0 && native_quest_birth_retained_bytes==0);
+    std::cout<<"QUEST_COST_ADMISSION {\"unsupported_no_writes\":true}\n";
+#else
+    assert(persistence_mode_requires_mysql());
+    assert(quest_native_completion_owner::profile(&callback_source) && callback_source!=SIZE_MAX);
+    assert(quest_native_completion_owner::initial(&initial) && initial==0);
+    native_quest_cost_projection expected;
+    assert(native_quest_cost_project(cash.denominations,cash.cash_revision,requirements,&expected)==result::ok);
+    assert(quest_native_completion_owner::project_cost_projection(
+        cash,&payload.native_cost.projection,live)==result::ok);
+    assert(payload.native_cost.projection==expected);
+    assert(native_quest_gameplay_retained_bytes==0 && native_quest_birth_retained_bytes==0);
+
+    payload.native_cost.projection=prior;
+    recorded_admission success;
+    assert(quest_cost_prepare_project(cash,requirements,&payload.native_cost.projection,
+        live,real_recording_reserve,&success,0,callback_source)==result::ok);
+    assert(payload.native_cost.projection==expected && success.ordinal>=2);
+    // A real caller-owned capacity change must be present at allocator preentry.
+    // No test allowance is substituted for the actual live census.
+    const size_t old_bytes_capacity=selected_bytes.capacity();
+    selected_bytes.reserve(old_bytes_capacity+4096);
+    payload.native_cost.projection=prior;
+    recorded_admission grown;
+    assert(quest_cost_prepare_project(cash,requirements,&payload.native_cost.projection,
+        live,real_recording_reserve,&grown,0,callback_source)==result::ok);
+    assert(grown.requests[0]-success.requests[0]==selected_bytes.capacity()-old_bytes_capacity);
+    assert(payload.native_cost.projection==expected);
+    for(size_t point=1;point<=success.ordinal;++point)
+    {
+        clear_inputs(); payload.native_cost.projection=prior;
+        const auto *old_data=payload.native_cost.projection.attempts.data();
+        const size_t old_capacity=payload.native_cost.projection.attempts.capacity();
+        recorded_admission refused; refused.refuse_at=point;
+        assert(quest_cost_prepare_project(cash,requirements,&payload.native_cost.projection,
+            live,real_recording_reserve,&refused,0,callback_source)==result::allocation_failure);
+        assert(refused.ordinal==point && payload.native_cost.projection==untouched);
+        assert(payload.native_cost.projection.attempts.data()==old_data);
+        assert(payload.native_cost.projection.attempts.capacity()==old_capacity);
+    }
+
+    clear_inputs(); payload.native_cost.projection=prior;
+    recorded_admission overflow;
+    assert(quest_cost_prepare_project(cash,requirements,&payload.native_cost.projection,
+        live,real_recording_reserve,&overflow,SIZE_MAX,callback_source)==result::allocation_failure);
+    assert(overflow.ordinal==0 && payload.native_cost.projection==untouched);
+    assert(native_quest_gameplay_retained_bytes==0 && native_quest_birth_retained_bytes==0);
+
+    clear_inputs();
+    const size_t journal=critical_command_journal_native_rewrite_storage_bytes();
+    assert(journal<PLAYER_SAVE_PIPELINE_MAX_BYTES-2);
+    native_quest_gameplay_retained_bytes=PLAYER_SAVE_PIPELINE_MAX_BYTES-journal-2;
+    native_quest_birth_retained_bytes=1;
+    const size_t driver=native_quest_gameplay_retained_bytes;
+    assert(quest_native_completion_owner::reserve_cost_projection(1,nullptr));
+    assert(!quest_native_completion_owner::reserve_cost_projection(2,nullptr));
+    assert(native_quest_gameplay_retained_bytes==driver && native_quest_birth_retained_bytes==1);
+    clear_inputs();
+
+    // Every state rejection goes through the real preflight guard. If the
+    // original observers were invoked, their sentinel assertions would fire.
+    auto state_refusal=[&] {
+        payload.native_cost.projection=prior;
+        assert(!quest_native_completion_owner::reserve_cost_projection(0,nullptr));
+        assert(quest_native_completion_owner::project_cost_projection(
+            cash,&payload.native_cost.projection,live)==result::allocation_failure);
+        assert(payload.native_cost.projection==untouched);
+        assert(native_quest_gameplay_retained_bytes==0 && native_quest_birth_retained_bytes==0);
+        clear_inputs();
+    };
+    native_quest_flat_global_observer=forbidden_observer; state_refusal();
+    native_quest_flat_global_scope=&cash; state_refusal();
+    native_quest_flat_literal_pool_owned=true; state_refusal();
+    native_quest_coordinator_observer=forbidden_observer; state_refusal();
+    native_quest_coordinator_reserve=forbidden_reserve; state_refusal();
+    native_quest_coordinator_lender=&cash; state_refusal();
+    native_quest_coordinator_guard=&cash; state_refusal();
+    native_quest_coordinator_borrowed_bytes=1; state_refusal();
+    bool foreign_accepted=true;
+    std::thread foreign([&] { foreign_accepted=quest_native_completion_owner::reserve_cost_projection(0,nullptr); });
+    foreign.join(); assert(!foreign_accepted);
+    assert(native_quest_gameplay_retained_bytes==0 && native_quest_birth_retained_bytes==0);
+    std::cout<<"QUEST_COST_ADMISSION {\"success\":true,\"refusal_points\":"
+             <<success.ordinal<<",\"cap_boundary\":true,\"registered_states\":8,\"no_retained_writes\":true}\n";
+#endif
+}

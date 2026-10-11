@@ -8661,6 +8661,19 @@
         "native-compiler"
       ],
       "purpose": "Four genuine ordinary whole Coordinator Make objects and actual macro profile probes, compile only; four whole Zone public-getter runs across SQL-header/flat supported and genuine assertions-refusal profiles, exact values/null/strong outputs. Coordinator private getter/caller runtime remains OPEN. No services or full accounting/release qualification."
+    },
+    "test_quest_cost_admission.py": {
+      "profile": "native",
+      "mode": "script",
+      "minimum_cases": 1,
+      "cpu": 2,
+      "memory_mb": 8192,
+      "seconds": 160.3495653150021,
+      "timeout_seconds": 5400,
+      "locks": [
+        "native-compiler"
+      ],
+      "purpose": "Three genuine final Quest projector/temporary Item admission profiles with whole production Quest/Item checks, fifteen real provider objects and current native selectors; cap/refusal ordering and unchanged outputs/retained scalars. Component only; earlier preparation, builder, full producer and service/release gates remain open."
     }
   }
 }
