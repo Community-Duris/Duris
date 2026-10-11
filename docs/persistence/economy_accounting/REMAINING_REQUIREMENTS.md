@@ -4881,3 +4881,12 @@ and protected WIP remain preserved. Inventory478/931/2911/2853,0new/unmapped
 does not establish completion. Full host/native/gameplay/persistence/recovery/
 R1-R8/release stay OPEN; targeted compiler proof is recorded above.
 Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Guarded combined build checkpoint passed - 2026-10-10
+
+[Evidence](GUARDED_COMBINED_BUILD_CHECKPOINT_2026-10-10.md): frozen published3049fb771 builds and links in both
+production storage modes; existing inactive-flat boot preflight passes.
+Newer critical08ef94/list240fc9 providers are outside this frozen checkpoint.
+SQL service smoke and full host/gameplay/persistence/recovery/32MiB/release
+qualification remain OPEN. No whole plan completed; inactive/CLOSED, goal ACTIVE.
