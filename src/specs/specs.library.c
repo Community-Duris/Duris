@@ -17,6 +17,7 @@
 #include "core/utils.h"
 #include <ctype.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <string.h>
 #include <strings.h>
 #include <time.h>
@@ -948,14 +949,22 @@ constexpr size_t original_proclib_token_declarations =
 	4 * sizeof(char *) + sizeof(char) + sizeof(int) + 3 * sizeof(char *) + 2 * sizeof(int) +
 	sizeof(char *) + sizeof(int) + sizeof(char *) + sizeof(const char **) + 4 * sizeof(int) +
 	2 * sizeof(char *) + sizeof(unsigned int) + 3 * sizeof(int) + sizeof(char *) + sizeof(bool);
-// Actual literal format-companion declarations: budget/destination/format,
-// longest pack(int,char*,char*), capacity/required/request/rendered/available/
-// copy_size/observed/error; malloc/free/snprintf/memcpy/fprintf call carriers.
-// The original checked_vsnprintf va_list objects are NOT called or counted.
-// Native libc implementation qualification remains the existing libc policy.
+// Actual variadic owning companion declarations: budget/destination/format/
+// rendered, longest incoming value pack(int,char*,char*), capacity/request/
+// available/copy_size, required/render_required/error, observed/returned bool.
+// Both va_list objects are genuine local storage, not an ABI frame estimate.
+// va_start(args,format), va_copy(measure_args,args), and the two selected
+// va_end invocations own their actual source arguments (six pointer carriers).
+// Each fortified vsnprintf owns wrapper/chk/dynamic-object-size call carriers;
+// malloc/free, fortified memcpy, and fortified fprintf are counted separately.
+// The libc implementation remains subject to the existing native libc policy.
 constexpr size_t original_proclib_format_declarations =
-	6 * sizeof(void *) + 4 * sizeof(size_t) + 3 * sizeof(int) + sizeof(bool) +
-	10 * sizeof(void *) + 4 * sizeof(size_t) + 4 * sizeof(int);
+	6 * sizeof(void *) + 4 * sizeof(size_t) + 4 * sizeof(int) + 2 * sizeof(bool) +
+	2 * sizeof(va_list) + 6 * sizeof(void *) +
+	2 * (7 * sizeof(void *) + 4 * sizeof(size_t) + 4 * sizeof(int)) +
+	// malloc(size/result), free(pointer), memcpy wrapper/chk/object-size,
+	// fprintf wrapper/chk, including both genuine int/size vararg copies.
+	13 * sizeof(void *) + 7 * sizeof(size_t) + 6 * sizeof(int);
 // __try_malloc/__free and the real MEMCHK init/increment/decrement paths are
 // allocation-free for MEMCHK <= 1. Their literal header is charged separately.
 constexpr size_t original_proclib_malloc_declarations =
@@ -1035,37 +1044,60 @@ bool original_proclib_next_bounded(char *&source, char *destination,
 	return budget.charge();
 }
 
-// Literal owning companion of checked_vsnprintf's measure/malloc/render/copy/
-// warning/free algorithm. The actual separate malloc is admitted before it is
-// made. Preserve the exact original destination truncation and stderr warning.
-// These parser destinations never alias their arguments. Native libc/stdio
-// qualification is still part of the existing combined major-plan gate.
-template <typename... Arguments>
+// Owning companion of checked_vsnprintf's measure/malloc/render/copy/warning/
+// free algorithm. Its printf annotation checks the four literal call sites.
+// Both passes use independent authentic va_list cursors over the same values.
+// Admit the same measured allocation before malloc, and preserve destination
+// truncation and stderr warning bytes. Native libc qualification stays open.
 bool original_proclib_format_bounded(original_proclib_budget &budget, char *destination,
-				     size_t capacity, const char *format,
-				     Arguments... arguments) noexcept
+				     size_t capacity, const char *format, ...) noexcept
+	__attribute__((format(printf, 4, 5)));
+
+bool original_proclib_format_bounded(original_proclib_budget &budget, char *destination,
+				     size_t capacity, const char *format, ...) noexcept
 {
-	const int required = snprintf(nullptr, 0, format, arguments...);
+	va_list args, measure_args;
+	va_start(args, format);
+	va_copy(measure_args, args);
+	const int required = vsnprintf(nullptr, 0, format, measure_args);
+	va_end(measure_args);
 	if (required < 0)
 	{
+		va_end(args);
 		errno = EINVAL;
 		return false;
 	}
 	if (!budget.charge(static_cast<size_t>(required) + 1))
+	{
+		va_end(args);
 		return false;
+	}
 	const size_t request = static_cast<size_t>(required) + 1;
 	char *rendered = static_cast<char *>(malloc(request));
 	if (!rendered)
+	{
+		va_end(args);
 		return budget.finish(ENOMEM);
+	}
 	budget.retained += request;
 	if (!budget.charge())
 	{
+		va_end(args);
 		free(rendered);
 		budget.retained -= request;
 		budget.finish(ENOBUFS);
 		return false;
 	}
-	snprintf(rendered, request, format, arguments...);
+	const int render_required = vsnprintf(rendered, request, format, args);
+	va_end(args);
+	// The genuine second render must agree with its measured allocation.
+	// Admit/copy/free order on successful rendering remains unchanged.
+	if (render_required != required)
+	{
+		free(rendered);
+		budget.retained -= request;
+		return budget.finish(render_required < 0 ? EINVAL : EOVERFLOW);
+	}
 	if (capacity)
 	{
 		const size_t available = capacity - 1;
