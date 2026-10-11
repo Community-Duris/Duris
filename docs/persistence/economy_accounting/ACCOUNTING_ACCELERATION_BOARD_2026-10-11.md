@@ -73,6 +73,20 @@ All6906 source/private contracts unchanged. Independent6997-member/550562942-byt
 seal review passed; guarded matching global lease RELEASED, fresh exact-owned
 and passive-volume consumer inventories0/empty. No full two-engine qualification.
 
+Focused ACC-02-ORIGINAL65-DIAG-01 terminal FAILED03:55:08 MDT on original
+session19578/exit1 (107.583s), frozen6bfa. Separate fresh Maria10.11.19 reproduction
+captured actual ERROR1644/45000: "incompatible zone reset item terminal schema";
+151-byte raw error SHA25687a1b0d598b05d617ee113c570004ddb86e575a01404ed8f3e8e66f5c46bd0a4.
+Original64 receipts/state/protected rows unchanged, no65 receipt; native killed
+session, missing-table1146 and unrelated45000 negatives all refused with no
+reconnect and preserved state. Real nullable recovery preserved original64 and
+protected rows, then the external fixture supplied the wrong runtime object to
+the exact history checker (KeyError). Pinned65 history/rerun/wrong-selector checks
+NOT_COMPLETED. No original RETRY-03 result relabeled. All6964 sealed members/
+549628522bytes independently verified, source6906/private contracts unchanged;
+both owned containers removed, graceful DBstop0/OOMfalse, passive consumers0,
+seven unrelated service IDs preserved, matching exclusive lock RELEASED.
+
 Accounting inactive; admission CLOSED; final release BLOCKED. This board records
 execution, not inventory-based completion. Original Plans 1-5 and R1-R8 evidence
 keeps its exact historical scope. Architecture work follows the first checkpoint.
@@ -86,7 +100,7 @@ original "do it", superseding "go with the useful parts". Local model GPT-6.1 So
 | --- | --- | --- |
 | Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | Reduced policy adopted; reviewed RETRY-03 failure/seal/release; narrow recipe handoff and focused refusal diagnostic queue |
 | Remote primary | Non-connected RGitGoin; private session/WIP inaccessible; published `experimental-accounting` | Existing Plans1-4/shared runtime/final integration ownership retained; no delegation ACK required; architecture/toolchain/storage/32MiB proof queue |
-| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Clean published521d04aa8; RETRY-03 frozen6bfa FAILED/sealed/RELEASED; prepare focused diagnostic without resources, restore queue retained |
+| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Clean published5674270da; DIAG-01 FAILED/sealed/RELEASED, exact native cause established for isolated profile; distinct one-line DIAG-02 preparation only, no active grant; restore queue retained |
 | World/quest (parked) | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | IDLE/clean f7228f3fe; original failure and component PASS handoffs preserved; proposed runtime allocation WITHDRAWN, no resources |
 | Shop/backend (parked) | `01a129b4-a553-78e0-85c2-69e34d8e0d59`; `C:/Users/alexa/.codex/worktrees/969b/NewDuris Max`; `codex/accounting-accel-shop` | IDLE/clean6022; parked handoff preserved; ACC-04-TX unstarted possible future ticket only, no grant; allocation WITHDRAWN |
 
@@ -113,7 +127,7 @@ No WORLD/SHOP runtime edits were made or are newly authorized.
 | WORLD proposal | `src/world/db.c`, `src/world/quest_mobile_native_birth.c`, its private header; additional `src/world/quest.c` request | WITHDRAWN; parked, no maintained runtime edits |
 | SHOP proposal | `src/economy/shop_trade_transaction.c`, its private header, `src/sql/sql_player.c`, `src/flatfile/flatfile_item_repository.c`, its private header | WITHDRAWN; parked, no maintained runtime edits |
 | PRIMARY | Existing Plans1-4, all shared runtime/interfaces, former proposed domain paths, save/coordinator/item, headers/contracts, schema/registry/matrix, final integration | Retained; no workload-transfer ACK required |
-| PLAN5 | Established independent operator/audit/backup/restore paths | Retained; RETRY-03 terminal handoff and resource-free focused diagnostic preparation |
+| PLAN5 | Established independent operator/audit/backup/restore paths | Retained; DIAG-01 terminal handoff and distinct resource-free diagnostic fixture repair preparation |
 | Orchestrator | This board; reviewed integration deliveries on own branch | Active docs lease; no runtime implementation lease |
 
 No further acknowledgment or runtime lease request for the withdrawn allocation.
@@ -150,7 +164,7 @@ override availability or invent tokens/receipts for accepting tests.
 | Ticket | Accepting result | Dependencies / next step |
 | --- | --- | --- |
 | ACC-01 | Both fresh production binaries and inactive flat preflight PASS; runtime source contracts 10/10 PASS | Terminal frozen6022 proof; mutable SQL startup assigned ACC-02/Plan5; newer native delta needs follow-up |
-| ACC-02 | Genuine two-engine schema65 matrix and exact restore/startup histories; independent audit and native room/restore gates | RETRY-03 FAILED/sealed/RELEASED; diagnose exact original65 SQL refusal with fresh isolated focused controls before any meaningful-batch retry |
+| ACC-02 | Genuine two-engine schema65 matrix and exact restore/startup histories; independent audit and native room/restore gates | RETRY-03 remains FAILED; DIAG-01 captures exact intended SQL cause but fails owned fixture lookup; review one-line DIAG-02 preparation before focused retry, no full matrix grant |
 | ACC-03-RC | Existing `test_native_quest_recovery_context.py` actual-provider ASan/UBSan component or exact first failure | Component PASS/sealed/RELEASED; exact three-line recipe/pin handoff remains for primary adoption, WORLD parked |
 | ACC-04-TX | Existing `test_shop_trade_transaction.py` component or exact first failure, then retention/repository gates | Parked unstarted preparation only; no standing dispatch/grant; current private capability aborts remain unqualified |
 | PRIMARY-01 | Connected save/coordinator/item lifecycle map then verified boundary/caller/admission closure | Existing primary implementation ownership; no withdrawn delegation dependency |
@@ -496,16 +510,31 @@ and existing-directory creation attempts retained/corrected before seal/release;
 native inputs/results/predicates unchanged. Report published Plan5
 `521d04aa81b89c48e419b02f3a4c096baccbbad6`:
 `PLAN5_SCHEMA65_ORIGINAL_REFUSAL_FAILURE_2026-10-11.md`.
-Next finite ticket `ACC-02-ORIGINAL65-DIAG-01`: Plan5 prepares outside the frozen
-source, candidate owned new `tests/async/test_schema65_original_refusal_diagnostic.py`.
-Restricted external mysql-client stderr tap; exact raw1644/45000/immutable-message
-evidence or retain genuine failure. Preserve original64 receipts/state/protected
-rows/no65 receipt, real nullable recovery/rerun/wrong selector and genuine killed
-session/different SQL error/unrelated45000 negatives. Fresh namespace/Linuxvolume,
-one512MiB Maria plus serial2GiB QA proposed only; preparation resource-free.
-Concrete helper/source/error bounds/controls/cleanup reviewed before new grant.
+Focused `ACC-02-ORIGINAL65-DIAG-01` received exactly one exclusive cohort grant
+SHA2569fad76dc07d7d60d4d176f6f8327ab41ae65aaf6308895594e7721d2fc4451cb,
+one512MiB/CPU1 Maria plus serial2GiB/CPU2 QA/native300s. Frozen preparation
+a611c24a, transport20356a20, fixturef7d878da; no build/shared source changes.
+Actual intended1644/45000 native refusal and three negative controls established
+for this new reproduction; overall fixture FAILED at line265's wrong runtime
+view before exact65/rerun/wrong-selector completion. Executed helpers and failed
+run immutable. Seal6429db4cc773c7947e004abdcfbb34a3dd1815fe2dc1bf1ae50c4a058ef54f69,
+6964members/549628522bytes; independent review64cf78471f75ffc22bb24e179411119fedf296f4dd642aad50a297bfd6b1ddc8
+at `D:/Dev/Tests/Duris/accounting-accel-integration/ACC-02-ORIGINAL65-DIAG-01-review/terminal-review.json`.
+Matching global lease RELEASED; owned containers absent, passive volume
+`plan5-schema65-diag01-fc7f493367-data` retained with exact labels/no consumers,
+earlier volumes and seven unrelated full service IDs preserved. Stopped raw DB
+data is diagnostic scratch, not qualified backup/restore. Reviewed report imported
+byte-exact from Plan5 `5674270da389324bd7df5ae9fd8695de51b1db9b`:
+`PLAN5_SCHEMA65_REFUSAL_DIAGNOSTIC_RESULT_2026-10-11.md`.
+
+Next finite ticket `ACC-02-ORIGINAL65-DIAG-02`: distinct resource-free preparation
+for the one-line owned fixture repair, passing `runtime['schema65']` to the
+unchanged exact history checker. Original64 setup remains on its original view;
+all acceptance/error/negative controls stay intact. Candidate owned new
+`tests/async/test_schema65_original_refusal_diagnostic.py`; source frozen6bfa.
+Review concrete helper/diff/preparation pins before a distinct exclusive grant.
 No shared runner/matrix/migration edit, generic-error acceptance, qualified fields
-or full rerun authorized by this diagnostic queue.
+or full rerun authorized. Primary owns any final matrix diagnostic repair.
 
 Exact PRIMARY handoff for the native recipe: adopt only the three `SOURCES`
 entries from integration `6bfa0f7ebdd5f2f46841047fdd10522e4d27dfea` in
@@ -627,6 +656,24 @@ acknowledgment. Those additional native deltas
 remain unreviewed/unqualified here; maintained migrations and matrix are
 unchanged from frozen a60. The primary's published object-compile reports do not
 qualify whole Item/ROOT selection, runtime/ABI, architecture or release.
+
+Latest meaningful primary batch observed through
+`0555741d740cf028552fcf63973265bfbcda052c`: preceding6d0542847 repairs two
+legacy publication fixtures against actual owning bodies and adds two existing
+driver input pins (484 total/482 older preserved). Primary reports GNU13.3
+ASan/UBSan spell component and static copyover checks PASS; private native
+packet not independently rerun here. Frozen HRT batch still eight-of-nine
+regressions FAILED. New055 marks an internal native-birth builder maybe_unused
+and its unsupported-profile command argument unused; guards/bodies/refusal stay
+unchanged. Primary reports eight production/sanitizer objects compiled across
+both backends; this is object proof only, no full links or original runner PASS.
+Both patches and reports reviewed as bounded source observations, no newer
+runtime/test imports into this candidate and no per-commit full builds. All12
+diagnostic inputs remain byte-identical to frozen6bfa; native recipe handoff still
+pending. No broad gameplay/recovery/architecture/32MiB/release acceptance inferred.
+Observation `D:/Dev/Tests/Duris/accounting-accel-integration/primary-observation-0555741d7.json`
+SHA256708ae16de790e19ead5d4caca859bb38a7e1e8bdb868b35e8aff9d65c9f29e43
+binds all12 actual current-primary input hashes to the frozen diagnostic.
 
 No historical primary acknowledgment was accepted; that proposal and requirement
 are now WITHDRAWN/NOT_REQUIRED. No helper runtime implementation active. Both
