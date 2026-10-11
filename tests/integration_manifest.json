@@ -2794,10 +2794,12 @@
       ],
       "mode": "unittest",
       "required_cases": [
-        "UidScopeTests.test_legacy_previous_owner_nulls_stay_unknown_and_partial_values_refuse"
+        "UidScopeTests.test_legacy_previous_owner_nulls_stay_unknown_and_partial_values_refuse",
+        "SnapshotCliTests.test_output_byte_limit_includes_final_newline_before_file_creation"
       ],
       "arguments": [
         "UidScopeTests.test_legacy_previous_owner_nulls_stay_unknown_and_partial_values_refuse",
+        "SnapshotCliTests.test_output_byte_limit_includes_final_newline_before_file_creation",
         "-v"
       ],
       "environment": {},

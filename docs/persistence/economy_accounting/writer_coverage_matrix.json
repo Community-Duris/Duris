@@ -157,7 +157,7 @@
       "migrations/reconcile_auction_transactions.sh": "59ff14a554c408f63e9c6fddb0502e7f21fc1af3f37737e244093ed7e7819ae9",
       "migrations/runtime_compatibility_manifest.json": "6ec36cf62c2fb688c2afce9d8eb2c9b05c59ad794ae61d196e79ec4077853a8a",
       "migrations/verify_runtime_compatibility.sh": "0a803d5e3afd9b0af6c3de5a25dfa48a765fcecacdc4dbff3a1346051ae3474d",
-      "scripts/economic_sql_audit_snapshot.py": "b11872745b57c339995ab890171b5003f8132e194a73ae4f5fa69bc92fd2f8ae",
+      "scripts/economic_sql_audit_snapshot.py": "ac7299ecf327bd36d3882fa3406bfd351fe1f6a4723f2018f9dae2b5eb8f81ea",
       "scripts/generate_economy_writer_coverage.py": "176fd8349d3f0115285f1902c94f3f6af09c3f86d623bf453b6aed1b158b77df",
       "scripts/persistence_backup.py": "14585a68763936717e928de8a4cd1868c4a7722720b103c1a7be352089f24368",
       "scripts/persistence_restore.py": "c6226b82f8c7ae9288827050cbbcabf29d26c629920ff786f21cefd0184c0c06",
@@ -606,7 +606,7 @@
       "tests/async/test_coin_transfer_shared_bank_accounting.py": "f48cd0bf3fcd980a6ee3a41eb94c42898aa3f6deaf60058f56d71e955cd79da8",
       "tests/async/test_data_lifecycle_manifest.py": "3ec3020da2b1c102e10329d6e77de307dd2d89e82c0f6e1ee756c35d82e70d05",
       "tests/async/test_economic_sql_lifecycle_activation_contract.py": "186f0327fa342eb3b6a6833177b449eb9728e3907e86e1acd03c93e1f85c1e44",
-      "tests/async/test_economic_sql_uid_scope.py": "2febe4f3f3e78c0a89d332a9b38988975156da8bdc84f3dc152628b77e17832b",
+      "tests/async/test_economic_sql_uid_scope.py": "60b13011a72c00e478af099b7ec033b9db0d30f9535c662df66527d05bc8d924",
       "tests/async/test_economy_writer_coverage_contract.py": "089f47d41bf9c0883c1fd3b99ecc150037a0796c81c28f82b32524195c42279c",
       "tests/async/test_flatfile_collector_repository.py": "0a38db332267215177db3a38c9b594657b6f3c5d3c90a3ca3abb86b81f88cbfe",
       "tests/async/test_immutable_migration_runner.py": "b8fe07002ef91a27c1ca379a816008ae09482c6980e78a7afee3f68fbdc8f220",
@@ -619,7 +619,7 @@
       "tests/async/test_player_save_journal.py": "52cfe3a4c6ac0998d7546b55d362817fa3309f4818e7478775d749bef26325d5",
       "tests/async/test_reconcile_economy_accounting.py": "7c430d5650ce51a47e1cc2487663ce52c1644df3612e4378ebde7802253096cc",
       "tests/async/test_staging_migration_fork_mysql.py": "908ab9a227cf732b86bd3503aa0d3ccec07e0d2f35998568ea41d56543ba723d",
-      "tests/integration_manifest.json": "5fe32bcf2c9195ffe3085cd33bee91569c53e5a6d29dbffb5473acdf8c6a002c"
+      "tests/integration_manifest.json": "80d930fdf21908f56c9bdb5023ade03a1083b6a9e8f40de3c1b8c02998d14292"
     },
     "status": "source_integrated_unqualified"
   },
