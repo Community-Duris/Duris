@@ -158,3 +158,34 @@ and both-engine durability, whole-host 32MiB peak, cold restore/shutdown,
 gameplay/recovery/workload, Plans 1-5/R1-R8 and release remain open. Accounting
 stays inactive, admission CLOSED, release BLOCKED. No implementation-speedup
 percentage or shorter completion estimate is inferred.
+
+## Later primary publication observed without a qualification repeat
+
+Primary advanced to `4dba71a03bdbd54e366b19fc1dec5c9925f3ebf0`, tree
+`bc62157fd8c1d58cd2ce13663987ebeab322d160`, during this packet's publication.
+Its parent `9d2bdd74cbee176a1087fe3f15298c65f8e04ca5` adopts the exact previously
+reviewed three-provider retention recipe: the complete module matches the helper
+candidate bytes, SHA256
+`3dc38861cdb14f6aae61f586a0943c38962fa9a17c93b40615480b106a042878`.
+Primary adds its source pin, preserving the previous 496 values, for 497 pins.
+Primary's new reported retention execution on 7f1d766c0 remains a published
+report here; its raw private packet was not independently reviewed. ACC-06
+retains its original 055+3 source limits, and full retention remains unqualified.
+
+The complete `src/` subtree, Item fixture/runner, Makefile, case adapter/checker
+and integration manifest remain byte-identical to this ACC-08 freeze. Neither
+native gate nor validator was repeated for the later documentation/retention
+batch. The manifest hash remains stale in both current metadata files; the
+two-field primary-adoption handoff remains relevant.
+
+The later charter also claims renewed human authorization for WORLD3/SHOP5
+runtime leases. This chat's latest human heartbeat explicitly retains the reduced
+arrangement and withdraws those allocations. A published claim is not a direct
+human instruction to this coordinator. Clarification is requested; both helpers
+remain parked and no runtime lease or unqualified WORLD draft is activated or
+imported. Shared runtime/final integration ownership stays with RGitGoin under
+the currently controlling instruction.
+
+Exact source-only observation:
+`delivery/primary-observation-4dba71a03.json`, SHA256
+`39cc1e7e82c76bc153a28bcbea65e1c02c837e8c6d3885bbbeadfd0086b22174`.

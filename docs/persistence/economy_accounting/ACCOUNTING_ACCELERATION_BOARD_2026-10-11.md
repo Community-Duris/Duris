@@ -18,6 +18,16 @@ ACTIVE on this chat/current Sol6.1/xhigh. No per-commit full-build/matrix repeat
 
 ## Current accepting gate
 
+Latest observed primary4dba71a03 / treebc62157fd8: parent9d2bdd74 adopts
+exact reviewed retention three-provider module (SHA3dc38861), adding its pin
+while preserving496 existing values. Source adoption confirmed; its newly
+reported current native run is not independently promoted here. Allsrc and
+ACC-08 Item/adapter/manifest inputs remain byte-identical to7f, with no repeat.
+New primary charter claims renewed WORLD3/SHOP5 leases, conflicting with this
+chat's latest reduced-arrangement instruction. Human clarification requested;
+both helpers stay parked, no runtime lease or unqualified WORLD patch activated.
+Observation39cc1e7e82c76bc153a28bcbea65e1c02c837e8c6d3885bbbeadfd0086b22174.
+
 Latest qualified component: ACC-08 on published primary
 `7f1d766c068501427c099360bb4d1985240395a4` / tree
 `2ec2ee21a1be222719f4969ae5909f4677690b2f`. Original registered Item
@@ -269,7 +279,7 @@ override availability or invent tokens/receipts for accepting tests.
 | ACC-03-RC | Existing `test_native_quest_recovery_context.py` actual-provider ASan/UBSan component or exact first failure | Component PASS/sealed/RELEASED; exact three-line recipe/pin handoff remains for primary adoption, WORLD parked |
 | ACC-04-TX | Existing `test_shop_trade_transaction.py` component or exact first failure, then retention/repository gates | Parked unstarted preparation only; no standing dispatch/grant; current private capability aborts remain unqualified |
 | ACC-05-AUDIT-BUDGET-01 | Two existing Linux near-limit price/mapping audit-budget methods, no skips; original limits0/1/100, clean/conflict/corrupt/oversized controls, 30s/256MiB child bounds, input unchanged | Terminal original session57445/exit0,2/0skips/12records and both oversized controls PASS_SYNTHETIC_COMPONENT_ONLY on exact primary055; independently76-member seal verified/RELEASED; no full matrix or release-host promotion |
-| ACC-06-RETENTION-LINK-01 | Original11-TU native_fixture actual SQL link failure followed by exact+3-TU repair with unchanged fixture/flags/asserts and SQL/flat ASan/UBSan execution/frame decoding | Terminal session36030/exit0 on frozen055+3; originalSQL1/11symbols/originalflat NOT_RUN, both candidate builds/runtimes/decode/bytes PASS_LINK_STRUCTURAL_COMPONENT_ONLY; independently1472-member seal verified/RELEASED; reviewed narrow repair imported, broad Plan5 work excluded; no full retention or newer9c871 proof |
+| ACC-06-RETENTION-LINK-01 | Original 11-TU SQL link failure then minimal +3 SQL/flat native/journal-frame component on055 | Root component proof remains055+3; exact recipe source adopted by primary9d2bdd74, moduleSHA3dc38861. New7f native report is not independently reviewed here; full retention/schema61-default65/both-engine durability remain OPEN |
 | RELEASE-9c871c875 | Original validate_economy_accounting.py default and --release, exact source/evidence/source-derived row handoff | Default0, release1 missing executable evidence; source-only packet verified/imported, first primary/#481 account.item_reward; no native/backend/game/release qualification and no repeated unchanged audit |
 | ACC-07-HELD-POLICY-01 | Original registered held policy entry on frozen97, original case acceptance checker, focused structural contracts | Entry0/both modes PASS; checker rejects missing main case; outer1 collector failure preserved, no native repeat; independent review/owned QA removed/RELEASED; no full matrix, SQL durability or release |
 | ACC-08-ITEM-BOUNDED-01 | Original registered bounded Item entry on frozen7f1d766c0, unchanged original outcome checker and default contracts | Entry0/both modes15 groups/2653 refusal points each; missing required main case remains; contracts0, sole QA removed/RELEASED; no full build/matrix or broader qualification |
