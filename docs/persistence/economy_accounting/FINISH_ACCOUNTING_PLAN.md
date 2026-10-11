@@ -18755,3 +18755,8 @@ Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
 ## Exact schema64/65 history source integrated - 2026-10-10
 
 [Source integration](PLAN5_EXACT_SCHEMA64_65_HISTORY_PRIMARY_INTEGRATION_2026-10-10.md): restore qualifier preserves all seven receipt fields and supports three authentic64 and six65 histories. Partial fixtures correctly stop at63; genuine64/65 acceptance and session cleanup cases are retained. Independent packet/final Source review and inventory refresh pass. Tests/database/recovery remain in the major-plan batch; no runtime qualification or plan completion is claimed. Inactive/CLOSED, release BLOCKED, goal ACTIVE.
+
+
+## Frozen backup/restore runtime profiles integrated - 2026-10-10
+
+[Source integration](PLAN5_RUNTIME_PROFILE_PRIMARY_INTEGRATION_2026-10-10.md): completed Plan5 profile slice now binds frozen schema64/65 selection throughout operator capture and restore, preserves exact legacy64 compatibility, archives the140 primary migration inputs and refuses unmeasured65. Independent167/final Source review and inventory refresh pass. Five tests and two fixture updates are integrated; execution remains in the major-plan batch. Archive coherence, room/report wiring and native recovery/release qualification remain open. Inactive/CLOSED, release BLOCKED, goal ACTIVE.
