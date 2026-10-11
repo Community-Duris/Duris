@@ -4357,3 +4357,165 @@ bool player_item_snapshot_list_decode_initial_inline_bytes(size_t *out) noexcept
 	*out = sizeof(decoder) + sizeof(std::vector<player_item_snapshot>);
 	return true;
 }
+
+// Distinct SOURCE contract for player_item_snapshot_list_decode_bounded.
+// Neither the original unbounded decoder nor its SOURCE getter is substituted.
+namespace
+{
+template <class T> constexpr size_t item_bounded_list_numeric_source =
+	// Actual bounded forwarding this/value/result surrounds decoder::number.
+	2 * sizeof(void *) + sizeof(bool) + item_codec_decode_number_source<T>;
+constexpr size_t item_bounded_list_numbers_missing =
+	item_bounded_list_numeric_source<int32_t> + item_bounded_list_numeric_source<int16_t> +
+	item_bounded_list_numeric_source<uint64_t> + item_bounded_list_numeric_source<int64_t> +
+	item_bounded_list_numeric_source<int8_t> + item_bounded_list_numeric_source<uint8_t> +
+	item_bounded_list_numeric_source<uint32_t> +
+	// boolean forwarding this/value/result, then original boolean this/value,
+	// encoded uint8_t and return. Its numeric descendant is above.
+	4 * sizeof(void *) + sizeof(uint8_t) + 2 * sizeof(bool);
+template <class T> constexpr size_t item_bounded_list_vector_control_missing =
+	// The actual own subtotal holds this/values/range/value, both Read objects,
+	// count, two size_t and one bool. Add the two genuine range iterators,
+	// remaining next/added/own/request scalars (four total), function return
+	// alongside object_rows, size() temporary bound to std::max, and resize
+	// wrapper's this/new_size. Library iterator/vector leaves are credited below.
+	2 * sizeof(typename std::vector<T>::iterator) + 3 * sizeof(size_t) + sizeof(bool) +
+	sizeof(void *) + sizeof(size_t);
+constexpr size_t item_bounded_list_array_missing =
+	// Five actual array range loops: values,timers,bitvectors,affects,inner pair.
+	// Existing decode_items owns the current value reference in each. Their
+	// hidden range/begin/end carriers3P. Captured GNU13 array::begin/end
+	// each owns this/returned pointer2P and calls data(this/returned pointer)
+	// 2P; end uses the fixed template _Nm directly. There is no _S_ptr leaf
+	// and no runtime size() in this actual selected array implementation.
+	// These 8P descendants are distinct from normal_iterator source credits.
+	5 * (3 * sizeof(void *) + 8 * sizeof(void *));
+constexpr size_t item_bounded_list_callbacks_missing =
+	// decode_items owns outer row lambda's this/value. Three nested actual
+	// affect/description/spell call operators each add this/value; all four
+	// returned bools are distinct from the vector's object_rows bool. All Read
+	// closure storage (exact in-reference capture) is already own-admitted.
+	3 * 2 * sizeof(void *) + 4 * sizeof(bool);
+constexpr size_t item_bounded_list_observation_missing =
+	// Actual old observation=18P+7N+3B credits peak(2P2N+B), heap formal/current
+	// refs(5P+B), three genuine capacity receivers/results(3P3N), four iterator
+	// receiver/return pairs(8P), checked-add N+B and string capacity result N.
+	// Missing remainder of reached actual item_list_heap graph: scanner5P;
+	// five typed vector_heap bodies12P2N5B; string_heap and genuine const
+	// capacity/_M_is_local/data/local/pointer_to/addressof14P2B; checked-add P;
+	// remaining two typed normal_iterator begin/end/ctor/base/compare/++/*
+	// graph28P2B. No public CURRENT policy wrapper is reached here.
+	60 * sizeof(void *) + 2 * sizeof(size_t) + 9 * sizeof(bool) +
+	sizeof(size_t); // Actual peak constexpr observation scalar.
+constexpr size_t item_bounded_list_fill_missing =
+	// Exact old relationship request credits four 3P+N fill helper groups,
+	// one size_t conversion argument, can_fill bool and the real RA tag.
+	// Missing _M_fill_initialize2P+N/get_allocator2P; allocator specialization
+	// uninit_fill_n_a extra P+2B; RA __fill_n_a3P+N; integer-return N;
+	// __fill_a3P and scalar __fill_a1 3P+N. Same genuine value-fill leaf as the
+	// original relationships validator, with the named credit partition only.
+	14 * sizeof(void *) + 4 * sizeof(size_t) + 2 * sizeof(bool);
+template <class T> constexpr size_t item_bounded_list_move_missing()
+{
+	// Old move source owns vector temporary inline, swaps/copy-data and cleanup.
+	// Named uncovered get_allocator, actual const-allocator vector ctor,
+	// C++20 direct alloc_on_move and second allocator argument getter.
+	return 7 * sizeof(void *) + sizeof(std::allocator<T>) + 11 * sizeof(void *) +
+	       10 * sizeof(void *) + 2 * sizeof(void *) +
+	       // Actual internal std::move(__x)2P and swap-temp data default P.
+	       3 * sizeof(void *);
+}
+constexpr size_t item_bounded_list_lifetime_missing =
+	// Actual workspace generated destructor this; two empty outer/depth vector
+	// default chains (six real receivers each). Row member vector defaults
+	// already own five receivers; add _Vector_impl_data this for three types.
+	sizeof(void *) + 2 * 6 * sizeof(void *) + 3 * sizeof(void *) +
+	// Six strings: old default credit is string/hider/default allocator6P,
+	// init loop N/char and genuine allocator temporary. Missing const allocator
+	// copy4P/move-ref2P, local_data/pointer_to/addressof8P, init this+B chain,
+	// set_length/length/data/traits assign6P2N+char+B chain.
+	6 * (21 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(char) + 4 * sizeof(bool)) +
+	// Old string cleanup5P2N+B covers destructor/dispose/is_local/destroy and
+	// one data receiver, capacity and allocation count. Missing data return,
+	// real local_data8P, selected deallocation11P4N2B:20P4N2B per string.
+	6 * (20 * sizeof(void *) + 4 * sizeof(size_t) + 2 * sizeof(bool)) +
+	// Five actual vector types (outer,depth,dynamic,description,spell): old
+	// allocator subtotal owns _Destroy range and deallocation signatures.
+	// Add vector/base/allocator cleanup4P, get-allocator2P and constant-query
+	// results2B. Outer/description nontrivial destroy adds destroy_at and
+	// __addressof3P each, plus nested description pointer _Destroy P; both
+	// actual _Destroy constant-query results. Generated row/destructor this
+	// already belongs to the old nontrivial subtotal.
+	5 * (6 * sizeof(void *) + 2 * sizeof(bool)) + 7 * sizeof(void *) + 2 * sizeof(bool) +
+	// _Construct and __uninitialized_default_n constant-evaluation returns
+	// for the four actual row/dynamic/description/spell instantiations.
+	4 * 2 * sizeof(bool) + item_bounded_list_move_missing<player_item_snapshot>() +
+	item_bounded_list_move_missing<size_t>() +
+	2 * sizeof(void *); // Actual public std::move(work.items).
+constexpr size_t item_bounded_list_missing_source =
+	item_bounded_list_numbers_missing +
+	item_bounded_list_vector_control_missing<player_item_snapshot> +
+	item_bounded_list_vector_control_missing<player_item_dynamic_affect_snapshot> +
+	item_bounded_list_vector_control_missing<player_item_extra_description_snapshot> +
+	item_bounded_list_vector_control_missing<int32_t> + item_bounded_list_array_missing +
+	item_bounded_list_callbacks_missing + item_bounded_list_observation_missing +
+	item_bounded_list_fill_missing + item_bounded_list_lifetime_missing +
+	// Public/decode_items constexpr own, relationship own/request, bad_alloc
+	// reference; live_frame ctor(this,owner,count) and destructor(this). Frame
+	// OBJECTS already belong to each actual old own subtotal, never here.
+	4 * sizeof(size_t) + sizeof(void *) + 3 * sizeof(void *) + sizeof(size_t) +
+	// Traits copy/assign constant-evaluation results in actual string mutation.
+	2 * sizeof(bool);
+constexpr size_t item_bounded_list_existing_public_source =
+	5 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(player_snapshot_codec_result) +
+	sizeof(bool);
+constexpr size_t item_bounded_list_existing_string_source =
+	3 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(uint32_t) + sizeof(bool);
+constexpr size_t item_bounded_list_existing_vector_source =
+	// Four distinct actual Read<T> instantiations, each captures only in by
+	// reference. This is a conservative union of reached typed helper scopes,
+	// not a multiplication by the number of decoded objects or rows.
+	4 * (4 * sizeof(void *) + 2 * sizeof(void *) + sizeof(uint32_t) + sizeof(bool) +
+	     2 * sizeof(size_t));
+constexpr size_t item_bounded_list_existing_items_source = 10 * sizeof(void *) + sizeof(bool);
+constexpr size_t item_bounded_list_existing_relationship_source =
+	3 * sizeof(void *) + sizeof(size_t) + sizeof(int32_t) + sizeof(bool);
+constexpr size_t item_bounded_list_existing_observation_source =
+	7 * sizeof(void *) + 4 * sizeof(size_t) + 3 * sizeof(bool) +
+	3 * (sizeof(void *) + sizeof(size_t)) + 4 * (2 * sizeof(void *));
+constexpr size_t item_bounded_list_existing_fill_source =
+	// Excludes separate old inline returned depth vector and fill value.
+	4 * (3 * sizeof(void *) + sizeof(size_t)) + sizeof(size_t) + sizeof(bool) +
+	sizeof(std::random_access_iterator_tag);
+constexpr size_t item_bounded_list_complete_source =
+	item_bounded_list_existing_public_source + item_bounded_list_existing_string_source +
+	item_bounded_list_existing_vector_source + item_bounded_list_existing_items_source +
+	item_bounded_list_existing_relationship_source +
+	item_bounded_list_existing_observation_source + item_list_vector_frames +
+	item_list_string_frames + item_list_nontrivial_frames + item_list_move_frames +
+	item_list_size_constructor_frames + item_bounded_list_existing_fill_source +
+	item_bounded_list_missing_source;
+}
+bool player_item_snapshot_list_decode_bounded_source_frame_bytes(size_t *out) noexcept
+{
+	if (!out || !item_codec_source_policy())
+		return false;
+	*out = item_bounded_list_complete_source;
+	return true;
+}
+bool player_item_snapshot_list_decode_bounded_source_supplement_frame_bytes(size_t *out) noexcept
+{
+	if (!out || !item_codec_source_policy())
+		return false;
+	*out = item_bounded_list_missing_source;
+	return true;
+}
+bool player_item_snapshot_list_decode_bounded_initial_inline_bytes(size_t *out) noexcept
+{
+	if (!out || !item_codec_source_policy())
+		return false;
+	// The original first reservation precedes construction of workspace,
+	// public frame and bounded decoder; it already prospectively owns them.
+	*out = 0;
+	return true;
+}
