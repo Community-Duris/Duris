@@ -62,4 +62,40 @@ chaos_pouch_ledger_result chaos_pouch_ledger_overlay(const player_item_snapshot 
 bool chaos_pouch_ledger_counters_equal(const player_item_snapshot &left,
 				       const player_item_snapshot &right);
 
+// Genuine controller present before the original first admit callback. The
+// later prepare_frame/verify_frame and all Source/library work are separate;
+// this is not the mixed original own allowance or any retained heap baseline.
+bool chaos_pouch_ledger_prepare_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t chaos_pouch_ledger_prepare_initial_query_frame_bytes() noexcept
+{
+	// Getter output pointer and returned bool; scalar result is caller-owned.
+	return sizeof(size_t *) + sizeof(bool);
+}
+bool chaos_pouch_ledger_verify_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t chaos_pouch_ledger_verify_initial_query_frame_bytes() noexcept
+{
+	// Getter output pointer and returned bool; scalar result is caller-owned.
+	return sizeof(size_t *) + sizeof(bool);
+}
+
+// Pure, strong-output Source profiles for the actual unchanged bounded ledger
+// methods. Callers own inputs/usage/prior output and physical alias heaps once.
+// Admit full+initial transiently before entry; retain only the positive genuine
+// supplement in outer during the original child. Historical library inventories
+// are not full providers. Queries allocate nothing and observe no live objects.
+bool chaos_pouch_ledger_prepare_source_frame_bytes(size_t *) noexcept;
+bool chaos_pouch_ledger_prepare_source_supplement_frame_bytes(size_t *) noexcept;
+bool chaos_pouch_ledger_verify_source_frame_bytes(size_t *) noexcept;
+bool chaos_pouch_ledger_verify_source_supplement_frame_bytes(size_t *) noexcept;
+// Export output+return; helper output/two flags/return+two local size_t;
+// selected lower query output/policy/return; checked-add ref/size/return.
+constexpr size_t chaos_pouch_ledger_prepare_source_query_frame_bytes() noexcept
+{
+	return 4 * sizeof(void *) + 3 * sizeof(size_t) + 7 * sizeof(bool);
+}
+constexpr size_t chaos_pouch_ledger_verify_source_query_frame_bytes() noexcept
+{
+	return 4 * sizeof(void *) + 3 * sizeof(size_t) + 7 * sizeof(bool);
+}
+
 #endif
