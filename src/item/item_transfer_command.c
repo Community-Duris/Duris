@@ -10383,3 +10383,3184 @@ bool item_transfer_native_recovery_valid_complete_initial_inline_bytes(size_t *)
 	return false;
 }
 #endif
+
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) && \
+	!defined(_GLIBCXX_CONCEPT_CHECKS)
+namespace
+{
+struct item_native_shape_complete_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const std::vector<uint8_t> *exact = nullptr;
+	const quest_reward_continuation *terms = nullptr;
+	bool prefix(size_t &result, size_t extra = 0) const noexcept
+	{
+		size_t total = outer;
+		if (!payload_clone_add(total, sizeof(*this)) || !payload_clone_add(total, frames) ||
+		    (exact && (!payload_clone_add(total, sizeof(*exact)) ||
+			       !payload_clone_vector_heap(*exact, false, total))) ||
+		    (terms && (!payload_clone_add(total, sizeof(*terms)) ||
+			       !payload_clone_string_heap(terms->character_name, false, total) ||
+			       !payload_clone_string_heap(terms->definition_id, false, total))) ||
+		    !payload_clone_add(total, extra))
+			return false;
+		result = total;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && reserve && reserve(total, context);
+	}
+};
+namespace item_native_decl_source
+{
+constexpr size_t P = sizeof(void *), N = sizeof(size_t), B = sizeof(bool);
+constexpr size_t F = sizeof(bool (*)(size_t, void *) noexcept);
+constexpr size_t item_complete_native_cost_value_owned_own_source = 2 * P + N + B;
+constexpr size_t item_complete_native_cost_value_wrapper_own_source = 3 * P + F + 2 * N + B;
+} // namespace item_native_decl_source
+constexpr size_t item_complete_native_cost_encode_child_own_source =
+	// input reference, output/context2P, actual reserve function-pointer F,
+	// outer/query plus source/initial/supplement/request/child_outer7N, returned enum.
+	sizeof(void *) + 2 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) +
+	7 * sizeof(size_t) + sizeof(native_quest_cost_projection_result);
+constexpr size_t item_complete_native_cost_encode_child_query_source =
+	3 * native_quest_cost_projection_encode_source_query_frame_bytes();
+
+} // namespace
+namespace
+{
+constexpr size_t item_complete_native_cost_value_controller_source =
+	// Exact/terms selectors: this endpoint sets only exact byte vector.
+	// Prefix2P2N+B; peakP2N+B; checked add P+N+B; actual reserve callback P+N+B.
+	2 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) + sizeof(void *) +
+	2 * sizeof(size_t) + sizeof(bool) + 2 * (sizeof(void *) + sizeof(size_t) + sizeof(bool)) +
+	// Actual false byte heap helper refs2P,countN,fresh/return2B + capacityP+N.
+	3 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(bool);
+constexpr size_t item_complete_native_cost_value_lifetime_source =
+	// Plain empty exact vector, then populated/empty destruction after child.
+	6 * sizeof(void *) + item_complete_native_vector_cleanup_source<uint8_t>;
+constexpr size_t item_complete_native_cost_value_direct_source =
+	// payload attempts.empty(): const vector receiver/returnB, real two CI
+	// operands, begin/end receiver2P, both ctor occurrences4P, ==2P+B/base4P.
+	13 * sizeof(void *) + 2 * sizeof(std::vector<native_quest_cost_attempt>::const_iterator) +
+	2 * sizeof(bool) +
+	// Actual no-argument supported-policy returned bool in wrapper.
+	sizeof(bool);
+constexpr size_t item_complete_native_cost_value_retained_source =
+	item_native_decl_source::item_complete_native_cost_value_wrapper_own_source +
+	item_native_decl_source::item_complete_native_cost_value_owned_own_source +
+	item_complete_native_cost_value_controller_source +
+	item_complete_native_cost_value_lifetime_source +
+	item_complete_native_cost_value_direct_source +
+	item_complete_native_cost_encode_child_own_source +
+	item_complete_native_cost_encode_child_query_source;
+} // namespace
+
+namespace
+{
+native_quest_cost_projection_result item_complete_native_cost_encode_child(
+	const native_quest_cost_projection &input, std::vector<uint8_t> *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept
+{
+	constexpr size_t query = 3 * native_quest_cost_projection_encode_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0;
+	size_t request = outer, child_outer = outer;
+	// These are three distinct genuine scalar getter call occurrences. Their
+	// output values are already the parent's actual adapter-owned locals.
+	if (!payload_clone_add(request, query) || !reserve || !reserve(request, context) ||
+	    !native_quest_cost_projection_encode_source_frame_bytes(&source) ||
+	    !native_quest_cost_projection_encode_initial_inline_bytes(&initial) ||
+	    !native_quest_cost_projection_encode_source_supplement_frame_bytes(&supplement))
+		return native_quest_cost_projection_result::allocation_failure;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context) || !payload_clone_add(child_outer, supplement))
+		return native_quest_cost_projection_result::allocation_failure;
+	return native_quest_cost_projection_encode_bounded(input, output, reserve, context,
+							   child_outer);
+}
+
+bool item_native_cost_value_valid_complete_owned(const item_transfer_payload &payload,
+						 item_native_shape_complete_budget &budget)
+{
+	if (!payload.native_cost.present || !payload.native_cost.wallet_mapping_id ||
+	    payload.native_mobile.action != item_native_mobile_action::consumption ||
+	    payload.native_cost.projection.attempts.empty())
+		return false;
+	if (!budget.peak(sizeof(std::vector<uint8_t>)))
+		return false;
+	std::vector<uint8_t> exact;
+	budget.exact = &exact;
+	size_t admission_prefix = 0;
+	if (!budget.prefix(admission_prefix))
+		return false;
+	return item_complete_native_cost_encode_child(payload.native_cost.projection, &exact,
+						      budget.reserve, budget.context,
+						      admission_prefix) ==
+	       native_quest_cost_projection_result::ok;
+}
+} // namespace
+bool item_transfer_native_cost_value_valid_complete_bounded(
+	const item_transfer_payload &payload, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	if (!reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = item_complete_native_cost_value_retained_source;
+	item_native_shape_complete_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	try
+	{
+		return item_native_cost_value_valid_complete_owned(payload, budget);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_transfer_native_cost_value_valid_complete_source_frame_bytes(size_t *bytes) noexcept
+{
+	if (!bytes || !payload_clone_policy_supported())
+		return false;
+	size_t total = item_complete_native_cost_value_retained_source, child = 0;
+	if (!native_quest_cost_projection_encode_source_frame_bytes(&child) ||
+	    !payload_clone_add(total, child))
+		return false;
+	*bytes = total;
+	return true;
+}
+bool item_transfer_native_cost_value_valid_complete_source_supplement_frame_bytes(
+	size_t *bytes) noexcept
+{
+	if (!bytes || !payload_clone_policy_supported())
+		return false;
+	*bytes = 0;
+	return true;
+}
+bool item_transfer_native_cost_value_valid_complete_initial_inline_bytes(size_t *bytes) noexcept
+{
+	if (!bytes || !payload_clone_policy_supported())
+		return false;
+	*bytes = sizeof(item_native_shape_complete_budget);
+	return true;
+}
+
+#else
+bool item_transfer_native_cost_value_valid_complete_bounded(const item_transfer_payload &,
+							    bool (*)(size_t, void *) noexcept,
+							    void *, size_t) noexcept
+{
+	return false;
+}
+bool item_transfer_native_cost_value_valid_complete_source_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_native_cost_value_valid_complete_source_supplement_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_native_cost_value_valid_complete_initial_inline_bytes(size_t *) noexcept
+{
+	return false;
+}
+#endif
+
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) && \
+	!defined(_GLIBCXX_CONCEPT_CHECKS)
+namespace
+{
+struct item_native_wire_encode_complete_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const std::vector<uint8_t> *first = nullptr, *second = nullptr, *value = nullptr;
+	const item_transfer_payload *original = nullptr;
+	bool prefix(size_t &result, size_t extra = 0) const noexcept
+	{
+		size_t total = outer;
+		if (!payload_clone_add(total, sizeof(*this)) || !payload_clone_add(total, frames) ||
+		    (first && (!payload_clone_add(total, sizeof(*first)) ||
+			       !payload_clone_vector_heap(*first, false, total))) ||
+		    (second && (!payload_clone_add(total, sizeof(*second)) ||
+				!payload_clone_vector_heap(*second, false, total))) ||
+		    (value && (!payload_clone_add(total, sizeof(*value)) ||
+			       !payload_clone_vector_heap(*value, false, total))) ||
+		    (original && (!payload_clone_add(total, sizeof(*original)) ||
+				  !payload_clone_heap(*original, false, total))) ||
+		    !payload_clone_add(total, extra))
+			return false;
+		result = total;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && reserve && reserve(total, context);
+	}
+	bool growth(const std::vector<uint8_t> &bytes, size_t count) const noexcept
+	{
+		size_t request = 0;
+		if (count > bytes.max_size() - bytes.size())
+			return false;
+		if (count > bytes.capacity() - bytes.size())
+		{
+			size_t next = bytes.size();
+			if (!payload_clone_add(next, std::max(bytes.size(), count)) ||
+			    next > bytes.max_size())
+				next = bytes.max_size();
+			if (!payload_clone_add(request, next))
+				return false;
+		}
+		return peak(request);
+	}
+	bool clone_payload(const item_transfer_payload &source) const noexcept
+	{
+		size_t request = 0;
+		return item_transfer_payload_fresh_copy_request_bytes(source, &request) &&
+		       payload_clone_add(request, sizeof(item_transfer_payload)) && peak(request);
+	}
+};
+struct item_native_wire_decode_complete_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const item_transfer_payload *payload = nullptr;
+	const critical_command *expected = nullptr;
+	const std::vector<uint8_t> *canonical = nullptr;
+	const quest_reward_continuation *terms = nullptr;
+	bool prefix(size_t &result, size_t extra = 0) const noexcept
+	{
+		size_t total = outer;
+		if (!payload_clone_add(total, sizeof(*this)) || !payload_clone_add(total, frames) ||
+		    (payload && (!payload_clone_add(total, sizeof(*payload)) ||
+				 !payload_clone_heap(*payload, false, total))) ||
+		    (canonical && (!payload_clone_add(total, sizeof(*canonical)) ||
+				   !payload_clone_vector_heap(*canonical, false, total))) ||
+		    (expected &&
+		     (!payload_clone_add(total, sizeof(*expected)) ||
+		      !payload_clone_vector_heap(expected->keys, false, total) ||
+		      !payload_clone_vector_heap(expected->expected_revisions, false, total) ||
+		      !payload_clone_vector_heap(expected->payload, false, total) ||
+		      !payload_clone_vector_heap(expected->accounting_intent, false, total))) ||
+		    (terms && (!payload_clone_add(total, sizeof(*terms)) ||
+			       !payload_clone_string_heap(terms->character_name, false, total) ||
+			       !payload_clone_string_heap(terms->definition_id, false, total))) ||
+		    !payload_clone_add(total, extra))
+			return false;
+		result = total;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && reserve && reserve(total, context);
+	}
+};
+} // namespace
+
+namespace
+{
+namespace item_native_decl_source
+{
+constexpr size_t item_complete_native_fee_shape_owned_own_source = 5 * P + N + 2 * B;
+constexpr size_t item_complete_native_fee_shape_wrapper_own_source = 3 * P + F + 2 * N + 2 * B;
+constexpr size_t item_complete_native_fee_encode_owned_own_source = 3 * P + 2 * N + 2 * B;
+constexpr size_t item_complete_native_fee_encode_wrapper_own_source = 4 * P + F + 2 * N + 2 * B;
+constexpr size_t item_complete_native_fee_decode_owned_own_source = 4 * P + 6 * N + 2 * B;
+constexpr size_t item_complete_native_fee_decode_wrapper_own_source = 4 * P + F + 2 * N + B;
+constexpr size_t item_complete_native_money_shape_owned_own_source = 5 * P + N + 2 * B;
+constexpr size_t item_complete_native_money_shape_wrapper_own_source = 3 * P + F + 2 * N + 2 * B;
+constexpr size_t item_complete_native_money_encode_owned_own_source = 3 * P + 2 * N + 2 * B;
+constexpr size_t item_complete_native_money_encode_wrapper_own_source = 4 * P + F + 2 * N + 2 * B;
+constexpr size_t item_complete_native_money_decode_owned_own_source = 4 * P + 2 * N + 2 * B;
+constexpr size_t item_complete_native_money_decode_wrapper_own_source = 4 * P + F + 2 * N + B;
+} // namespace item_native_decl_source
+
+} // namespace
+
+namespace
+{
+constexpr size_t item_complete_native_cost_decode_child_own_source =
+	// input span object, output/context2P, actual reserve function-pointer F,
+	// outer/query plus source/initial/supplement/request/child_outer7N, returned enum.
+	sizeof(std::span<const uint8_t>) + 2 * sizeof(void *) +
+	sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	sizeof(native_quest_cost_projection_result);
+constexpr size_t item_complete_native_cost_decode_child_span_call_source =
+	// Actual child call copies adapter span lvalue into by-value input2P;
+	// explicitly declared adapter span destructor receiverP. Child owns its
+	// own span formal/destructor; pointer/count expression belongs caller.
+	3 * sizeof(void *);
+constexpr size_t item_complete_native_cost_decode_child_query_source =
+	3 * native_quest_cost_projection_decode_source_query_frame_bytes();
+constexpr size_t item_complete_native_money_encode_child_own_source =
+	// input reference, output/context2P, actual reserve function-pointer F,
+	// outer/query plus source/initial/supplement/request/child_outer7N, returned enum.
+	sizeof(void *) + 2 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) +
+	7 * sizeof(size_t) + sizeof(native_quest_coin_give_result);
+constexpr size_t item_complete_native_money_encode_child_query_source =
+	3 * native_quest_coin_give_encode_source_query_frame_bytes();
+constexpr size_t item_complete_native_money_decode_child_own_source =
+	// input span object, output/context2P, actual reserve function-pointer F,
+	// outer/query plus source/initial/supplement/request/child_outer7N, returned enum.
+	sizeof(std::span<const uint8_t>) + 2 * sizeof(void *) +
+	sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	sizeof(native_quest_coin_give_result);
+constexpr size_t item_complete_native_money_decode_child_span_call_source =
+	// Actual child call copies adapter span lvalue into by-value input2P;
+	// explicitly declared adapter span destructor receiverP. Child owns its
+	// own span formal/destructor; pointer/count expression belongs caller.
+	3 * sizeof(void *);
+constexpr size_t item_complete_native_money_decode_child_query_source =
+	3 * native_quest_coin_give_decode_source_query_frame_bytes();
+constexpr size_t item_complete_native_reference_encode_child_query_source =
+	3 * quest_mobile_native_reference_encode_source_query_frame_bytes();
+constexpr size_t item_complete_native_reference_decode_child_own_source =
+	// input span object, output/context2P, actual reserve function-pointer F,
+	// outer/query plus source/initial/supplement/request/child_outer7N, returned enum.
+	sizeof(std::span<const uint8_t>) + 2 * sizeof(void *) +
+	sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	sizeof(player_snapshot_codec_result);
+constexpr size_t item_complete_native_reference_decode_child_span_call_source =
+	// Actual child call copies adapter span lvalue into by-value input2P;
+	// explicitly declared adapter span destructor receiverP. Child owns its
+	// own span formal/destructor; pointer/count expression belongs caller.
+	3 * sizeof(void *);
+constexpr size_t item_complete_native_reference_decode_child_query_source =
+	3 * quest_mobile_native_reference_decode_source_query_frame_bytes();
+} // namespace
+
+namespace
+{
+native_quest_cost_projection_result item_complete_native_cost_decode_child(
+	std::span<const uint8_t> input, native_quest_cost_projection *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept
+{
+	constexpr size_t query = 3 * native_quest_cost_projection_decode_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0;
+	size_t request = outer, child_outer = outer;
+	// These are three distinct genuine scalar getter call occurrences. Their
+	// output values are already the parent's actual adapter-owned locals.
+	if (!payload_clone_add(request, query) || !reserve || !reserve(request, context) ||
+	    !native_quest_cost_projection_decode_source_frame_bytes(&source) ||
+	    !native_quest_cost_projection_decode_initial_inline_bytes(&initial) ||
+	    !native_quest_cost_projection_decode_source_supplement_frame_bytes(&supplement))
+		return native_quest_cost_projection_result::allocation_failure;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context) || !payload_clone_add(child_outer, supplement))
+		return native_quest_cost_projection_result::allocation_failure;
+	return native_quest_cost_projection_decode_bounded(input, output, reserve, context,
+							   child_outer);
+}
+
+} // namespace
+
+namespace
+{
+native_quest_coin_give_result item_complete_native_money_encode_child(
+	const native_quest_coin_give_projection &input, std::vector<uint8_t> *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept
+{
+	constexpr size_t query = 3 * native_quest_coin_give_encode_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0;
+	size_t request = outer, child_outer = outer;
+	// These are three distinct genuine scalar getter call occurrences. Their
+	// output values are already the parent's actual adapter-owned locals.
+	if (!payload_clone_add(request, query) || !reserve || !reserve(request, context) ||
+	    !native_quest_coin_give_encode_source_frame_bytes(&source) ||
+	    !native_quest_coin_give_encode_initial_inline_bytes(&initial) ||
+	    !native_quest_coin_give_encode_source_supplement_frame_bytes(&supplement))
+		return native_quest_coin_give_result::allocation_failure;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context) || !payload_clone_add(child_outer, supplement))
+		return native_quest_coin_give_result::allocation_failure;
+	return native_quest_coin_give_encode_bounded(input, output, reserve, context, child_outer);
+}
+
+} // namespace
+
+namespace
+{
+native_quest_coin_give_result item_complete_native_money_decode_child(
+	std::span<const uint8_t> input, native_quest_coin_give_projection *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept
+{
+	constexpr size_t query = 3 * native_quest_coin_give_decode_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0;
+	size_t request = outer, child_outer = outer;
+	// These are three distinct genuine scalar getter call occurrences. Their
+	// output values are already the parent's actual adapter-owned locals.
+	if (!payload_clone_add(request, query) || !reserve || !reserve(request, context) ||
+	    !native_quest_coin_give_decode_source_frame_bytes(&source) ||
+	    !native_quest_coin_give_decode_initial_inline_bytes(&initial) ||
+	    !native_quest_coin_give_decode_source_supplement_frame_bytes(&supplement))
+		return native_quest_coin_give_result::allocation_failure;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context) || !payload_clone_add(child_outer, supplement))
+		return native_quest_coin_give_result::allocation_failure;
+	return native_quest_coin_give_decode_bounded(input, output, reserve, context, child_outer);
+}
+
+} // namespace
+
+namespace
+{
+player_snapshot_codec_result item_complete_native_reference_decode_child(
+	std::span<const uint8_t> input, quest_mobile_native_reference *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept
+{
+	constexpr size_t query =
+		3 * quest_mobile_native_reference_decode_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0;
+	size_t request = outer, child_outer = outer;
+	// These are three distinct genuine scalar getter call occurrences. Their
+	// output values are already the parent's actual adapter-owned locals.
+	if (!payload_clone_add(request, query) || !reserve || !reserve(request, context) ||
+	    !quest_mobile_native_reference_decode_source_frame_bytes(&source) ||
+	    !quest_mobile_native_reference_decode_initial_inline_bytes(&initial) ||
+	    !quest_mobile_native_reference_decode_source_supplement_frame_bytes(&supplement))
+		return player_snapshot_codec_result::allocation_failure;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context) || !payload_clone_add(child_outer, supplement))
+		return player_snapshot_codec_result::allocation_failure;
+	return quest_mobile_native_reference_decode_bounded(input, output, reserve, context,
+							    child_outer);
+}
+
+} // namespace
+
+namespace
+{
+constexpr size_t item_complete_fee_reward_continuation_decode_child_own_source =
+	3 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 8 * sizeof(size_t) +
+	sizeof(bool);
+constexpr size_t item_complete_fee_reward_continuation_decode_child_query_source =
+	3 * quest_fee_reward_continuation_decode_source_query_frame_bytes();
+bool item_complete_fee_reward_continuation_decode_child(const uint8_t *data, size_t size,
+							quest_reward_continuation *output,
+							bool (*reserve)(size_t, void *) noexcept,
+							void *context, size_t outer) noexcept
+{
+	constexpr size_t query =
+		3 * quest_fee_reward_continuation_decode_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0;
+	size_t request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !quest_fee_reward_continuation_decode_source_frame_bytes(&source) ||
+	    !quest_fee_reward_continuation_decode_initial_inline_bytes(&initial) ||
+	    !quest_fee_reward_continuation_decode_source_supplement_frame_bytes(&supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	// The selecting parent retains its output terms and both string heaps.
+	// Full Source and INITIAL are transient; only the old child's uncovered
+	// Source remains in outer while its original owner admits its own fields.
+	return quest_fee_reward_continuation_decode_bounded(data, size, output, reserve, context,
+							    child_outer);
+}
+
+} // namespace
+
+namespace
+{
+template <class T> constexpr size_t item_payload_default_vector_source =
+	// vector/base/impl/data + selected allocator/new_allocator default receivers.
+	6 * sizeof(void *);
+constexpr size_t item_payload_default_string_local_source = 4 * 2 * sizeof(void *);
+constexpr size_t item_payload_default_string_init_source =
+	sizeof(void *) + sizeof(size_t) + sizeof(char) + sizeof(bool);
+constexpr size_t item_payload_default_string_set_length_source =
+	2 * (sizeof(void *) + sizeof(size_t)) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(char) + sizeof(bool);
+constexpr size_t item_payload_default_string_source =
+	// String receiver; hider receiver/data/default-allocator reference; genuine
+	// temporary allocator; allocator/new_allocator default and const-copy;
+	// move reference/result; real temporary allocator cleanup receiver.
+	// The new_allocator destructor declaration is PP-excluded in C++20.
+	sizeof(void *) + 3 * sizeof(void *) + sizeof(std::allocator<char>) + 2 * sizeof(void *) +
+	4 * sizeof(void *) + 2 * sizeof(void *) + sizeof(void *) +
+	item_payload_default_string_local_source + item_payload_default_string_init_source +
+	item_payload_default_string_set_length_source;
+constexpr size_t item_payload_aggregate_default_source =
+	// Six strings and six vectors are initialized sequentially, with no
+	// callback or nested member initialization through these leaf bodies.
+	// Four uint64 vectors reuse their completed typed lane. The byte/attempt
+	// specializations remain separate. No default/copy/move aggregate receiver
+	// is invented for recursive aggregate initialization of value = {}.
+	item_payload_default_string_source + item_payload_default_vector_source<uint8_t> +
+	item_payload_default_vector_source<uint64_t> +
+	item_payload_default_vector_source<native_quest_cost_attempt>;
+template <class T> constexpr size_t item_payload_cleanup_vector_source =
+	// Actual vector/base/generated _Vector_impl/allocator cleanup receivers.
+	// _Vector_impl is nontrivial because allocator has a declared destructor;
+	// the new_allocator destructor declaration is PP-excluded in C++20.
+	4 * sizeof(void *) +
+	// _Destroy(first,last,allocator), _Destroy(first,last), trivial aux<true>.
+	3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	// _M_get_Tp_allocator this/reference result; _M_deallocate, traits,
+	// allocator and new_allocator pointer/count receivers; sized delete;
+	// two actual predicate wrapper results: _Destroy and allocator deallocate.
+	// Their calls are separate; no intrinsic result is invented. T is trivial.
+	2 * sizeof(void *) + 4 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) +
+	sizeof(size_t) + 2 * sizeof(bool);
+constexpr size_t item_payload_cleanup_string_source =
+	// String/dispose/is-local/destroy receivers, destroy size and locality bool.
+	4 * sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+	// Actual const data and local_data/pointer_to/addressof/__addressof.
+	2 * sizeof(void *) + 4 * 2 * sizeof(void *) +
+	// _M_get_allocator receiver/reference result. String destroy directly
+	// calls traits deallocate: it does not call vector _M_deallocate.
+	2 * sizeof(void *) + 3 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) +
+	sizeof(size_t) + sizeof(bool) +
+	// Actual hider/allocator destruction receivers. new_allocator destructor
+	// is PP-excluded in selected C++20; allocator predicate has one result.
+	2 * sizeof(void *);
+constexpr size_t item_payload_cleanup_source =
+	// Ten reached generated nontrivial aggregate destructor receiver sites:
+	// payload, corpse, collector, continuation, recovery, two forests,
+	// publication, native-cost context and native-cost projection.
+	10 * sizeof(void *) + item_payload_cleanup_string_source +
+	item_payload_cleanup_vector_source<uint8_t> + item_payload_cleanup_vector_source<uint64_t> +
+	item_payload_cleanup_vector_source<native_quest_cost_attempt>;
+constexpr size_t item_payload_caller_lifetime_source =
+	item_payload_aggregate_default_source + item_payload_cleanup_source;
+constexpr size_t item_complete_payload_plain_default_source =
+	item_payload_aggregate_default_source +
+	// Actual plain payload default constructors: payload/corpse/collector/
+	// continuation/native-mobile/reference/recovery/two forests/publication.
+	// native_cost={} and native_money={} initialize as aggregates, not these
+	// enclosing default constructor lanes; their members remain in aggregate.
+	10 * sizeof(void *);
+constexpr size_t item_complete_payload_move_additional_source =
+	// Exact ten nontrivial enclosing move sites from authenticated clone map:
+	// payload/corpse/collector/continuation/recovery/two forests/publication/
+	// native-cost context/projection. this/source/ref return3P per actual site.
+	// Scalar-only native mobile/money/owner/entry/arrays add no invented body.
+	10 * 3 * sizeof(void *) + 2 * sizeof(void *) +
+	// Genuine three typed equal-standard-allocator vector assignments. Their
+	// exact named cleanup subtree is already retained in lifetime above; this
+	// subtraction removes only that same subtree, not a whole copy envelope.
+	duris_craft_recipe_bounded_detail::complete_recipe_vector_move_selected_source<uint8_t> -
+	duris_craft_recipe_bounded_detail::member_vector_cleanup_source<uint8_t>() +
+	duris_craft_recipe_bounded_detail::complete_recipe_vector_move_selected_source<uint64_t> -
+	duris_craft_recipe_bounded_detail::member_vector_cleanup_source<uint64_t>() +
+	duris_craft_recipe_bounded_detail::complete_recipe_vector_move_selected_source<
+		native_quest_cost_attempt> -
+	duris_craft_recipe_bounded_detail::member_vector_cleanup_source<native_quest_cost_attempt>() +
+	// Selected complete string assignment graph, plus second genuine mutable
+	// allocator getter occurrence for two coexisting alloc_on_move references.
+	// Default, assignment and destruction are distinct actual phase occurrences;
+	// no unused COPY constructor/string allocation subtree is imported.
+	duris_craft_recipe_bounded_detail::member_string_move_assignment_source +
+	2 * sizeof(void *);
+constexpr size_t item_complete_payload_plain_move_cleanup_source =
+	item_complete_payload_plain_default_source + item_payload_cleanup_source +
+	item_complete_payload_move_additional_source;
+constexpr size_t item_complete_payload_aggregate_move_cleanup_source =
+	item_payload_caller_lifetime_source + item_complete_payload_move_additional_source;
+static_assert(std::is_trivially_destructible_v<native_quest_cost_attempt>);
+} // namespace
+
+namespace
+{
+template <class T> constexpr size_t item_complete_command_vector_copy_source =
+	(19 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(std::allocator<T>)) +
+	(11 * sizeof(void *) + 6 * sizeof(size_t) + sizeof(bool)) + 6 * sizeof(void *) +
+	// Trivial uninitialized-copy backend; actual _Num is ptrdiff_t.
+	// No bare builtin memmove callee, implicit trivial T assignment, or
+	// invented normal-iterator copy/move call. Actual wrapper objects stay.
+	46 * sizeof(void *) + sizeof(std::ptrdiff_t) + 4 * sizeof(bool) -
+	// The two begin/end result objects ARE the two by-value parameters.
+	2 * sizeof(void *);
+template <class T> constexpr size_t item_complete_command_vector_default_source =
+	// vector/base/Impl/allocator/newallocator/Impl_data constructors.
+	6 * sizeof(void *);
+constexpr size_t item_complete_command_aggregate_default_source =
+	item_complete_command_vector_default_source<critical_entity_key> +
+	item_complete_command_vector_default_source<critical_expected_revision> +
+	item_complete_command_vector_default_source<uint8_t>;
+constexpr size_t item_complete_command_plain_default_source =
+	// Plain command's generated nontrivial DMI default receiver is selected;
+	// expected{} instead aggregate-initializes members without this call.
+	sizeof(void *) + item_complete_command_aggregate_default_source;
+constexpr size_t item_complete_command_copy_source =
+	// Generated nontrivial command copy receiver/source; COPY construction.
+	2 * sizeof(void *) + item_complete_command_vector_copy_source<critical_entity_key> +
+	item_complete_command_vector_copy_source<critical_expected_revision> +
+	item_complete_command_vector_copy_source<uint8_t>;
+constexpr size_t item_complete_command_move_source =
+	// Generated nontrivial assignment receiver/source/ref return3P. The actual
+	// caller std::move<critical_command>2P belongs to the selecting parent.
+	3 * sizeof(void *) +
+	duris_craft_recipe_bounded_detail::complete_recipe_vector_move_selected_source<
+		critical_entity_key> +
+	duris_craft_recipe_bounded_detail::complete_recipe_vector_move_selected_source<
+		critical_expected_revision> +
+	duris_craft_recipe_bounded_detail::complete_recipe_vector_move_selected_source<uint8_t>;
+constexpr size_t item_complete_command_cleanup_source =
+	// Generated command destructor receiver and three actual typed tails.
+	// Payload/accounting_intent byte members reuse their completed same-T lane.
+	sizeof(void *) +
+	duris_craft_recipe_bounded_detail::member_vector_cleanup_source<critical_entity_key>() +
+	duris_craft_recipe_bounded_detail::member_vector_cleanup_source<
+		critical_expected_revision>() +
+	duris_craft_recipe_bounded_detail::member_vector_cleanup_source<uint8_t>();
+static_assert(std::is_trivial_v<critical_entity_key> &&
+	      std::is_trivial_v<critical_expected_revision>);
+static_assert(std::is_trivially_copyable_v<critical_entity_key> &&
+	      std::is_trivially_copyable_v<critical_expected_revision>);
+static_assert(std::is_trivially_destructible_v<critical_entity_key> &&
+	      std::is_trivially_destructible_v<critical_expected_revision>);
+} // namespace
+
+namespace
+{
+namespace item_native_control_source = duris_craft_recipe_bounded_detail;
+constexpr size_t item_complete_native_controller_checked_add_source =
+	sizeof(void *) + sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_native_controller_callback_source =
+	sizeof(void *) + sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_native_controller_prefix_peak_source =
+	// Same actual shape/encode/decode methods each have their own parent
+	// selected constant; equal widths do not merge distinct method bodies.
+	// prefix this/out, extra/total, returnedbool; peak this/extra/total/result.
+	2 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) + sizeof(void *) +
+	2 * sizeof(size_t) + sizeof(bool) + item_complete_native_controller_checked_add_source +
+	item_complete_native_controller_callback_source;
+template <class T> constexpr size_t item_complete_native_vector_current_source =
+	// Actual payload_clone_vector_heap(false): value/bytes refs,fresh/count/result,
+	// then selected capacity this/returnedN. size() true branch unselected.
+	2 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(bool) +
+	item_native_control_source::complete_recipe_vector_capacity_source<T>;
+constexpr size_t item_complete_native_string_current_source =
+	// Actual payload_clone_string_heap(false), string capacity/is_local and
+	// const data/local/pointer_to/addressof/__addressof. Same exact published
+	// recovery/current family, no fresh string size() or allocation imported.
+	2 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(bool) + sizeof(void *) + sizeof(size_t) +
+	11 * sizeof(void *) + sizeof(bool);
+constexpr size_t item_complete_native_fee_shape_controller_source =
+	item_complete_native_controller_prefix_peak_source +
+	// Only optional terms set; exact stays null in fee shape.
+	item_complete_native_string_current_source;
+constexpr size_t item_complete_native_money_shape_controller_source =
+	// Money shape sets neither exact nor terms. Cost-value's distinct budget
+	// and exact vector are child-owned and are not imported as this root.
+	item_complete_native_controller_prefix_peak_source;
+constexpr size_t item_complete_native_fee_money_encode_controller_source =
+	item_complete_native_controller_prefix_peak_source +
+	// first/second/value actual byte vectors set; original stays null in both
+	// fee/money encoders. Three heap calls sequentially share exact typed body.
+	item_complete_native_vector_current_source<uint8_t> +
+	// growth: this/bytes,count/request/next,returned bool. All count/capacity
+	// branches are possible; actual max_size,size,std::max added, capacity
+	// already in the live current observation family above.
+	2 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool) +
+	item_native_control_source::complete_recipe_vector_max_size_source<uint8_t> +
+	item_native_control_source::complete_recipe_vector_size_source<uint8_t> +
+	item_native_control_source::complete_recipe_size_max_source;
+constexpr size_t item_complete_native_payload_current_source =
+	// Actual payload_clone_heap(false): value/bytes refs,fresh/returnedbool.
+	// Its six strings/six vectors reduce only completed same-type families;
+	// each physical payload and all capacities remain separately in prefix.
+	2 * sizeof(void *) + 2 * sizeof(bool) + item_complete_native_string_current_source +
+	item_complete_native_vector_current_source<uint8_t> +
+	item_complete_native_vector_current_source<uint64_t> +
+	item_complete_native_vector_current_source<native_quest_cost_attempt>;
+constexpr size_t item_complete_native_fee_decode_controller_source =
+	item_complete_native_controller_prefix_peak_source +
+	item_complete_native_payload_current_source +
+	// expected keys/revisions additional typed false observers; expected's
+	// two byte fields and canonical byte already share payload's typed lane.
+	item_complete_native_vector_current_source<critical_entity_key> +
+	item_complete_native_vector_current_source<critical_expected_revision>;
+constexpr size_t item_complete_native_money_decode_controller_source =
+	// Same genuine method set under this distinct decode parent; no terms
+	// pointer is set, but actual payload has six string fields already mapped.
+	item_complete_native_fee_decode_controller_source;
+} // namespace
+
+namespace
+{
+namespace item_native_lifetime_source = duris_craft_recipe_bounded_detail;
+constexpr size_t item_complete_native_terms_lifetime_source =
+	// Actual plain quest_reward_continuation terms has generated nontrivial
+	// constructor/destructor receivers. Two strings reuse completed same-type
+	// default/cleanup families. Scalar/array and source{} DMIs add no calls.
+	2 * sizeof(void *) + item_payload_default_string_source +
+	item_payload_cleanup_string_source;
+constexpr size_t item_complete_native_empty_rhs_nonnull_deallocation_tail_source =
+	// Each RHS forest{} / cost_projection{} vector stays size/capacity0.
+	// Actual _M_deallocate(nullptr,0) reaches own2P+N only; these traits,
+	// allocator,newallocator and sized-delete descendants are unselected.
+	7 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_native_forest_aggregate_lifetime_source =
+	// Actual two binding{} temporaries share completed u64 member method
+	// families; enclosing aggregate constructor not called. Both physical
+	// forest objects are already retained once by accepted119 shape wrapper.
+	6 * sizeof(void *) + sizeof(void *) +
+	item_native_lifetime_source::member_vector_cleanup_source<uint64_t>() -
+	item_complete_native_empty_rhs_nonnull_deallocation_tail_source;
+constexpr size_t item_complete_native_empty_cost_projection_lifetime_source =
+	// native_quest_cost_projection{} aggregate temporary directly constructs
+	// attempts; genuine nontrivial enclosing destructor receiver is reached.
+	6 * sizeof(void *) + sizeof(void *) +
+	item_native_lifetime_source::member_vector_cleanup_source<native_quest_cost_attempt>() -
+	item_complete_native_empty_rhs_nonnull_deallocation_tail_source;
+constexpr size_t item_complete_native_fee_shape_lifetime_source =
+	item_complete_native_terms_lifetime_source +
+	item_complete_native_forest_aggregate_lifetime_source;
+constexpr size_t item_complete_native_money_shape_lifetime_source =
+	item_complete_native_empty_cost_projection_lifetime_source +
+	item_complete_native_forest_aggregate_lifetime_source +
+	// Separate actual plain projected DTO default has scalar/array DMIs;
+	// raw child candidate's own default receiver is a DIFFERENT call site.
+	sizeof(void *);
+constexpr size_t item_complete_native_byte_vector_lifetime_source =
+	// Genuine empty vector cost/money/recovery/canonical variable sites.
+	// Header count/value fill constructor is a separate operations fragment.
+	6 * sizeof(void *) + item_native_lifetime_source::member_vector_cleanup_source<uint8_t>();
+constexpr size_t item_complete_native_encode_value_move_source =
+	// Parent caller std::move2P, selected byte assignment closure. Exact
+	// named cleanup subtree already retained by byte lifetime above once.
+	2 * sizeof(void *) +
+	item_native_lifetime_source::complete_recipe_vector_move_selected_source<uint8_t> -
+	item_native_lifetime_source::member_vector_cleanup_source<uint8_t>();
+constexpr size_t item_complete_native_fee_money_encode_lifetime_source =
+	item_complete_native_byte_vector_lifetime_source +
+	item_complete_native_encode_value_move_source;
+constexpr size_t item_complete_native_money_decode_lifetime_source =
+	// Actual119 candidate/value is aggregate{}, not plain payload default.
+	item_complete_payload_aggregate_move_cleanup_source +
+	// Canonical byte and expected{} are distinct actual caller variables;
+	// these operation occurrences conservatively retain their real families.
+	item_complete_native_byte_vector_lifetime_source +
+	item_complete_command_aggregate_default_source + item_complete_command_cleanup_source;
+constexpr size_t item_complete_native_fee_decode_lifetime_source =
+	item_complete_native_money_decode_lifetime_source +
+	item_complete_native_terms_lifetime_source;
+} // namespace
+
+namespace
+{
+template <class T> constexpr size_t item_complete_native_integral_equal_tail_source =
+	// Same selected declared __equal_aux1, __equal<true> and __memcmp scopes
+	// for byte/int64/u64 integer pointers. Actual constant __simple object
+	// exists; its traits initializer introduces no runtime callee.
+	3 * sizeof(void *) + 2 * sizeof(bool) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(int) + sizeof(bool);
+template <class T, size_t Count> constexpr size_t item_complete_native_integral_array_equal_source =
+	// Actual array<T,Count> == refs/result; three const begin/end/data calls,
+	// raw equal/aux, three raw niter and genuine typed selected true tail.
+	2 * sizeof(void *) + sizeof(bool) + 12 * sizeof(void *) + 6 * sizeof(void *) +
+	2 * sizeof(bool) + 6 * sizeof(void *) + item_complete_native_integral_equal_tail_source<T>;
+template <class T> constexpr size_t item_complete_native_integral_vector_equal_source =
+	// vector<T> == refs/result and TWO real size calls. Endpoint results
+	// alias public equal formals; aux/niter iterator objects remain distinct.
+	2 * sizeof(void *) + sizeof(bool) + 2 * (sizeof(void *) + sizeof(size_t)) +
+	9 * sizeof(void *) + 6 * sizeof(typename std::vector<T>::const_iterator) +
+	2 * sizeof(bool) + 3 * sizeof(typename std::vector<T>::const_iterator) +
+	9 * sizeof(void *) + item_complete_native_integral_equal_tail_source<T>;
+constexpr size_t item_complete_native_empty_attempt_vector_equal_source =
+	// Native money compares projection against a fresh projection{} whose
+	// attempts size0. Size mismatch short-circuits; only equal-length zero
+	// reaches __equal<false>. Its element loop is unexecuted, so no attempt,
+	// requirement or nested cash comparisons belong to this selected lane.
+	2 * sizeof(void *) + sizeof(bool) + 2 * (sizeof(void *) + sizeof(size_t)) +
+	9 * sizeof(void *) + 6 * sizeof(std::vector<native_quest_cost_attempt>::const_iterator) +
+	2 * sizeof(bool) + 3 * sizeof(std::vector<native_quest_cost_attempt>::const_iterator) +
+	9 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(bool) + 3 * sizeof(void *) +
+	sizeof(bool);
+constexpr size_t item_complete_native_coin_projection_equal_source =
+	// Explicit defaulted equality this/other/result. Four same array<int64,4>
+	// members call their exact selected family sequentially; reuse only after
+	// each completed call. All four physical arrays remain input/output DTO.
+	2 * sizeof(void *) + sizeof(bool) +
+	item_complete_native_integral_array_equal_source<int64_t, 4>;
+constexpr size_t item_complete_native_empty_cost_projection_equal_source =
+	2 * sizeof(void *) + sizeof(bool) +
+	// Two exact cash-array member calls sequentially reuse their family.
+	item_complete_native_integral_array_equal_source<int64_t, 4> +
+	item_complete_native_empty_attempt_vector_equal_source;
+constexpr size_t item_complete_native_forest_value_equal_source =
+	// Explicit defaulted forest== receiver/other/result, actual digest array
+	// and UID vector. Both RHS forest{} calls share after completion; two real
+	// RHS objects/empty vectors stay separately physical in original119.
+	2 * sizeof(void *) + sizeof(bool) +
+	item_complete_native_integral_array_equal_source<uint8_t, 32> +
+	item_complete_native_integral_vector_equal_source<uint64_t>;
+template <class T> constexpr size_t item_complete_native_const_vector_empty_source =
+	// Empty root P+B, endpoint receiver/ctor6P, equality+base pair6P+B,
+	// with TWO genuine const iterator comparison operands, no qualifier temp.
+	13 * sizeof(void *) + 2 * sizeof(typename std::vector<T>::const_iterator) +
+	2 * sizeof(bool);
+constexpr size_t item_complete_native_absent_collector_helper_source =
+	// payload ref, local collector ref, version formal, returned bool. Only
+	// absent collector branch is reached after shape's explicit rejection.
+	2 * sizeof(void *) + sizeof(uint16_t) + sizeof(bool) +
+	item_complete_native_const_vector_empty_source<uint64_t>;
+constexpr size_t item_complete_native_publication_empty_standalone_source =
+	// Helper owns const terms ref/result. Actual string.empty invokes size;
+	// both fields sequentially share the same exact char-string families.
+	sizeof(void *) + sizeof(bool) +
+	duris_craft_recipe_bounded_detail::complete_recipe_string_empty_source +
+	duris_craft_recipe_bounded_detail::complete_recipe_string_size_source;
+constexpr size_t item_complete_native_publication_valid_standalone_source =
+	// Complete helper-only union, including find's real data getter. Parent
+	// controller/member calls may share only explicitly named matching lanes.
+	sizeof(void *) + sizeof(bool) +
+	duris_craft_recipe_bounded_detail::complete_recipe_string_size_source +
+	duris_craft_recipe_bounded_detail::complete_recipe_string_find_own_source +
+	duris_craft_recipe_bounded_detail::complete_recipe_traits_char_find_source +
+	duris_craft_recipe_bounded_detail::complete_recipe_string_const_data_source;
+constexpr size_t item_complete_native_fee_shape_helper_source =
+	item_complete_native_absent_collector_helper_source +
+	item_complete_native_coin_projection_equal_source +
+	item_complete_native_const_vector_empty_source<uint8_t> +
+	// consumed_order empty shares the exact U64 empty branch above.
+	item_complete_native_publication_empty_standalone_source +
+	item_complete_native_publication_valid_standalone_source -
+	// Same size() family selected by publication empty/valid, completed in
+	// mutually exclusive acknowledgement branches. No unrelated margin.
+	duris_craft_recipe_bounded_detail::complete_recipe_string_size_source +
+	// Actual offering action-source generation comparison is array<byte,16>.
+	item_complete_native_integral_array_equal_source<uint8_t, 16> +
+	item_complete_native_forest_value_equal_source;
+constexpr size_t item_complete_native_money_shape_helper_source =
+	item_complete_native_absent_collector_helper_source +
+	item_complete_native_empty_cost_projection_equal_source +
+	item_complete_native_coin_projection_equal_source -
+	// Exact cash array<int64,4> family is already retained by the earlier
+	// empty-cost projection comparison; its completed child calls do not
+	// coexist with this later coin projection comparison.
+	item_complete_native_integral_array_equal_source<int64_t, 4> +
+	item_complete_native_const_vector_empty_source<uint8_t> +
+	item_complete_native_publication_empty_standalone_source +
+	item_complete_native_forest_value_equal_source;
+static_assert(std::is_integral_v<int64_t> && std::is_integral_v<uint64_t>);
+static_assert(std::is_trivial_v<native_quest_cost_attempt> == false);
+} // namespace
+
+namespace
+{
+namespace item_native_direct_source = duris_craft_recipe_bounded_detail;
+constexpr size_t item_complete_native_fee_shape_direct_source =
+	// Each recorded accessor occurrence owns its actual receiver/returned
+	// scalar carriers. Wire helpers reuse only after completed calls.
+	sizeof(bool) + item_complete_recovery_byte_data_source + (sizeof(void *) + sizeof(size_t));
+constexpr size_t item_complete_native_fee_encode_direct_source =
+	// Each recorded accessor occurrence owns its actual receiver/returned
+	// scalar carriers. Wire helpers reuse only after completed calls.
+	sizeof(bool) + (sizeof(void *) + sizeof(size_t)) + (sizeof(void *) + sizeof(size_t)) +
+	(sizeof(void *) + sizeof(size_t)) + (sizeof(void *) + sizeof(size_t)) +
+	item_complete_recovery_byte_data_source + item_complete_recovery_byte_data_source +
+	item_complete_recovery_byte_data_source + item_complete_recovery_byte_data_source +
+	(sizeof(void *) + sizeof(size_t)) + item_complete_recovery_byte_data_source +
+	(sizeof(void *) + sizeof(size_t)) + item_complete_recovery_byte_data_source +
+	(sizeof(void *) + sizeof(size_t)) + item_complete_recovery_byte_data_source +
+	item_complete_recovery_byte_data_source + item_complete_recovery_byte_data_source +
+	item_complete_recovery_byte_data_source + item_complete_recovery_byte_data_source +
+	item_complete_recovery_byte_data_source + (sizeof(void *) + sizeof(size_t)) +
+	(sizeof(void *) + sizeof(size_t)) + (sizeof(void *) + sizeof(size_t)) +
+	(sizeof(void *) + sizeof(size_t)) + item_complete_recovery_put_wire_source +
+	2 * sizeof(void *) + sizeof(size_t);
+constexpr size_t item_complete_native_fee_decode_direct_source =
+	// Each recorded accessor occurrence owns its actual receiver/returned
+	// scalar carriers. Wire helpers reuse only after completed calls.
+	sizeof(bool) + (sizeof(void *) + sizeof(size_t)) + (sizeof(void *) + sizeof(size_t)) +
+	item_complete_recovery_byte_data_source + (sizeof(void *) + sizeof(size_t)) +
+	(sizeof(void *) + sizeof(size_t)) + (sizeof(void *) + sizeof(size_t)) +
+	(sizeof(void *) + sizeof(size_t)) + (sizeof(void *) + sizeof(size_t)) +
+	(sizeof(void *) + sizeof(size_t)) + item_complete_recovery_byte_data_source +
+	(sizeof(void *) + sizeof(size_t)) + item_complete_recovery_get_wire_source +
+	sizeof(uint16_t) + sizeof(bool) + 3 * (7 * sizeof(void *) + 2 * sizeof(size_t));
+constexpr size_t item_complete_native_money_shape_direct_source =
+	// Each recorded accessor occurrence owns its actual receiver/returned
+	// scalar carriers. Wire helpers reuse only after completed calls.
+	sizeof(bool);
+constexpr size_t item_complete_native_money_encode_direct_source =
+	// Each recorded accessor occurrence owns its actual receiver/returned
+	// scalar carriers. Wire helpers reuse only after completed calls.
+	sizeof(bool) + (sizeof(void *) + sizeof(size_t)) + (sizeof(void *) + sizeof(size_t)) +
+	(sizeof(void *) + sizeof(size_t)) + item_complete_recovery_byte_data_source +
+	item_complete_recovery_byte_data_source + item_complete_recovery_byte_data_source +
+	item_complete_recovery_byte_data_source + (sizeof(void *) + sizeof(size_t)) +
+	item_complete_recovery_byte_data_source + item_complete_recovery_byte_data_source +
+	item_complete_recovery_byte_data_source + item_complete_recovery_byte_data_source +
+	item_complete_recovery_byte_data_source + item_complete_recovery_byte_data_source +
+	(sizeof(void *) + sizeof(size_t)) + (sizeof(void *) + sizeof(size_t)) +
+	(sizeof(void *) + sizeof(size_t)) + item_complete_recovery_put_wire_source +
+	2 * sizeof(void *) + sizeof(size_t);
+constexpr size_t item_complete_native_money_decode_direct_source =
+	// Each recorded accessor occurrence owns its actual receiver/returned
+	// scalar carriers. Wire helpers reuse only after completed calls.
+	sizeof(bool) + (sizeof(void *) + sizeof(size_t)) + (sizeof(void *) + sizeof(size_t)) +
+	item_complete_recovery_byte_data_source + (sizeof(void *) + sizeof(size_t)) +
+	(sizeof(void *) + sizeof(size_t)) + (sizeof(void *) + sizeof(size_t)) +
+	(sizeof(void *) + sizeof(size_t)) + (sizeof(void *) + sizeof(size_t)) +
+	(sizeof(void *) + sizeof(size_t)) + (sizeof(void *) + sizeof(size_t)) +
+	item_complete_recovery_get_wire_source + sizeof(uint16_t) + sizeof(bool) +
+	2 * (7 * sizeof(void *) + 2 * sizeof(size_t));
+} // namespace
+
+namespace
+{
+constexpr size_t item_complete_native_money_vector_range_span_source =
+	// span(Range&&) receiver/ref2P; _Data CPO this/ref/pointer3P;
+	// const vector.data2P and raw _M_data_ptr this/arg/result3P;
+	// _Size CPO this/ref/size2P+N and const vector.size P+N;
+	// delegated raw pointer/count2P+N, to_address/raw __to_address4P,
+	// dynamic extent ctor P+N. CPO globals are not new temporary objects.
+	20 * sizeof(void *) + 4 * sizeof(size_t);
+constexpr size_t item_complete_native_money_default_subspan_source =
+	// subspan(fixed) default-count route: this/offset/count P+2N;
+	// genuine nonassert internal queryB, actual size/dynamicextent2P+2N,
+	// data2P, downstream pointer/count constructor closure7P+2N.
+	// Assertion RHS size() is short-circuited, but size()-offset executes.
+	12 * sizeof(void *) + 6 * sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_native_money_range_span_source =
+	item_complete_native_money_vector_range_span_source +
+	item_complete_native_money_default_subspan_source +
+	// Explicit outer range receiver destructor. Adapter3P owns its different
+	// onward copy2P and destructorP; do not share the two physical receivers.
+	sizeof(void *);
+constexpr size_t item_complete_native_money_range_span_inline =
+	// Distinct outer temporary is subspan's implicit receiver. The returned
+	// subspan object aliases existing child-adapter by-value formal once.
+	sizeof(std::span<const uint8_t>);
+} // namespace
+
+namespace
+{
+// Selected original native fee/money byte writer Source only.
+// Same published recipe header and same-TU published recovery byte field;
+// no whole recovery/recipe envelope, new API, adapter, runtime or gate.
+namespace item_native_byte_source = duris_craft_recipe_bounded_detail;
+using item_native_byte_I = std::vector<uint8_t>::iterator;
+using item_native_byte_CI = std::vector<uint8_t>::const_iterator;
+using item_native_byte_raw = uint8_t *;
+using item_native_byte_const_raw = const uint8_t *;
+
+constexpr size_t item_complete_native_byte_header_failure_cleanup_source =
+	// Genuine _Vector_impl and allocator receivers on allocation failure;
+	// share only these exact2P with already retained typed parent cleanup.
+	2 * sizeof(void *);
+constexpr size_t item_complete_native_byte_header_fill_source =
+	// Authentic published byte fill(n,zero,default allocator). The default
+	// allocator object and copy/check allocator object are real Source here.
+	// Caller vector DTO/allocated header heap and zero argument are separate.
+	item_complete_recovery_header_fill_source +
+	item_complete_native_byte_header_failure_cleanup_source;
+constexpr size_t item_complete_native_byte_header_zero_inline_bytes = sizeof(uint8_t);
+
+template <class Pointer> constexpr size_t item_complete_native_byte_raw_distance_source =
+	// Public distance owns first/last and scalar difference result. Category
+	// class prvalue is __distance's RA formal, not an extra returned object.
+	item_native_byte_source::complete_recipe_distance_own_source<Pointer> + sizeof(void *) +
+	item_native_byte_source::complete_recipe_ra_distance_own_source<Pointer>;
+
+constexpr size_t item_complete_native_byte_reference_insert_source =
+	// Actual mutable array.begin/end raw uint8_t* input. Public insert own
+	// this/CI/first/last/offset/returnedI retains true types and destinations.
+	item_native_byte_source::complete_recipe_byte_insert_own_source<item_native_byte_raw> +
+	// Actual growing _M_range_insert: this, rawfirst/last, four old/new ptrs,
+	// positionI, n/len, forward tag. No fitting mid/elems_after/oldfinish.
+	7 * sizeof(void *) + sizeof(item_native_byte_I) + 2 * sizeof(size_t) +
+	sizeof(std::forward_iterator_tag) +
+	item_native_byte_source::complete_recipe_byte_const_iterator_conversion_source +
+	item_native_byte_source::complete_recipe_normal_base_source<item_native_byte_I> +
+	item_native_byte_source::complete_recipe_byte_cbegin_own_source +
+	item_native_byte_source::complete_recipe_normal_pointer_constructor_source<
+		item_native_byte_CI> +
+	item_native_byte_source::complete_recipe_normal_subtract_own_source<item_native_byte_CI> +
+	2 * item_native_byte_source::complete_recipe_normal_base_source<item_native_byte_CI> +
+	// Both public begin()+offset have real begin receiver/temp and actual
+	// operator+ pointer argument temporary. Results alias range/public I.
+	2 * (item_native_byte_source::complete_recipe_wire_begin_own_source +
+	     item_native_byte_source::complete_recipe_normal_pointer_constructor_source<
+		     item_native_byte_I> +
+	     item_native_byte_source::complete_recipe_normal_offset_argument_source<
+		     item_native_byte_I> +
+	     item_native_byte_source::complete_recipe_normal_pointer_constructor_source<
+		     item_native_byte_I>)+item_native_byte_source::
+			complete_recipe_iterator_category_source<item_native_byte_raw> +
+	item_complete_native_byte_raw_distance_source<item_native_byte_raw> +
+	// Raw pointer != and difference are builtins, not normal iterator calls.
+	// Actual reference length148 never selects byte copy's assign_one.
+	item_native_byte_source::complete_recipe_uninitialized_copy_graph_source<
+		item_native_byte_raw, item_native_byte_raw> -
+	item_native_byte_source::complete_recipe_byte_assign_one_source +
+	// Growing halves move original header64 and empty suffix0. Neither is1.
+	2 * (item_native_byte_source::complete_recipe_uninitialized_move_if_noexcept_graph_source -
+	     item_native_byte_source::complete_recipe_byte_move_assign_one_source) +
+	item_native_byte_source::complete_recipe_vector_check_len_own_source<uint8_t> +
+	// Actual bounded _M_check_len calls size four times and max_size
+	// twice. Retain per-occurrence scalar results, including the two
+	// size() results overlapping in size()+max(size(),n). No family
+	// reuse or unrelated old caller allowance supplies these carriers.
+	2 * item_native_byte_source::complete_recipe_vector_max_size_source<uint8_t> +
+	4 * item_native_byte_source::complete_recipe_vector_size_source<uint8_t> +
+	item_native_byte_source::complete_recipe_size_max_source +
+	item_native_byte_source::complete_recipe_vector_allocate_source<uint8_t> +
+	item_native_byte_source::complete_recipe_vector_mutable_allocator_source<uint8_t> +
+	item_native_byte_source::complete_recipe_vector_destroy_range_source<uint8_t> +
+	item_native_byte_source::complete_recipe_vector_deallocate_graph_source<uint8_t> +
+	// The two real growing position.base() occurrences, no fitting-end lane.
+	2 * item_native_byte_source::complete_recipe_normal_base_source<item_native_byte_I>;
+
+constexpr size_t item_complete_native_byte_mutable_end_insert_source =
+	item_native_byte_source::complete_recipe_byte_end_insert_graph_source<item_native_byte_I,
+									      uint8_t *> -
+	// Input cost/giver/recovery lengths are0 or>=24/96/176; fitting final
+	// copy0, fitting oldmove0, growing oldprefix>=64 and suffix0. No count1.
+	2 * item_native_byte_source::complete_recipe_byte_assign_one_source -
+	3 * item_native_byte_source::complete_recipe_byte_move_assign_one_source;
+constexpr size_t item_complete_native_byte_const_end_insert_source =
+	item_native_byte_source::complete_recipe_byte_end_insert_graph_source<item_native_byte_CI,
+									      const uint8_t *> -
+	// Genuine continuation count1 input-copy lane stays. Only final fitting
+	// copy[first,mid] is0 (advance(mid,elems_after0)), and old moves are wide/0.
+	item_native_byte_source::complete_recipe_byte_assign_one_source -
+	3 * item_native_byte_source::complete_recipe_byte_move_assign_one_source;
+
+constexpr size_t item_complete_native_byte_raw_fresh_assign_source =
+	// Fresh payload continuation has size/capacity0; raw wire pointers, not
+	// span J or normal iterator. Positive assign allocates; zero copies0.
+	item_native_byte_source::complete_recipe_byte_assign_own_source<item_native_byte_const_raw> +
+	item_native_byte_source::complete_recipe_byte_fresh_assign_aux_own_source<
+		item_native_byte_const_raw> +
+	item_native_byte_source::complete_recipe_iterator_category_source<
+		item_native_byte_const_raw> +
+	item_complete_native_byte_raw_distance_source<item_native_byte_const_raw> +
+	item_native_byte_source::complete_recipe_vector_capacity_source<uint8_t> +
+	item_native_byte_source::complete_recipe_vector_size_source<uint8_t> +
+	item_native_byte_source::complete_recipe_byte_check_init_len_source +
+	item_native_byte_source::complete_recipe_allocator_const_copy_source +
+	item_native_byte_source::complete_recipe_allocator_cleanup_source +
+	// Exact _S_max_size5P4N, not unreached public max_size/getconstallocator.
+	item_complete_recovery_byte_fill_static_max_source +
+	item_native_byte_source::complete_recipe_byte_allocate_and_copy_own_source<
+		item_native_byte_const_raw> +
+	item_native_byte_source::complete_recipe_vector_allocate_source<uint8_t> +
+	item_native_byte_source::complete_recipe_vector_mutable_allocator_source<uint8_t> +
+	item_native_byte_source::complete_recipe_uninitialized_copy_graph_source<
+		item_native_byte_const_raw, item_native_byte_const_raw> +
+	// Positive path destroys the old empty range; declaration wrappers are
+	// reached, without element dtor. Old _M_deallocate(nullptr,0) stops at its
+	// own this/pointer/count; no traits/allocator/delete body selected here.
+	item_native_byte_source::complete_recipe_vector_destroy_range_source<uint8_t> +
+	2 * sizeof(void *) + sizeof(size_t) +
+	// Zero path calls actual raw copy and erase. copy count0 excludes only
+	// assign_one; erase's localn0 excludes its conditional Destroy subtree.
+	item_native_byte_source::complete_recipe_copy_graph_source<
+		false, item_native_byte_const_raw, uint8_t *, item_native_byte_const_raw> -
+	item_native_byte_source::complete_recipe_byte_assign_one_source +
+	item_native_byte_source::complete_recipe_byte_erase_at_end_own_source;
+
+constexpr size_t item_complete_native_byte_reference_insert_callers_source =
+	// Two mutable array begin/end each receiver/result2P + data2P. Destination
+	// end() returns a real I temporary bound to converting const-iterator ctor.
+	8 * sizeof(void *) + item_native_byte_source::complete_recipe_wire_end_own_source +
+	item_native_byte_source::complete_recipe_normal_pointer_constructor_source<
+		item_native_byte_I>;
+constexpr size_t item_complete_native_byte_mutable_end_insert_callers_source =
+	// Source begin/end class results initialize public Input formals. Actual
+	// getter receiver and pointer-ref constructor2P each, no second I result.
+	6 * sizeof(void *) + item_native_byte_source::complete_recipe_wire_end_own_source +
+	item_native_byte_source::complete_recipe_normal_pointer_constructor_source<
+		item_native_byte_I>;
+constexpr size_t item_complete_native_byte_const_end_insert_callers_source =
+	// Stored pointer lvalues bind reference-compatibly; no qualification temp.
+	6 * sizeof(void *) + item_native_byte_source::complete_recipe_wire_end_own_source +
+	item_native_byte_source::complete_recipe_normal_pointer_constructor_source<
+		item_native_byte_I>;
+constexpr size_t item_complete_native_byte_raw_fresh_assign_callers_source = 0;
+// Raw pointer arithmetic has no separately declared library function. Its
+// inputs/lengths/wire pointer are genuine existing decoder-own locals.
+
+} // namespace
+
+namespace
+{
+// Selected GNU13 ordinary C++20 equality graph only. Includes genuine
+// caller begin/end declarations and their selected constructor temporaries.
+// Count per actual call occurrence conservatively; loop iterations reuse
+// those same physical scopes. Input container/element heaps stay caller-owned.
+// No old equal_frames, recovery-u64 profile, encode, sort or byte allocation.
+// Each first vector iterator class return is the corresponding public equal
+// by-value formal destination (guaranteed elision), not another result object.
+// Subsequent by-value aux/niter formals are real independent objects; implicit
+// trivial iterator/predicate special members have no declared callee scopes.
+
+constexpr size_t item_complete_native_predicate_iterators_source =
+	// Caller const begin/end and mutable begin:3 receiverP plus the
+	// selected ctor this/reference6P. Stored pointer lvalues bind
+	// reference-compatibly: no pointer qualification temporary.
+	9 * sizeof(void *) +
+	// Loop != is C++20 rewritten ==: two references+B; its two base calls
+	// each have this/reference2P. No additional operator!= callable scope.
+	6 * sizeof(void *) + sizeof(bool) +
+	// Prefix++ on const/mutable each has this/returned-reference2P;
+	// dereference on each likewise has this/returned-reference2P.
+	8 * sizeof(void *);
+
+constexpr size_t item_complete_native_keys_equal_source =
+	item_complete_native_predicate_iterators_source +
+	// std::equal actual2constI+mutableI, function-pointer predicate, resultB.
+	2 * sizeof(std::vector<critical_entity_key>::const_iterator) +
+	sizeof(std::vector<critical_entity_key>::iterator) +
+	sizeof(decltype(&critical_entity_key_equal)) + sizeof(bool) +
+	// Real critical_entity_key_equal refs2P/resultB, not an adapter.
+	2 * sizeof(void *) + sizeof(bool);
+
+template <class Predicate> constexpr size_t item_complete_native_revisions_equal_source =
+	item_complete_native_predicate_iterators_source +
+	// Public equal's actual input formals and genuine empty Predicate object.
+	// Caller Predicate{} initializes this formal directly; no second object.
+	2 * sizeof(std::vector<critical_expected_revision>::const_iterator) +
+	sizeof(std::vector<critical_expected_revision>::iterator) + sizeof(Predicate) +
+	sizeof(bool) +
+	// Actual const Predicate::operator():this/two refs3P/resultB. Nested
+	// key_equal refs2P/resultB. Scalar revision comparison has no callee.
+	5 * sizeof(void *) + 2 * sizeof(bool);
+
+constexpr size_t item_complete_native_byte_equal_tail_source =
+	// __equal_aux1 raw3P/resultB + actual const local __simpleB. Its traits
+	// initializer is required constant-evaluated (template argument), with
+	// no runtime trait callee. The automatic local object still exists.
+	3 * sizeof(void *) + 2 * sizeof(bool) +
+	// Selected __equal<true>::equal: raw3P/local size_t __len/resultB.
+	3 * sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+	// __memcmp raw2P/countN/int result; genuine runtime public
+	// std::is_constant_evaluated returnedB. No invented builtin callee.
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(int) + sizeof(bool);
+
+constexpr size_t item_complete_native_fee_money_canonical_equal_source =
+	// C++20 != rewrites vector==:refs2P/resultB only. Const size twice:
+	// two actual thisP/size_t-resultN occurrences (no old root size credit).
+	2 * sizeof(void *) + sizeof(bool) + 2 * (sizeof(void *) + sizeof(size_t)) +
+	// Three const begin/end receivers3P and selected pointer-ref ctors6P.
+	// Stored pointer lvalues bind reference-compatibly with no
+	// qualification temporary. Class results are public equal formals.
+	9 * sizeof(void *) +
+	// public equal and __equal_aux: each3 real iterator formals/resultB.
+	6 * sizeof(std::vector<uint8_t>::const_iterator) + 2 * sizeof(bool) +
+	// Three normal-iterator niter calls:by-valueI/raw-pointer resultP,
+	// each real base this/reference2P. Three actual distinct call occurrences.
+	3 * sizeof(std::vector<uint8_t>::const_iterator) + 9 * sizeof(void *) +
+	item_complete_native_byte_equal_tail_source;
+
+constexpr size_t item_complete_native_action_operation_equal_source =
+	// C++20 != rewrites array== refs2P/resultB. Three const begin/end
+	// calls each this/raw-result2P and reached data this/raw-result2P.
+	// Array data returns _M_elems directly: no _S_ptr/_S_ref helper.
+	2 * sizeof(void *) + sizeof(bool) + 12 * sizeof(void *) +
+	// public equal/aux each raw3P/resultB; three fallback niter calls
+	// each raw-by-valueP/raw-resultP. No normal iterator or array DTO callee.
+	6 * sizeof(void *) + 2 * sizeof(bool) + 6 * sizeof(void *) +
+	item_complete_native_byte_equal_tail_source;
+
+} // namespace
+
+namespace
+{
+struct item_native_fee_revision_equal
+{
+	bool operator()(const critical_expected_revision &a,
+			const critical_expected_revision &b) const
+	{
+		return critical_entity_key_equal(a.key, b.key) && a.revision == b.revision;
+	}
+};
+struct item_native_money_revision_equal
+{
+	bool operator()(const critical_expected_revision &left,
+			const critical_expected_revision &right) const
+	{
+		return critical_entity_key_equal(left.key, right.key) &&
+		       left.revision == right.revision;
+	}
+};
+
+} // namespace
+
+namespace
+{
+struct item_native_entities_complete_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, frames;
+	const critical_command *command = nullptr;
+	const std::vector<uint64_t> *roots = nullptr;
+	const std::vector<player_item_snapshot> *outputs = nullptr;
+	bool prefix(size_t &result, size_t extra = 0) const noexcept
+	{
+		size_t total = outer, row = 0;
+		if (!payload_clone_add(total, sizeof(*this)) || !payload_clone_add(total, frames))
+			return false;
+		if (command &&
+		    (!payload_clone_add(total, sizeof(*command)) ||
+		     !payload_clone_vector_heap(command->keys, false, total) ||
+		     !payload_clone_vector_heap(command->expected_revisions, false, total) ||
+		     !payload_clone_vector_heap(command->payload, false, total) ||
+		     !payload_clone_vector_heap(command->accounting_intent, false, total)))
+			return false;
+		if (roots && (!payload_clone_add(total, sizeof(*roots)) ||
+			      !payload_clone_vector_heap(*roots, false, total)))
+			return false;
+		if (outputs)
+		{
+			if (!payload_clone_add(total, sizeof(*outputs)) ||
+			    !payload_clone_vector_heap(*outputs, false, total))
+				return false;
+			for (const auto &item : *outputs)
+				if (!player_item_snapshot_current_heap_bytes(item, &row) ||
+				    !payload_clone_add(total, row))
+					return false;
+		}
+		if (!payload_clone_add(total, extra))
+			return false;
+		result = total;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && reserve && reserve(total, context);
+	}
+	template <typename T> bool growth(const std::vector<T> &value, size_t count) const noexcept
+	{
+		size_t request = 0;
+		if (count > value.max_size() - value.size())
+			return false;
+		if (count > value.capacity() - value.size())
+		{
+			size_t next = value.size();
+			if (!payload_clone_add(next, std::max(value.size(), count)) ||
+			    next > value.max_size())
+				next = value.max_size();
+			if (next > SIZE_MAX / sizeof(T) ||
+			    !payload_clone_add(request, next * sizeof(T)))
+				return false;
+		}
+		return peak(request);
+	}
+	template <typename T> bool fresh(size_t count, size_t extra = 0) const noexcept
+	{
+		size_t request = 0;
+		return count <= SIZE_MAX / sizeof(T) &&
+		       payload_clone_add(request, count * sizeof(T)) &&
+		       payload_clone_add(request, extra) && peak(request);
+	}
+	template <typename T, typename Comparator> bool sort_frame(size_t count) const noexcept
+	{
+		// Only the shape-proven native count-two callsites select this class.
+		// Actual two-element sort Source is already retained by frames. No
+		// introsort recursive/pivot/heap phase is executed at these callsites.
+		(void)count;
+		return peak();
+	}
+};
+} // namespace
+
+namespace
+{
+// Exact named equivalent of the original revision-sort lambda. The native
+// selected companion will bind this real type, without claiming lambda layout.
+struct item_native_entities_revision_less
+{
+	bool operator()(const critical_expected_revision &left,
+			const critical_expected_revision &right) const
+	{
+		return critical_entity_key_less(left.key, right.key);
+	}
+};
+template <class T> constexpr size_t item_complete_native_entities_fresh_assign_source =
+	// Selected fresh vector initializer-list assignment of exactly two trivial
+	// elements. IL formal/backing array are caller INLINE, excluded here.
+	// Public assignment2P; actual IL pointer/count ctor and begin/end/begin/size.
+	2 * sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) + 7 * sizeof(void *) +
+	sizeof(size_t) +
+	// forward aux this/first/last/tmp, len,F plus sliced RA; raw distance.
+	4 * sizeof(void *) + sizeof(size_t) + sizeof(std::forward_iterator_tag) +
+	sizeof(std::random_access_iterator_tag) + 5 * sizeof(void *) + 2 * sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) + sizeof(void *) + sizeof(size_t) +
+	6 * sizeof(void *) +
+	// check_init converted allocator object, const-copy/cleanup, max/traits/min.
+	10 * sizeof(void *) + 6 * sizeof(size_t) + sizeof(std::allocator<T>) + 5 * sizeof(void *) +
+	sizeof(size_t) + 11 * sizeof(void *) + 6 * sizeof(size_t) + sizeof(bool) +
+	// raw const T* -> T* uninitialized copy; actual Num2 skips assign_one.
+	46 * sizeof(void *) + sizeof(std::ptrdiff_t) + 4 * sizeof(bool) +
+	// Null old Destroy still reaches its actual runtime predicate; null
+	// deallocate reaches only its root, no allocator/delete child.
+	7 * sizeof(void *) + sizeof(bool) + 2 * sizeof(void *) + sizeof(size_t);
+template <class T, class Comparator>
+constexpr size_t item_complete_native_entities_sort_two_common_source =
+	// Actual count2 public/factory/__sort/introsort/final/insertion/adapter.
+	// Introsort has no __cut declaration reached, recursion or pivot/heap.
+	13 * sizeof(typename std::vector<T>::iterator) + 3 * sizeof(Comparator) +
+	4 * sizeof(__gnu_cxx::__ops::_Iter_comp_iter<Comparator>) + 28 * sizeof(void *) +
+	5 * sizeof(std::ptrdiff_t) + 2 * sizeof(bool);
+template <class T> constexpr size_t item_complete_native_entities_fee_backward_extra_source =
+	// Actual reversed two-element insertion owns __val and one-element backward.
+	// Same completed normal offset4P+D shares with common first+1; real
+	// std::move<T>2P in backward serves completed insertion moves. No implicit
+	// trivial element/iterator callable is introduced. Root discarded I stays.
+	sizeof(T) + 14 * sizeof(typename std::vector<T>::iterator) + 29 * sizeof(void *) +
+	sizeof(std::ptrdiff_t) + sizeof(bool);
+template <class T, class Comparator>
+constexpr size_t item_complete_native_entities_money_linear_extra_source =
+	// Already-sorted count2 invokes unguarded insertion and val comparator;
+	// loop body false. Actual converting adapter and two real move calls.
+	3 * sizeof(typename std::vector<T>::iterator) +
+	sizeof(__gnu_cxx::__ops::_Iter_comp_iter<Comparator>) +
+	sizeof(__gnu_cxx::__ops::_Val_comp_iter<Comparator>) + sizeof(T) + 12 * sizeof(void *) +
+	sizeof(bool);
+constexpr size_t item_complete_native_entities_key_less_target_source =
+	2 * sizeof(void *) + sizeof(bool);
+constexpr size_t item_complete_native_entities_revision_less_target_source =
+	// Named operator this/left/right/result, then genuine key comparator.
+	3 * sizeof(void *) + sizeof(bool) + item_complete_native_entities_key_less_target_source;
+template <class T, class Equal> constexpr size_t item_complete_native_entities_adjacent_source =
+	// Standalone selected function-pointer predicate path, no default equality.
+	7 * sizeof(typename std::vector<T>::iterator) + 3 * sizeof(Equal) +
+	sizeof(__gnu_cxx::__ops::_Iter_comp_iter<Equal>) + 20 * sizeof(void *) + 3 * sizeof(bool);
+template <class T> constexpr size_t item_complete_native_entities_sort_caller_source =
+	// Both vector endpoint method receivers and actual explicit pointer ctors;
+	// returned iterators are public sort's by-value formal destinations.
+	6 * sizeof(void *);
+template <class T> constexpr size_t item_complete_native_entities_adjacent_caller_source =
+	// Three actual endpoint calls; result and RHS end are distinct I operands.
+	// Rewritten != is equality with both simultaneous returned base refs.
+	9 * sizeof(void *) + 2 * sizeof(typename std::vector<T>::iterator) + 6 * sizeof(void *) +
+	sizeof(bool);
+template <bool Fee> constexpr size_t item_complete_native_entities_key_algorithm_source =
+	item_complete_native_entities_sort_two_common_source<critical_entity_key,
+							     decltype(&critical_entity_key_less)> +
+	item_complete_native_entities_key_less_target_source +
+	(Fee ? item_complete_native_entities_fee_backward_extra_source<critical_entity_key> :
+	       item_complete_native_entities_money_linear_extra_source<
+		       critical_entity_key,
+		       decltype(&critical_entity_key_less)>)+item_complete_native_entities_sort_caller_source<critical_entity_key> +
+	// Conservatively distinct actual adjacency invocation. No borrowing of
+	// ended sort credits or opaque broad-sort reservation.
+	item_complete_native_entities_adjacent_source<critical_entity_key,
+						      decltype(&critical_entity_key_equal)> +
+	item_complete_native_entities_adjacent_caller_source<critical_entity_key>;
+template <bool Fee> constexpr size_t item_complete_native_entities_revision_algorithm_source =
+	item_complete_native_entities_sort_two_common_source<critical_expected_revision,
+							     item_native_entities_revision_less> +
+	item_complete_native_entities_revision_less_target_source +
+	(Fee ? item_complete_native_entities_fee_backward_extra_source<critical_expected_revision> :
+	       item_complete_native_entities_money_linear_extra_source<
+		       critical_expected_revision,
+		       item_native_entities_revision_less>)+item_complete_native_entities_sort_caller_source<critical_expected_revision>;
+static_assert(std::is_trivial_v<critical_entity_key> &&
+	      std::is_trivial_v<critical_expected_revision>);
+} // namespace
+
+constexpr size_t item_complete_native_entities_owned_declaration_source =
+	// admission_prefix and zero-count for-loop index initializer are both reached.
+	3 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_native_entities_wrapper_declaration_source =
+	4 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 2 * sizeof(size_t) +
+	sizeof(bool);
+constexpr size_t item_complete_native_entities_prefix_peak_source =
+	2 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool) + sizeof(void *) +
+	2 * sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_native_entities_fresh_source =
+	sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_native_entities_sort_frame_source =
+	sizeof(void *) + sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_native_entities_owner_key_child_own_source =
+	3 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	sizeof(bool);
+constexpr size_t item_complete_native_entities_owner_key_child_query_source =
+	3 * item_owner_key_source_query_frame_bytes();
+
+namespace
+{
+template <class T> constexpr size_t item_complete_native_entities_vector_current_source =
+	// Actual payload_clone_vector_heap(false): value/bytes refs,fresh/count/result,
+	// then selected capacity this/returnedN. size() true branch unselected.
+	2 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(bool) +
+	duris_craft_recipe_bounded_detail::complete_recipe_vector_capacity_source<T>;
+constexpr size_t item_complete_native_entities_unselected_byte_deallocation_tail_source =
+	// Candidate payload/accounting_intent stay empty. Actual null _M_deallocate
+	// reaches its root only; traits/allocator/newallocator and sized delete
+	// descendants7P4NB are unselected for this byte cleanup (not K/R).
+	7 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(bool);
+constexpr size_t item_complete_native_entities_command_lifetime_source =
+	item_complete_command_aggregate_default_source + item_complete_command_cleanup_source -
+	item_complete_native_entities_unselected_byte_deallocation_tail_source +
+	// Only two member-vector assignments are selected, not whole command MOVE.
+	// Their real V/A locals stay in Source. Exact named typed cleanup is shared
+	// with the candidate command cleanup; caller std::move is distinct per T.
+	duris_craft_recipe_bounded_detail::complete_recipe_vector_move_selected_source<
+		critical_entity_key> -
+	duris_craft_recipe_bounded_detail::member_vector_cleanup_source<critical_entity_key>() +
+	duris_craft_recipe_bounded_detail::complete_recipe_vector_move_selected_source<
+		critical_expected_revision> -
+	duris_craft_recipe_bounded_detail::member_vector_cleanup_source<
+		critical_expected_revision>() +
+	4 * sizeof(void *);
+constexpr size_t item_complete_native_entities_selected_controller_source =
+	item_complete_native_entities_prefix_peak_source +
+	// Two genuinely distinct fresh<T> and sort_frame<T,Comparator> methods.
+	2 * item_complete_native_entities_fresh_source +
+	2 * item_complete_native_entities_sort_frame_source + sizeof(void *) + sizeof(size_t) +
+	sizeof(bool) + sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+	item_complete_native_entities_vector_current_source<critical_entity_key> +
+	item_complete_native_entities_vector_current_source<critical_expected_revision> +
+	item_complete_native_entities_vector_current_source<uint8_t>;
+constexpr size_t item_complete_native_entities_selected_direct_source =
+	// policy-supported result; owner identity equality references/result;
+	// key/revision size() roots (max-keys and sort arguments).
+	sizeof(bool) + 2 * sizeof(void *) + sizeof(bool) + 2 * (sizeof(void *) + sizeof(size_t));
+constexpr size_t item_complete_native_entities_common_retained_source =
+	item_complete_native_entities_owned_declaration_source +
+	item_complete_native_entities_wrapper_declaration_source +
+	item_complete_native_entities_selected_controller_source +
+	item_complete_native_entities_selected_direct_source +
+	item_complete_native_entities_command_lifetime_source +
+	item_complete_native_entities_fresh_assign_source<critical_entity_key> +
+	item_complete_native_entities_fresh_assign_source<critical_expected_revision> +
+	item_complete_native_entities_owner_key_child_own_source +
+	item_complete_native_entities_owner_key_child_query_source;
+constexpr size_t item_complete_native_fee_entities_retained_source =
+	item_complete_native_entities_common_retained_source +
+	item_complete_native_entities_key_algorithm_source<true> +
+	item_complete_native_entities_revision_algorithm_source<true>;
+constexpr size_t item_complete_native_money_entities_retained_source =
+	item_complete_native_entities_common_retained_source +
+	item_complete_native_entities_key_algorithm_source<false> +
+	item_complete_native_entities_revision_algorithm_source<false>;
+} // namespace
+
+namespace
+{
+bool item_complete_native_entities_owner_key_child(const item_owner_identity &owner,
+						   critical_entity_key *output,
+						   bool (*reserve)(size_t, void *) noexcept,
+						   void *context, size_t outer) noexcept
+{
+	constexpr size_t query = 3 * item_owner_key_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0, request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_owner_key_source_frame_bytes(&source) ||
+	    !item_owner_key_initial_inline_bytes(&initial) ||
+	    !item_owner_key_source_supplement_frame_bytes(&supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return item_owner_key_bounded(owner, output, reserve, context, child_outer);
+}
+
+} // namespace
+
+namespace
+{
+bool item_native_entities_populate_complete_owned(critical_command *command,
+						  const item_transfer_payload &payload,
+						  item_native_entities_complete_budget &budget)
+{
+	critical_entity_key from_key = {}, to_key = {};
+	size_t admission_prefix = 0;
+	if (!command ||
+	    !(budget.prefix(admission_prefix) &&
+	      item_complete_native_entities_owner_key_child(payload.from_owner, &from_key,
+							    budget.reserve, budget.context,
+							    admission_prefix)) ||
+	    !(budget.prefix(admission_prefix) &&
+	      item_complete_native_entities_owner_key_child(
+		      payload.to_owner, &to_key, budget.reserve, budget.context, admission_prefix)))
+		return false;
+	if (!budget.fresh<critical_entity_key>(
+		    2, 2 * sizeof(critical_entity_key) +
+			       sizeof(std::initializer_list<critical_entity_key>)))
+		return false;
+	command->keys = { from_key, to_key };
+	if (!budget.fresh<critical_expected_revision>(
+		    2, 2 * sizeof(critical_expected_revision) +
+			       sizeof(std::initializer_list<critical_expected_revision>)))
+		return false;
+	command->expected_revisions = { { from_key, payload.expected_from_revision },
+					{ to_key, payload.expected_to_revision } };
+	if (item_owner_identity_equal(payload.from_owner, payload.to_owner))
+	{
+		if (payload.expected_from_revision != payload.expected_to_revision)
+			return false;
+		command->keys.pop_back();
+		command->expected_revisions.pop_back();
+	}
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		critical_entity_key item_key = { critical_entity_type::item,
+						 payload.items[index].item_uid };
+		if (!budget.growth(command->keys, 1))
+			return false;
+		command->keys.push_back(item_key);
+		if (!budget.growth(command->expected_revisions, 1))
+			return false;
+		command->expected_revisions.push_back(
+			{ item_key, payload.items[index].expected_item_revision });
+	}
+	if (payload.target_parent_item_uid)
+	{
+		critical_entity_key parent_key = { critical_entity_type::item,
+						   payload.target_parent_item_uid };
+		if (!budget.growth(command->keys, 1))
+			return false;
+		command->keys.push_back(parent_key);
+		if (!budget.growth(command->expected_revisions, 1))
+			return false;
+		command->expected_revisions.push_back(
+			{ parent_key, payload.expected_target_parent_revision });
+	}
+	if (payload.reason == item_transfer_reason::craft)
+	{
+		if (!budget.peak(sizeof(std::vector<player_item_snapshot>) + 4 * sizeof(void *) +
+				 sizeof(std::allocator<player_item_snapshot>)))
+			return false;
+		std::vector<player_item_snapshot> outputs;
+		budget.outputs = &outputs;
+		if (!(budget.prefix(admission_prefix) &&
+		      item_transfer_craft_outputs_decode_bounded(payload, &outputs, budget.reserve,
+								 budget.context, admission_prefix,
+								 nullptr)))
+			return false;
+		for (const player_item_snapshot &output : outputs)
+		{
+			const critical_entity_key output_key = { critical_entity_type::item,
+								 output.object_uid };
+			if (!budget.growth(command->keys, 1))
+				return false;
+			command->keys.push_back(output_key);
+			if (!budget.growth(command->expected_revisions, 1))
+				return false;
+			command->expected_revisions.push_back(
+				{ output_key, ITEM_TRANSFER_ABSENT_REVISION });
+		}
+		budget.outputs = nullptr;
+	}
+	if (payload.collector.present)
+	{
+		const critical_entity_key catalog_key = { critical_entity_type::collector,
+							  COLLECTOR_CATALOG_KEY };
+		if (!budget.growth(command->keys, 1))
+			return false;
+		command->keys.push_back(catalog_key);
+		// The SQL repository takes the current catalog row lock before any item
+		// lock; zero is a serialization key, not an optimistic catalog fence.
+		if (!budget.growth(command->expected_revisions, 1))
+			return false;
+		command->expected_revisions.push_back({ catalog_key, 0 });
+	}
+	if (payload.native_recovery.present &&
+	    payload.native_mobile.action == item_native_mobile_action::consumption &&
+	    !payload.native_cost.fee_only)
+	{
+		const critical_entity_key giver_key = { critical_entity_type::player,
+							payload.native_recovery.player_pid };
+		if (!budget.growth(command->keys, 1))
+			return false;
+		command->keys.push_back(giver_key);
+		// A serialization key only; the acknowledged save fence remains distinct
+		// from a player custody-owner revision and is checked by the original root.
+		if (!budget.growth(command->expected_revisions, 1))
+			return false;
+		command->expected_revisions.push_back({ giver_key, 0 });
+	}
+	if (payload.native_recovery.present && command->keys.size() > CRITICAL_COMMAND_MAX_KEYS)
+		return false;
+	if (!budget.sort_frame<critical_entity_key, decltype(&critical_entity_key_less)>(
+		    command->keys.size()))
+		return false;
+	std::sort(command->keys.begin(), command->keys.end(), critical_entity_key_less);
+	if (std::adjacent_find(command->keys.begin(), command->keys.end(),
+			       critical_entity_key_equal) != command->keys.end())
+		return false;
+	if (!budget.sort_frame<critical_expected_revision, item_native_entities_revision_less>(
+		    command->expected_revisions.size()))
+		return false;
+	std::sort(command->expected_revisions.begin(), command->expected_revisions.end(),
+		  item_native_entities_revision_less{});
+	return true;
+}
+} // namespace
+
+namespace
+{
+bool item_complete_native_fee_entities_bounded(critical_command *command,
+					       const item_transfer_payload &payload,
+					       bool (*reserve)(size_t, void *) noexcept,
+					       void *context, size_t outer_live) noexcept
+{
+	if (!command || !reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames =
+		item_complete_native_fee_entities_retained_source + 2 * sizeof(critical_entity_key);
+	item_native_entities_complete_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak(sizeof(critical_command)))
+		return false;
+	try
+	{
+		// Only original entity vectors are populated; authentic existing command
+		// payload/accounting/scalars stay untouched and caller-owned throughout.
+		critical_command candidate = {};
+		budget.command = &candidate;
+		if (!item_native_entities_populate_complete_owned(&candidate, payload, budget) ||
+		    !budget.peak())
+			return false;
+		command->keys = std::move(candidate.keys);
+		command->expected_revisions = std::move(candidate.expected_revisions);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+} // namespace
+
+namespace
+{
+bool item_complete_native_money_entities_bounded(critical_command *command,
+						 const item_transfer_payload &payload,
+						 bool (*reserve)(size_t, void *) noexcept,
+						 void *context, size_t outer_live) noexcept
+{
+	if (!command || !reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = item_complete_native_money_entities_retained_source +
+				  2 * sizeof(critical_entity_key);
+	item_native_entities_complete_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak(sizeof(critical_command)))
+		return false;
+	try
+	{
+		// Only original entity vectors are populated; authentic existing command
+		// payload/accounting/scalars stay untouched and caller-owned throughout.
+		critical_command candidate = {};
+		budget.command = &candidate;
+		if (!item_native_entities_populate_complete_owned(&candidate, payload, budget) ||
+		    !budget.peak())
+			return false;
+		command->keys = std::move(candidate.keys);
+		command->expected_revisions = std::move(candidate.expected_revisions);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+} // namespace
+
+namespace
+{
+bool item_complete_native_fee_entities_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	size_t result = item_complete_native_fee_entities_retained_source, child = 0;
+	if (!item_owner_key_source_frame_bytes(&child) || !payload_clone_add(result, child))
+		return false;
+	*output = result;
+	return true;
+}
+bool item_complete_native_fee_entities_source_supplement_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = 0;
+	return true;
+}
+bool item_complete_native_fee_entities_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = sizeof(item_native_entities_complete_budget);
+	return true;
+}
+constexpr size_t item_complete_native_fee_entities_source_query_frame_bytes() noexcept
+{
+	// Full getter owns outputP/resultN/childN/returnedB, policyB,
+	// genuine owner getter(P+B), checked-add(P+N+B). Other getters are dominated.
+	return 3 * sizeof(void *) + 3 * sizeof(size_t) + 4 * sizeof(bool);
+}
+bool item_complete_native_fee_entities_entry_child(critical_command *command,
+						   const item_transfer_payload &payload,
+						   bool (*reserve)(size_t, void *) noexcept,
+						   void *context, size_t outer) noexcept
+{
+	constexpr size_t query = 3 * item_complete_native_fee_entities_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0, request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_complete_native_fee_entities_source_frame_bytes(&source) ||
+	    !item_complete_native_fee_entities_initial_inline_bytes(&initial) ||
+	    !item_complete_native_fee_entities_source_supplement_frame_bytes(&supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return item_complete_native_fee_entities_bounded(command, payload, reserve, context,
+							 child_outer);
+}
+constexpr size_t item_complete_native_fee_entities_entry_child_own_source =
+	3 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	sizeof(bool);
+constexpr size_t item_complete_native_fee_entities_entry_child_query_source =
+	3 * item_complete_native_fee_entities_source_query_frame_bytes();
+bool item_complete_native_money_entities_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	size_t result = item_complete_native_money_entities_retained_source, child = 0;
+	if (!item_owner_key_source_frame_bytes(&child) || !payload_clone_add(result, child))
+		return false;
+	*output = result;
+	return true;
+}
+bool item_complete_native_money_entities_source_supplement_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = 0;
+	return true;
+}
+bool item_complete_native_money_entities_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = sizeof(item_native_entities_complete_budget);
+	return true;
+}
+constexpr size_t item_complete_native_money_entities_source_query_frame_bytes() noexcept
+{
+	// Full getter owns outputP/resultN/childN/returnedB, policyB,
+	// genuine owner getter(P+B), checked-add(P+N+B). Other getters are dominated.
+	return 3 * sizeof(void *) + 3 * sizeof(size_t) + 4 * sizeof(bool);
+}
+bool item_complete_native_money_entities_entry_child(critical_command *command,
+						     const item_transfer_payload &payload,
+						     bool (*reserve)(size_t, void *) noexcept,
+						     void *context, size_t outer) noexcept
+{
+	constexpr size_t query = 3 * item_complete_native_money_entities_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0, request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_complete_native_money_entities_source_frame_bytes(&source) ||
+	    !item_complete_native_money_entities_initial_inline_bytes(&initial) ||
+	    !item_complete_native_money_entities_source_supplement_frame_bytes(&supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return item_complete_native_money_entities_bounded(command, payload, reserve, context,
+							   child_outer);
+}
+constexpr size_t item_complete_native_money_entities_entry_child_own_source =
+	3 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	sizeof(bool);
+constexpr size_t item_complete_native_money_entities_entry_child_query_source =
+	3 * item_complete_native_money_entities_source_query_frame_bytes();
+} // namespace
+
+namespace
+{
+constexpr size_t item_complete_native_cost_value_entry_child_own_source =
+	2 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	1 * sizeof(bool);
+constexpr size_t item_complete_native_cost_value_entry_child_query_source =
+	3 * item_transfer_native_cost_value_valid_complete_source_query_frame_bytes();
+constexpr size_t item_complete_native_fee_shape_entry_child_own_source =
+	2 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	2 * sizeof(bool);
+constexpr size_t item_complete_native_fee_shape_entry_child_query_source =
+	3 * item_transfer_native_fee_shape_valid_complete_source_query_frame_bytes();
+constexpr size_t item_complete_native_money_shape_entry_child_own_source =
+	2 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	2 * sizeof(bool);
+constexpr size_t item_complete_native_money_shape_entry_child_query_source =
+	3 * item_transfer_native_money_shape_valid_complete_source_query_frame_bytes();
+constexpr size_t item_complete_native_fee_encode_entry_child_own_source =
+	3 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	2 * sizeof(bool);
+constexpr size_t item_complete_native_fee_encode_entry_child_query_source =
+	3 * item_transfer_native_fee_encode_complete_source_query_frame_bytes();
+constexpr size_t item_complete_native_money_encode_entry_child_own_source =
+	3 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	2 * sizeof(bool);
+constexpr size_t item_complete_native_money_encode_entry_child_query_source =
+	3 * item_transfer_native_money_encode_complete_source_query_frame_bytes();
+constexpr size_t item_complete_native_recovery_encode_entry_child_own_source =
+	4 * sizeof(void *) + sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) +
+	1 * sizeof(bool);
+constexpr size_t item_complete_native_recovery_encode_entry_child_query_source =
+	3 * item_transfer_native_recovery_encode_complete_source_query_frame_bytes();
+constexpr size_t item_complete_native_recovery_decode_entry_child_own_source =
+	sizeof(std::span<const uint8_t>) + 3 * sizeof(void *) +
+	sizeof(bool (*)(size_t, void *) noexcept) + 7 * sizeof(size_t) + 1 * sizeof(bool) +
+	3 * sizeof(void *);
+constexpr size_t item_complete_native_recovery_decode_entry_child_query_source =
+	3 * item_transfer_native_recovery_decode_complete_source_query_frame_bytes();
+bool item_complete_native_cost_value_entry_child(const item_transfer_payload &payload,
+						 bool (*reserve)(size_t, void *) noexcept,
+						 void *context, size_t outer) noexcept
+{
+	constexpr size_t query =
+		3 * item_transfer_native_cost_value_valid_complete_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0, request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_transfer_native_cost_value_valid_complete_source_frame_bytes(&source) ||
+	    !item_transfer_native_cost_value_valid_complete_initial_inline_bytes(&initial) ||
+	    !item_transfer_native_cost_value_valid_complete_source_supplement_frame_bytes(
+		    &supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return item_transfer_native_cost_value_valid_complete_bounded(payload, reserve, context,
+								      child_outer);
+}
+bool item_complete_native_fee_shape_entry_child(const item_transfer_payload &payload,
+						bool acknowledged,
+						bool (*reserve)(size_t, void *) noexcept,
+						void *context, size_t outer) noexcept
+{
+	constexpr size_t query =
+		3 * item_transfer_native_fee_shape_valid_complete_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0, request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_transfer_native_fee_shape_valid_complete_source_frame_bytes(&source) ||
+	    !item_transfer_native_fee_shape_valid_complete_initial_inline_bytes(&initial) ||
+	    !item_transfer_native_fee_shape_valid_complete_source_supplement_frame_bytes(
+		    &supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return item_transfer_native_fee_shape_valid_complete_bounded(payload, acknowledged, reserve,
+								     context, child_outer);
+}
+bool item_complete_native_money_shape_entry_child(const item_transfer_payload &payload,
+						  bool acknowledged,
+						  bool (*reserve)(size_t, void *) noexcept,
+						  void *context, size_t outer) noexcept
+{
+	constexpr size_t query =
+		3 * item_transfer_native_money_shape_valid_complete_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0, request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_transfer_native_money_shape_valid_complete_source_frame_bytes(&source) ||
+	    !item_transfer_native_money_shape_valid_complete_initial_inline_bytes(&initial) ||
+	    !item_transfer_native_money_shape_valid_complete_source_supplement_frame_bytes(
+		    &supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return item_transfer_native_money_shape_valid_complete_bounded(
+		payload, acknowledged, reserve, context, child_outer);
+}
+bool item_complete_native_fee_encode_entry_child(const item_transfer_payload &payload,
+						 bool acknowledged, std::vector<uint8_t> *output,
+						 bool (*reserve)(size_t, void *) noexcept,
+						 void *context, size_t outer) noexcept
+{
+	constexpr size_t query =
+		3 * item_transfer_native_fee_encode_complete_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0, request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_transfer_native_fee_encode_complete_source_frame_bytes(&source) ||
+	    !item_transfer_native_fee_encode_complete_initial_inline_bytes(&initial) ||
+	    !item_transfer_native_fee_encode_complete_source_supplement_frame_bytes(&supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return item_transfer_native_fee_encode_complete_bounded(payload, acknowledged, output,
+								reserve, context, child_outer);
+}
+bool item_complete_native_money_encode_entry_child(const item_transfer_payload &payload,
+						   bool acknowledged, std::vector<uint8_t> *output,
+						   bool (*reserve)(size_t, void *) noexcept,
+						   void *context, size_t outer) noexcept
+{
+	constexpr size_t query =
+		3 * item_transfer_native_money_encode_complete_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0, request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_transfer_native_money_encode_complete_source_frame_bytes(&source) ||
+	    !item_transfer_native_money_encode_complete_initial_inline_bytes(&initial) ||
+	    !item_transfer_native_money_encode_complete_source_supplement_frame_bytes(&supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return item_transfer_native_money_encode_complete_bounded(payload, acknowledged, output,
+								  reserve, context, child_outer);
+}
+bool item_complete_native_recovery_encode_entry_child(
+	const item_native_mobile_recovery_context &value, std::vector<uint8_t> *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer,
+	size_t *retained_heap) noexcept
+{
+	constexpr size_t query =
+		3 * item_transfer_native_recovery_encode_complete_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0, request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_transfer_native_recovery_encode_complete_source_frame_bytes(&source) ||
+	    !item_transfer_native_recovery_encode_complete_initial_inline_bytes(&initial) ||
+	    !item_transfer_native_recovery_encode_complete_source_supplement_frame_bytes(
+		    &supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return item_transfer_native_recovery_encode_complete_bounded(
+		value, output, reserve, context, child_outer, retained_heap);
+}
+bool item_complete_native_recovery_decode_entry_child(std::span<const uint8_t> bytes,
+						      item_native_mobile_recovery_context *output,
+						      bool (*reserve)(size_t, void *) noexcept,
+						      void *context, size_t outer,
+						      size_t *retained_heap) noexcept
+{
+	constexpr size_t query =
+		3 * item_transfer_native_recovery_decode_complete_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0, request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_transfer_native_recovery_decode_complete_source_frame_bytes(&source) ||
+	    !item_transfer_native_recovery_decode_complete_initial_inline_bytes(&initial) ||
+	    !item_transfer_native_recovery_decode_complete_source_supplement_frame_bytes(
+		    &supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return item_transfer_native_recovery_decode_complete_bounded(
+		bytes, output, reserve, context, child_outer, retained_heap);
+}
+
+} // namespace
+
+// Actual allocation-free raw money projection SOURCE and real INLINE.
+// No bounded giver encoder/decoder Source is imported as a substitute.
+namespace
+{
+constexpr size_t item_complete_native_money_project_own_source =
+	// two input array refs/output ptr; two revision values; denomination,
+	// quantity; copper/index/added locals and returned genuine result enum.
+	3 * sizeof(void *) + 2 * sizeof(uint64_t) + sizeof(uint8_t) + sizeof(int32_t) +
+	2 * sizeof(int64_t) + sizeof(size_t) + sizeof(native_quest_coin_give_result);
+constexpr size_t item_complete_native_money_counts_own_source =
+	// cash/range refs, hidden raw const begin/end pointers, count, bool result.
+	4 * sizeof(void *) + sizeof(int64_t) + sizeof(bool);
+constexpr size_t item_complete_native_money_project_array_source =
+	// Actual array<int64_t,4> const begin/end/data receiver and pointer result;
+	// size receiver/result; mutable and const subscript this/index/ref result.
+	// No iterator class, array_traits body, array assignment/default callee.
+	3 * (2 * sizeof(void *)) + (sizeof(void *) + sizeof(size_t)) +
+	2 * (2 * sizeof(void *) + sizeof(size_t));
+constexpr size_t item_complete_native_money_project_callee_source =
+	item_complete_native_money_project_own_source +
+	item_complete_native_money_counts_own_source +
+	item_complete_native_money_project_array_source +
+	// Plain candidate's generated nontrivial default constructor receiver,
+	// due actual DMIs. Scalar/fixed-array member operations have no call body.
+	sizeof(void *);
+constexpr size_t item_complete_native_money_project_inline =
+	sizeof(std::array<int64_t, 4>) + sizeof(native_quest_coin_give_projection);
+constexpr size_t item_complete_native_money_project_adapter_own_source =
+	// Same project params plus real budget reference; no named local or
+	// runtime constexpr accessor call. Actual peak/prefix descendants separate.
+	4 * sizeof(void *) + 2 * sizeof(uint64_t) + sizeof(uint8_t) + sizeof(int32_t) +
+	sizeof(native_quest_coin_give_result);
+native_quest_coin_give_result item_complete_native_money_project_child(
+	const std::array<int64_t, 4> &player_before, uint64_t player_revision,
+	const std::array<int64_t, 4> &mobile_before, uint64_t mobile_revision, uint8_t denomination,
+	int32_t quantity, native_quest_coin_give_projection *output,
+	item_native_shape_complete_budget &budget) noexcept
+{
+	// Re-admit actual raw candidate/units immediately before entry: an earlier
+	// reference child has ended and may have issued its own smaller reservation.
+	// Parent owns genuine callee+adapter Source; this is only prospective INLINE.
+	if (!budget.peak(item_complete_native_money_project_inline))
+		return native_quest_coin_give_result::allocation_failure;
+	return native_quest_coin_give_project(player_before, player_revision, mobile_before,
+					      mobile_revision, denomination, quantity, output);
+}
+} // namespace
+
+namespace
+{
+constexpr size_t item_complete_native_fee_shape_retained_source =
+	item_native_decl_source::item_complete_native_fee_shape_owned_own_source +
+	item_native_decl_source::item_complete_native_fee_shape_wrapper_own_source +
+	item_complete_native_fee_shape_controller_source +
+	item_complete_native_fee_shape_lifetime_source +
+	item_complete_native_fee_shape_direct_source +
+	item_complete_native_fee_shape_helper_source +
+	item_complete_native_reference_encode_child_own_source +
+	item_complete_native_reference_encode_child_query_source +
+	item_complete_native_forest_shape_adapter_source +
+	3 * shop_trade_recovery_forest_shape_valid_bounded_source_query_frame_bytes() +
+	item_complete_native_cost_value_entry_child_own_source +
+	item_complete_native_cost_value_entry_child_query_source +
+	item_complete_fee_reward_continuation_decode_child_own_source +
+	item_complete_fee_reward_continuation_decode_child_query_source;
+constexpr size_t item_complete_native_fee_encode_retained_source =
+	item_native_decl_source::item_complete_native_fee_encode_owned_own_source +
+	item_native_decl_source::item_complete_native_fee_encode_wrapper_own_source +
+	item_complete_native_fee_money_encode_controller_source +
+	item_complete_native_fee_money_encode_lifetime_source +
+	item_complete_native_fee_encode_direct_source +
+	item_complete_native_fee_shape_entry_child_own_source +
+	item_complete_native_fee_shape_entry_child_query_source +
+	item_complete_native_cost_encode_child_own_source +
+	item_complete_native_cost_encode_child_query_source +
+	item_complete_native_reference_encode_child_own_source +
+	item_complete_native_reference_encode_child_query_source +
+	item_complete_native_recovery_encode_entry_child_own_source +
+	item_complete_native_recovery_encode_entry_child_query_source +
+	item_complete_native_byte_header_fill_source -
+	item_complete_native_byte_header_failure_cleanup_source +
+	item_complete_native_byte_reference_insert_source +
+	item_complete_native_byte_reference_insert_callers_source +
+	item_complete_native_byte_mutable_end_insert_source +
+	item_complete_native_byte_mutable_end_insert_callers_source +
+	item_complete_native_byte_const_end_insert_source +
+	item_complete_native_byte_const_end_insert_callers_source;
+constexpr size_t item_complete_native_fee_decode_retained_source =
+	item_native_decl_source::item_complete_native_fee_decode_owned_own_source +
+	item_native_decl_source::item_complete_native_fee_decode_wrapper_own_source +
+	item_complete_native_fee_decode_controller_source +
+	item_complete_native_fee_decode_lifetime_source +
+	item_complete_native_fee_decode_direct_source +
+	item_complete_native_reference_decode_child_own_source +
+	item_complete_native_reference_decode_child_span_call_source +
+	item_complete_native_reference_decode_child_query_source +
+	item_complete_native_cost_decode_child_own_source +
+	item_complete_native_cost_decode_child_span_call_source +
+	item_complete_native_cost_decode_child_query_source +
+	item_complete_native_recovery_decode_entry_child_own_source +
+	item_complete_native_recovery_decode_entry_child_query_source +
+	item_complete_native_fee_encode_entry_child_own_source +
+	item_complete_native_fee_encode_entry_child_query_source +
+	item_complete_native_fee_entities_entry_child_own_source +
+	item_complete_native_fee_entities_entry_child_query_source +
+	item_complete_native_fee_money_canonical_equal_source +
+	item_complete_native_keys_equal_source +
+	item_complete_native_revisions_equal_source<item_native_fee_revision_equal> +
+	item_complete_native_byte_raw_fresh_assign_source +
+	item_complete_fee_reward_continuation_decode_child_own_source +
+	item_complete_fee_reward_continuation_decode_child_query_source +
+	item_complete_native_action_operation_equal_source;
+constexpr size_t item_complete_native_money_shape_retained_source =
+	item_native_decl_source::item_complete_native_money_shape_owned_own_source +
+	item_native_decl_source::item_complete_native_money_shape_wrapper_own_source +
+	item_complete_native_money_shape_controller_source +
+	item_complete_native_money_shape_lifetime_source +
+	item_complete_native_money_shape_direct_source +
+	item_complete_native_money_shape_helper_source +
+	item_complete_native_reference_encode_child_own_source +
+	item_complete_native_reference_encode_child_query_source +
+	item_complete_native_forest_shape_adapter_source +
+	3 * shop_trade_recovery_forest_shape_valid_bounded_source_query_frame_bytes() +
+	item_complete_native_money_project_callee_source +
+	item_complete_native_money_project_adapter_own_source;
+constexpr size_t item_complete_native_money_encode_retained_source =
+	item_native_decl_source::item_complete_native_money_encode_owned_own_source +
+	item_native_decl_source::item_complete_native_money_encode_wrapper_own_source +
+	item_complete_native_fee_money_encode_controller_source +
+	item_complete_native_fee_money_encode_lifetime_source +
+	item_complete_native_money_encode_direct_source +
+	item_complete_native_money_shape_entry_child_own_source +
+	item_complete_native_money_shape_entry_child_query_source +
+	item_complete_native_money_encode_child_own_source +
+	item_complete_native_money_encode_child_query_source +
+	item_complete_native_reference_encode_child_own_source +
+	item_complete_native_reference_encode_child_query_source +
+	item_complete_native_recovery_encode_entry_child_own_source +
+	item_complete_native_recovery_encode_entry_child_query_source +
+	item_complete_native_byte_header_fill_source -
+	item_complete_native_byte_header_failure_cleanup_source +
+	item_complete_native_byte_reference_insert_source +
+	item_complete_native_byte_reference_insert_callers_source +
+	item_complete_native_byte_mutable_end_insert_source +
+	item_complete_native_byte_mutable_end_insert_callers_source;
+constexpr size_t item_complete_native_money_decode_retained_source =
+	item_native_decl_source::item_complete_native_money_decode_owned_own_source +
+	item_native_decl_source::item_complete_native_money_decode_wrapper_own_source +
+	item_complete_native_money_decode_controller_source +
+	item_complete_native_money_decode_lifetime_source +
+	item_complete_native_money_decode_direct_source +
+	item_complete_native_reference_decode_child_own_source +
+	item_complete_native_reference_decode_child_span_call_source +
+	item_complete_native_reference_decode_child_query_source +
+	item_complete_native_money_decode_child_own_source +
+	item_complete_native_money_decode_child_span_call_source +
+	item_complete_native_money_decode_child_query_source +
+	item_complete_native_recovery_decode_entry_child_own_source +
+	item_complete_native_recovery_decode_entry_child_query_source +
+	item_complete_native_money_encode_entry_child_own_source +
+	item_complete_native_money_encode_entry_child_query_source +
+	item_complete_native_money_entities_entry_child_own_source +
+	item_complete_native_money_entities_entry_child_query_source +
+	item_complete_native_fee_money_canonical_equal_source +
+	item_complete_native_keys_equal_source +
+	item_complete_native_revisions_equal_source<item_native_money_revision_equal> +
+	item_complete_native_money_range_span_source;
+} // namespace
+
+namespace
+{
+bool item_native_fee_shape_complete_owned(const item_transfer_payload &payload, bool acknowledged,
+					  item_native_shape_complete_budget &budget)
+{
+	const auto &fee = payload.native_cost;
+	const auto &native = payload.native_mobile;
+	const auto &recovery = payload.native_recovery;
+	size_t admission_prefix = 0;
+	if (!fee.fee_only ||
+	    !(budget.prefix(admission_prefix) &&
+	      item_complete_native_cost_value_entry_child(payload, budget.reserve, budget.context,
+							  admission_prefix)) ||
+	    !native.present || native.action != item_native_mobile_action::consumption ||
+	    !native.final_giver_pid || native.final_giver_pid > INT32_MAX ||
+	    native.reference.mobile_revision == UINT64_MAX ||
+	    payload.from_owner.type != item_owner_type::native_mobile ||
+	    payload.from_owner.id != native.reference.mobile_instance_id ||
+	    payload.from_owner.context_id || payload.to_owner.type != item_owner_type::player ||
+	    payload.to_owner.id != native.final_giver_pid || payload.to_owner.context_id ||
+	    payload.reason != item_transfer_reason::quest_turnin ||
+	    payload.reason_id != native.reference.mobile_vnum || payload.logical_source_id ||
+	    payload.multi_root || payload.item_count || payload.item_blob_size ||
+	    payload.selected_item_uid || payload.target_root_item_uid ||
+	    payload.target_parent_item_uid || payload.expected_target_parent_revision ||
+	    payload.corpse.present || payload.collector.present ||
+	    !valid_collector_context(payload, ITEM_TRANSFER_NATIVE_MOBILE_COST_PAYLOAD_VERSION) ||
+	    payload.native_money.present || payload.native_money.original_room_vnum ||
+	    payload.native_money.player_wallet_mapping_id ||
+	    payload.native_money.mobile_wallet_mapping_id ||
+	    payload.native_money.projection != native_quest_coin_give_projection{} ||
+	    payload.expected_from_revision != native.reference.stock_revision ||
+	    payload.expected_to_revision == UINT64_MAX || !recovery.consumed_root_order.empty())
+		return false;
+	std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> reference{};
+	if (!budget.prefix(admission_prefix))
+		return false;
+	if (item_complete_native_reference_encode_child(
+		    native.reference, &reference, budget.reserve, budget.context,
+		    admission_prefix) != player_snapshot_codec_result::ok)
+		return false;
+	if (payload.continuation.kind == item_transfer_continuation_kind::quest_offering)
+	{
+		if (!budget.peak(sizeof(quest_reward_continuation)))
+			return false;
+		quest_reward_continuation terms;
+		budget.terms = &terms;
+		if (!budget.prefix(admission_prefix))
+			return false;
+		if (!item_complete_fee_reward_continuation_decode_child(
+			    payload.continuation.data.data(), payload.continuation.data.size(),
+			    &terms, budget.reserve, budget.context, admission_prefix) ||
+		    terms.player_pid != native.final_giver_pid ||
+		    terms.mobile_vnum != static_cast<uint32_t>(native.reference.mobile_vnum) ||
+		    terms.action_mobile_instance_id != native.reference.mobile_instance_id ||
+		    terms.completion_index != fee.completion_slot ||
+		    terms.action_source.generation.bytes !=
+			    native.reference.birth_source.generation.bytes ||
+		    terms.action_source.sequence != native.reference.mobile_revision)
+			return false;
+		budget.terms = nullptr;
+	}
+	else if (payload.continuation.kind != item_transfer_continuation_kind::none ||
+		 !payload.continuation.data.empty())
+		return false;
+	if (!acknowledged)
+		return !recovery.present && !recovery.player_pid &&
+		       !recovery.acknowledged_save_revision &&
+		       recovery.player_before == shop_trade_recovery_forest_binding{} &&
+		       recovery.player_after == shop_trade_recovery_forest_binding{} &&
+		       native_publication_terms_empty(recovery.publication_terms);
+	return recovery.present && recovery.player_pid == native.final_giver_pid &&
+	       recovery.acknowledged_save_revision &&
+	       native_publication_terms_valid(recovery.publication_terms) &&
+	       !recovery.publication_terms.disappear &&
+	       recovery.player_before.canonical_bytes == recovery.player_after.canonical_bytes &&
+	       recovery.player_before.ordered_item_uids ==
+		       recovery.player_after.ordered_item_uids &&
+	       (budget.prefix(admission_prefix) &&
+		item_complete_native_forest_shape_child(
+			recovery.player_before, shop_trade_recovery_forest_role::player_before,
+			budget.reserve, budget.context, admission_prefix)) &&
+	       (budget.prefix(admission_prefix) &&
+		item_complete_native_forest_shape_child(
+			recovery.player_after, shop_trade_recovery_forest_role::player_after,
+			budget.reserve, budget.context, admission_prefix));
+}
+} // namespace
+
+namespace
+{
+bool item_encode_native_fee_complete_owned(const item_transfer_payload &payload, bool acknowledged,
+					   std::vector<uint8_t> *output,
+					   item_native_wire_encode_complete_budget &budget)
+{
+	size_t admission_prefix = 0;
+	if (!output ||
+	    !(budget.prefix(admission_prefix) &&
+	      item_complete_native_fee_shape_entry_child(payload, acknowledged, budget.reserve,
+							 budget.context, admission_prefix)))
+		return false;
+	if (!budget.peak(2 * sizeof(std::vector<uint8_t>)))
+		return false;
+	std::vector<uint8_t> cost, recovery;
+	budget.first = &cost;
+	budget.second = &recovery;
+	std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> reference{};
+	if (!budget.prefix(admission_prefix))
+		return false;
+	if (item_complete_native_cost_encode_child(
+		    payload.native_cost.projection, &cost, budget.reserve, budget.context,
+		    admission_prefix) != native_quest_cost_projection_result::ok ||
+	    (!budget.prefix(admission_prefix) ?
+		     player_snapshot_codec_result::invalid_value :
+		     item_complete_native_reference_encode_child(
+			     payload.native_mobile.reference, &reference, budget.reserve,
+			     budget.context, admission_prefix)) !=
+		    player_snapshot_codec_result::ok ||
+	    (acknowledged && !(budget.prefix(admission_prefix) &&
+			       item_complete_native_recovery_encode_entry_child(
+				       payload.native_recovery, &recovery, budget.reserve,
+				       budget.context, admission_prefix, nullptr))))
+		return false;
+	const size_t bytes = native_fee_header_bytes + reference.size() + cost.size() +
+			     payload.continuation.data.size() + recovery.size();
+	if (bytes > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
+		return false;
+	if (!budget.peak(sizeof(std::vector<uint8_t>) + native_fee_header_bytes))
+		return false;
+	std::vector<uint8_t> value(native_fee_header_bytes, 0);
+	budget.value = &value;
+	value[0] = 'N';
+	value[1] = 'Q';
+	value[2] = 'F';
+	value[3] = '2';
+	put_u16(value.data() + 4, 1);
+	put_u16(value.data() + 6,
+		acknowledged ? ITEM_TRANSFER_NATIVE_MOBILE_COST_RECOVERY_PAYLOAD_VERSION :
+			       ITEM_TRANSFER_NATIVE_MOBILE_COST_PAYLOAD_VERSION);
+	put_u32(value.data() + 8, static_cast<uint32_t>(bytes));
+	put_u32(value.data() + 12, static_cast<uint32_t>(cost.size()));
+	put_u32(value.data() + 16, static_cast<uint32_t>(payload.continuation.data.size()));
+	put_u32(value.data() + 20, static_cast<uint32_t>(recovery.size()));
+	put_u32(value.data() + 24, payload.native_mobile.final_giver_pid);
+	put_u32(value.data() + 28, payload.native_cost.completion_slot);
+	put_u64(value.data() + 32, payload.expected_from_revision);
+	put_u64(value.data() + 40, payload.expected_to_revision);
+	put_u64(value.data() + 48, payload.native_cost.wallet_mapping_id);
+	put_u16(value.data() + 56, static_cast<uint16_t>(payload.continuation.kind));
+	if (!budget.growth(value, reference.size()))
+		return false;
+	value.insert(value.end(), reference.begin(), reference.end());
+	if (!budget.growth(value, cost.size()))
+		return false;
+	value.insert(value.end(), cost.begin(), cost.end());
+	if (!budget.growth(value, payload.continuation.data.size()))
+		return false;
+	value.insert(value.end(), payload.continuation.data.begin(),
+		     payload.continuation.data.end());
+	if (!budget.growth(value, recovery.size()))
+		return false;
+	value.insert(value.end(), recovery.begin(), recovery.end());
+	if (!budget.peak())
+		return false;
+	*output = std::move(value);
+	return true;
+}
+} // namespace
+
+namespace
+{
+bool item_decode_native_fee_complete_owned(const critical_command &command,
+					   item_transfer_payload *output,
+					   item_native_wire_decode_complete_budget &budget)
+{
+	constexpr size_t fixed = native_fee_header_bytes + QUEST_MOBILE_NATIVE_REFERENCE_BYTES;
+	if (!output || !native_cost_version(command.payload_version) ||
+	    command.type != critical_command_type::item_transfer ||
+	    command.payload.size() < fixed ||
+	    command.payload.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
+		return false;
+	const auto *wire = command.payload.data();
+	const bool acknowledged = command.payload_version ==
+				  ITEM_TRANSFER_NATIVE_MOBILE_COST_RECOVERY_PAYLOAD_VERSION;
+	if (wire[0] != 'N' || wire[1] != 'Q' || wire[2] != 'F' || wire[3] != '2' ||
+	    get_u16(wire + 4) != 1 || get_u16(wire + 6) != command.payload_version ||
+	    get_u32(wire + 8) != command.payload.size() || get_u16(wire + 58) || get_u32(wire + 60))
+		return false;
+	const size_t cost_size = get_u32(wire + 12), continuation_size = get_u32(wire + 16),
+		     recovery_size = get_u32(wire + 20);
+	size_t remaining = command.payload.size() - fixed;
+	if (cost_size > remaining)
+		return false;
+	remaining -= cost_size;
+	if (continuation_size > remaining ||
+	    continuation_size > ITEM_TRANSFER_CONTINUATION_MAX_BYTES)
+		return false;
+	remaining -= continuation_size;
+	if (recovery_size != remaining || (!acknowledged && recovery_size))
+		return false;
+	if (!budget.peak(sizeof(item_transfer_payload)))
+		return false;
+	item_transfer_payload value{};
+	budget.payload = &value;
+	size_t admission_prefix = 0;
+	if (!budget.prefix(admission_prefix))
+		return false;
+	value.native_mobile.present = true;
+	value.native_mobile.action = item_native_mobile_action::consumption;
+	value.native_mobile.final_giver_pid = get_u32(wire + 24);
+	value.native_cost.present = value.native_cost.fee_only = true;
+	value.native_cost.completion_slot = get_u32(wire + 28);
+	value.native_cost.wallet_mapping_id = get_u64(wire + 48);
+	value.expected_from_revision = get_u64(wire + 32);
+	value.expected_to_revision = get_u64(wire + 40);
+	if (item_complete_native_reference_decode_child(
+		    { wire + native_fee_header_bytes, QUEST_MOBILE_NATIVE_REFERENCE_BYTES },
+		    &value.native_mobile.reference, budget.reserve, budget.context,
+		    admission_prefix) != player_snapshot_codec_result::ok ||
+	    (!budget.prefix(admission_prefix) ?
+		     native_quest_cost_projection_result::invalid :
+		     item_complete_native_cost_decode_child(
+			     { wire + fixed, cost_size }, &value.native_cost.projection,
+			     budget.reserve, budget.context, admission_prefix)) !=
+		    native_quest_cost_projection_result::ok)
+		return false;
+	value.continuation.kind = static_cast<item_transfer_continuation_kind>(get_u16(wire + 56));
+	if (!budget.peak(continuation_size))
+		return false;
+	value.continuation.data.assign(wire + fixed + cost_size,
+				       wire + fixed + cost_size + continuation_size);
+	if (acknowledged &&
+	    !(budget.prefix(admission_prefix) &&
+	      item_complete_native_recovery_decode_entry_child(
+		      { wire + fixed + cost_size + continuation_size, recovery_size },
+		      &value.native_recovery, budget.reserve, budget.context, admission_prefix,
+		      nullptr)))
+		return false;
+	value.from_owner = { item_owner_type::native_mobile,
+			     value.native_mobile.reference.mobile_instance_id, 0 };
+	value.to_owner = { item_owner_type::player, value.native_mobile.final_giver_pid, 0 };
+	value.reason = item_transfer_reason::quest_turnin;
+	value.reason_id = value.native_mobile.reference.mobile_vnum;
+	if (!budget.peak(sizeof(std::vector<uint8_t>) + sizeof(critical_command)))
+		return false;
+	std::vector<uint8_t> canonical;
+	critical_command expected{};
+	budget.canonical = &canonical;
+	budget.expected = &expected;
+	if (!(budget.prefix(admission_prefix) &&
+	      item_complete_native_fee_encode_entry_child(value, acknowledged, &canonical,
+							  budget.reserve, budget.context,
+							  admission_prefix)) ||
+	    (!budget.peak() || canonical != command.payload) ||
+	    !(budget.prefix(admission_prefix) &&
+	      item_complete_native_fee_entities_entry_child(&expected, value, budget.reserve,
+							    budget.context, admission_prefix)) ||
+	    command.keys.size() != expected.keys.size() ||
+	    command.expected_revisions.size() != expected.expected_revisions.size() ||
+	    !budget.peak() ||
+	    !std::equal(command.keys.begin(), command.keys.end(), expected.keys.begin(),
+			critical_entity_key_equal) ||
+	    !std::equal(command.expected_revisions.begin(), command.expected_revisions.end(),
+			expected.expected_revisions.begin(), item_native_fee_revision_equal{}))
+		return false;
+	if (value.continuation.kind == item_transfer_continuation_kind::quest_offering)
+	{
+		if (!budget.peak(sizeof(quest_reward_continuation)))
+			return false;
+		quest_reward_continuation terms;
+		budget.terms = &terms;
+		if (!budget.prefix(admission_prefix))
+			return false;
+		if (!item_complete_fee_reward_continuation_decode_child(
+			    value.continuation.data.data(), value.continuation.data.size(), &terms,
+			    budget.reserve, budget.context, admission_prefix) ||
+		    terms.action_operation.bytes != command.operation_id.bytes)
+			return false;
+		budget.terms = nullptr;
+	}
+	if (!budget.peak())
+		return false;
+	*output = std::move(value);
+	return true;
+}
+} // namespace
+
+namespace
+{
+bool item_native_money_shape_complete_owned(const item_transfer_payload &payload, bool acknowledged,
+					    item_native_shape_complete_budget &budget)
+{
+	const auto &money = payload.native_money;
+	const auto &native = payload.native_mobile;
+	const auto &recovery = payload.native_recovery;
+	size_t admission_prefix = 0;
+	if (!money.present || money.original_room_vnum < 0 || !money.player_wallet_mapping_id ||
+	    !money.mobile_wallet_mapping_id ||
+	    money.player_wallet_mapping_id == money.mobile_wallet_mapping_id ||
+	    payload.native_cost.present || payload.native_cost.fee_only ||
+	    payload.native_cost.completion_slot || payload.native_cost.wallet_mapping_id ||
+	    payload.native_cost.projection != native_quest_cost_projection{} || !native.present ||
+	    native.action != item_native_mobile_action::acceptance || !native.final_giver_pid ||
+	    native.final_giver_pid > INT32_MAX ||
+	    payload.from_owner.type != item_owner_type::player ||
+	    payload.from_owner.id != native.final_giver_pid || payload.from_owner.context_id ||
+	    payload.to_owner.type != item_owner_type::native_mobile ||
+	    payload.to_owner.id != native.reference.mobile_instance_id ||
+	    payload.to_owner.context_id || payload.reason != item_transfer_reason::player_give ||
+	    payload.reason_id != native.reference.mobile_vnum || payload.logical_source_id ||
+	    payload.multi_root || payload.item_count || payload.item_blob_size ||
+	    payload.selected_item_uid || payload.target_root_item_uid ||
+	    payload.target_parent_item_uid || payload.expected_target_parent_revision ||
+	    payload.corpse.present || payload.collector.present ||
+	    !valid_collector_context(payload, ITEM_TRANSFER_NATIVE_MOBILE_MONEY_PAYLOAD_VERSION) ||
+	    payload.continuation.kind != item_transfer_continuation_kind::none ||
+	    !payload.continuation.data.empty() || payload.expected_from_revision == UINT64_MAX ||
+	    payload.expected_to_revision != native.reference.stock_revision ||
+	    !native_publication_terms_empty(recovery.publication_terms) ||
+	    !recovery.consumed_root_order.empty())
+		return false;
+	std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> encoded{};
+	native_quest_coin_give_projection projected;
+	if (!budget.prefix(admission_prefix) || !budget.peak())
+		return false;
+	if (item_complete_native_reference_encode_child(native.reference, &encoded, budget.reserve,
+							budget.context, admission_prefix) !=
+		    player_snapshot_codec_result::ok ||
+	    native.reference.mobile_revision == UINT64_MAX ||
+	    item_complete_native_money_project_child(
+		    money.projection.player_before, money.projection.player_before_revision,
+		    money.projection.mobile_before, money.projection.mobile_before_revision,
+		    money.projection.denomination, money.projection.quantity, &projected,
+		    budget) != native_quest_coin_give_result::ok ||
+	    projected != money.projection)
+		return false;
+	if (!acknowledged)
+		return !recovery.present && !recovery.player_pid &&
+		       !recovery.acknowledged_save_revision &&
+		       recovery.player_before == shop_trade_recovery_forest_binding{} &&
+		       recovery.player_after == shop_trade_recovery_forest_binding{};
+	return recovery.present && recovery.player_pid == native.final_giver_pid &&
+	       recovery.acknowledged_save_revision && recovery.player_before.present &&
+	       recovery.player_after.present &&
+	       recovery.player_before.canonical_bytes == recovery.player_after.canonical_bytes &&
+	       recovery.player_before.ordered_item_uids ==
+		       recovery.player_after.ordered_item_uids &&
+	       (budget.prefix(admission_prefix) &&
+		item_complete_native_forest_shape_child(
+			recovery.player_before, shop_trade_recovery_forest_role::player_before,
+			budget.reserve, budget.context, admission_prefix)) &&
+	       (budget.prefix(admission_prefix) &&
+		item_complete_native_forest_shape_child(
+			recovery.player_after, shop_trade_recovery_forest_role::player_after,
+			budget.reserve, budget.context, admission_prefix));
+}
+} // namespace
+
+namespace
+{
+bool item_encode_native_money_complete_owned(const item_transfer_payload &payload,
+					     bool acknowledged, std::vector<uint8_t> *output,
+					     item_native_wire_encode_complete_budget &budget)
+{
+	size_t admission_prefix = 0;
+	if (!output ||
+	    !(budget.prefix(admission_prefix) &&
+	      item_complete_native_money_shape_entry_child(payload, acknowledged, budget.reserve,
+							   budget.context, admission_prefix)))
+		return false;
+	if (!budget.peak(2 * sizeof(std::vector<uint8_t>)))
+		return false;
+	std::vector<uint8_t> money, recovery;
+	budget.first = &money;
+	budget.second = &recovery;
+	std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> reference{};
+	if (!budget.prefix(admission_prefix))
+		return false;
+	if (item_complete_native_money_encode_child(
+		    payload.native_money.projection, &money, budget.reserve, budget.context,
+		    admission_prefix) != native_quest_coin_give_result::ok ||
+	    (!budget.prefix(admission_prefix) ?
+		     player_snapshot_codec_result::invalid_value :
+		     item_complete_native_reference_encode_child(
+			     payload.native_mobile.reference, &reference, budget.reserve,
+			     budget.context, admission_prefix)) !=
+		    player_snapshot_codec_result::ok ||
+	    (acknowledged && !(budget.prefix(admission_prefix) &&
+			       item_complete_native_recovery_encode_entry_child(
+				       payload.native_recovery, &recovery, budget.reserve,
+				       budget.context, admission_prefix, nullptr))))
+		return false;
+	const size_t bytes = ITEM_TRANSFER_NATIVE_MOBILE_MONEY_HEADER_BYTES + reference.size() +
+			     money.size() + recovery.size();
+	if (bytes > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
+		return false;
+	if (!budget.peak(sizeof(std::vector<uint8_t>) +
+			 ITEM_TRANSFER_NATIVE_MOBILE_MONEY_HEADER_BYTES))
+		return false;
+	std::vector<uint8_t> result(ITEM_TRANSFER_NATIVE_MOBILE_MONEY_HEADER_BYTES, 0);
+	budget.value = &result;
+	result[0] = 'N';
+	result[1] = 'Q';
+	result[2] = 'M';
+	result[3] = '1';
+	put_u16(result.data() + 4, 1);
+	put_u16(result.data() + 6,
+		acknowledged ? ITEM_TRANSFER_NATIVE_MOBILE_MONEY_RECOVERY_PAYLOAD_VERSION :
+			       ITEM_TRANSFER_NATIVE_MOBILE_MONEY_PAYLOAD_VERSION);
+	put_u32(result.data() + 8, static_cast<uint32_t>(bytes));
+	put_u32(result.data() + 12, static_cast<uint32_t>(recovery.size()));
+	put_u32(result.data() + 16, payload.native_mobile.final_giver_pid);
+	put_u32(result.data() + 20, static_cast<uint32_t>(payload.native_money.original_room_vnum));
+	put_u64(result.data() + 24, payload.expected_from_revision);
+	put_u64(result.data() + 32, payload.expected_to_revision);
+	put_u64(result.data() + 40, payload.native_money.player_wallet_mapping_id);
+	put_u64(result.data() + 48, payload.native_money.mobile_wallet_mapping_id);
+	if (!budget.growth(result, reference.size()))
+		return false;
+	result.insert(result.end(), reference.begin(), reference.end());
+	if (!budget.growth(result, money.size()))
+		return false;
+	result.insert(result.end(), money.begin(), money.end());
+	if (!budget.growth(result, recovery.size()))
+		return false;
+	result.insert(result.end(), recovery.begin(), recovery.end());
+	if (!budget.peak())
+		return false;
+	*output = std::move(result);
+	return true;
+}
+} // namespace
+
+namespace
+{
+bool item_decode_native_money_complete_owned(const critical_command &command,
+					     item_transfer_payload *output,
+					     item_native_wire_decode_complete_budget &budget)
+{
+	constexpr size_t fixed = ITEM_TRANSFER_NATIVE_MOBILE_MONEY_HEADER_BYTES +
+				 QUEST_MOBILE_NATIVE_REFERENCE_BYTES + NATIVE_QUEST_COIN_GIVE_BYTES;
+	if (!output || !native_money_version(command.payload_version) ||
+	    command.type != critical_command_type::item_transfer ||
+	    command.payload.size() < fixed ||
+	    command.payload.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
+		return false;
+	const auto *wire = command.payload.data();
+	const bool acknowledged = command.payload_version ==
+				  ITEM_TRANSFER_NATIVE_MOBILE_MONEY_RECOVERY_PAYLOAD_VERSION;
+	if (wire[0] != 'N' || wire[1] != 'Q' || wire[2] != 'M' || wire[3] != '1' ||
+	    get_u16(wire + 4) != 1 || get_u16(wire + 6) != command.payload_version ||
+	    get_u32(wire + 8) != command.payload.size() || get_u32(wire + 20) > INT32_MAX ||
+	    get_u64(wire + 56) || get_u32(wire + 12) != command.payload.size() - fixed ||
+	    (!acknowledged && command.payload.size() != fixed))
+		return false;
+	if (!budget.peak(sizeof(item_transfer_payload)))
+		return false;
+	item_transfer_payload candidate{};
+	budget.payload = &candidate;
+	size_t admission_prefix = 0;
+	if (!budget.prefix(admission_prefix))
+		return false;
+	candidate.native_mobile.present = true;
+	candidate.native_mobile.action = item_native_mobile_action::acceptance;
+	candidate.native_mobile.final_giver_pid = get_u32(wire + 16);
+	candidate.expected_from_revision = get_u64(wire + 24);
+	candidate.expected_to_revision = get_u64(wire + 32);
+	candidate.native_money.present = true;
+	candidate.native_money.original_room_vnum = static_cast<int32_t>(get_u32(wire + 20));
+	candidate.native_money.player_wallet_mapping_id = get_u64(wire + 40);
+	candidate.native_money.mobile_wallet_mapping_id = get_u64(wire + 48);
+	if (item_complete_native_reference_decode_child(
+		    { wire + ITEM_TRANSFER_NATIVE_MOBILE_MONEY_HEADER_BYTES,
+		      QUEST_MOBILE_NATIVE_REFERENCE_BYTES },
+		    &candidate.native_mobile.reference, budget.reserve, budget.context,
+		    admission_prefix) != player_snapshot_codec_result::ok ||
+	    (!budget.prefix(admission_prefix) ?
+		     native_quest_coin_give_result::invalid :
+		     item_complete_native_money_decode_child(
+			     { wire + ITEM_TRANSFER_NATIVE_MOBILE_MONEY_HEADER_BYTES +
+				       QUEST_MOBILE_NATIVE_REFERENCE_BYTES,
+			       NATIVE_QUEST_COIN_GIVE_BYTES },
+			     &candidate.native_money.projection, budget.reserve, budget.context,
+			     admission_prefix)) != native_quest_coin_give_result::ok ||
+	    (acknowledged && !(budget.prefix(admission_prefix) &&
+			       item_complete_native_recovery_decode_entry_child(
+				       std::span<const uint8_t>(command.payload).subspan(fixed),
+				       &candidate.native_recovery, budget.reserve, budget.context,
+				       admission_prefix, nullptr))))
+		return false;
+	candidate.from_owner = { item_owner_type::player, candidate.native_mobile.final_giver_pid,
+				 0 };
+	candidate.to_owner = { item_owner_type::native_mobile,
+			       candidate.native_mobile.reference.mobile_instance_id, 0 };
+	candidate.reason = item_transfer_reason::player_give;
+	candidate.reason_id = candidate.native_mobile.reference.mobile_vnum;
+	if (!budget.peak(sizeof(std::vector<uint8_t>) + sizeof(critical_command)))
+		return false;
+	std::vector<uint8_t> canonical;
+	critical_command expected{};
+	budget.canonical = &canonical;
+	budget.expected = &expected;
+	if (!(budget.prefix(admission_prefix) &&
+	      item_complete_native_money_encode_entry_child(candidate, acknowledged, &canonical,
+							    budget.reserve, budget.context,
+							    admission_prefix)) ||
+	    (!budget.peak() || canonical != command.payload) ||
+	    !(budget.prefix(admission_prefix) &&
+	      item_complete_native_money_entities_entry_child(&expected, candidate, budget.reserve,
+							      budget.context, admission_prefix)) ||
+	    command.keys.size() != expected.keys.size() ||
+	    command.expected_revisions.size() != expected.expected_revisions.size() ||
+	    !budget.peak() ||
+	    !std::equal(command.keys.begin(), command.keys.end(), expected.keys.begin(),
+			critical_entity_key_equal) ||
+	    !std::equal(command.expected_revisions.begin(), command.expected_revisions.end(),
+			expected.expected_revisions.begin(), item_native_money_revision_equal{}))
+		return false;
+	if (!budget.peak())
+		return false;
+	*output = std::move(candidate);
+	return true;
+}
+} // namespace
+
+bool item_transfer_native_fee_shape_valid_complete_bounded(const item_transfer_payload &payload,
+							   bool acknowledged,
+							   bool (*reserve)(size_t, void *) noexcept,
+							   void *context,
+							   size_t outer_live) noexcept
+{
+	if (!reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = item_complete_native_fee_shape_retained_source +
+				  sizeof(std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES>) +
+				  2 * sizeof(shop_trade_recovery_forest_binding) +
+				  sizeof(native_quest_coin_give_projection);
+	item_native_shape_complete_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	try
+	{
+		return item_native_fee_shape_complete_owned(payload, acknowledged, budget);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_transfer_native_fee_encode_complete_bounded(const item_transfer_payload &payload,
+						      bool acknowledged,
+						      std::vector<uint8_t> *encoded,
+						      bool (*reserve)(size_t, void *) noexcept,
+						      void *context, size_t outer_live) noexcept
+{
+	if (!encoded || !reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = item_complete_native_fee_encode_retained_source +
+				  sizeof(std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES>) +
+				  item_complete_native_byte_header_zero_inline_bytes;
+	item_native_wire_encode_complete_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	try
+	{
+		return item_encode_native_fee_complete_owned(payload, acknowledged, encoded,
+							     budget);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_transfer_native_fee_decode_complete_bounded(const critical_command &command,
+						      item_transfer_payload *payload,
+						      bool (*reserve)(size_t, void *) noexcept,
+						      void *context, size_t outer_live) noexcept
+{
+	if (!payload || !reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames =
+		item_complete_native_fee_decode_retained_source + 2 * sizeof(item_owner_identity);
+	item_native_wire_decode_complete_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	try
+	{
+		return item_decode_native_fee_complete_owned(command, payload, budget);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_transfer_native_money_shape_valid_complete_bounded(
+	const item_transfer_payload &payload, bool acknowledged,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	if (!reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = item_complete_native_money_shape_retained_source +
+				  sizeof(std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES>) +
+				  2 * sizeof(shop_trade_recovery_forest_binding) +
+				  sizeof(native_quest_cost_projection) +
+				  sizeof(native_quest_coin_give_projection);
+	item_native_shape_complete_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	try
+	{
+		return item_native_money_shape_complete_owned(payload, acknowledged, budget);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_transfer_native_money_encode_complete_bounded(const item_transfer_payload &payload,
+							bool acknowledged,
+							std::vector<uint8_t> *encoded,
+							bool (*reserve)(size_t, void *) noexcept,
+							void *context, size_t outer_live) noexcept
+{
+	if (!encoded || !reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = item_complete_native_money_encode_retained_source +
+				  sizeof(std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES>) +
+				  item_complete_native_byte_header_zero_inline_bytes;
+	item_native_wire_encode_complete_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	try
+	{
+		return item_encode_native_money_complete_owned(payload, acknowledged, encoded,
+							       budget);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_transfer_native_money_decode_complete_bounded(const critical_command &command,
+							item_transfer_payload *payload,
+							bool (*reserve)(size_t, void *) noexcept,
+							void *context, size_t outer_live) noexcept
+{
+	if (!payload || !reserve || !payload_clone_policy_supported())
+		return false;
+	constexpr size_t frames = item_complete_native_money_decode_retained_source +
+				  2 * sizeof(item_owner_identity) +
+				  item_complete_native_money_range_span_inline;
+	item_native_wire_decode_complete_budget budget{ reserve, context, outer_live, frames };
+	if (!budget.peak())
+		return false;
+	try
+	{
+		return item_decode_native_money_complete_owned(command, payload, budget);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_transfer_native_fee_shape_valid_complete_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	size_t result = item_complete_native_fee_shape_retained_source, child = 0;
+	if (!item_transfer_native_cost_value_valid_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	if (!quest_mobile_native_reference_encode_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	if (!quest_fee_reward_continuation_decode_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	if (!shop_trade_recovery_forest_shape_valid_bounded_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	*output = result;
+	return true;
+}
+bool item_transfer_native_fee_shape_valid_complete_source_supplement_frame_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = 0;
+	return true;
+}
+bool item_transfer_native_fee_shape_valid_complete_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = sizeof(item_native_shape_complete_budget);
+	return true;
+}
+bool item_transfer_native_money_shape_valid_complete_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	size_t result = item_complete_native_money_shape_retained_source, child = 0;
+	if (!quest_mobile_native_reference_encode_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	if (!shop_trade_recovery_forest_shape_valid_bounded_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	*output = result;
+	return true;
+}
+bool item_transfer_native_money_shape_valid_complete_source_supplement_frame_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = 0;
+	return true;
+}
+bool item_transfer_native_money_shape_valid_complete_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = sizeof(item_native_shape_complete_budget);
+	return true;
+}
+bool item_transfer_native_fee_encode_complete_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	size_t result = item_complete_native_fee_encode_retained_source, child = 0;
+	if (!item_transfer_native_fee_shape_valid_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	if (!native_quest_cost_projection_encode_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	if (!quest_mobile_native_reference_encode_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	if (!item_transfer_native_recovery_encode_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	*output = result;
+	return true;
+}
+bool item_transfer_native_fee_encode_complete_source_supplement_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = 0;
+	return true;
+}
+bool item_transfer_native_fee_encode_complete_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = sizeof(item_native_wire_encode_complete_budget);
+	return true;
+}
+bool item_transfer_native_money_encode_complete_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	size_t result = item_complete_native_money_encode_retained_source, child = 0;
+	if (!item_transfer_native_money_shape_valid_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	if (!native_quest_coin_give_encode_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	if (!quest_mobile_native_reference_encode_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	if (!item_transfer_native_recovery_encode_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	*output = result;
+	return true;
+}
+bool item_transfer_native_money_encode_complete_source_supplement_frame_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = 0;
+	return true;
+}
+bool item_transfer_native_money_encode_complete_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = sizeof(item_native_wire_encode_complete_budget);
+	return true;
+}
+bool item_transfer_native_fee_decode_complete_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	size_t result = item_complete_native_fee_decode_retained_source, child = 0;
+	if (!quest_mobile_native_reference_decode_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	if (!native_quest_cost_projection_decode_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	if (!item_transfer_native_recovery_decode_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	if (!item_transfer_native_fee_encode_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	if (!item_complete_native_fee_entities_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	if (!quest_fee_reward_continuation_decode_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	*output = result;
+	return true;
+}
+bool item_transfer_native_fee_decode_complete_source_supplement_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = 0;
+	return true;
+}
+bool item_transfer_native_fee_decode_complete_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = sizeof(item_native_wire_decode_complete_budget);
+	return true;
+}
+bool item_transfer_native_money_decode_complete_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	size_t result = item_complete_native_money_decode_retained_source, child = 0;
+	if (!quest_mobile_native_reference_decode_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	if (!native_quest_coin_give_decode_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	if (!item_transfer_native_recovery_decode_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	if (!item_transfer_native_money_encode_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	if (!item_complete_native_money_entities_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	*output = result;
+	return true;
+}
+bool item_transfer_native_money_decode_complete_source_supplement_frame_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = 0;
+	return true;
+}
+bool item_transfer_native_money_decode_complete_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = sizeof(item_native_wire_decode_complete_budget);
+	return true;
+}
+
+#else
+bool item_transfer_native_fee_shape_valid_complete_bounded(const item_transfer_payload &, bool,
+							   bool (*)(size_t, void *) noexcept,
+							   void *, size_t) noexcept
+{
+	return false;
+}
+bool item_transfer_native_fee_encode_complete_bounded(const item_transfer_payload &, bool,
+						      std::vector<uint8_t> *,
+						      bool (*)(size_t, void *) noexcept, void *,
+						      size_t) noexcept
+{
+	return false;
+}
+bool item_transfer_native_fee_decode_complete_bounded(const critical_command &,
+						      item_transfer_payload *,
+						      bool (*)(size_t, void *) noexcept, void *,
+						      size_t) noexcept
+{
+	return false;
+}
+bool item_transfer_native_money_shape_valid_complete_bounded(const item_transfer_payload &, bool,
+							     bool (*)(size_t, void *) noexcept,
+							     void *, size_t) noexcept
+{
+	return false;
+}
+bool item_transfer_native_money_encode_complete_bounded(const item_transfer_payload &, bool,
+							std::vector<uint8_t> *,
+							bool (*)(size_t, void *) noexcept, void *,
+							size_t) noexcept
+{
+	return false;
+}
+bool item_transfer_native_money_decode_complete_bounded(const critical_command &,
+							item_transfer_payload *,
+							bool (*)(size_t, void *) noexcept, void *,
+							size_t) noexcept
+{
+	return false;
+}
+bool item_transfer_native_fee_shape_valid_complete_source_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_native_fee_shape_valid_complete_source_supplement_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_native_fee_shape_valid_complete_initial_inline_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_native_fee_encode_complete_source_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_native_fee_encode_complete_source_supplement_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_native_fee_encode_complete_initial_inline_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_native_fee_decode_complete_source_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_native_fee_decode_complete_source_supplement_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_native_fee_decode_complete_initial_inline_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_native_money_shape_valid_complete_source_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_native_money_shape_valid_complete_source_supplement_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_native_money_shape_valid_complete_initial_inline_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_native_money_encode_complete_source_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_native_money_encode_complete_source_supplement_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_native_money_encode_complete_initial_inline_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_native_money_decode_complete_source_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_native_money_decode_complete_source_supplement_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_native_money_decode_complete_initial_inline_bytes(size_t *) noexcept
+{
+	return false;
+}
+#endif
