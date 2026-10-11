@@ -66454,8 +66454,8 @@
       "src/economy/economic_accounting_plan.c": "ef56a574d61ce4b029f8f2a0df88f4ae4a9d2b37c7c50fef524f2eea6fc7bdda",
       "src/economy/economic_accounting_plan.h": "fbfc542a859c418fc2a9cd9d1f2c662febaeb8134b84681263831402621ef6c4",
       "src/economy/economic_accounting_types.c": "c4d0eba179cf599c1e8f70912d6fa7740a974f8826beb843cfc4c469095277f3",
-      "src/economy/economic_command_admission.c": "7357959763514749caef941e4036a1654c5f1b818cb662713630ec5fc3c53c9b",
-      "src/economy/economic_command_admission.h": "3d1336dabf0461511e0be5097cc137e9f08a8ae15a334c7c4dd034270d3793f1",
+      "src/economy/economic_command_admission.c": "12b277271bd10ccef6c7c32cd41d85494f3540f4142cfd57960a4e5b087c63d3",
+      "src/economy/economic_command_admission.h": "374c98f77ce4cd41c7d36dddedf9add4d49313c78421f88103b3be56096a72ee",
       "src/economy/economic_gameplay_authority.c": "9643af883e2d7662acf17cd16d2d3d7933c897702d8f07e4893c5de8fb76f92c",
       "src/economy/economic_gameplay_authority.h": "00e4355f171f0a8bdc00187943aaf6ad954bdb5112569e61570a422bf4864b80",
       "src/economy/economic_source_event.c": "df911d6dce247bbe779e99c2e7948bbab5e6184451c9306e40f4f083e5838458",
@@ -66929,7 +66929,7 @@
       "tests/async/run_plan5_retention_journeys.py": "3dc38861cdb14f6aae61f586a0943c38962fa9a17c93b40615480b106a042878",
       "tests/run_test_entry.py": "bdfbc6eb466ddbb3887dbc639530cf76bff50142e86d11c79dc99d5ac45cc07d",
       "tests/async/test_test_entry_main_outcome.py": "3175efa87cf0a2f287b80491787554d9cd45fe109b93807a46de83dee6b1314c",
-      "tests/regression_manifest.json": "d32ceac2c2161933b7812fbf06b23978b7078b98c1dc4c6f58db9c8e3a620503",
+      "tests/regression_manifest.json": "d49a62a1f69ab968e67cef0b97167577fb2dc2cfac17644c84d82731c547ee41",
       "tests/async/test_original_logit_source_profile.py": "687de0b9b21478fe90b7de27a282855176c61f973d28fa042deb47bf8c675fc3",
       "tests/async/original_logit_source_profile_test.cpp": "4b653b73384835d1f2738e1639c88843d52a21cfcd6df6a4faa0a8221addb8c3",
       "tests/async/test_native_birth_zone_source_profile.py": "ed8e51359ca1cad73ad1cdc99faa7782d7636c047dbb30a4d7eaa70384047b2a",
@@ -66938,7 +66938,9 @@
       "tests/async/test_quest_cost_admission.py": "954d60c7ba826523cd774e63f4b0605e46064b7dea27ab35e6bd7c2de5e4ea81",
       "tests/async/quest_cost_admission_cases.cpp.in": "cda1b39973f37b2c9ccedaf68462f4830f384b4aaa191db4de90ae019de89f49",
       "tests/async/test_currency_command_build_bounded.py": "59c7a174fea46274fc9ad68a28e872d68ce38e612a8ea6254b34c03f9c67c0a7",
-      "tests/async/currency_command_build_bounded_test.cpp": "337c44f9ecc88c784dc8a4b5ac8de198672d9fdfc6b2dac8b474ec05d6eb1407"
+      "tests/async/currency_command_build_bounded_test.cpp": "337c44f9ecc88c784dc8a4b5ac8de198672d9fdfc6b2dac8b474ec05d6eb1407",
+      "tests/async/test_currency_bank_admission_bounded.py": "be545d94176ac82d285f89496dde01d7cc1ced2d5f8eebe4fce15380d3aad696",
+      "tests/async/currency_bank_admission_bounded_test.cpp": "079c2e84931ab72193ebdb42bf9810e980f0667a4f79c3ec2c20686f43e2de92"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {
