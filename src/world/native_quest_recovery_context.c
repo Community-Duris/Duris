@@ -1506,7 +1506,7 @@ bool money_receipt_valid_bounded(const item_transfer_payload &payload,
 	if (!item_native_mobile_money_result_decode(
 		    { receipt.result_payload.data(), receipt.result_size }, &actual) ||
 	    !scope.invoke(
-		    [&](size_t prefix)
+		    [&]([[maybe_unused]] size_t prefix)
 		    {
 			    return item_native_mobile_money_result_build_owned(
 				    payload, &expected, reserve, context, scope);
@@ -1552,7 +1552,7 @@ bool fee_receipt_valid_bounded(const item_transfer_payload &payload,
 	if (!item_native_mobile_fee_result_decode(
 		    { receipt.result_payload.data(), receipt.result_size }, &actual) ||
 	    !scope.invoke(
-		    [&](size_t prefix) {
+		    [&]([[maybe_unused]] size_t prefix) {
 			    return item_native_mobile_fee_result_build_owned(
 				    payload, &expected, reserve, context, scope);
 		    },
@@ -1581,14 +1581,14 @@ bool context_shape_bounded(const item_transfer_payload &payload,
 	};
 	if (!(payload.native_money.present ?
 		      scope.invoke(
-			      [&](size_t prefix) {
+			      [&]([[maybe_unused]] size_t prefix) {
 				      return money_receipt_valid_bounded(payload, value.receipt,
 									 reserve, context, scope);
 			      },
 			      false, native_quest_recovery_codec_source_frame_bytes()) :
 	      payload.native_cost.fee_only ?
 		      scope.invoke(
-			      [&](size_t prefix) {
+			      [&]([[maybe_unused]] size_t prefix) {
 				      return fee_receipt_valid_bounded(payload, value.receipt,
 								       reserve, context, scope);
 			      },
@@ -1902,7 +1902,7 @@ bool child_command_shape_bounded(const critical_command &parent,
 		    critical_command_codec_result::ok ||
 	    child.operation_id.bytes != value.next_child_operation.bytes ||
 	    !scope.invoke_codec(
-		    [&](size_t prefix) {
+		    [&]([[maybe_unused]] size_t prefix) {
 			    return original_command_bounded(child, &child_payload, &canonical,
 							    reserve, context, scope);
 		    },
@@ -2012,7 +2012,7 @@ bool latest_child_shape_bounded(const critical_command &parent,
 		return false;
 	correlation.next_child_command = value.latest_child_command;
 	return scope.invoke_codec(
-		[&](size_t prefix) {
+		[&]([[maybe_unused]] size_t prefix) {
 			return child_command_shape_bounded(parent, payload, correlation, reserve,
 							   context, scope);
 		},
@@ -2268,33 +2268,33 @@ native_quest_recovery_context_encode_bounded(const critical_command &command,
 			encoded_live(scope, encoded_command), native_live(scope, native_bytes),
 			player_live(scope, player_bytes);
 		if (!scope.invoke_codec(
-			    [&](size_t prefix) {
+			    [&]([[maybe_unused]] size_t prefix) {
 				    return original_command_bounded(command, &payload,
 								    &encoded_command, reserve,
 								    context, scope);
 			    },
 			    false, native_quest_recovery_codec_source_frame_bytes()) ||
 		    !scope.invoke_codec(
-			    [&](size_t prefix) {
+			    [&]([[maybe_unused]] size_t prefix) {
 				    return context_shape_bounded(payload, value, reserve, context,
 								 scope);
 			    },
 			    false, native_quest_recovery_codec_source_frame_bytes()) ||
 		    !scope.invoke_codec(
-			    [&](size_t prefix) {
+			    [&]([[maybe_unused]] size_t prefix) {
 				    return child_command_shape_bounded(command, payload, value,
 								       reserve, context, scope);
 			    },
 			    false, native_quest_recovery_codec_source_frame_bytes()) ||
 		    !scope.invoke_codec(
-			    [&](size_t prefix) {
+			    [&]([[maybe_unused]] size_t prefix) {
 				    return latest_child_shape_bounded(command, payload, value,
 								      reserve, context, scope);
 			    },
 			    false, native_quest_recovery_codec_source_frame_bytes()))
 			return player_snapshot_codec_result::invalid_value;
 		auto result = scope.invoke_codec(
-			[&](size_t prefix)
+			[&]([[maybe_unused]] size_t prefix)
 			{
 				return original_forests_bounded(payload, value, &native_bytes,
 								&player_bytes, reserve, context,
@@ -2304,7 +2304,7 @@ native_quest_recovery_context_encode_bounded(const critical_command &command,
 			native_quest_recovery_codec_source_frame_bytes());
 		if (result != player_snapshot_codec_result::ok)
 			return result;
-		nqr_bounded_writer out{ scope };
+		nqr_bounded_writer out{ scope, {} };
 		recovery_codec_live out_live(scope, out.bytes);
 		out.raw(payload.native_cost.fee_only ?
 				fee_magic :
@@ -2472,7 +2472,7 @@ player_snapshot_codec_result native_quest_recovery_context_decode_bounded(
 		uint8_t outcome = 0, publication = 0;
 		uint16_t failure = 0;
 		if (!scope.invoke_codec(
-			    [&](size_t prefix) {
+			    [&]([[maybe_unused]] size_t prefix) {
 				    return original_command_bounded(command, &payload,
 								    &encoded_command, reserve,
 								    context, scope);
@@ -2611,7 +2611,7 @@ player_snapshot_codec_result native_quest_recovery_context_decode_bounded(
 		}
 		if (in.cursor != bytes.size() ||
 		    !scope.invoke_codec(
-			    [&](size_t prefix) {
+			    [&]([[maybe_unused]] size_t prefix) {
 				    return context_shape_bounded(payload, candidate, reserve,
 								 context, scope);
 			    },
