@@ -18,7 +18,32 @@ ACTIVE on this chat/current Sol6.1/xhigh. No per-commit full-build/matrix repeat
 
 ## Current qualification gate
 
-Latest qualified primary22da1ea35 / treeb1f6c11c95: additive bounded currency
+Latest qualified primary96e34552f / tree3d2af74f08: actual original late Quest
+builder selection and bounded companion, preserving cost/selected/current
+selectors. ACC-15 original registered entry0/420.138327s, script/main
+passed/all seven markers/zero skips/original checker[]. Three profiles69 objects
+(nine ordinary whole Quest/Item/Item-command,57 providers,three fixtures) and
+four current constructed selectors. SQL builder4wire/486real child
+refusals/strong output/outer and retained once/INITIAL/cap/capacity/eight registry
+states/thread; flat actual SQL-only admission and assertions refuse strongly.
+Default contracts0/13.717218s. Native seal
+dbb65d2e5f2572446295379710985cbe64aa55151f5763e5165edb53b01500e6; review
+de619d102173ddeddeecc558d295f50b0155799c99c41387cba9fad258b97711.
+All4010 exact Git inputs unchanged; CPU1/2GiB owned QA removed/lease RELEASED,
+seven foreign services/four passive volumes preserved, heavy lock ABSENT.
+Original Item command prefix/header and earlier cost/selected bodies preserved;
+all931 policies/2911 census/2853sites/coordinates equal22da, zero stale anchors.
+Seven pins refresh/other502 remain/509total; raw508/509 retains adapter CRLF
+alias. Current96e3 two-field patch59b8a3f0 yields509/509/other508
+preserved/apply-reverse0/adoption UNCONFIRMED. See
+QUEST_NATIVE_BUILDER_COMPONENT_QUALIFICATION_2026-10-11.md. Actual late source
+selection/component execution, not complete prepare_original/custody/game/SQL/
+ACK/reward/restore/declaration/native ABI/emitted aggregate32MiB/host/fullmatrix/
+release proof. Private packets report-only. Pregrant owned import failure
+preserved/corrected without source/control changes; one native cohort/no repeat.
+Helpers parked; all prior proofs/failures keep their original source scope.
+
+Earlier qualified primary22da1ea35 / treeb1f6c11c95: additive bounded currency
 builder prerequisite. ACC-14 original registered run_test0/65.942023s,
 actual script/main passed, zero skips; ten whole currency/critical provider
 objects and four genuine component runs across both header backends. Each
@@ -354,7 +379,7 @@ original "do it", superseding "go with the useful parts". Local model GPT-6.1 So
 
 | Lane | Chat / worktree / branch | Current ticket |
 | --- | --- | --- |
-| Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | ACC-14 original currency builder prerequisite PASS on22da;4009 inputs/sealed/released; exact22da pin patch qualified; prior4e69 component PASS/371 failure and source-only retry preserved; finite wait/no grant |
+| Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | ACC-15 original late Quest builder component PASS on96e3;4010 inputs/sealed/released; current96e3 pin candidate qualified; prior22da/4e69 results and371 failure preserved; finite wait/no grant |
 | Remote primary | Non-connected RGitGoin; private session/WIP inaccessible; published `experimental-accounting` | Existing Plans1-4/shared runtime/final integration ownership retained; no delegation ACK required; architecture/toolchain/storage/32MiB proof queue |
 | Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Publishedeaa43822 corrected independent ACC-07 review; e922 restore-coin source-only report/patch; full goal BLOCKED by owner with scope preserved; finite wait, no native grant |
 | World/quest (parked) | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | IDLE/clean5e679b5fe after exact resource-free ACC-08 review; olderf722 failure/component handoffs preserved; runtime allocation WITHDRAWN, no standing task or resources |
@@ -437,6 +462,7 @@ override availability or invent tokens/receipts for accepting tests.
 | ACC-12-QUEST-COST-ADMISSION-02 | Same original371 entry after exact four-data-file freeze repair | Preserved source-only4005-input preparation/4cases8blocks; receipt896684a1/seal39425bd8; native NOT_RUN/no grant, superseded in executable queue by meaningful combined ACC13/4e69; no retroactive371 native pass |
 | ACC-13-QUEST-SELECTED-LIST-01 | Exact original current4e69 registered cost/selected-list entry with complete frozen Quest data, all original controls/checker and default contracts | Entry0/335.401178s, actual script/main/all6markers/0skips/checker[]; three profiles54objects/four current selectors; cost8refusal points and selected2child refusals/parent cap/capacity/strong output; contracts0/13.460406s;4059-member seal verified/4006 inputs unchanged/owned QA removed/RELEASED; component limits preserved |
 | ACC-14-CURRENCY-BOUNDED-BUILDER-01 | Exact original22da registered currency builder regression and default contracts | run_test0/65.942023s/script-main passed/0skips; ten whole objects/four components; supported each46cases/11reserve denials/136-byte equivalence, assertions each4strong refusals; contracts0/14.416360s;4044-member seal verified/4009 inputs unchanged/owned QA removed/RELEASED; original ATM/authority/ABI/aggregate32MiB/full producer gates remain OPEN |
+| ACC-15-QUEST-NATIVE-BUILDER-01 | Exact original96e3 registered combined cost/selected/native builder entry and contracts | Entry0/420.138327s/script-main/all7markers/0skips/checker[]; three profiles69objects/four current selectors; builder4wire/486real child refusals/parent cap-capacity/strong output/INITIAL/retained-once/registry/thread; contracts0/13.717218s;4058-member seal verified/4010 inputs unchanged/owned QA removed/RELEASED; whole preparation/service/release gates remain OPEN |
 | PRIMARY-01 | Connected save/coordinator/item lifecycle map then verified boundary/caller/admission closure | Existing primary implementation ownership; no withdrawn delegation dependency |
 | PRIMARY-02 | Supported toolchain/runtime/library correspondence, complete storage/frame/transitive proof, aggregate 32MiB accept/refuse | Remains explicit; object compile/source packets do not close it |
 | FINAL | Gameplay/persistence/schema/backup/restore/recovery/fault/load/resource/R1-R8 gates agree on one frozen candidate | Reviewed implementation batches and per-slice architecture evidence |
@@ -960,11 +986,11 @@ Do not repeat this source/release audit on unchanged9c or open standing helper
 research; wait for meaningful source/evidence or an exact independently owned
 executable slice. Full Work1-5/R6-R8 acceptance remains open.
 
-Finite queue after ACC-14 currency component PASS: the failed371 run and
-corrected371 source-only snapshot remain preserved; no stale standalone371
-retry is queued. One meaningful22da regression qualified its codec prerequisite;
-earlier4e69 Quest proof retains its original source and exact data scope.
-Primary adoption of current22da two-field raw-Git adapter-pin normalization
+Finite queue after ACC-15 original late Quest builder component PASS: failed371
+and corrected371 source-only snapshot remain preserved; no stale standalone371
+retry is queued. One meaningful96e3 cohort qualified its combined component;
+earlier22da currency/4e69 Quest results retain their original source/data scope.
+Primary adoption of current96e3 two-field raw-Git adapter-pin normalization
 remains pending; actual same-root writer evidence and coherent0062/default65
 restore route, with the existing
 source-only restore-coin three-provider packet; caller integration and native
