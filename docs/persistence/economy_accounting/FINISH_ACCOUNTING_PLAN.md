@@ -18865,3 +18865,13 @@ and protected WIP remain preserved. Inventory481/931/2911/2853,0new/unmapped
 does not establish completion. Full host/native/gameplay/persistence/recovery/
 R1-R8/release stay OPEN; targeted compiler proof is recorded above.
 Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Integrate ordinary NPC reservation local source providers implemented - 2026-10-10
+
+[Source checkpoint](NPC_RESERVATION_LOCAL_SOURCE_PROVIDER_INTEGRATION_2026-10-10.md) Complete NPC reservation LOCAL providers integrated; Birth and authority objects compile in both production modes. Configured ROOT observer composition and full runtime qualification remain open.
+Independent RAW and actual formatted source reviews passed; original behavior
+and protected WIP remain preserved. Inventory481/931/2911/2853,0new/unmapped
+does not establish completion. Full host/native/gameplay/persistence/recovery/
+R1-R8/release stay OPEN; targeted compiler proof is recorded above.
+Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.

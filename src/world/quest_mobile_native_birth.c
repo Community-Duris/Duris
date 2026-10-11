@@ -13220,3 +13220,260 @@ bool quest_mobile_native_birth_charge_local_initial_inline_bytes(size_t *output)
 	return false;
 #endif
 }
+
+// Original partial constants retained below as genuine selected scope rows.
+namespace
+{
+constexpr size_t birth_reserve_array_comparison_call_source =
+	34 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(int) + 7 * sizeof(bool);
+constexpr size_t birth_reserve_string_comparison_call_source =
+	15 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(int) + 2 * sizeof(bool);
+constexpr size_t birth_reserve_string_cstring_comparison_call_source =
+	11 * sizeof(void *) + 4 * sizeof(size_t) + sizeof(int) + 3 * sizeof(bool);
+constexpr size_t birth_reserve_direct_int_array_access_source = 2 * sizeof(void *) + sizeof(size_t);
+constexpr size_t birth_reserve_string_empty_source =
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(bool);
+// Conservative sums of the actual lexical comparison occurrences, NOT
+// invented distinct typed families or interchangeable old aggregate credit.
+constexpr size_t birth_reserve_freeze_comparison_source =
+	9 * birth_reserve_array_comparison_call_source +
+	birth_reserve_string_comparison_call_source +
+	8 * birth_reserve_direct_int_array_access_source;
+constexpr size_t birth_reserve_npc_comparison_source =
+	// Six byte16 and four byte32 operators; rewritten root != Cstring ==.
+	10 * birth_reserve_array_comparison_call_source +
+	birth_reserve_string_cstring_comparison_call_source + birth_reserve_string_empty_source +
+	4 * birth_reserve_direct_int_array_access_source;
+constexpr size_t birth_reserve_same_owner_comparison_source =
+	// Five byte16, four byte32 and one int4 ==; string/string ==.
+	10 * birth_reserve_array_comparison_call_source +
+	birth_reserve_string_comparison_call_source + 2 * sizeof(void *) + sizeof(bool);
+constexpr size_t birth_reserve_freeze_own_source =
+	sizeof(size_t) + 5 * sizeof(void *) + sizeof(bool);
+constexpr size_t birth_reserve_npc_own_source =
+	9 * sizeof(void *) + 2 * sizeof(critical_operation_id) + sizeof(bool);
+constexpr size_t birth_reserve_npc_wrapper_source = sizeof(void *) + sizeof(bool);
+constexpr size_t birth_reserve_valid_flat_own_source =
+	10 * sizeof(void *) + sizeof(int) + sizeof(bool);
+constexpr size_t birth_reserve_chain_valid_own_source =
+	7 * sizeof(void *) + sizeof(int) + sizeof(bool);
+constexpr size_t birth_reserve_chain_prev_source = sizeof(void *) + 2 * sizeof(int);
+constexpr size_t birth_reserve_flat_scope_own_source = 2 * sizeof(void *) + sizeof(bool);
+constexpr size_t birth_reserve_id_zero_source =
+	12 * sizeof(void *) + sizeof(uint8_t) + sizeof(bool);
+constexpr size_t birth_reserve_callback_own_source =
+	// full/opaque/state/live/constexpr frames/returned bool.
+	2 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool);
+constexpr size_t birth_reserve_checked_add_source = sizeof(void *) + sizeof(size_t) + sizeof(bool);
+constexpr size_t birth_reserve_original_source_getter_source =
+	// ordinary_envelope getter source/result; nested npc_current_frames
+	// five named constexpr subtotals/result; two actual working-byte returns.
+	// sizeof/declval branches themselves are unevaluated. No current observer
+	// body is executed by these legacy computation-only getters.
+	10 * sizeof(size_t);
+
+// Exact mutable find/end/node arrow uint64->P_char map family; thread is
+// explicitly separate. Four genuine iterator objects own all elided returns.
+// Actual map uses runtime_identity_allocator; read-only lookup does not call
+// it. The actual selected iterator specialization is allocator-independent.
+using birth_reserve_identity_iterator =
+	std::__detail::_Node_iterator<std::pair<const uint64_t, P_char>, false, false>;
+constexpr size_t birth_reserve_identity_local_source =
+	78 * sizeof(void *) + 24 * sizeof(size_t) + 2 * sizeof(uint64_t) + 6 * sizeof(bool) +
+	4 * sizeof(birth_reserve_identity_iterator) + 2 * sizeof(std::__detail::_Select1st) +
+	2 * sizeof(std::__detail::_Mod_range_hashing);
+}
+
+// LOCAL declared-Source closure of the preserved reserve callback. Each sum
+// below is a conservative sum of genuine selected call occurrences/families,
+// not a claim that sequential children or their selectedS objects coexist.
+// All source/current container heaps are existing caller-retained objects.
+namespace
+{
+constexpr size_t birth_reserve_complete_thread_source =
+	sizeof(void *) + 2 * sizeof(std::thread::id) + 3 * sizeof(std::thread::native_handle_type) +
+	2 * sizeof(bool);
+constexpr size_t birth_reserve_complete_vector_range_source = 12 * sizeof(void *) + sizeof(bool);
+constexpr size_t birth_reserve_complete_vector_size_source = sizeof(void *) + sizeof(size_t);
+constexpr size_t birth_reserve_complete_vector_index_source = 2 * sizeof(void *) + sizeof(size_t);
+constexpr size_t birth_reserve_complete_unique_get_source = 12 * sizeof(void *);
+constexpr size_t birth_reserve_complete_unique_full_source = 15 * sizeof(void *) + sizeof(bool);
+constexpr size_t birth_reserve_complete_unique_bool_deref_source =
+	// bool/get family plus actual operator* and its declared assertion query.
+	15 * sizeof(void *) + 2 * sizeof(bool);
+constexpr size_t birth_reserve_complete_unique_bool_get_source = 13 * sizeof(void *) + sizeof(bool);
+constexpr size_t birth_reserve_complete_shared_full_source =
+	// bool/*/arrow, with actual operator* assertion's declared query result.
+	9 * sizeof(void *) + 2 * sizeof(bool);
+constexpr size_t birth_reserve_complete_shared_bool_arrow_source =
+	7 * sizeof(void *) + sizeof(bool);
+constexpr size_t birth_reserve_complete_mode_source = sizeof(persistence_mode);
+constexpr size_t birth_reserve_complete_boot_source = sizeof(bool) +
+						      birth_reserve_complete_mode_source +
+						      birth_reserve_complete_vector_size_source;
+constexpr size_t birth_reserve_complete_flat_scope_source =
+	birth_reserve_flat_scope_own_source + sizeof(void *) +
+	birth_reserve_complete_thread_source + sizeof(bool) + birth_reserve_complete_mode_source +
+	birth_reserve_complete_boot_source + birth_reserve_string_empty_source +
+	birth_reserve_string_cstring_comparison_call_source + 2 * birth_reserve_id_zero_source;
+constexpr size_t birth_reserve_complete_chain_source =
+	birth_reserve_chain_valid_own_source + birth_reserve_complete_thread_source +
+	birth_reserve_complete_vector_range_source + birth_reserve_chain_prev_source;
+// NPC current (and its exact db receiver wrapper), excluding authority child
+// Source and selectedS INITIAL. The identity lookup's thread check is a second
+// genuine call; its require-game-thread failure is unreachable after this
+// synchronous parent passed the same thread check. The raw actual pointer is
+// dereferenced directly: no unique_ptr::* is selected in this child.
+constexpr size_t birth_reserve_complete_npc_without_authority_source =
+	birth_reserve_npc_wrapper_source + birth_reserve_npc_own_source + sizeof(void *) +
+	birth_reserve_complete_thread_source + sizeof(bool) + birth_reserve_complete_mode_source +
+	birth_reserve_npc_comparison_source + 2 * birth_reserve_id_zero_source +
+	birth_reserve_complete_unique_bool_get_source + birth_reserve_complete_vector_range_source +
+	birth_reserve_complete_shared_bool_arrow_source +
+	birth_reserve_same_owner_comparison_source +
+	2 * sizeof(void *) + // actual mobile.character() this/returned P_char
+	birth_reserve_identity_local_source + birth_reserve_complete_thread_source;
+// valid_flat's one NPC current child is composed separately below, alongside
+// freeze's direct NPC current occurrence. The flat-scope branch and both real
+// ranges remain covered, without guessing that private lists must be empty.
+constexpr size_t birth_reserve_complete_valid_flat_without_npc_source =
+	birth_reserve_valid_flat_own_source + birth_reserve_complete_thread_source +
+	birth_reserve_complete_mode_source + birth_reserve_complete_boot_source +
+	birth_reserve_complete_chain_source + 3 * sizeof(void *) +
+	sizeof(bool) + // empty(): own this/B + two iterator objects
+	birth_reserve_complete_shared_bool_arrow_source + // NPC bool/arrow
+	birth_reserve_complete_vector_range_source + // const flat_scopes range
+	birth_reserve_complete_shared_bool_arrow_source + // distinct flat scope type
+	birth_reserve_complete_flat_scope_source +
+	birth_reserve_complete_vector_range_source + // const bindings range
+	birth_reserve_complete_vector_size_source + birth_reserve_complete_vector_index_source;
+constexpr size_t birth_reserve_complete_freeze_without_npc_source =
+	birth_reserve_freeze_own_source + birth_reserve_complete_thread_source +
+	birth_reserve_complete_vector_size_source + 2 * birth_reserve_complete_vector_index_source +
+	birth_reserve_complete_unique_bool_deref_source + // original_birth bool/*
+	birth_reserve_complete_unique_full_source + // source_pin bool/arrow
+	birth_reserve_complete_unique_bool_deref_source + // implementation bool/*
+	birth_reserve_complete_shared_full_source + // NPC bool/*/arrow
+	birth_reserve_freeze_comparison_source +
+	birth_reserve_complete_valid_flat_without_npc_source;
+constexpr size_t birth_reserve_complete_local_core_source =
+	birth_reserve_callback_own_source + birth_reserve_complete_vector_size_source +
+	birth_reserve_complete_vector_index_source + birth_reserve_complete_unique_get_source +
+	birth_reserve_complete_freeze_without_npc_source +
+	2 * birth_reserve_complete_npc_without_authority_source +
+	2 * birth_reserve_checked_add_source + birth_reserve_original_source_getter_source;
+}
+
+bool quest_mobile_native_birth_reserve_ordinary_flat_submission_local_source_frame_bytes(
+	size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && defined(_GLIBCXX_HAS_GTHREADS) &&                           \
+	!defined(_GLIBCXX_NATIVE_THREAD_ID) && !defined(_GLIBCXX_DEBUG) &&                    \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L
+	if (!output)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	size_t authority = 0;
+	size_t charge = 0;
+	size_t total = birth_reserve_complete_local_core_source;
+	if (!economic_gameplay_authority::capture_flat_reset_projection_source_frame_bytes(
+		    &authority) ||
+	    !quest_mobile_native_birth_charge_local_source_frame_bytes(&charge))
+		return false;
+	if (authority > SIZE_MAX / 2 || 2 * authority > SIZE_MAX - total)
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	total += 2 * authority;
+	if (charge > SIZE_MAX - total)
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	total += charge;
+	*output = total;
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
+
+bool quest_mobile_native_birth_reserve_ordinary_flat_submission_local_source_supplement_frame_bytes(
+	size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && defined(_GLIBCXX_HAS_GTHREADS) &&                           \
+	!defined(_GLIBCXX_NATIVE_THREAD_ID) && !defined(_GLIBCXX_DEBUG) &&                    \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L
+	if (!output)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	size_t authority = 0;
+	size_t charge = 0;
+	size_t total = birth_reserve_complete_local_core_source;
+	if (!economic_gameplay_authority::capture_flat_reset_projection_source_frame_bytes(
+		    &authority) ||
+	    !quest_mobile_native_birth_charge_local_source_frame_bytes(&charge))
+		return false;
+	if (authority > SIZE_MAX / 2 || 2 * authority > SIZE_MAX - total)
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	total += 2 * authority;
+	if (charge > SIZE_MAX - total)
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	total += charge;
+	*output = total;
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
+
+bool quest_mobile_native_birth_reserve_ordinary_flat_submission_local_initial_inline_bytes(
+	size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && defined(_GLIBCXX_HAS_GTHREADS) &&                           \
+	!defined(_GLIBCXX_NATIVE_THREAD_ID) && !defined(_GLIBCXX_DEBUG) &&                    \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L
+	if (!output)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	size_t child = 0;
+	if (!economic_gameplay_authority::capture_flat_reset_projection_initial_inline_bytes(
+		    &child))
+		return false;
+	size_t total = 0;
+	if (child > SIZE_MAX / 2)
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	// Two actual sequential child occurrences: conservative transitive INITIAL
+	// upper bound, not simultaneous storage. Parent owns no initial workspace.
+	total = 2 * child;
+	*output = total;
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
