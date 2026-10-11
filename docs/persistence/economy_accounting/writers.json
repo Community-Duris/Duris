@@ -45468,12 +45468,12 @@
         ],
         [
           "src/world/object_template.h",
-          112,
+          116,
           "item_lifecycle"
         ],
         [
           "src/world/object_template.h",
-          176,
+          180,
           "item_lifecycle"
         ]
       ],
@@ -65462,13 +65462,13 @@
     },
     {
       "path": "src/world/object_template.h",
-      "line": 112,
+      "line": 116,
       "family": "item_lifecycle",
       "excerpt": "friend P_obj instantiate_object_template(const object_template &);"
     },
     {
       "path": "src/world/object_template.h",
-      "line": 176,
+      "line": 180,
       "family": "item_lifecycle",
       "excerpt": "P_obj instantiate_object_template(const object_template &prototype);"
     },
@@ -66548,7 +66548,7 @@
       "src/player/player_snapshot_codec.c": "3b63009eda6ad9939658284cf48e09dbeff2f35f9ced3124913ee721ea65866b",
       "src/player/player_snapshot_repository.c": "cde7ec90d5d0ce53a54e2b43bbbfe1167a648644ac066e80077e42c810d03352",
       "src/specs/specs.heavens.c": "8d533fffdd1092c7deac2ae04cae7f6355858f1fe1230289dea3e23de4cb9d73",
-      "src/specs/specs.library.c": "551d7f8774b0bb4dc6e8a17a94cbe6c4c88f14fe8d9b47a8f0cd46713b7cc06a",
+      "src/specs/specs.library.c": "87d4ec73ea64b883700679098bfcdbeb8b35e8d7bfdf5735ab2f5b8ac6ea6299",
       "src/specs/specs.vecna.c": "5b1075a75fc61ac5f67d3e3f51731dfe22bd6928d8ee149e58769e3697b24f3e",
       "src/specs/specs.venthix.c": "83fc76787a5d77953049b9f3dc1f4c2ea097be483c9e388707b2895a57213f1c",
       "src/specs/specs.venthix.h": "36084a038b8129caab5e8bb5e862c48ce0a76c8cd080096e7682655f9d1d65a7",
@@ -66566,7 +66566,7 @@
       "src/world/native_quest_frozen_continuation.h": "70d9427e8e0af7012e6041d68656087302094c18fc5798b209155c61c2107341",
       "src/world/native_quest_recovery_context.c": "ac3653ea6c27c27919283370a0a46c95178e99cebbcedd2b7057135701595363",
       "src/world/native_quest_recovery_context.h": "420dfd3de61d7e0d4962fb66520e33a63685522b1d409ab51c6d3d43c767542f",
-      "src/world/object_template.h": "3863925ecf5f309271c7934d107af4f0129cb1814f9de547a7406806bcdce929",
+      "src/world/object_template.h": "d9ffc85894b08eeb13e1a626fc4f3beb9d35dc041758c660de4cff0cd92f54be",
       "src/world/quest_mobile_native.c": "0335382dea0cda046239d8cf080bddf30ae4f36e2086febf8007040d307323fd",
       "src/world/quest_mobile_native.h": "1db1575e5f27f476198bbb909c6303c03d43496ebff96e85907d0c646a9684f7",
       "src/world/quest_mobile_native_binding.c": "028824588cfcdffd7efd81bd543afd86cf0ec9d8dce6f3ece7877e2e80626343",
