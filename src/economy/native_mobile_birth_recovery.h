@@ -406,4 +406,48 @@ native_mobile_birth_shared_shop_recovery_fixed_valid_source_query_frame_bytes() 
 	return sizeof(size_t *) + sizeof(bool);
 }
 
+// Explicit complete INITIAL companions; old registry/default callbacks remain
+// unchanged. Exact target identity is required before profile use. Each child
+// owns its admitted Source+INITIAL, so the genuine retained supplement is0.
+bool native_mobile_birth_recovery_initial_fixed_bounded(const critical_native_recovery_envelope &,
+							bool (*)(size_t, void *) noexcept, void *,
+							size_t) noexcept;
+bool native_mobile_birth_recovery_initial_fixed_bounded_source_frame_bytes(size_t *) noexcept;
+bool native_mobile_birth_recovery_initial_fixed_bounded_source_supplement_frame_bytes(
+	size_t *) noexcept;
+bool native_mobile_birth_recovery_initial_fixed_bounded_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t
+native_mobile_birth_recovery_initial_fixed_bounded_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + sizeof(bool);
+}
+bool native_mobile_birth_cash_role_recovery_initial_fixed_bounded(
+	const critical_native_recovery_envelope &, bool (*)(size_t, void *) noexcept, void *,
+	size_t) noexcept;
+bool native_mobile_birth_cash_role_recovery_initial_fixed_bounded_source_frame_bytes(
+	size_t *) noexcept;
+bool native_mobile_birth_cash_role_recovery_initial_fixed_bounded_source_supplement_frame_bytes(
+	size_t *) noexcept;
+bool native_mobile_birth_cash_role_recovery_initial_fixed_bounded_initial_inline_bytes(
+	size_t *) noexcept;
+constexpr size_t
+native_mobile_birth_cash_role_recovery_initial_fixed_bounded_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + sizeof(bool);
+}
+bool native_mobile_birth_shared_shop_recovery_initial_fixed_bounded(
+	const critical_native_recovery_envelope &, bool (*)(size_t, void *) noexcept, void *,
+	size_t) noexcept;
+bool native_mobile_birth_shared_shop_recovery_initial_fixed_bounded_source_frame_bytes(
+	size_t *) noexcept;
+bool native_mobile_birth_shared_shop_recovery_initial_fixed_bounded_source_supplement_frame_bytes(
+	size_t *) noexcept;
+bool native_mobile_birth_shared_shop_recovery_initial_fixed_bounded_initial_inline_bytes(
+	size_t *) noexcept;
+constexpr size_t
+native_mobile_birth_shared_shop_recovery_initial_fixed_bounded_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + sizeof(bool);
+}
+
 #endif
