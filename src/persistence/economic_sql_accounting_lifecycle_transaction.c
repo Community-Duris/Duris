@@ -99,6 +99,13 @@ unsigned int economic_sql_accounting_lifecycle_transaction::verify_initialized_r
 {
 	return ENOTSUP;
 }
+unsigned int economic_sql_accounting_lifecycle_transaction::verify_initialized_runtime_sources(
+	MYSQL *, economic_sql_cutover_transaction_owner &,
+	const economic_sql_runtime_boot_selection &,
+	economic_sql_initialized_activation_verifier) noexcept
+{
+	return ENOTSUP;
+}
 #else
 namespace
 {
@@ -3073,6 +3080,74 @@ unsigned int economic_sql_accounting_lifecycle_transaction::verify_runtime_retur
 				*selected->installation.baseline_operation, wallets, banks),
 			ESTALE);
 		return 0;
+	}
+	catch (const failure &error)
+	{
+		return error.code ? error.code : EIO;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EIO;
+	}
+}
+
+unsigned int economic_sql_accounting_lifecycle_transaction::verify_initialized_runtime_sources(
+	MYSQL *connection, economic_sql_cutover_transaction_owner &retained,
+	const economic_sql_runtime_boot_selection &original,
+	economic_sql_initialized_activation_verifier verify) noexcept
+{
+	try
+	{
+		// Authenticate the original held session before reading retained context.
+		require(connection && retained.connection_ == connection &&
+				retained.runtime_handoff_ && original.prepared_ &&
+				original.finished_ && original.selected_ &&
+				original.session_ == retained.session_ &&
+				original.authority_id_ == retained.sql_authority_id_ &&
+				retained.is_valid(),
+			EPERM);
+		require(verify, ENODATA);
+		economic_sql_lifecycle_request request;
+		economic_sql_activation_evidence evidence;
+		{
+			const auto selected = load_verified_runtime_selection(connection);
+			require(selected && selected->lineage.bytes == original.lineage_.bytes &&
+					selected->epoch.bytes == original.epoch_.bytes &&
+					selected->installation.baseline_operation->bytes ==
+						original.baseline_.bytes,
+				ESTALE);
+			// Historical absence is not repaired with a clock or caller preimage.
+			require(selected->opening.request.actor_id &&
+					selected->opening.request.accepted_at_usec,
+				ENODATA);
+			const auto active = load_activation(connection, original.lineage_);
+			require(active.exists && active.state == 1 &&
+					active.epoch.bytes == original.epoch_.bytes &&
+					active.installation.bytes ==
+						selected->installation.operation.bytes &&
+					active.baseline.bytes == original.baseline_.bytes &&
+					active.route_count &&
+					active.verified_route_count == active.route_count &&
+					!active.unclassified_route_count &&
+					digest_nonzero(active.manifest_digest) &&
+					digest_nonzero(active.audit_digest),
+				ESTALE);
+			request = selected->opening.request;
+			evidence.manifest_digest = active.manifest_digest;
+			evidence.audit_digest = active.audit_digest;
+			evidence.route_count = active.route_count;
+			evidence.verified_route_count = active.verified_route_count;
+			evidence.unclassified_route_count = active.unclassified_route_count;
+		}
+		// Only owning fixed values survive the read scope. Revalidate their binding
+		// in the original verifier under these same fences, without an intervening
+		// callback or unlock. Stored evidence is context, never independent proof.
+		return verify_initialized_runtime_sources(connection, retained, original, request,
+							  evidence, verify);
 	}
 	catch (const failure &error)
 	{
