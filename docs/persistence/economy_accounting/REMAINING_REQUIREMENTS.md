@@ -1,3 +1,7 @@
+## SQL origin output byte limit integrated — 2026-10-11
+
+[Origin-output integration](PLAN5_SQL_ORIGIN_OUTPUT_BYTE_LIMIT_PRIMARY_INTEGRATION_2026-10-11.md) bounds the complete JSON plus newline before exclusive file creation. Windows/Linux16 boundary controls and14 module methods pass on the frozen component; Linux0600 is checked. One existing UID source pin changes, the origin exporter gains one new pin, and480 existing pins remain (482 total,0 removed). No new test row/case or full-matrix/32MiB/SQL/native qualification is claimed. Reader work and original R1–R8/release gates remain open; accounting stays inactive/CLOSED.
+
 ## SQL export limit fixed and combined checkpoint recorded — 2026-10-11
 
 [Exporter integration](PLAN5_SQL_OUTPUT_BYTE_LIMIT_PRIMARY_INTEGRATION_2026-10-11.md) refuses a JSON file exceeding the existing bound

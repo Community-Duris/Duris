@@ -66803,7 +66803,7 @@
       "src/flatfile/flatfile_shop_native_checkpoint.c": "8b311979b435a2fcea692430c1eb9091a4e9e2565d9f119d6ac50993d302de15",
       "src/persistence/economic_sql_initialized_activation_view.h": "920af96f4f6e8b62c1385e38dfed58bee4c2c096e2735e3fbf0151d8582a5b69",
       "src/persistence/zone_reset_item_terminal_sql.c": "54ae802793d2d2cf2e86143dc96aaf60ed6d568f33f49570621bd04e1cd10945",
-      "tests/async/test_economic_sql_uid_scope.py": "60b13011a72c00e478af099b7ec033b9db0d30f9535c662df66527d05bc8d924",
+      "tests/async/test_economic_sql_uid_scope.py": "901242f7d071d57041740195c7d06dd53cf2181852ace4dc7e14a48b20d343b7",
       "src/economy/economic_initialized_world_money_correspondence.h": "cd87eb2c3cb0caf3b885829cf977015c556bd03c7724aa5659a1dbfebe55ad4c",
       "src/item/ordinary_drop_recovery.c": "d879d78608e4c8914582d50b3e0e657affe756fca0a817877452bff0aa8856d4",
       "src/persistence/economic_sql_source_snapshot.h": "bde8255591e4aa6afb6f149274658bc5b4776555fcf8896395c1c90a1f33731c",
@@ -66910,7 +66910,8 @@
       "src/economy/economic_currency_adapter.h": "09071b1c1d7fc99d5bca587aabc55981981ec2e60b0478202a9d16648208613c",
       "tests/async/test_data_lifecycle_manifest.py": "3ec3020da2b1c102e10329d6e77de307dd2d89e82c0f6e1ee756c35d82e70d05",
       "scripts/qualify_database_restore.py": "61eee5a95b79bb6302c77b18400aa8873e4c0248c1bcf4088182ba53142aab3a",
-      "tests/async/test_immutable_migration_runner.py": "b8fe07002ef91a27c1ca379a816008ae09482c6980e78a7afee3f68fbdc8f220"
+      "tests/async/test_immutable_migration_runner.py": "b8fe07002ef91a27c1ca379a816008ae09482c6980e78a7afee3f68fbdc8f220",
+      "scripts/economic_sql_audit_origins.py": "de5c14f519d1f0bfb8d8ded1edb0ae45cdedb654891edd1dc7317d947e5464a3"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {
