@@ -1,3 +1,9 @@
+## Latest shared ownership and zone native thread source correction — 2026-10-11
+
+The latest human approval authorizes the separate WORLD and SHOP file leases. Those owners retain their leased paths; Root owns the unleased Zone and shared Coordinator files. Historical charter text below does not revoke that later approval.
+
+[Zone native thread Source correction](ZONE_NATIVE_THREAD_SOURCE_PROFILE_INTEGRATION_2026-10-11.md) corrects the captured direct pthread_self() profile and its two native-handle declaration count. Four genuine Zone public-getter runs pass across both backends and supported/assertions profiles; exact permanent regression installed. Coordinator object checks pass, while private getter/caller runtime remains OPEN. 504 Source pins: only Zone/source/test/registration pins update; Coordinator source pin remains at its actual unadopted preimage. All other pins, writer policies/census and unrelated WIP are preserved. Plans1–4, R1–R8, architecture, complete caller/producer/native/gameplay/SQL/persistence/recovery/host/release gates remain OPEN. Accounting inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
 ## Native-birth sanitizer warning repair — 2026-10-11
 
 [Warning repair](NATIVE_BIRTH_SANITIZER_WARNING_FIX_2026-10-11.md) fixes two

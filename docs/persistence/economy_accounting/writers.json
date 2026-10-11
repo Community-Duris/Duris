@@ -66766,7 +66766,7 @@
       "src/economy/native_mobile_birth_cash_role_recipe.h": "7cdb82f36ab94945cbc80f15ffddcec6df14230bbf6429c24fe35d904629f5ee",
       "src/economy/zone_reset_item_origin.c": "5d46adf0b7f63a54401fd4317f9b6dff4d50cb68e3209546c11d8f78e9aa9da1",
       "tests/async/run_economic_sql_audit_snapshot_mysql.py": "f59e9f70e73b4a579bc46f8181c762b951bcf22ef0765383a2cef6c7091487e0",
-      "src/world/zone_reset_item_owner.c": "b439b7cc1445e52f0ed6a2b928aa4e899c8670d429b95e6e6395f2f65e256e96",
+      "src/world/zone_reset_item_owner.c": "fbccb16533f3d0c142d9d2cd8842a2389bc47bdfc3a9fe070d1820449b1fd39e",
       "src/economy/auction_player_forest.c": "b5ee05b6b330d0d0e543a6208a2d2c8738d29087ce3926fbc3e1099edcee4e85",
       "src/economy/smith_native_before_sql.h": "396cae88ab7e60564fab2fc9df54ebcb5b0bef677d901d57e2679569650e5bfa",
       "src/persistence/sql_room_creation_source.h": "3748e305a486fbb3a645b109b73fa201d77470597686a5e6c8cdae8f9d55d5c1",
@@ -66929,9 +66929,11 @@
       "tests/async/run_plan5_retention_journeys.py": "3dc38861cdb14f6aae61f586a0943c38962fa9a17c93b40615480b106a042878",
       "tests/run_test_entry.py": "bdfbc6eb466ddbb3887dbc639530cf76bff50142e86d11c79dc99d5ac45cc07d",
       "tests/async/test_test_entry_main_outcome.py": "3175efa87cf0a2f287b80491787554d9cd45fe109b93807a46de83dee6b1314c",
-      "tests/regression_manifest.json": "19aec2dc58a6c84b0da20041e47faf804156f5641cf8a6f38ecae57fb44383f6",
+      "tests/regression_manifest.json": "cbecb543f0cdd33690cb3ab62fec622990cfd802139fe4e52da0119d938a19a7",
       "tests/async/test_original_logit_source_profile.py": "687de0b9b21478fe90b7de27a282855176c61f973d28fa042deb47bf8c675fc3",
-      "tests/async/original_logit_source_profile_test.cpp": "4b653b73384835d1f2738e1639c88843d52a21cfcd6df6a4faa0a8221addb8c3"
+      "tests/async/original_logit_source_profile_test.cpp": "4b653b73384835d1f2738e1639c88843d52a21cfcd6df6a4faa0a8221addb8c3",
+      "tests/async/test_native_birth_zone_source_profile.py": "ed8e51359ca1cad73ad1cdc99faa7782d7636c047dbb30a4d7eaa70384047b2a",
+      "tests/async/native_birth_zone_source_profile_test.cpp": "eed22b327b7f837adb502c4e436f43a8c126c1e8ede7c1e22f0df6c0e72fe1ef"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {
