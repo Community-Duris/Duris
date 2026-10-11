@@ -18,7 +18,24 @@ ACTIVE on this chat/current Sol6.1/xhigh. No per-commit full-build/matrix repeat
 
 ## Current accepting gate
 
-Latest observed primaryc812928d2 / tree4ab5b44eaa adopts the reviewed manifest
+Latest qualified primaryc72a56041 / tree08ce5b2cfe: exact one-line actual-main
+outcome repair, new focused regression and three new pins; complete src,
+original fixtures, manifest/checker/TestResult and all931 writer policies remain.
+ACC-09 parent-adapter regression1 (expected), repaired actual eight cases0;
+registered held-policy0/15.406566s and Item0/124.373742s, both actual [script,main]
+passed, all original markers, zero skips and original checker failures[].
+Item each mode15 groups/2653 refusal points/2653 reservations. Native seal
+a68ad6caa1160afeacbf3255544e3ac2973cb30ca4ef2bfce62afd4004d376bb;
+review5f4381a9c0a21f7352f88eca1a9b7d3f9cb2000d9c6b893bb0e1c58a12fad072.
+All3991 inputs unchanged; sole1GiB/CPU1 QA removed/lease RELEASED, seven foreign
+services/four passive volumes preserved, heavy lock ABSENT. Source-pins499/500
+match raw Git: declared adapter hash is the exact CRLF encoding alias of its
+published LF bytes. Separate two-field raw-Git normalization patch6b712eeb
+is apply/reverse checked, all500 candidate hashes exact, primary adoption pending.
+See `REGISTERED_MAIN_ADAPTER_QUALIFICATION_2026-10-11.md`. No full matrix,
+validator/generator, runtime/SQL durability/restore/host/release promotion.
+
+Earlier primaryc812928d2 / tree4ab5b44eaa adopts the reviewed manifest
 pin correction: only the two expected metadata fields change, all497 declared
 hashes match exact published Git bytes, and the other496 values/policies remain.
 Complete src and original Item entry/checker/manifest inputs remain identical
@@ -35,7 +52,7 @@ chat's latest reduced-arrangement instruction. Human clarification requested;
 both helpers stay parked, no runtime lease or unqualified WORLD patch activated.
 Observation39cc1e7e82c76bc153a28bcbea65e1c02c837e8c6d3885bbbeadfd0086b22174.
 
-Latest qualified component: ACC-08 on published primary
+Prior qualified component: ACC-08 on published primary
 `7f1d766c068501427c099360bb4d1985240395a4` / tree
 `2ec2ee21a1be222719f4969ae5909f4677690b2f`. Original registered Item
 entry0/129.014213s, SQL-header and flat each15 groups/2653 refusal points/
@@ -293,6 +310,8 @@ override availability or invent tokens/receipts for accepting tests.
 | ACC-07-HELD-POLICY-01 | Original registered held policy entry on frozen97, original case acceptance checker, focused structural contracts | Entry0/both modes PASS; checker rejects missing main case; outer1 collector failure preserved, no native repeat; independent review/owned QA removed/RELEASED; no full matrix, SQL durability or release |
 | ACC-08-ITEM-BOUNDED-01 | Original registered bounded Item entry on frozen7f1d766c0, unchanged original outcome checker and default contracts | Entry0/both modes15 groups/2653 refusal points each; missing required main case remains; contracts0, sole QA removed/RELEASED; no full build/matrix or broader qualification |
 | ITEM-MANIFEST-PIN | Exact two-field portable hash refresh on7f1d766c0, unchanged cases/policies/source; apply/reverse check and candidate validator | Qualified source-pin accuracy repair only; original/candidate default validator both0; primaryc812928d2 adoption verified against all497 exact Git hashes, other496 pins preserved; registered main refusal unchanged |
+| ACC-09-REGISTERED-MAIN-01 | Exact published one-line adapter repair, actual eight-case regression plus original held-policy/Item entries and unchanged real TestResult/outcome checker | Parent control1 expected; repaired regression0/eight passed; held0/15.406566s, Item0/124.373742s; actual script/main both passed, original markers/zero skips/checker failures[]; sole1GiB QA removed/sealed/RELEASED; earlier97/7f refusals preserved |
+| ADAPTER-SOURCE-PIN | Exact published LF adapter versus declared CRLF encoding alias; narrow two-field raw-Git pin normalization on c72 | Original raw hashes499/500; separate candidate500/500, other499 values/policies/source unchanged, apply/reverse0; primary adoption pending, no behavior defect or acceptance waiver inferred |
 | PRIMARY-01 | Connected save/coordinator/item lifecycle map then verified boundary/caller/admission closure | Existing primary implementation ownership; no withdrawn delegation dependency |
 | PRIMARY-02 | Supported toolchain/runtime/library correspondence, complete storage/frame/transitive proof, aggregate 32MiB accept/refuse | Remains explicit; object compile/source packets do not close it |
 | FINAL | Gameplay/persistence/schema/backup/restore/recovery/fault/load/resource/R1-R8 gates agree on one frozen candidate | Reviewed implementation batches and per-slice architecture evidence |
@@ -816,16 +835,18 @@ Do not repeat this source/release audit on unchanged9c or open standing helper
 research; wait for meaningful source/evidence or an exact independently owned
 executable slice. Full Work1-5/R6-R8 acceptance remains open.
 
-Finite queue after ACC-08: primary genuine main invocation/outcome observation
-under existing [script,main] for both Item and held-policy registrations; actual same-root
+Finite queue after ACC-09: primary adoption of the exact two-field raw-Git
+adapter-pin normalization; actual same-root
 writer evidence and coherent0062/default65 restore route, with the existing
-source-only restore-coin three-provider packet. Current7f source contracts pass
-but the executed Item registration remains rejected. Wait for a substantive
+source-only restore-coin three-provider packet. Actual registered Item and held
+components now pass on c72 with the original required [script,main] outcomes;
+earlier ACC-07/08 refusals retain their original97/7f scope. Wait for a substantive
 published repair/evidence batch or exact independently owned executable slice.
 No full build/matrix, unchanged audit repeat, standing helper research or runtime
 allocation. Historical proofs retain their original sources; full deliverable
 remains OPEN and the withdrawn speedup percentage is excluded. Manifest-pin
 source adoption is verified atc812928d2 and removed from the pending queue.
+The genuine main-outcome repair is qualified by ACC-09 and removed from that queue.
 
 Exact PRIMARY handoff for the native recipe: adopt only the three `SOURCES`
 entries from integration `6bfa0f7ebdd5f2f46841047fdd10522e4d27dfea` in
