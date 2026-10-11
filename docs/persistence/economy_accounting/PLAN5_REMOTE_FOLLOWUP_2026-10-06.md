@@ -3418,3 +3418,30 @@ readonlysource/freshLinuxDBvolume/directDoutputs, ownedgracefulcleanup/seal/
 inventories beforeguardedglobalrelease. No sharededit/Cpp/fullmatrix/contractwrite
 or olddata reuse. Pendingnative/full65/restore/authority/retention/erasure/
 recovery/load/release; inactive/CLOSED/fullgoalACTIVE. Additivecuratorinput only.
+
+## 2026-10-11 — DIAG-01 native cause captured; fixture lookup failed
+
+[Focused diagnostic result](PLAN5_SCHEMA65_REFUSAL_DIAGNOSTIC_RESULT_2026-10-11.md)
+records actualsession19578 native/hostexit1,107.583012s, frozen6bfa0f7e source6906
+unchanged. FreshMaria10.11.19 original65 produced raw1644/45000 terminalschema
+signal151bytes, SHA87a1b0d598b05d617ee113c570004ddb86e575a01404ed8f3e8e66f5c46bd0a4;
+original64receipts/state/protectedrows unchanged/no65receipt. Real2013/1146/
+unrelated45000 negatives allclosed/no-reconnect/preserved/no65 and refused
+classification despite samegenericrunnercategory. Realnullable recovery/prefix/
+protectedrow/tail1 assertions passed, then ownfixtureline265 suppliedwhole runtime
+instead ofnested schema65 and raisedKeyError. Pinned65/rerun/wrongselector remain
+incomplete; noPASSdiagnostic orfullschema/releaseclaim. One-call semanticrepair is
+runtime['schema65']; original64 setup keeps top-level runtime. Executedhelpers/
+evidence immutable; distinctDIAG-02 preparation/grant required before nextnative.
+
+Evidence D:/Dev/Tests/Duris/accounting-plan5/ACC-02-ORIGINAL65-DIAG-01,
+seal6429db4cc773c7947e004abdcfbb34a3dd1815fe2dc1bf1ae50c4a058ef54f69,
+6964members/549628522bytes. DBgracefulstop0/OOMfalse/removal; owner/joband
+passivevolumeconsumers0empty; newvolume/rawsnapshotandoldvolumes preserved,
+sevenunrelatedserviceIDs running. Actualmatchinggloballease releasedafterseal/
+reverification. Basee3b10382c67363a9609fe86c265b2e6c9c20456f, result/remote via
+owned delivery/result.json. Onlyreport/additivefollowup maintained; no shared
+runner/matrix/migration/contract/registry edit. Currentnativeprofilecauseproved
+withoutretroactiveclaimaboutdiscardedfull-runstderr. Full65/restore/authority/
+retention/erasure/recovery/load/release OPEN; inactive/CLOSED/fullgoalACTIVE.
+Additivecuratorinput; no notebookimport/combinedqualification.
