@@ -1,0 +1,11 @@
+# Zone native thread Source profile integration — 2026-10-11
+
+The two Zone flat-global current Source getters previously refused the installed native thread macro and counted the unused gthread wrapper. Select Linux/glibc>=2.27 direct pthread_self() and two native handles. Both real public getters pass exact value, null refusal and genuine assertions-profile strong-output checks: four runs total across SQL-header and flat backends. Install the exact tested Generic v2 runner/fixture and register its shared scope; no private Coordinator calls or added link closure.
+
+Both finite formatted Source reviews pass. Genuine whole provider/macro checks use pinned GNU13.3/libstdc++13, glibc>=2.27 and original production Make flags; residual compile/link/profile errors fail. The exact permanent runner executes once; no synthetic provider, native macro override, services or full-server rerun is used.
+
+Adopted source `src/world/zone_reset_item_owner.c` SHA `fbccb16533f3d0c142d9d2cd8842a2389bc47bdfc3a9fe070d1820449b1fd39e`; tested recipe `711a2a68abbc34cdeb6d9f5ef025fe978e26fce5eaf710aab42f0f8f51ee46ed`, base `221f9e5ac159a0a1498222b348d2cdb05f9677da`; Parent `1d8b829cf6821bf14ccff668ad1aab773a9d87db5f77fe39c90d789e0181c5c0`, native `970b698840049b68e23e374e03558a677928970c42c2971cb2c4cdeffd018e9e`, cases `12ae2eaa2deb8752f513137dc004cf20340b5048196a3ef441429a65baa25469`, Root receipt `70740e49b92e03f06f3a14f7fdc9218bf76044faf6250af9a45668e87c686014`. Batch elapsed 493.56200000000536 seconds. Every native artifact is authenticated, including real result/case/input/log receipts.
+
+Zone milestone changes only its existing source pin and registration pin, adds the two actual test pins:502→504. Coordinator source remains at its current preimage until its separate milestone. Writer policies/census, leased WORLD/SHOP paths and unrelated WIP stay intact. Inventory listing, coverage generation, nonrelease validation and generation check are registration/inventory evidence, not accounting completion.
+
+Plans1–4, R1–R8, architecture, full caller/producer/native/ABI/emitted-stack/gameplay/SQL/persistence/recovery/host/release gates remain OPEN. Accounting inactive/CLOSED; coverage incomplete; release BLOCKED; goal ACTIVE.

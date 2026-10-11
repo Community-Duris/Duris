@@ -576,7 +576,7 @@
       "src/world/specs.prototypes.h": "814e7a01ae7f3bd62639226728e1933f05ca467d1472baad3746078dfac5d685",
       "src/world/world_activity.c": "12cff01d1e178c7cf1de2b0412ca4ae6476cd299c5ae9d938f63749354e4a095",
       "src/world/world_activity.h": "f0ddefcce591f13ed52663150d56bade49e802d171ab36d9583ba94207201a8b",
-      "src/world/zone_reset_item_owner.c": "b439b7cc1445e52f0ed6a2b928aa4e899c8670d429b95e6e6395f2f65e256e96",
+      "src/world/zone_reset_item_owner.c": "fbccb16533f3d0c142d9d2cd8842a2389bc47bdfc3a9fe070d1820449b1fd39e",
       "src/world/zone_reset_item_owner.h": "420cc2a60cb447ab2db63daad61b235ffb8c9be6dd0c4e4400d8ba752fb47d6e",
       "src/world/zone_reset_room_nesting.h": "1fc91a523d8c00f7a04eb29f51312abdd578360fffae1d3f14ed8a2bca6b39d7",
       "src/world/zone_reset_room_publication.c": "43c9d6def63b3ad30d55208423bfbff854f3ea2e3bf21d4dc13a77c6a68b0795",
@@ -601,6 +601,7 @@
       "tests/async/modern_room_component_cases.inc": "47a6edfbade0cee7df14d11cd268519a961ba3b927bede5322dbe93eef45190b",
       "tests/async/modern_room_explicit_boundary_cases.inc": "e2bbb28b2f417ca23eb13075097cb6feb33d0fe75dc5b5fb8c8792dbd85e4d8e",
       "tests/async/modern_room_fixture_support.inc": "3919d7b897aabc31e87bf7750ca5ae91431fb6ce7b3188e6a33a2c4ec9a642df",
+      "tests/async/native_birth_zone_source_profile_test.cpp": "eed22b327b7f837adb502c4e436f43a8c126c1e8ede7c1e22f0df6c0e72fe1ef",
       "tests/async/native_quest_publication_mysql_harness.cpp": "4d057cb6d61a7c389156a82ab8160970a7bcd19a36a61008c00e559f38c2fabb",
       "tests/async/original_logit_source_profile_test.cpp": "4b653b73384835d1f2738e1639c88843d52a21cfcd6df6a4faa0a8221addb8c3",
       "tests/async/physical_provider_union_cases.inc": "ee051a6cd3797de2752e4c5c5e0468fab27eaa31d17373ec3b52ddf4b26b72a7",
@@ -626,6 +627,7 @@
       "tests/async/test_item_movement_prompt_runtime.py": "4bb624536db82fe3594b379c822a8979a8be42362a890a0c0c5bd0b5179a8800",
       "tests/async/test_item_ownership_runtime.py": "98d7fde83b4cf1357e53b1f9712af05b408b2c013fa1de476945938c9a1c5c02",
       "tests/async/test_item_transfer_complete_bounded.py": "f5f7c546ee566265e4a842be2cd264285a4d73c146365ee44483027c06f5c367",
+      "tests/async/test_native_birth_zone_source_profile.py": "ed8e51359ca1cad73ad1cdc99faa7782d7636c047dbb30a4d7eaa70384047b2a",
       "tests/async/test_original_logit_source_profile.py": "687de0b9b21478fe90b7de27a282855176c61f973d28fa042deb47bf8c675fc3",
       "tests/async/test_persistence_backup.py": "7a330310230f808c7a840709f1af5a551637f10c14df7c904c286ea6bc5b3c81",
       "tests/async/test_persistence_mode.py": "c5e2eb9dd405e7a4e05e5100ae2b03209facf15113ce8267c7a8b6987b47485b",
@@ -639,7 +641,7 @@
       "tests/async/test_test_entry_main_outcome.py": "3175efa87cf0a2f287b80491787554d9cd45fe109b93807a46de83dee6b1314c",
       "tests/async/test_txn_publication_copyover_drain.py": "64d323b2b5041115c0f70602d6f51bbdc83ac337d9309838095391baa745a843",
       "tests/integration_manifest.json": "268f2921125a4b9b47607c28ed12dcf42ad8c4e29e08d6a29fbf1640946b4dc2",
-      "tests/regression_manifest.json": "19aec2dc58a6c84b0da20041e47faf804156f5641cf8a6f38ecae57fb44383f6",
+      "tests/regression_manifest.json": "cbecb543f0cdd33690cb3ab62fec622990cfd802139fe4e52da0119d938a19a7",
       "tests/run_test_entry.py": "bdfbc6eb466ddbb3887dbc639530cf76bff50142e86d11c79dc99d5ac45cc07d"
     },
     "status": "source_integrated_unqualified"
