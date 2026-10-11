@@ -1,3 +1,15 @@
+## SQL export limit fixed and combined checkpoint recorded — 2026-10-11
+
+[Exporter integration](PLAN5_SQL_OUTPUT_BYTE_LIMIT_PRIMARY_INTEGRATION_2026-10-11.md) refuses a JSON file exceeding the existing bound
+after its trailing newline is added, before file creation. Windows/Linux14 tests,
+the two registered cases and registration validation pass. Only three existing
+source pins change;931 writer policies and the census remain unchanged.
+[Combined checkpoint](GUARDED_COMBINED_BUILD_CHECKPOINT_2026-10-11.md) passes fresh production SQL/flat builds and
+the original inactive-flat preflight at83e2e; SQL startup remains unrun. This is
+the architecture prerequisite, not full protocol acceptance. The new world/shop
+leases remain proposed pending direct authorization. Inactive/CLOSED, incomplete
+coverage and outstanding implementation/architecture/R1–R8/release gates remain.
+
 # Experimental accounting review checkpoint
 
 ## Bounded genuine ROOM native current observation - 2026-10-09
