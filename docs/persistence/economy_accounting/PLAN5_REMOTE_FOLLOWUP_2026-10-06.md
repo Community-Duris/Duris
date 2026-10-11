@@ -3288,3 +3288,28 @@ lockreleased afterseal; noownedresources, unrelatedservicespreserved. Freshfull
 two-engine matrix+originalpredicates remains next acceptinggate underseparategrant;
 do not promote commissioning to schema65/restore/retention/release completion.
 No sharedfields changed; additivecurator evidence, fullgoalACTIVE/inactiveCLOSED.
+
+
+## 2026-10-11 — ACC-02 native MariaDB staging failure
+
+[Native retry result](PLAN5_ACC02_MARIADB_STAGING_FAILURE_2026-10-11.md) binds exact
+source a60f5dcce0c6496e687a0806ee7d0c559579e4fb, terminal session69068/exit1.
+MySQL8.0.46 passed canonical/staging/master exact history+metadata parity,
+original65 routes/64 boot and native migration-session faults. Measured FP
+0cb5c5bdbf0862e115a933dc03b84e46a4a0855edb83cdd2c791ed66b42469a1 remains
+UNQUALIFIED. Maria10.11.19 canonical65 passed; staging45 append failed at0060.
+Daemon log reports missing source during item_owner_revision.ibd rename; both
+DBs running/OOMKilledfalse, retained frm/ibd present afterward. Root cause
+unestablished, Windows data bind hypothesis only. Original source/predicates and
+all6901 files unchanged; final65 boot/tamper/report/header writes NOT_RUN.
+Seal4d0e5992f40dc1f8277154c0bf5268574ca96f02aed22c68aca98e6eacd415a7:
+6967members/550329309bytes at D:/Dev/Tests/Duris/accounting-plan5/ACC-02-a60f5dcc-retry02.
+Raw failed DB scratch preserved/unsealed. Exact-owned independent inventoryexit0
+empty; seven unrelated services preserved; exact matching global lock released
+only after seal verification. No owned resources. Paired original staging
+storage reproduction preparation is resource-free, next native job awaits a
+distinct grant. Owned base4516f495ef59078e34bf052d3a566400cb7d1757; result/remote
+bound by delivery. No shared edits/requests, no experimental-accounting push.
+Current schema65/restore/authority/retention/erasure/recovery/load/R1-R8/release
+OPEN, goalACTIVE/inactiveCLOSED. Additive curator input only; no notebook
+application or primary/release acknowledgment claimed.
