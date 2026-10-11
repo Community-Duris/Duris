@@ -688,7 +688,7 @@
   "test_random_equipment_config_contract.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.033,"purpose":"random equipment config contract"},
   "test_random_equipment_config_runtime.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":0.369,"purpose":"random equipment config runtime"},
   "test_recipe_craft_transaction.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":0.721,"purpose":"Execute the actual recipe planner with refused and deferred craft admission."},
-  "test_reconcile_economy_accounting.py": {"profile":"fast","mode":"unittest","minimum_cases":38,"cpu":1,"memory_mb":256,"seconds":0.154,"purpose":"Corrupted disposable snapshots for the read-only economic reconciler."},
+  "test_reconcile_economy_accounting.py": {"profile":"fast","mode":"unittest","minimum_cases":42,"cpu":1,"memory_mb":256,"seconds":0.154,"purpose":"Corrupted disposable snapshots for the read-only economic reconciler."},
   "test_redis_admin_nonblocking.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.026,"purpose":"Redis administrator commands must remain truthful and network-free online."},
   "test_redis_cache_store_live.py": {"profile":"journey","mode":"script","minimum_cases":1,"cpu":2,"memory_mb":2048,"seconds":7.214,"purpose":"Exercise local cache reads and bounded asynchronous Redis publication."},
   "test_redis_clear_scoped_live.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.24,"purpose":"Verify destructive Redis maintenance deletes only Duris-owned key prefixes."},

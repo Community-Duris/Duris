@@ -1,3 +1,12 @@
+## Reader transport unit milestone — 2026-10-11
+
+[PLAN5_READER_TRANSPORT_PRIMARY_INTEGRATION_2026-10-11.md](PLAN5_READER_TRANSPORT_PRIMARY_INTEGRATION_2026-10-11.md) records actual Linux reader checks:
+149 original/153 candidate methods with three optional classes unqualified,
+all6 component cases (real FIFO) and19 registered selectors PASS. Full matrix
+NOT_RUN; current2206 combined native build PENDING. Exact three existing source
+pins change; writer policies/census remain unchanged. Full Plan5, SQL durability,
+restore/host/release, inactive/CLOSED and existing open gates remain unchanged.
+
 ## SQL origin output byte limit integrated — 2026-10-11
 
 [Origin-output integration](PLAN5_SQL_ORIGIN_OUTPUT_BYTE_LIMIT_PRIMARY_INTEGRATION_2026-10-11.md) bounds the complete JSON plus newline before exclusive file creation. Windows/Linux16 boundary controls and14 module methods pass on the frozen component; Linux0600 is checked. One existing UID source pin changes, the origin exporter gains one new pin, and480 existing pins remain (482 total,0 removed). No new test row/case or full-matrix/32MiB/SQL/native qualification is claimed. Reader work and original R1–R8/release gates remain open; accounting stays inactive/CLOSED.

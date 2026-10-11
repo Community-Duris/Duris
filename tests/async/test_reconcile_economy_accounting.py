@@ -2920,6 +2920,147 @@ class ReconciliationTests(unittest.TestCase):
                 reconciler.audit_items({}, {}, origins, native, {1, 2, 3})
                 self.assertEqual(dict(reconciler.counts), expected)
 
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "requires POSIX FIFO input")
+    def test_cli_refuses_nonregular_snapshot_without_waiting(self):
+        with tempfile.TemporaryDirectory(prefix="duris-snapshot-pipe-") as temporary:
+            pipe = Path(temporary) / "private-operator-pipe"
+            os.mkfifo(pipe, 0o600)
+            alias = Path(temporary) / "pipe-alias"
+            alias.symlink_to(pipe)
+            directory = Path(temporary) / "private-directory"
+            directory.mkdir()
+            for path in (pipe, alias, directory):
+                before = path.lstat()
+                for limit in (0, 1, 100):
+                    with self.subTest(alias=path == alias, limit=limit):
+                        result = subprocess.run([
+                            sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                            str(path), "--limit", str(limit)], capture_output=True,
+                            text=True, timeout=2, check=False)
+                        self.assertEqual(result.returncode, 2)
+                        self.assertEqual(result.stdout, "")
+                        self.assertEqual(result.stderr,
+                                         "reconciliation failed: snapshot requires a regular file\n")
+                        after = path.lstat()
+                        self.assertEqual((after.st_mode, after.st_ino, after.st_size),
+                                         (before.st_mode, before.st_ino, before.st_size))
+
+    def test_snapshot_growth_after_size_check_cannot_bypass_byte_limit(self):
+        import io
+        from unittest import mock
+        import reconcile_economy_accounting as audit
+        original_stat, original_fstat = Path.stat, os.fstat
+        payload = json.dumps(clean_snapshot()).encode("utf-8")
+        bound = len(payload) + 64
+        grown_payload = payload + b" " * (bound + 1 - len(payload))
+        with tempfile.TemporaryDirectory(prefix="duris-snapshot-growth-") as temporary:
+            path = Path(temporary) / "snapshot.json"
+            for limit in (0, 1, 100):
+                with self.subTest(limit=limit):
+                    path.write_bytes(payload)
+                    identity = original_stat(path)
+                    grew = []
+                    def grow():
+                        if not grew:
+                            with path.open("ab") as writer:
+                                writer.write(grown_payload[len(payload):])
+                            grew.append(True)
+                    def stat_then_grow(selected, *args, **kwargs):
+                        result = original_stat(selected, *args, **kwargs)
+                        if selected == path:
+                            grow()
+                        return result
+                    def fstat_then_grow(fd):
+                        result = original_fstat(fd)
+                        if (result.st_dev, result.st_ino) == (identity.st_dev, identity.st_ino):
+                            grow()
+                        return result
+                    stdout, stderr = io.StringIO(), io.StringIO()
+                    with mock.patch.object(Path, "stat", stat_then_grow), \
+                         mock.patch.object(os, "fstat", fstat_then_grow), \
+                         mock.patch.object(audit, "MAX_INPUT_BYTES", bound), \
+                         mock.patch.object(sys, "argv", ["audit", str(path), "--limit", str(limit)]), \
+                         mock.patch("sys.stdout", stdout), mock.patch("sys.stderr", stderr):
+                        result = audit.main()
+                    self.assertTrue(grew)
+                    self.assertEqual(result, 2)
+                    self.assertEqual(stdout.getvalue(), "")
+                    self.assertEqual(stderr.getvalue(),
+                                     "reconciliation failed: snapshot or output limit exceeded\n")
+                    self.assertEqual(path.read_bytes(), grown_payload)
+
+    def test_cli_rejects_duplicate_snapshot_fields_before_any_view(self):
+        original = json.dumps(clean_snapshot(), separators=(",", ":"))
+        cases = [
+            original.replace('"complete":true', '"complete":false,"complete":true', 1),
+            original.replace('"complete":true', '"complete":true,"complete":true', 1),
+            original.replace('"balance":[7,0,0,0]',
+                             '"balance":[99,0,0,0],"balance":[7,0,0,0]', 1),
+            original.replace('"result_code":0', '"result_code":9,"result_code":0', 1),
+            original.replace('"canonical_plan":',
+                             '"canonical_plan":"private-bad-plan","canonical_plan":', 1),
+            original.replace('"source_event":',
+                             '"source_event":"' + "00" * 48 + '","source_event":', 1),
+            original.replace('"balance":[7,0,0,0]',
+                             '"bal\\u0061nce":[99,0,0,0],"balance":[7,0,0,0]', 1),
+            original.replace('{', '{"private-operator-alias":null,'
+                             '"private-operator-alias":null,', 1),
+        ]
+        with tempfile.TemporaryDirectory(prefix="duris-duplicate-snapshot-") as temporary:
+            path = Path(temporary) / "snapshot.json"
+            for index, body in enumerate([*cases, original]):
+                path.write_text(body, encoding="utf-8")
+                before = path.read_bytes()
+                for name in ("exceptions", "holdings", "provenance", "operation",
+                             "supply", "prices", "routes"):
+                    for limit in (0, 1, 100):
+                        with self.subTest(case=index, view=name, limit=limit):
+                            command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                       str(path), "--view", name, "--limit", str(limit)]
+                            if name == "provenance":
+                                command += ["--uid", "81"]
+                            elif name == "operation":
+                                command += ["--operation-id", OP]
+                            result = subprocess.run(command, capture_output=True, text=True,
+                                                    timeout=30, check=False)
+                            if index < len(cases):
+                                self.assertEqual(result.returncode, 2)
+                                self.assertEqual(result.stdout, "")
+                                self.assertEqual(result.stderr,
+                                                 "reconciliation failed: duplicate snapshot field\n")
+                            else:
+                                self.assertEqual(result.returncode, 0, result.stderr)
+                                self.assertEqual(result.stderr, "")
+                                json.loads(result.stdout)
+                            self.assertEqual(path.read_bytes(), before)
+
+    def test_cli_refuses_excessive_json_nesting_before_any_view(self):
+        original = json.dumps(clean_snapshot(), separators=(",", ":"))
+        with tempfile.TemporaryDirectory(prefix="duris-nested-snapshot-") as temporary:
+            path = Path(temporary) / "snapshot.json"
+            for opening, closing in (("[", "]"), ('{"value":', "}")):
+                body = original[:-1] + ',"private-operator-alias":' + opening * 16384 + "0" + closing * 16384 + "}"
+                path.write_text(body, encoding="utf-8")
+                before = path.read_bytes()
+                self.assertLess(len(before), MAX_INPUT_BYTES)
+                with self.assertRaises(RecursionError):
+                    json.loads(body)
+                for name in ("exceptions", "holdings", "provenance", "operation", "supply", "prices", "routes"):
+                    for limit in (0, 1, 100):
+                        with self.subTest(shape=opening, view=name, limit=limit):
+                            command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                       str(path), "--view", name, "--limit", str(limit)]
+                            if name == "provenance":
+                                command += ["--uid", "81"]
+                            elif name == "operation":
+                                command += ["--operation-id", OP]
+                            result = subprocess.run(command, capture_output=True, text=True, timeout=10, check=False)
+                            self.assertEqual(result.returncode, 2)
+                            self.assertEqual(result.stdout, "")
+                            self.assertEqual(result.stderr,
+                                             "reconciliation failed: snapshot JSON nesting exceeds parser limit\n")
+                            self.assertEqual(path.read_bytes(), before)
+
     def test_cli_bounded_exception_result(self):
         snapshot = clean_snapshot()
         snapshot["postings"].pop()
