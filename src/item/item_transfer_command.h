@@ -670,4 +670,23 @@ constexpr size_t item_owner_key_source_query_frame_bytes() noexcept
 {
 	return sizeof(size_t *) + sizeof(bool);
 }
+
+// Additive full owning quest-offering validator. Source reports the prospective
+// parent+unchanged generic decoder graph; only genuine decoder supplement is
+// retained in its outer. INITIAL is the actual first parent controller object.
+bool item_transfer_quest_offering_continuation_valid_complete_bounded(
+	const item_transfer_payload &, bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+bool item_transfer_quest_offering_continuation_valid_complete_source_frame_bytes(size_t *) noexcept;
+bool item_transfer_quest_offering_continuation_valid_complete_source_supplement_frame_bytes(
+	size_t *) noexcept;
+bool item_transfer_quest_offering_continuation_valid_complete_initial_inline_bytes(
+	size_t *) noexcept;
+constexpr size_t
+item_transfer_quest_offering_continuation_valid_complete_source_query_frame_bytes() noexcept
+{
+	// Full getter output/result/child P+2N+B, runtime policy B, genuine
+	// nested full getter2P4N2B and checked add P+N+B. Caller result N separate.
+	return 4 * sizeof(void *) + 7 * sizeof(size_t) + 5 * sizeof(bool);
+}
+
 #endif
