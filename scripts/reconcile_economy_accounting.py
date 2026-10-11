@@ -3972,7 +3972,10 @@ def main() -> int:
             if len({key for key, _ in pairs}) != len(pairs):
                 raise SnapshotError("duplicate snapshot field")
             return dict(pairs)
-        snapshot = json.loads(data, object_pairs_hook=unique_fields)
+        try:
+            snapshot = json.loads(data, object_pairs_hook=unique_fields)
+        except RecursionError as error:
+            raise SnapshotError("snapshot JSON nesting exceeds parser limit") from error
         del data
         report = Reconciler(args.limit).audit(snapshot)
         result = view(snapshot, report, args.view, args.limit, args.uid,

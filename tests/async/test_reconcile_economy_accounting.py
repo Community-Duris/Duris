@@ -3105,6 +3105,31 @@ class ReconciliationTests(unittest.TestCase):
                                 json.loads(result.stdout)
                             self.assertEqual(path.read_bytes(), before)
 
+    def test_cli_refuses_excessive_json_nesting_before_any_view(self):
+        original = json.dumps(clean_snapshot(), separators=(",", ":"))
+        with tempfile.TemporaryDirectory(prefix="duris-nested-snapshot-") as temporary:
+            path = Path(temporary) / "snapshot.json"
+            for opening, closing in (("[", "]"), ('{"value":', "}")):
+                body = original[:-1] + ',"private-operator-alias":' + opening * 4096 + "0" + closing * 4096 + "}"
+                path.write_text(body, encoding="utf-8")
+                before = path.read_bytes()
+                self.assertLess(len(before), MAX_INPUT_BYTES)
+                for name in ("exceptions", "holdings", "provenance", "operation", "supply", "prices", "routes"):
+                    for limit in (0, 1, 100):
+                        with self.subTest(shape=opening, view=name, limit=limit):
+                            command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                       str(path), "--view", name, "--limit", str(limit)]
+                            if name == "provenance":
+                                command += ["--uid", "81"]
+                            elif name == "operation":
+                                command += ["--operation-id", OP]
+                            result = subprocess.run(command, capture_output=True, text=True, timeout=10, check=False)
+                            self.assertEqual(result.returncode, 2)
+                            self.assertEqual(result.stdout, "")
+                            self.assertEqual(result.stderr,
+                                             "reconciliation failed: snapshot JSON nesting exceeds parser limit\n")
+                            self.assertEqual(path.read_bytes(), before)
+
     def test_cli_bounded_exception_result(self):
         snapshot = clean_snapshot()
         snapshot["postings"].pop()
