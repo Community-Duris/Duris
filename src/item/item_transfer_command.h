@@ -708,4 +708,49 @@ item_transfer_native_mobile_context_valid_complete_source_query_frame_bytes() no
 	return 5 * sizeof(void *) + 3 * sizeof(size_t) + 9 * sizeof(bool);
 }
 
+// Additive original-equivalent recovery entries. Full prospective Source
+// includes the genuine nested child graph; runtime retains its own Source
+// once, admits child Source+INITIAL transiently and retains only old-child
+// positive supplement. Parent objects and heaps remain live at actual cuts.
+bool item_transfer_native_recovery_encode_complete_bounded(
+	const item_native_mobile_recovery_context &, std::vector<uint8_t> *,
+	bool (*)(size_t, void *) noexcept, void *, size_t, size_t *) noexcept;
+bool item_transfer_native_recovery_decode_complete_bounded(std::span<const uint8_t>,
+							   item_native_mobile_recovery_context *,
+							   bool (*)(size_t, void *) noexcept,
+							   void *, size_t, size_t *) noexcept;
+bool item_transfer_native_recovery_valid_complete_bounded(
+	const item_transfer_payload &, const item_native_mobile_recovery_context &, uint16_t,
+	bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
+bool item_transfer_native_recovery_encode_complete_source_frame_bytes(size_t *) noexcept;
+bool item_transfer_native_recovery_encode_complete_source_supplement_frame_bytes(size_t *) noexcept;
+bool item_transfer_native_recovery_encode_complete_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t item_transfer_native_recovery_encode_complete_source_query_frame_bytes() noexcept
+{
+	// Dominating actual valid getter: own outputP/resultN/childN/returnB/
+	// runtime policyB, checked add P+N+B, forest/list query P+2B each,
+	// generic continuation query2P+4N+2B. Caller outputN stays separate.
+	return 6 * sizeof(void *) + 7 * sizeof(size_t) + 9 * sizeof(bool);
+}
+bool item_transfer_native_recovery_decode_complete_source_frame_bytes(size_t *) noexcept;
+bool item_transfer_native_recovery_decode_complete_source_supplement_frame_bytes(size_t *) noexcept;
+bool item_transfer_native_recovery_decode_complete_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t item_transfer_native_recovery_decode_complete_source_query_frame_bytes() noexcept
+{
+	// Dominating actual valid getter: own outputP/resultN/childN/returnB/
+	// runtime policyB, checked add P+N+B, forest/list query P+2B each,
+	// generic continuation query2P+4N+2B. Caller outputN stays separate.
+	return 6 * sizeof(void *) + 7 * sizeof(size_t) + 9 * sizeof(bool);
+}
+bool item_transfer_native_recovery_valid_complete_source_frame_bytes(size_t *) noexcept;
+bool item_transfer_native_recovery_valid_complete_source_supplement_frame_bytes(size_t *) noexcept;
+bool item_transfer_native_recovery_valid_complete_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t item_transfer_native_recovery_valid_complete_source_query_frame_bytes() noexcept
+{
+	// Dominating actual valid getter: own outputP/resultN/childN/returnB/
+	// runtime policyB, checked add P+N+B, forest/list query P+2B each,
+	// generic continuation query2P+4N+2B. Caller outputN stays separate.
+	return 6 * sizeof(void *) + 7 * sizeof(size_t) + 9 * sizeof(bool);
+}
+
 #endif
