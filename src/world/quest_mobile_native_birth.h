@@ -487,4 +487,40 @@ constexpr size_t quest_mobile_native_birth_charge_local_initial_query_frame_byte
 {
 	return 2 * sizeof(void *) + sizeof(bool);
 }
+
+#include "economy/economic_gameplay_authority.h"
+
+// Exact preserved reserve_ordinary_flat_submission callback LOCAL Source:
+// freeze/current/binding/identity/authority and charge LOCAL. Pure queries do
+// not observe or admit. Configured outside-global/nonlender Item observer child
+// Source remains the selecting ROOT's responsibility, never this LOCAL claim.
+// Original first-entry freeze has no Source admission; supplement equals full.
+// INITIAL is only a conservative two-occurrence sum of the authority children's
+// selected shared_ptr INLINE. The children are sequential, not coexisting parent
+// workspace; selecting ROOT keeps each actual physical lifetime only once.
+// Existing source pin/container/projection heaps remain caller-retained. Original
+// callback, dispatch, default/inactive behavior, and old budgets are unchanged.
+bool quest_mobile_native_birth_reserve_ordinary_flat_submission_local_source_frame_bytes(
+	size_t *) noexcept;
+bool quest_mobile_native_birth_reserve_ordinary_flat_submission_local_source_supplement_frame_bytes(
+	size_t *) noexcept;
+bool quest_mobile_native_birth_reserve_ordinary_flat_submission_local_initial_inline_bytes(
+	size_t *) noexcept;
+constexpr size_t
+quest_mobile_native_birth_reserve_ordinary_flat_submission_local_source_query_frame_bytes() noexcept
+{
+	// Own output/errno result, three named size_t locals, own bool result;
+	// both genuine child Source query scopes. Accessor N is caller-owned.
+	return 2 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool) +
+	       economic_gameplay_authority::capture_flat_reset_projection_source_query_frame_bytes() +
+	       quest_mobile_native_birth_charge_local_source_query_frame_bytes();
+}
+constexpr size_t
+quest_mobile_native_birth_reserve_ordinary_flat_submission_local_initial_query_frame_bytes() noexcept
+{
+	// Own output/errno result, child/total locals and own bool result; one
+	// pure child INITIAL query. No observation or selectedS is constructed.
+	return 2 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) +
+	       economic_gameplay_authority::capture_flat_reset_projection_initial_query_frame_bytes();
+}
 #endif
