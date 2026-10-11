@@ -1,3 +1,13 @@
+## Legacy publication fixture repair — 2026-10-11
+
+[Fixture repair](LEGACY_PUBLICATION_FIXTURE_REPAIR_2026-10-11.md) restores
+complete runtime-identity extraction and the actual transaction owning-function
+locator. Both original checks pass against current source; production and the
+declined inactive spell path are unchanged. Two evidence pins are added (484
+total,482 preserved). No registered/full HRT/SQL/recovery/shutdown/release
+qualification is claimed; the original HRT batch remains FAIL. Inactive/CLOSED,
+incomplete coverage and the existing R1–R8/open-plan gates remain unchanged.
+
 ## Reader transport unit milestone — 2026-10-11
 
 [PLAN5_READER_TRANSPORT_PRIMARY_INTEGRATION_2026-10-11.md](PLAN5_READER_TRANSPORT_PRIMARY_INTEGRATION_2026-10-11.md) records actual Linux reader checks:

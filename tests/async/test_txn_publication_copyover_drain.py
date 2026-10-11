@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Source-contract checks for transaction ownership and commit ordering fixes."""
-from _paths import SRC
+from _paths import SRC, extract_function
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
@@ -37,8 +37,11 @@ bid = auction[bid_start : auction.index("bool auction_bid_legacy(", bid_start)]
 assert "payload.action = auction_action::bid" in bid
 assert "auction_transaction_submit" in bid
 
-apply_start = critical_repository.index("critical_apply_result critical_command_repository_apply")
-apply = critical_repository[apply_start:]
+public_apply = extract_function(
+    "critical_command_repository.c", "critical_apply_result critical_command_repository_apply("
+)
+assert "return apply_with_writer(connection, command, nullptr);" in public_apply
+apply = extract_function("critical_command_repository.c", "apply_with_writer(MYSQL *connection")
 auction_execute = apply.index("auction_repository_execute")
 auction_commit = apply.index('execute(connection, "COMMIT")', auction_execute)
 assert apply.index('execute(connection, "START TRANSACTION")') < auction_execute

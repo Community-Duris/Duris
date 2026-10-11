@@ -66911,7 +66911,9 @@
       "tests/async/test_data_lifecycle_manifest.py": "3ec3020da2b1c102e10329d6e77de307dd2d89e82c0f6e1ee756c35d82e70d05",
       "scripts/qualify_database_restore.py": "61eee5a95b79bb6302c77b18400aa8873e4c0248c1bcf4088182ba53142aab3a",
       "tests/async/test_immutable_migration_runner.py": "b8fe07002ef91a27c1ca379a816008ae09482c6980e78a7afee3f68fbdc8f220",
-      "scripts/economic_sql_audit_origins.py": "de5c14f519d1f0bfb8d8ded1edb0ae45cdedb654891edd1dc7317d947e5464a3"
+      "scripts/economic_sql_audit_origins.py": "de5c14f519d1f0bfb8d8ded1edb0ae45cdedb654891edd1dc7317d947e5464a3",
+      "tests/async/test_txn_publication_copyover_drain.py": "64d323b2b5041115c0f70602d6f51bbdc83ac337d9309838095391baa745a843",
+      "tests/async/test_spell_component_retirement_publication.py": "dbb84c30138984db14db13a695ea5d7130937c0dc7b7339085955136897ef0b8"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {
