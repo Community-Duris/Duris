@@ -1,3 +1,31 @@
+## Approved five-session acceleration ownership amendment - 2026-10-11
+
+The human user approved and instructed execution of the five-session arrangement
+in Codex chat 01a104b8-0bcd-7863-b720-a15cad96df41. Read
+[the acceleration charter](ACCOUNTING_ACCELERATION_CHARTER_2026-10-11.md) before
+selecting new work. It retains the primary's shared lifecycle and final integration
+ownership, preserves independent Plan 5, and proposes exclusive WORLD and SHOP
+implementation leases for two new Sol6.1/xhigh workers. The new orchestrator owns
+the combined integration branch and executable checkpoint queue.
+
+PRIMARY ACTION: finish the current bounded source task and required combined
+checkpoint; disclose protected WIP and acknowledge exact delegated paths/source
+in the charter's Primary acknowledgment section through a published primary
+commit. Until that acknowledgment, the proposed leases are not active. Existing
+independent tests and Plan 5 qualification can advance immediately with proper
+resource ownership. Once acknowledged, do not edit an active worker's leased
+files except to integrate its completed delivery and explicitly release/renew
+ownership. This user-approved allocation supersedes older preparation-only and
+primary-only restrictions within the exact active lease; other shared ownership,
+functional order, architecture verification and activation restrictions remain.
+
+The old quest/domain preparation helpers and coordination heartbeat are being
+retired after their current bounded slices with all source, goals and evidence
+preserved. Do not dispatch further work to that retired pair or recreate the
+open-ended research loop. Use the charter's three worker lanes and publish narrow
+interface handoffs; take real executable failures and qualification seriously.
+This amendment claims no primary acknowledgment, native pass or release readiness.
+
 ## Required architecture and maintainability work - 2026-10-11
 
 **User-directed implementation requirement: pending.** Address the growing
