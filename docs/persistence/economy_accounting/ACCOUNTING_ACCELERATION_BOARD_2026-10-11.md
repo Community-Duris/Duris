@@ -141,6 +141,26 @@ Reviewed report from Plan5 `5bc90a239c145d6719baa7b2756d9815cf676179` imported;
 collector41260 KeyError/unknown original command exits and corrected33679
 terminal receipts preserved. No native/job/container/grant/shared-file change.
 
+ACC-07-HELD-POLICY-01 on published97ded8571: original registered entry0/
+15.478888s, both SQL-header/flat policy markers and assertions PASS. Original
+acceptance checker rejects `missing required cases: main`: receipt has passed
+script and called main, but no main case. Outer1 collector AttributeError is
+preserved separately; completion and independent Plan5 review used actual
+original TestResult/receipts, without native rerun. Focused source contracts0;
+six extracted method bodies/state whitespace-equal,931 policies unchanged except
+sites,13 changed pins verified/481 preserved. Sole1GiB/CPU1 QA removed/lease
+RELEASED;7 unrelated services/4 passive volumes preserved. Report:
+`HELD_RETIREMENT_POLICY_REGISTERED_GATE_2026-10-11.md`. Primary compatible case
+observation/registration repair required; no acceptance deletion, full-matrix,
+SQL durability, cold restore, host or release qualification.
+
+Plan5 producere9225b07 publishes source-only restore-coin12-to15 recipe export.
+Reviewed whole-AST inverse and exact three real providers; report/portable patch
+imported only, test module and broad follow-up excluded. Compared9c and current97
+module/provider/fixture/helper inputs match; current native/DB remain NOT_RUN.
+`PLAN5_RESTORE_COIN_RECIPE_HANDOFF_2026-10-11.md` retains full original selector
+and primary-owned0062/default65 route prerequisite. No second native cohort.
+
 Accounting inactive; admission CLOSED; final release BLOCKED. This board records
 execution, not inventory-based completion. Original Plans 1-5 and R1-R8 evidence
 keeps its exact historical scope. Architecture work follows the first checkpoint.
@@ -152,9 +172,9 @@ original "do it", superseding "go with the useful parts". Local model GPT-6.1 So
 
 | Lane | Chat / worktree / branch | Current ticket |
 | --- | --- | --- |
-| Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | ACC-05/06 component proofs and current9c source-contract PASS/release refusal reviewed; exact narrow primary handoffs; current runtime unqualified, no active grant |
+| Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | ACC-07 native policy PASS/registered-case rejection reviewed; source contracts0, exact primary repair handoff; ACC-05/06 and9c release refusal preserved; no active grant |
 | Remote primary | Non-connected RGitGoin; private session/WIP inaccessible; published `experimental-accounting` | Existing Plans1-4/shared runtime/final integration ownership retained; no delegation ACK required; architecture/toolchain/storage/32MiB proof queue |
-| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Published5bc90a239 current original release refusal/source-contract report; ACC-05/06 exact proofs and released resources preserved; finite acceptance queue, no next native grant |
+| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Publishede9225b07 source-only restore-coin report/patch; independent ACC-07 receipt review; preserved5bc/ACC-05/06 proofs; finite wait, no next native grant |
 | World/quest (parked) | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | IDLE/clean f7228f3fe; original failure and component PASS handoffs preserved; proposed runtime allocation WITHDRAWN, no resources |
 | Shop/backend (parked) | `01a129b4-a553-78e0-85c2-69e34d8e0d59`; `C:/Users/alexa/.codex/worktrees/969b/NewDuris Max`; `codex/accounting-accel-shop` | IDLE/clean6022; parked handoff preserved; ACC-04-TX unstarted possible future ticket only, no grant; allocation WITHDRAWN |
 
@@ -224,6 +244,7 @@ override availability or invent tokens/receipts for accepting tests.
 | ACC-05-AUDIT-BUDGET-01 | Two existing Linux near-limit price/mapping audit-budget methods, no skips; original limits0/1/100, clean/conflict/corrupt/oversized controls, 30s/256MiB child bounds, input unchanged | Terminal original session57445/exit0,2/0skips/12records and both oversized controls PASS_SYNTHETIC_COMPONENT_ONLY on exact primary055; independently76-member seal verified/RELEASED; no full matrix or release-host promotion |
 | ACC-06-RETENTION-LINK-01 | Original11-TU native_fixture actual SQL link failure followed by exact+3-TU repair with unchanged fixture/flags/asserts and SQL/flat ASan/UBSan execution/frame decoding | Terminal session36030/exit0 on frozen055+3; originalSQL1/11symbols/originalflat NOT_RUN, both candidate builds/runtimes/decode/bytes PASS_LINK_STRUCTURAL_COMPONENT_ONLY; independently1472-member seal verified/RELEASED; reviewed narrow repair imported, broad Plan5 work excluded; no full retention or newer9c871 proof |
 | RELEASE-9c871c875 | Original validate_economy_accounting.py default and --release, exact source/evidence/source-derived row handoff | Default0, release1 missing executable evidence; source-only packet verified/imported, first primary/#481 account.item_reward; no native/backend/game/release qualification and no repeated unchanged audit |
+| ACC-07-HELD-POLICY-01 | Original registered held policy entry on frozen97, original case acceptance checker, focused structural contracts | Entry0/both modes PASS; checker rejects missing main case; outer1 collector failure preserved, no native repeat; independent review/owned QA removed/RELEASED; no full matrix, SQL durability or release |
 | PRIMARY-01 | Connected save/coordinator/item lifecycle map then verified boundary/caller/admission closure | Existing primary implementation ownership; no withdrawn delegation dependency |
 | PRIMARY-02 | Supported toolchain/runtime/library correspondence, complete storage/frame/transitive proof, aggregate 32MiB accept/refuse | Remains explicit; object compile/source packets do not close it |
 | FINAL | Gameplay/persistence/schema/backup/restore/recovery/fault/load/resource/R1-R8 gates agree on one frozen candidate | Reviewed implementation batches and per-slice architecture evidence |
@@ -746,6 +767,14 @@ exact lexical-map review SHA7d441f7df59372086cd55c94e15a27b12245fb7c14d48842a822
 Do not repeat this source/release audit on unchanged9c or open standing helper
 research; wait for meaningful source/evidence or an exact independently owned
 executable slice. Full Work1-5/R6-R8 acceptance remains open.
+
+Finite queue after ACC-07: primary compatible held-policy case-observation repair
+with original entry and unchanged checker both passing; actual same-root writer
+evidence and coherent schema/restore route; exact source-only restore-coin
+three-provider patch for adoption. Current97 source contracts pass but policy
+registration remains rejected. No full build/matrix or unchanged audit repeat,
+standing helper research, new cohort or runtime allocation. Historical proofs
+remain on their original sources; full deliverable remains OPEN.
 
 Exact PRIMARY handoff for the native recipe: adopt only the three `SOURCES`
 entries from integration `6bfa0f7ebdd5f2f46841047fdd10522e4d27dfea` in
