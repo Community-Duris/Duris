@@ -18,7 +18,14 @@ ACTIVE on this chat/current Sol6.1/xhigh. No per-commit full-build/matrix repeat
 
 ## Current accepting gate
 
-Latest observed primary4dba71a03 / treebc62157fd8: parent9d2bdd74 adopts
+Latest observed primaryc812928d2 / tree4ab5b44eaa adopts the reviewed manifest
+pin correction: only the two expected metadata fields change, all497 declared
+hashes match exact published Git bytes, and the other496 values/policies remain.
+Complete src and original Item entry/checker/manifest inputs remain identical
+to7f; no native, validator or matrix repeat. Adoption receipt49df2b6804723535d5b6a699f225e59731c63a301b549c7331f90f9f5216ed5d,
+sealeda25e2ef3ac59462ef33f3f33337cdec38bff911589c37e2ebd91a8806678ec.
+
+Earlier primary4dba71a03 / treebc62157fd8: parent9d2bdd74 adopts
 exact reviewed retention three-provider module (SHA3dc38861), adding its pin
 while preserving496 existing values. Source adoption confirmed; its newly
 reported current native run is not independently promoted here. Allsrc and
@@ -36,10 +43,12 @@ entry0/129.014213s, SQL-header and flat each15 groups/2653 refusal points/
 Original checker rejects `missing required cases: main`; required [script,main],
 all markers and5400s timeout remain. Outer1 is the actual acceptance refusal,
 with no collector error or full matrix invocation. Default source contracts0.
-Independent hashes find one stale integration_manifest pin in writers/matrix;
+At frozen7f, independent hashes found one stale integration_manifest pin in
+writers/matrix;
 portable two-field refresh is apply/reverse checked and candidate contracts0,
 all496 candidate pins exact. Original validator also passed; no validator
-red-to-green claim. Candidate patch remains unadopted. All3983 Git inputs
+red-to-green claim. Primaryc812928d2 now adopts the exact two-field repair,
+preserving its added retention pin and all497 paths. All3983 original Git inputs
 unchanged; sole2GiB/CPU1 QA removed/lease RELEASED, seven unrelated services and
 four passive volumes preserved. Bounded WORLD review5e679b5fe independently
 verifies the sealed packet,3983 selected Git inputs and exact two-field patch;
@@ -283,7 +292,7 @@ override availability or invent tokens/receipts for accepting tests.
 | RELEASE-9c871c875 | Original validate_economy_accounting.py default and --release, exact source/evidence/source-derived row handoff | Default0, release1 missing executable evidence; source-only packet verified/imported, first primary/#481 account.item_reward; no native/backend/game/release qualification and no repeated unchanged audit |
 | ACC-07-HELD-POLICY-01 | Original registered held policy entry on frozen97, original case acceptance checker, focused structural contracts | Entry0/both modes PASS; checker rejects missing main case; outer1 collector failure preserved, no native repeat; independent review/owned QA removed/RELEASED; no full matrix, SQL durability or release |
 | ACC-08-ITEM-BOUNDED-01 | Original registered bounded Item entry on frozen7f1d766c0, unchanged original outcome checker and default contracts | Entry0/both modes15 groups/2653 refusal points each; missing required main case remains; contracts0, sole QA removed/RELEASED; no full build/matrix or broader qualification |
-| ITEM-MANIFEST-PIN | Exact two-field portable hash refresh on7f1d766c0, unchanged cases/policies/source; apply/reverse check and candidate validator | Qualified source-pin accuracy repair only; original/candidate default validator both0; registered main refusal unchanged; primary adoption UNCONFIRMED |
+| ITEM-MANIFEST-PIN | Exact two-field portable hash refresh on7f1d766c0, unchanged cases/policies/source; apply/reverse check and candidate validator | Qualified source-pin accuracy repair only; original/candidate default validator both0; primaryc812928d2 adoption verified against all497 exact Git hashes, other496 pins preserved; registered main refusal unchanged |
 | PRIMARY-01 | Connected save/coordinator/item lifecycle map then verified boundary/caller/admission closure | Existing primary implementation ownership; no withdrawn delegation dependency |
 | PRIMARY-02 | Supported toolchain/runtime/library correspondence, complete storage/frame/transitive proof, aggregate 32MiB accept/refuse | Remains explicit; object compile/source packets do not close it |
 | FINAL | Gameplay/persistence/schema/backup/restore/recovery/fault/load/resource/R1-R8 gates agree on one frozen candidate | Reviewed implementation batches and per-slice architecture evidence |
@@ -808,15 +817,15 @@ research; wait for meaningful source/evidence or an exact independently owned
 executable slice. Full Work1-5/R6-R8 acceptance remains open.
 
 Finite queue after ACC-08: primary genuine main invocation/outcome observation
-under existing [script,main] for both Item and held-policy registrations;
-primary adoption of the exact two-field manifest-pin patch; actual same-root
+under existing [script,main] for both Item and held-policy registrations; actual same-root
 writer evidence and coherent0062/default65 restore route, with the existing
 source-only restore-coin three-provider packet. Current7f source contracts pass
 but the executed Item registration remains rejected. Wait for a substantive
 published repair/evidence batch or exact independently owned executable slice.
 No full build/matrix, unchanged audit repeat, standing helper research or runtime
 allocation. Historical proofs retain their original sources; full deliverable
-remains OPEN and the withdrawn speedup percentage is excluded.
+remains OPEN and the withdrawn speedup percentage is excluded. Manifest-pin
+source adoption is verified atc812928d2 and removed from the pending queue.
 
 Exact PRIMARY handoff for the native recipe: adopt only the three `SOURCES`
 entries from integration `6bfa0f7ebdd5f2f46841047fdd10522e4d27dfea` in

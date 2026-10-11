@@ -189,3 +189,45 @@ the currently controlling instruction.
 Exact source-only observation:
 `delivery/primary-observation-4dba71a03.json`, SHA256
 `39cc1e7e82c76bc153a28bcbea65e1c02c837e8c6d3885bbbeadfd0086b22174`.
+
+## Manifest-pin adoption verified on the later published primary
+
+Primary `c812928d26ff5bcfe99a3d7d365778616f1123e9`, tree
+`4ab5b44eaa7886c3bcebef2974644ae64fc7e509`, adopts the reviewed two-field
+repair on parent `4dba71a03bdbd54e366b19fc1dec5c9925f3ebf0`. This supersedes
+the earlier unadopted observations above without changing their historical scope.
+The commit changes the two metadata files and four explanatory documents.
+
+For each metadata artifact, replacing exactly the old manifest-hash token in
+the parent's raw Git blob reproduces the adopted raw blob byte for byte. The
+JSON artifacts are also identical after restoring that one field. All 497 pin
+paths remain, including the separately adopted retention recipe; all other 496
+values and every policy remain unchanged. An independent batch audit reads all
+497 blobs from this exact published Git commit: 497 exact SHA256 matches, zero
+mismatches. Primary's physical private-checkout CRLF alias claims are separate
+from this raw Git audit and were not reviewed here.
+
+The complete `src/` tree and seven Item acceptance inputs remain byte-identical
+to the original 7f qualification. The manifest bytes, required `[script,main]`,
+markers, original checker and deadlines are unchanged. The actual registered
+`missing required cases: main` refusal therefore remains open; no accepting
+outcome is inferred from a source-pin correction. No native, validator,
+generator, full matrix, database or container job was repeated. Primary's
+reported generator/validator executions remain published reports here.
+
+Reproducible audit and sealed evidence:
+`D:/Dev/Tests/Duris/accounting-accel-integration/ACC-08-MANIFEST-PIN-ADOPTION-01`.
+Owner is this coordinator; its sole file lease is that new task directory,
+completed after the audit seal. No runtime file lease or heavy resource was
+used. `adoption-verification.json` SHA256
+`49df2b6804723535d5b6a699f225e59731c63a301b549c7331f90f9f5216ed5d`;
+`evidence-seal.json` SHA256
+`eda25e2ef3ac59462ef33f3f33337cdec38bff911589c37e2ebd91a8806678ec`,
+six members. A read-only PowerShell tree-printer quoting failure is preserved
+separately; the successful audit passes Git arguments directly without a shell.
+
+The finite queue now retains the genuine main-outcome repair, same-root writer
+evidence, coherent restore routes and an exact independently owned executable
+slice when available. Helpers remain parked under the reduced arrangement;
+the existing human clarification stays pending. Full accounting qualification
+and release remain open, with no revised completion estimate.
