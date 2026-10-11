@@ -18,7 +18,23 @@ ACTIVE on this chat/current Sol6.1/xhigh. No per-commit full-build/matrix repeat
 
 ## Current accepting gate
 
-Latest qualified primaryc72a56041 / tree08ce5b2cfe: exact one-line actual-main
+Latest qualified primary221f9e5ac / treec0ff2a2d68: passive original-logit profile
+batch. ACC-10 original registered run_test0/53.833357s, actual script/main passed,
+zero skips; six whole Utility production objects and four genuine supported/
+assertions getter runs pass across SQL-header/flat. Default source contracts0/
+11.492060s. Existing logging/working/preflight bodies byte-exact; all931 policies/
+2911 census entries preserved. Seal fc3c46c974968603815aff2eea62814a3203f247418d370416ab33ce560e9ceb;
+review909ae5665ee7c9ce538effb1288086054ba0be3ead6c9c16492bb7c2a7f3a971.
+All3994 frozen inputs unchanged, sole2GiB/CPU1 QA removed/lease RELEASED; seven
+foreign services/four passive volumes preserved and heavy lock ABSENT. Raw Git
+pins501/502 retain the known adapter CRLF alias; refreshed current-base two-field
+patch45c80ad7 yields502/502, apply/reverse0, other501 values preserved, unadopted.
+See `ORIGINAL_LOGIT_PROFILE_QUALIFICATION_2026-10-11.md`. Arithmetic/native profile
+conformance does not independently establish the full declaration census,
+transitive library/caller/lifetime coverage, emitted ABI/stack or32MiB host bound.
+No original logit/server/game/SQL/reader/World/restore/fullmatrix/release promotion.
+
+Earlier qualified primaryc72a56041 / tree08ce5b2cfe: exact one-line actual-main
 outcome repair, new focused regression and three new pins; complete src,
 original fixtures, manifest/checker/TestResult and all931 writer policies remain.
 ACC-09 parent-adapter regression1 (expected), repaired actual eight cases0;
@@ -311,7 +327,8 @@ override availability or invent tokens/receipts for accepting tests.
 | ACC-08-ITEM-BOUNDED-01 | Original registered bounded Item entry on frozen7f1d766c0, unchanged original outcome checker and default contracts | Entry0/both modes15 groups/2653 refusal points each; missing required main case remains; contracts0, sole QA removed/RELEASED; no full build/matrix or broader qualification |
 | ITEM-MANIFEST-PIN | Exact two-field portable hash refresh on7f1d766c0, unchanged cases/policies/source; apply/reverse check and candidate validator | Qualified source-pin accuracy repair only; original/candidate default validator both0; primaryc812928d2 adoption verified against all497 exact Git hashes, other496 pins preserved; registered main refusal unchanged |
 | ACC-09-REGISTERED-MAIN-01 | Exact published one-line adapter repair, actual eight-case regression plus original held-policy/Item entries and unchanged real TestResult/outcome checker | Parent control1 expected; repaired regression0/eight passed; held0/15.406566s, Item0/124.373742s; actual script/main both passed, original markers/zero skips/checker failures[]; sole1GiB QA removed/sealed/RELEASED; earlier97/7f refusals preserved |
-| ADAPTER-SOURCE-PIN | Exact published LF adapter versus declared CRLF encoding alias; narrow two-field raw-Git pin normalization on c72 | Original raw hashes499/500; separate candidate500/500, other499 values/policies/source unchanged, apply/reverse0; primary adoption pending, no behavior defect or acceptance waiver inferred |
+| ADAPTER-SOURCE-PIN | Exact published LF adapter versus declared CRLF encoding alias; current221f two-field raw-Git normalization, earlier c72 patch preserved | Current raw hashes501/502; candidate502/502, other501 values/policies/source unchanged, apply/reverse0; primary adoption pending, no behavior defect or acceptance waiver inferred |
+| ACC-10-ORIGINAL-LOGIT-01 | Exact permanent passive Utility regression through original registered run_test: six whole production objects, four genuine supported/assertions getter runs and default source contracts | Entry0/53.833357s, actual script/main passed, zero skips; contracts0/11.492060s; all3994 inputs unchanged, sole2GiB QA removed/sealed/RELEASED; component-only, no full server link/logit invocation/declaration completeness/ABI/host/release proof |
 | PRIMARY-01 | Connected save/coordinator/item lifecycle map then verified boundary/caller/admission closure | Existing primary implementation ownership; no withdrawn delegation dependency |
 | PRIMARY-02 | Supported toolchain/runtime/library correspondence, complete storage/frame/transitive proof, aggregate 32MiB accept/refuse | Remains explicit; object compile/source packets do not close it |
 | FINAL | Gameplay/persistence/schema/backup/restore/recovery/fault/load/resource/R1-R8 gates agree on one frozen candidate | Reviewed implementation batches and per-slice architecture evidence |
@@ -835,10 +852,11 @@ Do not repeat this source/release audit on unchanged9c or open standing helper
 research; wait for meaningful source/evidence or an exact independently owned
 executable slice. Full Work1-5/R6-R8 acceptance remains open.
 
-Finite queue after ACC-09: primary adoption of the exact two-field raw-Git
-adapter-pin normalization; actual same-root
+Finite queue after ACC-10: primary adoption of the exact current221f two-field
+raw-Git adapter-pin normalization; actual same-root
 writer evidence and coherent0062/default65 restore route, with the existing
-source-only restore-coin three-provider packet. Actual registered Item and held
+source-only restore-coin three-provider packet; caller integration and native
+authority/ABI/aggregate-storage qualification remain primary-owned. Actual registered Item and held
 components now pass on c72 with the original required [script,main] outcomes;
 earlier ACC-07/08 refusals retain their original97/7f scope. Wait for a substantive
 published repair/evidence batch or exact independently owned executable slice.
