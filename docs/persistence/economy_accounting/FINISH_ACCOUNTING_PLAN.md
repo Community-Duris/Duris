@@ -1,3 +1,101 @@
+## Required architecture and maintainability work - 2026-10-11
+
+**User-directed implementation requirement: pending.** Address the growing
+ownership, state-machine and recovery complexity as part of accounting delivery.
+This is required implementation work, not a claim of a defect, completed refactor,
+or release qualification. It applies to subsequent maintained implementation and
+integration. Preserve the functional work order, existing acceptance evidence,
+SQL-first delivery, flatfile parity, inactive behavior and activation restrictions.
+This section governs architecture work where older source-only or major-plan
+batching instructions would otherwise postpone its focused verification.
+
+### Ownership and immediate sequence
+
+The primary owns these maintained changes and their combined-source integration.
+Preserve Plan 5's independent audit, backup/restore, recovery and release ownership;
+request narrow interface changes through the existing handoff process. Existing
+helpers may supply reviewed preparation within their assigned ownership. This
+requirement does not authorize another chat to edit shared implementation files.
+
+1. Finish the currently bounded source task and produce the already-required
+   reproducible combined build/boot checkpoint. Freeze its source revision and
+   preserve all failures and qualified evidence before changing shared boundaries.
+   Necessary correctness/build repairs continue; do not defer the executable
+   checkpoint for a wholesale architecture rewrite.
+2. Review the save pipeline, critical-command coordinator and item movement
+   together. Record the actual owner, thread, lock, operation/revision identity,
+   admission, durable commit, live publication, checkpoint, acknowledgement and
+   retirement transitions. Identify valid pending/uncertain/retry states and the
+   evidence required to advance or release each one. Use this map to select the
+   smallest connected extraction; do not add another parallel execution owner.
+3. Implement and verify one responsibility boundary at a time alongside the
+   existing functional closure. Follow with world/reset and mobile-birth stages,
+   shop recovery and the corresponding backend repositories. Reassess against
+   current source before each slice; file length alone is not a refactor target.
+
+### Required responsibility boundaries
+
+| Area | Files to assess | Required direction |
+| --- | --- | --- |
+| Shared save lifecycle | `src/player/player_save_pipeline.c` | Keep snapshot admission, journaling, dispatch and exact revision completion coherent. Separate shop, Smith, auction, quest, drop and held-retirement checkpoint/replay implementations from the common lifecycle, preserving the real reservation and execution-hold owners. |
+| Shared operation lifecycle | `src/persistence/critical_command_coordinator.c` | Keep identity, queueing, scheduling, common completion and retention ownership together. Isolate native-birth, reset and domain-specific execution/recovery policy; express and check valid transitions rather than adding unrelated flags to shared state. |
+| Item ownership and publication | `src/item/item_movement_transaction.c` | Separate common movement submission/completion from craft, Collector, quest, creation, drop and retirement publication. Retain one authority for each pending operation and each already-applied effect through retry. |
+| World loading and resets | `src/world/db.c`, `src/world/quest_mobile_native_birth.c` | Separate parsing/loading, reset interpretation, native construction, recovery reconstruction and publication at real lifecycle boundaries. Preserve retained reset locals/cursors, original random choices, procedure binding, item registration, event scheduling and refusal/cleanup order. |
+| Shop execution and recovery | `src/economy/shop_trade_transaction.c` | Separate preparation, durable execution, cold recovery and live publication. Factor genuinely shared SQL/flatfile policy while retaining backend-specific authority and transaction semantics. |
+| Backend storage | `src/sql/sql_player.c`, `src/flatfile/flatfile_item_repository.c` | Extract concrete player/account/corpse/shop or native-custody responsibilities where current callers establish a boundary. Keep native effect, required evidence and receipt atomicity with the existing backend owner; avoid duplicating mutation or recovery authority. |
+
+### Constraints on each extraction
+
+- Preserve private execution tokens, factory provenance, lock ownership and
+  game-thread publication. Do not replace authenticated owner relationships with
+  unrestricted callbacks, public permits or inferred thread/identity authority.
+- Preserve wire/journal/schema compatibility, operation IDs, original payloads,
+  exact receipts, owner revisions, UID/source dedupe and recovery phase ordering.
+  Architectural cleanup must not silently change refusal, inactive behavior or
+  supported gameplay. Treat any necessary behavior/format change as a separately
+  identified correctness change with its own evidence.
+- Isolate toolchain-specific container/allocator inspection and storage profiling
+  from gameplay policy. Preserve the supported pinned toolchain and explicit
+  refusal on unsupported profiles. Centralize genuinely shared calculations and
+  retain one charge/reservation owner across nested callers, copies and retries;
+  do not guess layouts, remove bounds or count the same retained storage twice.
+- For manual frame/storage allowances, make the caller-to-provider dependency
+  explicit so a changed local, helper or retained lifetime prompts review of its
+  allowance and applicable boundary checks. Resource accounting must remain
+  verifiable after an extraction, not disappear into an opaque generic wrapper.
+- Remove superseded implementations once callers move, retaining only documented
+  compatibility paths. Avoid duplicate SQL/flatfile rules that can drift, empty
+  forwarding layers, broad frameworks and arbitrary line-count quotas. A smaller
+  file is useful only when ownership and the path from admission to retirement
+  become easier to follow.
+
+### Verification and completion
+
+For every maintained architecture slice, record the exact before/after source,
+changed responsibility, preserved safety rules, callers and remaining risks.
+Run changed-line formatting, the affected production builds and the smallest
+relevant existing executable regressions before marking that slice complete.
+Extend existing coverage only for a changed or previously untested invariant.
+If a required prerequisite is unavailable, keep the slice explicitly unqualified
+and establish that prerequisite before stacking another extraction on it.
+
+Exercise the touched protocol's meaningful boundaries: admission/allocation
+refusal, an uncertain or failed durable operation, committed-but-unpublished
+results, lost completions, repeated publication/acknowledgement, disconnect,
+shutdown/copyover and cold replay. Verify the affected SQL and flatfile paths,
+and both SQL engines where their behavior matters. Check original UIDs/value,
+receipts, pending holds, bounded retained storage and once-only effects. Existing
+source contracts supplement this proof; they do not replace execution.
+
+Run the existing full gameplay, persistence, schema, backup/restore and release
+gates on the final frozen combined candidate. An older binary, source review,
+codec fixture or successful compile does not qualify the refactored protocol.
+Architecture completion requires clearer responsibility and transition ownership
+plus the applicable executable evidence, not a renamed file or green inventory.
+Record concise progress here and link detailed evidence from the dated reports;
+keep unresolved architecture and functional gates visible. Accounting activation
+and production operations still require their existing separate authorization.
+
 ## FD exact-heading addendum independently CLOSED - 2026-10-10
 
 Quest's separate exact-heading addendum independently closes finite SOURCE/DESIGN/
