@@ -5,6 +5,7 @@ No database, Redis, live game, or external transport. Capture stubs below model
 MariaDB dump bytes only; the separate integration suite exercises real MariaDB.
 Run: python3 tests/async/test_persistence_backup.py
 """
+from dataclasses import replace
 import contextlib
 import gzip
 import io
@@ -22,6 +23,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 import persistence_backup as backup
 import persistence_restore as restore
+import migration_runner as migrations
+import qualify_database_restore as database_restore
 
 
 def policy(base):
@@ -51,7 +54,7 @@ def fake_database_capture(stage, unused, capacity_base=None):
     with gzip.open(stage / "database.sql.gz", "wb") as stream:
         for table in tables["runtime_table_sql_list"].replace("'", "").split(","):
             stream.write(f"CREATE TABLE `{table}` (synthetic INT);\n".encode())
-    return {"database": "synthetic"}
+    return {"database": "synthetic", "runtime_schema_profile": 64}
 
 
 class Fixture(unittest.TestCase):
@@ -73,7 +76,7 @@ class Fixture(unittest.TestCase):
         self.capture = mock.patch.object(backup, "mariadb_capture", fake_database_capture)
         self.capture.start()
         self.addCleanup(self.capture.stop)
-        self.schema_check = mock.patch.object(backup, "verify_database_schema")
+        self.schema_check = mock.patch.object(backup, "verify_database_schema", return_value=64)
         self.schema_check.start()
         self.addCleanup(self.schema_check.stop)
 
@@ -226,6 +229,150 @@ class PolicyTests(Fixture):
                 self.assertEqual(backup.retained(items, p, now), {"latest", "second", "previous"})
 
 class GenerationTests(Fixture):
+    def test_staged_migration_and_schema_changes_never_publish_or_prune(self):
+        for mode in sorted(backup.MODES):
+            for fault in ("payload", "selector", "extra", "schema"):
+                with self.subTest(mode=mode, fault=fault):
+                    self.p["root"] = self.base / ("source-fault-" + mode + "-" + fault)
+                    before = self.baseline(mode)
+                    def damage(stage):
+                        if stage != "after_capture":
+                            return
+                        pending, = self.p["root"].glob(".staging-*")
+                        archive = pending / "migrations"
+                        if fault == "payload":
+                            target = archive / "immutable/0065_zone_reset_item_birth_origin_nullable_default.sql"
+                            target.write_bytes(target.read_bytes() + b"\n-- changed\n")
+                        elif fault == "selector":
+                            (archive / "migration_manifest.nullable_default_0065.json").unlink()
+                        elif fault == "extra":
+                            (archive / "unexpected.sql").write_bytes(b"SELECT 1;\n")
+                        else:
+                            frozen = backup.read_json(pending / "runtime-schema.json")
+                            frozen["baseline_id"] = "changed-after-validation"
+                            backup.write_json(pending / "runtime-schema.json", frozen)
+                    reason = "schema_changed_during_capture" if fault == "schema" else "migration_archive_changed"
+                    with mock.patch.object(backup, "checkpoint", side_effect=damage), \
+                         self.assertRaisesRegex(backup.BackupError, reason):
+                        self.create(mode)
+                    self.assert_preserved(before)
+                    self.assertEqual(set(self.p["root"].glob("[0-9]*")), set(before))
+                    self.assertFalse(list(self.p["root"].glob(".staging-*")))
+
+    def test_migration_archive_checks_declared_inputs_even_with_consistent_inventory(self):
+        for mode in sorted(backup.MODES):
+            for fault in ("payload", "selector", "extra", "truncated"):
+                with self.subTest(mode=mode, fault=fault):
+                    self.p["root"] = self.base / ("archive-fault-" + mode + "-" + fault)
+                    generation = self.create(mode)
+                    archive = generation / "migrations"
+                    if fault == "payload":
+                        target = archive / "immutable/0065_zone_reset_item_birth_origin_nullable_default.sql"
+                        target.write_bytes(target.read_bytes() + b"\n-- changed\n")
+                    elif fault == "selector":
+                        (archive / "migration_manifest.nullable_default_0065.json").unlink()
+                    elif fault == "extra":
+                        (archive / "unexpected.sql").write_bytes(b"SELECT 1;\n")
+                    else:
+                        selector = archive / "migration_manifest.nullable_default_0065.json"
+                        value = backup.read_json(selector)
+                        value["migrations"].pop()
+                        backup.write_json(selector, value)
+                    meta = backup.read_json(generation / "manifest.json")
+                    meta["files"] = backup.inventory(generation)
+                    meta["files"].pop("manifest.json")
+                    backup.write_json(generation / "manifest.json", meta)
+                    before = backup.inventory(generation)
+                    with self.assertRaisesRegex(backup.BackupError, "invalid_migration_archive"):
+                        backup.verify(generation)
+                    self.assertEqual(backup.inventory(generation), before)
+        archive.rename(self.base / "removed-migration-archive")
+        meta["files"] = backup.inventory(generation)
+        meta["files"].pop("manifest.json")
+        backup.write_json(generation / "manifest.json", meta)
+        with self.assertRaisesRegex(backup.BackupError, "invalid_migration_archive"):
+            backup.verify(generation)
+
+    def test_legacy_generations_without_migration_archive_remain_supported(self):
+        for mode in sorted(backup.MODES):
+            with self.subTest(mode=mode):
+                self.p["root"] = self.base / ("legacy-archive-" + mode)
+                generation = self.create(mode)
+                (generation / "migrations").rename(self.base / ("legacy-inputs-" + mode))
+                meta = backup.read_json(generation / "manifest.json")
+                meta.pop("runtime_schema_profile", None)
+                meta["files"] = backup.inventory(generation)
+                meta["files"].pop("manifest.json")
+                backup.write_json(generation / "manifest.json", meta)
+                self.assertEqual(backup.verify(generation), meta)
+
+    def test_backup_retains_original_and_variant_migration_inputs(self):
+        generation = self.create("mariadb-primary")
+        self.assertEqual(backup.verify(generation).get("runtime_schema_profile", 64), 64)
+        for selector in ("migration_manifest.json", "migration_manifest.staging_0045.json",
+                         "migration_manifest.master_0031.json",
+                         "migration_manifest.nullable_default_0065.json",
+                         "migration_manifest.staging_0045_nullable_default_0065.json",
+                         "migration_manifest.master_0031_nullable_default_0065.json"):
+            with self.subTest(selector=selector):
+                self.assertEqual((generation / "migrations" / selector).read_bytes(),
+                                 (ROOT / "migrations" / selector).read_bytes())
+                manifest = migrations.load_manifest(ROOT / "migrations" / selector)
+                for step in manifest.migrations:
+                    for source, checksum in ((step.apply_path, step.apply_checksum),
+                                             (step.verify_path, step.verify_checksum)):
+                        saved = generation / "migrations" / source.relative_to(ROOT / "migrations")
+                        self.assertEqual(backup.digest(saved), checksum)
+        saved.write_bytes(b"edited")
+        with self.assertRaisesRegex(backup.BackupError, "generation_checksum_mismatch"):
+            backup.verify(generation)
+
+    def test_sql_generation_profile_binds_dump_coverage_and_legacy64(self):
+        generation = self.create("mariadb-primary")
+        meta = backup.read_json(generation / "manifest.json")
+        meta.pop("runtime_schema_profile", None)
+        backup.write_json(generation / "manifest.json", meta)
+        self.assertEqual(backup.verify(generation).get("runtime_schema_profile", 64), 64)
+        for bad in (None, True, "65", 63, 66):
+            with self.subTest(profile=bad):
+                meta["runtime_schema_profile"] = bad
+                backup.write_json(generation / "manifest.json", meta)
+                with self.assertRaisesRegex(backup.BackupError, "runtime_schema_profile_unsupported"):
+                    backup.verify(generation)
+        schema = json.loads((generation / "runtime-schema.json").read_text())
+        meta["runtime_schema_profile"] = 65
+        backup.write_json(generation / "manifest.json", meta)
+        with self.assertRaisesRegex(backup.BackupError, "runtime_schema65_unmeasured"):
+            backup.verify(generation)
+        # Synthetic measured flags exercise dispatch/coverage only, never DB acceptance.
+        schema["schema65"]["qualification"] = "measured"
+        schema["schema65"]["normalized_metadata_fingerprints"] = {
+            "mysql8": "1" * 64, "mariadb10_11": "2" * 64}
+        backup.write_json(generation / "runtime-schema.json", schema)
+        for complete in (True, False):
+            with gzip.open(generation / "database.sql.gz", "wb") as stream:
+                for table in schema["schema65"]["runtime_table_sql_list"].replace("'", "").split(","):
+                    if complete or table != "zone_reset_item_birth_origin":
+                        stream.write(f"CREATE TABLE `{table}` (synthetic INT);\n".encode())
+            meta["runtime_schema_sha256"] = backup.digest(generation / "runtime-schema.json")
+            meta["files"] = backup.inventory(generation)
+            meta["files"].pop("manifest.json")
+            backup.write_json(generation / "manifest.json", meta)
+            if complete:
+                self.assertEqual(backup.verify(generation)["runtime_schema_profile"], 65)
+            else:
+                with self.assertRaisesRegex(backup.BackupError, "dump_missing_required_tables"):
+                    backup.verify(generation)
+
+    def test_sql_capture_profile_drift_never_publishes_or_prunes(self):
+        before = self.baseline("mariadb-primary")
+        with mock.patch.object(backup, "verify_database_schema", side_effect=[64, 65]), \
+             self.assertRaisesRegex(backup.BackupError, "runtime_schema_profile_changed"):
+            self.create("mariadb-primary")
+        self.assert_preserved(before)
+        self.assertEqual(set(self.p["root"].glob("[0-9]*")), set(before))
+        self.assertFalse(list(self.p["root"].glob(".staging-*")))
+
     def test_explicit_deployed_schema_survives_checkout_schema_change(self):
         schema = json.loads((ROOT / "migrations/runtime_compatibility_manifest.json").read_text())
         schema["runtime_table_sql_list"] = "'accounts','player_data','ships'"
@@ -772,6 +919,172 @@ class RestoreTests(Fixture):
         guard = mock.patch.object(restore, "restore_capacity")
         guard.start()
         self.addCleanup(guard.stop)
+    def test_legacy_sql64_restore_matches_exact64_contract_despite_added65_profile(self):
+        generation = self.create("mariadb-primary")
+        meta = backup.read_json(generation / "manifest.json")
+        meta.pop("runtime_schema_profile", None)
+        schema = json.loads((generation / "runtime-schema.json").read_text())
+        schema.pop("schema65")
+        backup.write_json(generation / "runtime-schema.json", schema)
+        meta["runtime_schema_sha256"] = backup.digest(generation / "runtime-schema.json")
+        meta["files"] = backup.inventory(generation)
+        meta["files"].pop("manifest.json")
+        backup.write_json(generation / "manifest.json", meta)
+        env = {}
+        with mock.patch.object(restore, "private_database", return_value=contextlib.nullcontext(env)), \
+             mock.patch.object(restore, "database_import"), \
+             mock.patch.object(restore, "database_qualify") as qualify, \
+             mock.patch.object(restore, "service_load"), \
+             mock.patch.object(backup, "run", return_value=b"{}"):
+            result = restore.restore(self.p, generation.name, self.ledger())
+            self.assertEqual(result["result"], "qualified")
+            self.assertEqual(qualify.call_args_list, [
+                mock.call(env, generation / "runtime-schema.json", 64),
+                mock.call(env, generation / "runtime-schema.json", 64)])
+        schema["normalized_metadata_fingerprints"]["mysql8"] = "0" * 64
+        backup.write_json(generation / "runtime-schema.json", schema)
+        meta["runtime_schema_sha256"] = backup.digest(generation / "runtime-schema.json")
+        meta["files"] = backup.inventory(generation)
+        meta["files"].pop("manifest.json")
+        backup.write_json(generation / "manifest.json", meta)
+        with mock.patch.object(restore, "private_database") as database, \
+             self.assertRaisesRegex(backup.BackupError, "restore_requires_matching_runtime"):
+            restore.restore(self.p, generation.name, self.ledger())
+        database.assert_not_called()
+
+    def test_operator_verifiers_dispatch_frozen_profile_and_refuse_unmeasured65(self):
+        self.schema_check.stop()
+        schema = json.loads((ROOT / "migrations/runtime_compatibility_manifest.json").read_text())
+        frozen = self.base / "runtime-schema.json"
+        env = {"DB_SOCKET": "/tmp/synthetic.sock", "DB_USER": "restore",
+               "DB_NAME": "duris_restore", "RUNTIME_COMPATIBILITY_MANIFEST": str(frozen)}
+        for profile in (64, 65):
+            if profile == 65:
+                schema["schema65"]["qualification"] = "measured"
+                schema["schema65"]["normalized_metadata_fingerprints"] = {
+                    "mysql8": "1" * 64, "mariadb10_11": "2" * 64}
+            backup.write_json(frozen, schema)
+            def result(command, **unused):
+                return str(profile).encode() + b"\n" if command[0] == "mysql" else b"{}"
+            with self.subTest(profile=profile), \
+                 mock.patch.object(backup, "run", side_effect=result) as run, \
+                 mock.patch.object(backup, "db_connection", return_value=([], env, "duris_restore")):
+                self.assertEqual(backup.verify_database_schema(frozen), profile)
+                restore.database_qualify(env)
+                shell = [call for call in run.call_args_list
+                         if any(str(arg).endswith("verify_runtime_compatibility.sh")
+                                for arg in call.args[0])]
+                self.assertEqual(len(shell), 2)
+                for call in shell:
+                    self.assertEqual("--schema65" in call.args[0], profile == 65)
+                    self.assertEqual(call.kwargs["env"]["RUNTIME_COMPATIBILITY_MANIFEST"], str(frozen))
+                with self.assertRaisesRegex(backup.BackupError, "runtime_schema_profile_changed"):
+                    restore.database_qualify(env, frozen, 65 if profile == 64 else 64)
+        schema["schema65"]["qualification"] = "unmeasured"
+        schema["schema65"]["normalized_metadata_fingerprints"] = {
+            "mysql8": None, "mariadb10_11": None}
+        backup.write_json(frozen, schema)
+        for count in (b"65\n", b"63\n", b"66\n", b"64\n65\n", b""):
+            with self.subTest(count=count), \
+                 mock.patch.object(backup, "run", return_value=count) as run, \
+                 mock.patch.object(backup, "db_connection", return_value=([], env, "duris_restore")), \
+                 self.assertRaisesRegex(backup.BackupError,
+                     "runtime_schema65_unmeasured" if count == b"65\n" else "runtime_schema_profile_unsupported"):
+                backup.verify_database_schema(frozen)
+            self.assertEqual(run.call_count, 1)
+
+    def test_restore_accepts_exact_schema64_and_six_schema65_histories(self):
+        selectors = (
+            ("migration_manifest.json", "a0920c9e76246161f9e3dae66a020dbb770ccacbcaaf5a684d4f45fe64d2ab7f"),
+            ("migration_manifest.staging_0045.json", "fca49b0d040627d255f43f2170f4af69d9cdd3dc74f4e13461780358ba3cf84e"),
+            ("migration_manifest.master_0031.json", "d94d73d733186351a5ed2df7890679ebabe344b92e3a4d14a4ed7e8f29ea28e3"),
+            ("migration_manifest.nullable_default_0065.json", "55ab85c769d0f271c0c01b2ec55ac01217548d8062be3f837692bf05987b57ba"),
+            ("migration_manifest.staging_0045_nullable_default_0065.json", "9e81f924525c9e089a92559d1429e83f7e1c05cead3ca652a89eb68ec5534f97"),
+            ("migration_manifest.master_0031_nullable_default_0065.json", "45b830b94d19c1ab6ff017e33125e0426099a3a2508fb2d0a19b573ece5c0e02"),
+        )
+        histories = set()
+        for selector, checksum in selectors:
+            manifest = migrations.load_manifest(ROOT / "migrations" / selector)
+            rows = [migrations.AppliedMigration(
+                step.migration_id, step.sequence, step.description,
+                step.apply_checksum, step.verify_checksum, step.compatibility,
+                manifest.runner_version) for step in manifest.migrations]
+            self.assertEqual(len(rows), 65)
+            self.assertEqual(migrations.history_checksum(rows), checksum)
+            for count in (64, 65):
+                history = rows[:count]
+                with self.subTest(selector=selector, count=count):
+                    output = "\n".join("\t".join(map(str, (
+                        row.migration_id, row.sequence, row.description,
+                        row.apply_checksum, row.verify_checksum, row.compatibility,
+                        row.runner_version))) for row in history)
+                    executor = object.__new__(migrations.MysqlExecutor)
+                    executor.sql = mock.Mock(side_effect=[output,
+                        f"{count}\t{migrations.history_checksum(history)}"])
+                    database_restore.require_completed_history(executor.applied())
+                    self.assertEqual(executor.sql.call_count, 2)
+                    histories.add(migrations.history_checksum(history))
+        self.assertEqual(len(histories), 9)
+
+    def test_restore_history_rejects_partial_mixed_and_all_receipt_field_edits(self):
+        selectors = (
+            "migration_manifest.json", "migration_manifest.staging_0045.json",
+            "migration_manifest.master_0031.json", "migration_manifest.nullable_default_0065.json",
+            "migration_manifest.staging_0045_nullable_default_0065.json",
+            "migration_manifest.master_0031_nullable_default_0065.json",
+        )
+        histories = []
+        for selector in selectors:
+            manifest = migrations.load_manifest(ROOT / "migrations" / selector)
+            histories.append([migrations.AppliedMigration(
+                step.migration_id, step.sequence, step.description,
+                step.apply_checksum, step.verify_checksum, step.compatibility,
+                manifest.runner_version) for step in manifest.migrations])
+        edits = {"migration_id": "unknown", "sequence": 2, "description": "edited",
+                 "apply_checksum": "0" * 64, "verify_checksum": "0" * 64,
+                 "compatibility": "unknown", "runner_version": 2}
+        for selector, rows in zip(selectors, histories):
+            candidates = [("empty", []), ("partial63", rows[:63]),
+                          ("overflow66", rows + [rows[-1]]),
+                          ("missing_middle", rows[:30] + rows[31:]),
+                          ("reordered", [rows[1], rows[0]] + rows[2:])]
+            candidates += [(field, [replace(rows[0], **{field: value})] + rows[1:])
+                           for field, value in edits.items()]
+            candidates += [("edited_terminal", rows[:-1] +
+                            [replace(rows[-1], verify_checksum="0" * 64)])]
+            for label, history in candidates:
+                with self.subTest(selector=selector, mutation=label):
+                    # Even an attacker-recomputed count/hash cannot replace exact receipts.
+                    migrations.validate_history_state(history, len(history),
+                                                       migrations.history_checksum(history))
+                    with self.assertRaisesRegex(RuntimeError, "incomplete_or_unknown"):
+                        database_restore.require_completed_history(history)
+        mixed = list(histories[0])
+        mixed[44] = histories[1][44]
+        with self.assertRaisesRegex(RuntimeError, "incomplete_or_unknown"):
+            database_restore.require_completed_history(mixed)
+        mixed = list(histories[0])
+        mixed[30] = histories[2][30]
+        with self.assertRaisesRegex(RuntimeError, "incomplete_or_unknown"):
+            database_restore.require_completed_history(mixed)
+
+    def test_restore_history_requires_exact_recorded_state(self):
+        manifest = migrations.load_manifest()
+        rows = [migrations.AppliedMigration(
+            step.migration_id, step.sequence, step.description,
+            step.apply_checksum, step.verify_checksum, step.compatibility,
+            manifest.runner_version) for step in manifest.migrations]
+        output = "\n".join("\t".join(map(str, (
+            row.migration_id, row.sequence, row.description, row.apply_checksum,
+            row.verify_checksum, row.compatibility, row.runner_version))) for row in rows)
+        for state in ("", "65", "64\t" + migrations.history_checksum(rows),
+                      "65\t" + "0" * 64, "65\t" + migrations.history_checksum(rows[:-1])):
+            with self.subTest(state=state):
+                executor = object.__new__(migrations.MysqlExecutor)
+                executor.sql = mock.Mock(side_effect=[output, state])
+                with self.assertRaises(migrations.MigrationContractError):
+                    database_restore.require_completed_history(executor.applied())
+
     def test_bad_generation_manifest_refuses_before_candidate_or_service(self):
         ledger = self.ledger()
         live = backup.inventory(self.base / "live", exclude_locks=True)

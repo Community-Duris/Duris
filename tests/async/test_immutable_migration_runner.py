@@ -54,16 +54,26 @@ class FakeExecutor:
 
 class ImmutableMigrationRunnerTest(unittest.TestCase):
     def test_restore_accepts_all_complete_supported_histories(self):
-        for path in (runner.DEFAULT_MANIFEST,
-                     ROOT / "migrations/migration_manifest.staging_0045.json",
-                     ROOT / "migrations/migration_manifest.master_0031.json"):
+        paths = (
+            runner.DEFAULT_MANIFEST,
+            ROOT / "migrations/migration_manifest.staging_0045.json",
+            ROOT / "migrations/migration_manifest.master_0031.json",
+            ROOT / "migrations/migration_manifest.nullable_default_0065.json",
+            ROOT / "migrations/migration_manifest.staging_0045_nullable_default_0065.json",
+            ROOT / "migrations/migration_manifest.master_0031_nullable_default_0065.json",
+        )
+        for index, path in enumerate(paths):
             manifest = runner.load_manifest(path)
             rows = [runner.AppliedMigration(
                 step.migration_id, step.sequence, step.description,
                 step.apply_checksum, step.verify_checksum, step.compatibility,
                 manifest.runner_version) for step in manifest.migrations]
-            with self.subTest(manifest=path.name):
-                restore_qualifier.require_completed_history(rows)
+            self.assertEqual(len(rows), 65)
+            # The first three selectors have three distinct schema64 histories;
+            # the nullable-default selectors share those prefixes at schema64.
+            for count in ((64, 65) if index < 3 else (65,)):
+                with self.subTest(manifest=path.name, count=count):
+                    restore_qualifier.require_completed_history(rows[:count])
 
     def test_restore_rejects_partial_mixed_and_edited_histories(self):
         manifest = runner.load_manifest()
@@ -84,11 +94,11 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         mixed_master[30] = upgraded_master[30]
         for label, rows in (
             ("empty", []), ("common_prefix", canonical[:44]),
-            ("unmigrated_stage", staging[:45]), ("missing_head", canonical[:-1]),
+            ("unmigrated_stage", staging[:45]), ("missing_head", canonical[:63]),
             ("mixed", mixed),
             ("unmigrated_master", upgraded_master[:31]),
             ("mixed_master", mixed_master),
-            ("master_missing_head", upgraded_master[:-1]),
+            ("master_missing_head", upgraded_master[:63]),
             ("master_edited_receipt", upgraded_master[:30] +
              [replace(upgraded_master[30], description="edited")] + upgraded_master[31:]),
             ("edited_old_receipt", [replace(canonical[0], description="edited")] + canonical[1:]),
@@ -104,8 +114,9 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
             step.migration_id, step.sequence, step.description,
             step.apply_checksum, step.verify_checksum, step.compatibility,
             manifest.runner_version) for step in manifest.migrations]
-        for complete in (True, False):
-            executor = FakeExecutor(rows if complete else rows[:-1])
+        for count in (64, 65, 63):
+            complete = count in (64, 65)
+            executor = FakeExecutor(rows[:count])
             baseline_tables_query = (
                 "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
                 "AND ENGINE='InnoDB' AND table_name IN ('economic_baseline_control',"
@@ -114,7 +125,7 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
                 self.assertTrue(query.startswith("SELECT "))
                 return "3" if query == baseline_tables_query else "0"
             executor.sql = mock.Mock(side_effect=empty_restore_sql)
-            with self.subTest(complete=complete), mock.patch.dict(os.environ, {
+            with self.subTest(count=count), mock.patch.dict(os.environ, {
                     "DB_NAME": "duris_restore", "DB_SOCKET": "/tmp/disposable.sock"}), \
                     mock.patch.object(runner, "MysqlExecutor", return_value=executor):
                 if complete:
@@ -194,9 +205,9 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         manifest = runner.load_manifest()
         self.assertEqual(manifest.required_table_count, 170)
         self.assertEqual(len(manifest.required_tables), 170)
-        self.assertEqual(len(manifest.migrations), 61)
+        self.assertEqual(len(manifest.migrations), 65)
         self.assertEqual(manifest.migrations[-1].migration_id,
-                         "0061_economic_baseline_equipment")
+                         "0065_zone_reset_item_birth_origin")
         self.assertEqual(manifest.migrations[0].migration_id,
                          "0001_lookup_dataset_state")
         self.assertEqual(manifest.migrations[1].migration_id,
@@ -344,7 +355,7 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         self.assertEqual(runner.run_pending(staging, executor),
                          [item.migration_id for item in staging.migrations[45:]])
         self.assertEqual(executor.rows[:45], rows)
-        self.assertEqual(len(executor.rows), 61)
+        self.assertEqual(len(executor.rows), 65)
         replay = FakeExecutor(executor.rows)
         self.assertEqual(runner.run_pending(staging, replay), [])
         self.assertEqual(replay.events, ["lock", "baseline", "unlock"])
@@ -377,9 +388,9 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         self.assertEqual(runner.run_pending(master, resumed),
                          [item.migration_id for item in master.migrations[31:]])
         self.assertEqual(resumed.rows[:31], prefix)
-        self.assertEqual(len(resumed.rows), 61)
+        self.assertEqual(len(resumed.rows), 65)
         self.assertEqual(resumed.rows[-1].migration_id,
-                         "0061_economic_baseline_equipment")
+                         "0065_zone_reset_item_birth_origin")
         replay = FakeExecutor(resumed.rows)
         self.assertEqual(runner.run_pending(master, replay), [])
         self.assertEqual(replay.events, ["lock", "baseline", "unlock"])

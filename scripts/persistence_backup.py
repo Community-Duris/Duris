@@ -27,6 +27,8 @@ import signal
 import uuid
 from typing import NoReturn
 
+import migration_runner as migrations
+
 if __name__ == "__main__":
     sys.modules["persistence_backup"] = sys.modules[__name__]
 
@@ -36,6 +38,12 @@ GENERATION = re.compile(r"[0-9]{20}-[0-9a-f]{32}")
 LOCKS = {".identity.lock", ".critical-authority.lock", ".accounts.lock", ".artifact-mana.lock"}
 JOURNAL_FILES = {"players": "player-save.journal", "critical": "critical-command.journal"}
 LOCK_WAIT_SECONDS = 120
+MIGRATION_SELECTORS = (
+    "migration_manifest.json", "migration_manifest.staging_0045.json",
+    "migration_manifest.master_0031.json", "migration_manifest.nullable_default_0065.json",
+    "migration_manifest.staging_0045_nullable_default_0065.json",
+    "migration_manifest.master_0031_nullable_default_0065.json",
+)
 CAPACITY_CHECK_INTERVAL = 32 * 1024 * 1024
 BLOCKED_RETRY_FILE = ".blocked-retry.json"
 BLOCKED_RETRY_CODES = {
@@ -369,9 +377,92 @@ def run(args, *, env=None, input=None, timeout=300):
     return result.stdout
 
 
-def validate_dump(path, schema=None):
+def runtime_schema_profile(schema, profile):
+    require(type(profile) is int and profile in (64, 65), "runtime_schema_profile_unsupported")
+    value = json.loads(migrations.read_regular(schema, 1024 * 1024, "runtime schema"),
+                       object_pairs_hook=strict_json)
+    require(type(value) is dict, "runtime_schema_profile_unsupported")
+    selected = value if profile == 64 else value.get("schema65")
+    require(type(selected) is dict and type(selected.get("migration_head")) is dict and
+            type(selected["migration_head"].get("sequence")) is int and
+            selected["migration_head"]["sequence"] == profile and
+            selected.get("current_table_count") == (230 if profile == 64 else 231),
+            "runtime_schema_profile_unsupported")
+    if profile == 65:
+        fingerprints = selected.get("normalized_metadata_fingerprints")
+        require(selected.get("qualification") == "measured" and type(fingerprints) is dict and
+                set(fingerprints) == {"mysql8", "mariadb10_11"} and
+                all(isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value)
+                    for value in fingerprints.values()), "runtime_schema65_unmeasured")
+    return ({key: item for key, item in selected.items() if key != "schema65"}
+            if profile == 64 else selected)
+
+
+def database_runtime_profile(schema, args, env, database):
+    count = run(["mysql", *args, "-N", "-B", "--raw", database, "-e",
+                 "SELECT applied_count FROM mud_schema_migration_state WHERE state_id=1;"],
+                env=env).strip()
+    require(count in (b"64", b"65"), "runtime_schema_profile_unsupported")
+    profile = int(count)
+    runtime_schema_profile(schema, profile)
+    # Count selects a verifier only; the verifier authenticates full state/history/metadata.
+    return profile
+
+
+def migration_capture(stage, p, capacity_base):
+    sources = {}
+    for name in MIGRATION_SELECTORS:
+        path = ROOT / "migrations" / name
+        raw = migrations.read_regular(path, migrations.MAX_MANIFEST_BYTES, "migration selector")
+        manifest = migrations.load_manifest(path)
+        require(raw == migrations.read_regular(path, migrations.MAX_MANIFEST_BYTES,
+                                              "migration selector"), "migration_source_changed")
+        sources[path] = migrations.checksum(raw)
+        for step in manifest.migrations:
+            for source, checksum in ((step.apply_path, step.apply_checksum),
+                                     (step.verify_path, step.verify_checksum)):
+                require(source not in sources or sources[source] == checksum,
+                        "migration_source_changed")
+                sources[source] = checksum
+    captured_size = capacity_base + total_size(stage)
+    captured = {}
+    (stage / "migrations").mkdir(mode=0o700)
+    for source, checksum in sorted(sources.items()):
+        relative = source.relative_to(ROOT / "migrations")
+        require(".." not in relative.parts, "unsafe_path")
+        payload = migrations.read_regular(source, migrations.MAX_MIGRATION_BYTES, "migration input")
+        require(migrations.checksum(payload) == checksum, "migration_source_changed")
+        captured_size += len(payload)
+        require(captured_size <= p["max_bytes"],
+                "capacity_headroom_required")
+        require(shutil.disk_usage(stage).free >= p["min_free_bytes"] + len(payload),
+                "low_free_capacity")
+        target = stage / "migrations" / relative
+        target.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        with target.open("xb") as output:
+            output.write(payload)
+        target.chmod(0o600)
+        captured[relative.as_posix()] = {"sha256": checksum, "bytes": len(payload)}
+    return captured
+
+
+def validate_migration_archive(root):
+    try:
+        expected = set(MIGRATION_SELECTORS)
+        for name in MIGRATION_SELECTORS:
+            manifest = migrations.load_manifest(root / name)
+            require(len(manifest.migrations) == 65, "invalid_migration_archive")
+            for step in manifest.migrations:
+                expected.update(path.relative_to(root).as_posix()
+                                for path in (step.apply_path, step.verify_path))
+        require(set(inventory(root)) == expected, "invalid_migration_archive")
+    except migrations.MigrationContractError as error:
+        raise BackupError("invalid_migration_archive") from error
+
+
+def validate_dump(path, schema=None, profile=64):
     schema = schema or ROOT / "migrations/runtime_compatibility_manifest.json"
-    expected = set(json.loads(schema.read_text())
+    expected = set(runtime_schema_profile(schema, profile)
                    ["runtime_table_sql_list"].replace("'", "").split(","))
     found = set()
     with gzip.open(path, "rb") as stream:
@@ -385,9 +476,12 @@ def validate_dump(path, schema=None):
 def verify_database_schema(schema):
     # Freeze the selected contract in the generation before checking the live
     # database. Upgrades can explicitly select the deployed, older contract.
-    _, env, _ = db_connection()
+    args, env, database = db_connection()
+    profile = database_runtime_profile(schema, args, env, database)
     env["RUNTIME_COMPATIBILITY_MANIFEST"] = str(schema)
-    run([str(ROOT / "migrations/verify_runtime_compatibility.sh")], env=env)
+    run([str(ROOT / "migrations/verify_runtime_compatibility.sh"),
+         *(["--schema65"] if profile == 65 else [])], env=env)
+    return profile
 
 
 class BoundedOutput:
@@ -415,6 +509,7 @@ class BoundedOutput:
 
 def mariadb_capture(stage, p, capacity_base=None):
     args, env, database = db_connection()
+    profile = database_runtime_profile(stage / "runtime-schema.json", args, env, database)
     engines = run(["mysql", *args, "-N", "-B", database, "-e",
                    "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
                    "AND table_type='BASE TABLE' AND engine<>'InnoDB';"], env=env)
@@ -432,8 +527,8 @@ def mariadb_capture(stage, p, capacity_base=None):
         with gzip.GzipFile(fileobj=output, mode="wb", mtime=0) as zipped:
             with streaming_process(["mysqldump", *args, *options], env=env) as process:
                 shutil.copyfileobj(process.stdout, zipped)
-    validate_dump(path, stage / "runtime-schema.json")
-    return {"database": database}
+    validate_dump(path, stage / "runtime-schema.json", profile)
+    return {"database": database, "runtime_schema_profile": profile}
 
 
 def verify(generation):
@@ -450,8 +545,11 @@ def verify(generation):
     require(actual == manifest.get("files") and actual, "generation_checksum_mismatch")
     require(digest(generation / "runtime-schema.json") == manifest.get("runtime_schema_sha256"),
             "schema_manifest_mismatch")
+    if (generation / "migrations").exists() or "runtime_schema_profile" in manifest:
+        validate_migration_archive(generation / "migrations")
     if manifest["mode"] == "mariadb-primary":
-        validate_dump(generation / "database.sql.gz", generation / "runtime-schema.json")
+        validate_dump(generation / "database.sql.gz", generation / "runtime-schema.json",
+                      manifest.get("runtime_schema_profile", 64))
     return manifest
 
 
@@ -769,16 +867,24 @@ def backup(p, mode):
                 schema = secure_path(Path(os.environ["RUNTIME_COMPATIBILITY_MANIFEST"]), False)
             shutil.copyfile(schema, stage / "runtime-schema.json")
             (stage / "runtime-schema.json").chmod(0o600)
+            schema_digest = digest(stage / "runtime-schema.json")
             if mode == "mariadb-primary":
-                verify_database_schema(stage / "runtime-schema.json")
+                profile = verify_database_schema(stage / "runtime-schema.json")
+            migration_snapshot = migration_capture(stage, p, capacity_base)
             journals = journal_capture(stage, p, capacity_base)
             detail = (flatfile_capture(stage, p, capacity_base) if mode == "flatfile-primary"
                       else mariadb_capture(stage, p, capacity_base))
             require(all(inventory(p["journal_roots"][name]) == files for name, files in journals.items()),
                     "journal_changed_during_authority_capture")
             if mode == "mariadb-primary":
-                verify_database_schema(stage / "runtime-schema.json")
+                after_profile = verify_database_schema(stage / "runtime-schema.json")
+                require(profile == detail.get("runtime_schema_profile") == after_profile,
+                        "runtime_schema_profile_changed")
             checkpoint("after_capture")
+            require(digest(stage / "runtime-schema.json") == schema_digest,
+                    "schema_changed_during_capture")
+            require(inventory(stage / "migrations") == migration_snapshot, "migration_archive_changed")
+            validate_migration_archive(stage / "migrations")
             meta = {"version": 1, "generation": name, "created": capture_started, "mode": mode,
                     "runtime_schema_sha256": digest(stage / "runtime-schema.json"),
                     "files": inventory(stage), **detail}

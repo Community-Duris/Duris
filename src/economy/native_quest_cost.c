@@ -1017,8 +1017,6 @@ constexpr size_t cost_complete_projection_move =
 	// std::move<native_quest_cost_projection> actual argument/ref result; move.h:105; distinct from vector/attempt/allocator move instantiations.
 	(2 * sizeof(void *));
 constexpr size_t cost_complete_vector_move =
-	// ext allocator traits _S_propagate_on_move_assign actual returned bool; distinct from local __move_storage; ext/alloc_traits.h:109-110 selected by stl_vector.h:769; true propagation short-circuits _S_always_equal.
-	(sizeof(bool)) +
 	// operator= this/source/returned ref and move_storage constexpr; stl_vector.h:766-773.
 	(3 * sizeof(void *) + sizeof(bool)) +
 	// _M_move_assign this/source and true_type parameter; stl_vector.h:1959-1965.
