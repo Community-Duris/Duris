@@ -3243,3 +3243,20 @@ heavy matrix awaits ACC-01 release/exclusive grant. Current source passes do not
 close schema65/native restore/retention/room/wallet/release gates. No maintained
 shared interface edits; primary owns registration/pin integration. Additive curator
 input only; no notebook import or primary acknowledgment claimed.
+
+
+## 2026-10-11 — ACC-02 actual first-engine readiness failure
+
+See [native attempt1 evidence](PLAN5_ACC02_MYSQL_READINESS_FAILURE_2026-10-11.md).
+Exact source `a60f5dcce0c6496e687a0806ee7d0c559579e4fb`; original full two-engine matrix under reviewed exclusive
+grant/wrapper, session87928 terminalexit1. MySQL daemon actual dieexit1 after30s;
+no successful version query, migration, fingerprint, native boot/tamper or Maria
+test.6901 source files and both private contracts unchanged. Failure cause unknown,
+no observed OOM event; detached auto-removal loses daemon logs before finally.
+Fresh bounded commissioning diagnostic/transport retry goes through orchestrator.
+Seal `8efacec5bc181b68a3fe9b8a86d20d0338c4a0ac2a1decca06bd581aa041c77e`; raw evidence at
+`D:/Dev/Tests/Duris/accounting-plan5/ACC-02-a60f5dcc`. Successful final owned inventory
+exit0/empty verified; matching heavy lock released only after sealing; no owned
+containers or leases, unrelated services preserved. Shared constants unchanged;
+schema65/native restore/retention/authority/recovery/load/release gates OPEN.
+Goal ACTIVE, inactive/CLOSED; additive curator evidence only.
