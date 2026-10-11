@@ -8625,6 +8625,16 @@
         "native-compiler"
       ],
       "purpose": "Pure-value complete Item codec regression in SQL-header and flat modes: fifteen API cases, callback refusal, unchanged caller outputs, legacy wire compatibility and malformed/overflow rejection; no gameplay or persistence qualification."
+    },
+    "test_test_entry_main_outcome.py": {
+      "profile": "fast",
+      "mode": "unittest",
+      "minimum_cases": 8,
+      "cpu": 1,
+      "memory_mb": 256,
+      "seconds": 3.774,
+      "timeout_seconds": 180,
+      "purpose": "Actual entry adapter and unchanged matrix outcome contract: called/uncalled main, success/refusal, exit values, script/function and unittest cases in isolated fixture processes."
     }
   }
 }

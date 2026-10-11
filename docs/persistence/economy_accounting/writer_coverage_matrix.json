@@ -634,8 +634,11 @@
       "tests/async/test_reconcile_economy_accounting.py": "ba7cb643673bf445c625c243313ec4e498213d3a52e73d909cbad6ebbca3c9c9",
       "tests/async/test_spell_component_retirement_publication.py": "dbb84c30138984db14db13a695ea5d7130937c0dc7b7339085955136897ef0b8",
       "tests/async/test_staging_migration_fork_mysql.py": "908ab9a227cf732b86bd3503aa0d3ccec07e0d2f35998568ea41d56543ba723d",
+      "tests/async/test_test_entry_main_outcome.py": "3175efa87cf0a2f287b80491787554d9cd45fe109b93807a46de83dee6b1314c",
       "tests/async/test_txn_publication_copyover_drain.py": "64d323b2b5041115c0f70602d6f51bbdc83ac337d9309838095391baa745a843",
-      "tests/integration_manifest.json": "268f2921125a4b9b47607c28ed12dcf42ad8c4e29e08d6a29fbf1640946b4dc2"
+      "tests/integration_manifest.json": "268f2921125a4b9b47607c28ed12dcf42ad8c4e29e08d6a29fbf1640946b4dc2",
+      "tests/regression_manifest.json": "bfa97d1072a1dcf8596d4dc7626a6e8d6d8b261b224c94f1f93e22b0aa81d66e",
+      "tests/run_test_entry.py": "bdfbc6eb466ddbb3887dbc639530cf76bff50142e86d11c79dc99d5ac45cc07d"
     },
     "status": "source_integrated_unqualified"
   },
