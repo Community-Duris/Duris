@@ -13116,3 +13116,107 @@ bool birth_historical_entry_admit(size_t &base, size_t workspace,
 	return true;
 }
 }
+
+namespace
+{
+// The preserved historical charge projection names genuine unchanged lower
+// census graphs individually; it is not the public CURRENT wrapper. Keep its
+// original conservative terms intact. Add genuine directly selected scopes
+// absent from that historical projection rather than relabeling spare credit.
+constexpr size_t birth_charge_local_census_source =
+	birth_historical_charge_source +
+	// Direct npc scope retained_heap_bytes (not its identity/current graph).
+	birth_current_source_scope +
+	// Five direct const-vector ranges plus context.items: actual declared
+	// begin/end/ctor/deref/++/equality/base families. Own range objects remain
+	// in the historical parent projection. Distinct genuine call occurrences
+	// are conservatively summed; they are not claimed as distinct types.
+	6 * (12 * sizeof(void *) + sizeof(bool)) +
+	// Actual std::array returned_writers begin/end/data declared receiver and
+	// pointer-return scopes. No implicit array lifecycle is newly invented.
+	6 * sizeof(void *) +
+	// Exact direct item-stage is_flat_factory receiver/result. Its unique_ptr
+	// observer descendants already have persistent historical Source above.
+	sizeof(void *) + sizeof(bool);
+}
+
+bool quest_mobile_native_birth_charge_local_source_frame_bytes(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && defined(_GLIBCXX_HAS_GTHREADS) &&                           \
+	!defined(_GLIBCXX_NATIVE_THREAD_ID) && !defined(_GLIBCXX_DEBUG) &&                    \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L
+	if (!output)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	size_t keeper = 0;
+	if (!item_native_quest_birth_retained_budget_local_source_frame_bytes(&keeper))
+		return false;
+	size_t total = birth_charge_local_census_source;
+	if (keeper > SIZE_MAX - total)
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	total += keeper;
+	*output = total;
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
+
+bool quest_mobile_native_birth_charge_local_source_supplement_frame_bytes(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && defined(_GLIBCXX_HAS_GTHREADS) &&                           \
+	!defined(_GLIBCXX_NATIVE_THREAD_ID) && !defined(_GLIBCXX_DEBUG) &&                    \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L
+	if (!output)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	size_t keeper = 0;
+	if (!item_native_quest_birth_retained_budget_local_source_frame_bytes(&keeper))
+		return false;
+	size_t total = birth_charge_local_census_source;
+	if (keeper > SIZE_MAX - total)
+	{
+		errno = EOVERFLOW;
+		return false;
+	}
+	total += keeper;
+	*output = total;
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
+
+bool quest_mobile_native_birth_charge_local_initial_inline_bytes(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && defined(_GLIBCXX_HAS_GTHREADS) &&                           \
+	!defined(_GLIBCXX_NATIVE_THREAD_ID) && !defined(_GLIBCXX_DEBUG) &&                    \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 ||
+	    __gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	*output = 0;
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}

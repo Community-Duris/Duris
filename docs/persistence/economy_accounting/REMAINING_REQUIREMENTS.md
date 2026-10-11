@@ -5045,3 +5045,13 @@ and protected WIP remain preserved. Inventory481/931/2911/2853,0new/unmapped
 does not establish completion. Full host/native/gameplay/persistence/recovery/
 R1-R8/release stay OPEN; targeted compiler proof is recorded above.
 Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Integrate birth and Item local retained budget contracts implemented - 2026-10-10
+
+[Source checkpoint](BIRTH_ITEM_LOCAL_RETAINED_BUDGET_SOURCE_INTEGRATION_2026-10-10.md) Birth charge and both-engine Item LOCAL providers integrated; two production objects pass both modes. External observer and complete reserve/caller qualification remain open.
+Independent RAW and actual formatted source reviews passed; original behavior
+and protected WIP remain preserved. Inventory481/931/2911/2853,0new/unmapped
+does not establish completion. Full host/native/gameplay/persistence/recovery/
+R1-R8/release stay OPEN; targeted compiler proof is recorded above.
+Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
