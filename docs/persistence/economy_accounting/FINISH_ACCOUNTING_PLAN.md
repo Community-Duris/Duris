@@ -18750,3 +18750,8 @@ and protected WIP remain preserved. Inventory479/931/2911/2853,0new/unmapped
 does not establish completion. Full host/native/gameplay/persistence/recovery/
 R1-R8/release stay OPEN; targeted compiler proof is recorded above.
 Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Exact schema64/65 history source integrated - 2026-10-10
+
+[Source integration](PLAN5_EXACT_SCHEMA64_65_HISTORY_PRIMARY_INTEGRATION_2026-10-10.md): restore qualifier preserves all seven receipt fields and supports three authentic64 and six65 histories. Partial fixtures correctly stop at63; genuine64/65 acceptance and session cleanup cases are retained. Independent packet/final Source review and inventory refresh pass. Tests/database/recovery remain in the major-plan batch; no runtime qualification or plan completion is claimed. Inactive/CLOSED, release BLOCKED, goal ACTIVE.
