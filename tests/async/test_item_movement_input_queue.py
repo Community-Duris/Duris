@@ -7,6 +7,7 @@ and equipment outcomes can be asserted without linking the full game server.
 """
 
 from pathlib import Path
+import shlex
 import subprocess
 import tempfile
 
@@ -1594,10 +1595,297 @@ int main()
 '''
 
 
+
+LINKAGE_EXTERNALS = r'''
+// Fail-loud service/world exclusions for the original input-queue/prompt cases.
+#include <atomic>
+#include <cstdlib>
+#include <cstdio>
+#include "core/files.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
+#include "economy/currency_transaction.h"
+#include "item/held_retirement_recovery.h"
+#include "item/item_actions.h"
+#include "item/item_movement_transaction.h"
+#include "item/item_ownership_runtime.h"
+#include "item/ordinary_drop_recovery.h"
+#include "net/comm.h"
+#include "persistence/critical_command_repository.h"
+#include "persistence/economic_sql_item_transfer_transaction.h"
+#include "persistence/quest_reward_obligation_repository.h"
+#include "player/player_save_pipeline.h"
+#include "player/player_snapshot_capture.h"
+#include "sql/sql_pool.h"
+#include "world/handler.h"
+#include "world/native_quest_frozen_continuation.h"
+#include "world/quest_mobile_native.h"
+#include "world/quest_mobile_native_binding.h"
+static std::atomic<size_t> linkage_external_leaf_calls{0};
+[[noreturn]] static void linkage_external_leaf_unexpected(const char *symbol) noexcept {
+    linkage_external_leaf_calls.fetch_add(1);
+    std::fprintf(stderr, "UNSELECTED_EXTERNAL_LEAF_CALLED: %s\n", symbol);
+    std::abort();
+}
+struct linkage_external_leaf_exit_guard {
+    ~linkage_external_leaf_exit_guard() {
+        if (linkage_external_leaf_calls.load() != 0) std::abort();
+    }
+};
+static linkage_external_leaf_exit_guard linkage_external_leaf_exit_check;
+// Same controlled descriptor-list world input, no native observer selected.
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
+#include "magic/spells.h"
+#include "player/pet_restore_runtime.h"
+int IS_MORPH(P_char ch) {
+    linkage_external_leaf_unexpected("IS_MORPH(char_data*)");
+}
+void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_obj, int type) {
+    linkage_external_leaf_unexpected("act(char const*, int, char_data*, obj_data*, void*, int)");
+}
+size_t critical_command_journal_native_rewrite_storage_bytes() noexcept {
+    linkage_external_leaf_unexpected("critical_command_journal_native_rewrite_storage_bytes()");
+}
+size_t critical_command_journal_persistent_storage_bytes() noexcept {
+    linkage_external_leaf_unexpected("critical_command_journal_persistent_storage_bytes()");
+}
+critical_apply_result critical_command_repository_verify_native_quest_in_transaction(
+	MYSQL *connection, const critical_command &command) noexcept {
+    linkage_external_leaf_unexpected("critical_command_repository_verify_native_quest_in_transaction(st_mysql*, critical_command const&)");
+}
+bool currency_transaction_publish_wallet(P_char character, const currency_vector &wallet,
+					 uint64_t wallet_revision) {
+    linkage_external_leaf_unexpected("currency_transaction_publish_wallet(char_data*, currency_vector const&, unsigned long)");
+}
+bool economic_gameplay_authority::observe_native_money_checkpoint(
+	uint32_t pid, const quest_mobile_native_cash_reference &native,
+	economic_native_money_checkpoint_projection *output) noexcept {
+    linkage_external_leaf_unexpected("economic_gameplay_authority::observe_native_money_checkpoint(unsigned int, quest_mobile_native_cash_reference const&, economic_native_money_checkpoint_projection*)");
+}
+economic_accounting_error economic_gameplay_authority::prepare_native_money_transfer(
+	critical_command *command, uint32_t pid,
+	const quest_mobile_native_cash_reference *original_before) noexcept {
+    linkage_external_leaf_unexpected("economic_gameplay_authority::prepare_native_money_transfer(critical_command*, unsigned int, quest_mobile_native_cash_reference const*)");
+}
+unsigned int economic_sql_native_fee_lock_publication(
+	MYSQL *connection, const critical_command &command, const critical_completion &completion,
+	std::span<const player_item_snapshot> original_native_before,
+	std::span<const player_item_snapshot> original_player_before,
+	std::span<const player_item_snapshot> original_player_after,
+	uint64_t acknowledged_save_revision, economic_sql_native_fee_publication *output) noexcept {
+    linkage_external_leaf_unexpected("economic_sql_native_fee_lock_publication(st_mysql*, critical_command const&, critical_completion const&, std::span<player_item_snapshot const, 18446744073709551615ul>, std::span<player_item_snapshot const, 18446744073709551615ul>, std::span<player_item_snapshot const, 18446744073709551615ul>, unsigned long, economic_sql_native_fee_publication*)");
+}
+unsigned int economic_sql_native_money_lock_publication(
+	MYSQL *connection, const critical_command &command, const critical_completion &completion,
+	std::span<const player_item_snapshot> original_native_before,
+	std::span<const player_item_snapshot> original_player_before,
+	std::span<const player_item_snapshot> original_player_after,
+	uint64_t acknowledged_save_revision, economic_sql_native_money_publication *output) noexcept {
+    linkage_external_leaf_unexpected("economic_sql_native_money_lock_publication(st_mysql*, critical_command const&, critical_completion const&, std::span<player_item_snapshot const, 18446744073709551615ul>, std::span<player_item_snapshot const, 18446744073709551615ul>, std::span<player_item_snapshot const, 18446744073709551615ul>, unsigned long, economic_sql_native_money_publication*)");
+}
+unsigned int economic_sql_native_quest_lock_publication(
+	MYSQL *connection, const critical_command &command, const critical_completion &completion,
+	std::span<const player_item_snapshot> original_native_before,
+	std::span<const player_item_snapshot> original_player_before,
+	std::span<const player_item_snapshot> original_player_after,
+	uint64_t acknowledged_save_revision, economic_sql_native_quest_publication *output) noexcept {
+    linkage_external_leaf_unexpected("economic_sql_native_quest_lock_publication(st_mysql*, critical_command const&, critical_completion const&, std::span<player_item_snapshot const, 18446744073709551615ul>, std::span<player_item_snapshot const, 18446744073709551615ul>, std::span<player_item_snapshot const, 18446744073709551615ul>, unsigned long, economic_sql_native_quest_publication*)");
+}
+P_char get_linked_char(P_char ch, ush_int type) {
+    linkage_external_leaf_unexpected("get_linked_char(char_data*, unsigned short)");
+}
+bool has_innate(P_char ch, int innate) {
+    linkage_external_leaf_unexpected("has_innate(char_data*, int)");
+}
+bool held_retirement_repository_observe_current(const critical_command &command,
+						const critical_completion &completion,
+						const held_retirement_recovery &captured,
+						held_retirement_current_observation *output) noexcept {
+    linkage_external_leaf_unexpected("held_retirement_repository_observe_current(critical_command const&, critical_completion const&, held_retirement_recovery const&, held_retirement_current_observation*)");
+}
+obj_to_char_result obj_to_char_checked(P_obj object, P_char ch) {
+    linkage_external_leaf_unexpected("obj_to_char_checked(obj_data*, char_data*)");
+}
+inert_item_stage_result ordinary_drop_recovery_eligibility(const player_item_snapshot *items,
+							   size_t count) noexcept {
+    linkage_external_leaf_unexpected("ordinary_drop_recovery_eligibility(player_item_snapshot const*, unsigned long)");
+}
+ordinary_drop_observation ordinary_drop_recovery_publish_live(
+	const critical_command &command, const critical_completion &completion,
+	uint64_t actor_runtime_id, ordinary_drop_live_publication_state &state) noexcept {
+    linkage_external_leaf_unexpected("ordinary_drop_recovery_publish_live(critical_command const&, critical_completion const&, unsigned long, ordinary_drop_live_publication_state&)");
+}
+bool player_save_held_retirement_publication_owner::checkpoint_recovery_context(
+	const critical_native_recovery_envelope &expected,
+	const critical_native_recovery_envelope &successor) noexcept {
+    linkage_external_leaf_unexpected("player_save_held_retirement_publication_owner::checkpoint_recovery_context(critical_native_recovery_envelope const&, critical_native_recovery_envelope const&)");
+}
+bool player_save_held_retirement_publication_owner::copy_publication_context(
+	const critical_command &command, const critical_completion &completion,
+	held_retirement_publication_snapshot *output) noexcept {
+    linkage_external_leaf_unexpected("player_save_held_retirement_publication_owner::copy_publication_context(critical_command const&, critical_completion const&, held_retirement_publication_snapshot*)");
+}
+bool player_save_held_retirement_publication_owner::publish_held_retirement(
+	const critical_command &command, const critical_completion &completion,
+	const held_retirement_publication_snapshot &snapshot,
+	bool (*native_publish)(const critical_command &, const critical_completion &,
+			       void *) noexcept,
+	void *context) noexcept {
+    linkage_external_leaf_unexpected("player_save_held_retirement_publication_owner::publish_held_retirement(critical_command const&, critical_completion const&, held_retirement_publication_snapshot const&, bool (*)(critical_command const&, critical_completion const&, void*) noexcept, void*)");
+}
+bool player_save_held_retirement_publication_owner::rebind_recovery_checkpoint(
+	const critical_native_recovery_envelope &envelope, uint64_t runtime_id) noexcept {
+    linkage_external_leaf_unexpected("player_save_held_retirement_publication_owner::rebind_recovery_checkpoint(critical_native_recovery_envelope const&, unsigned long)");
+}
+bool player_save_native_quest_checkpoint_owner::observe_held(
+	const player_native_quest_checkpoint_token &token, P_char actor,
+	const critical_operation_id &operation, player_native_quest_checkpoint_stage *output,
+	std::vector<player_item_snapshot> *items_out) noexcept {
+    linkage_external_leaf_unexpected("player_save_native_quest_checkpoint_owner::observe_held(player_native_quest_checkpoint_token const&, char_data*, critical_operation_id const&, player_native_quest_checkpoint_stage*, std::vector<player_item_snapshot, std::allocator<player_item_snapshot> >*)");
+}
+bool player_save_native_quest_checkpoint_owner::original_held_bodies(
+	const critical_command &command, std::vector<player_item_snapshot> *before,
+	std::vector<player_item_snapshot> *after,
+	player_native_quest_checkpoint_stage *stage) noexcept {
+    linkage_external_leaf_unexpected("player_save_native_quest_checkpoint_owner::original_held_bodies(critical_command const&, std::vector<player_item_snapshot, std::allocator<player_item_snapshot> >*, std::vector<player_item_snapshot, std::allocator<player_item_snapshot> >*, player_native_quest_checkpoint_stage*)");
+}
+critical_submit_result player_save_native_quest_checkpoint_owner::submit_owned(
+	const player_native_quest_checkpoint_token &token, critical_command command,
+	std::span<const uint8_t> original_native_before, bool *checkpoint_released) noexcept {
+    linkage_external_leaf_unexpected("player_save_native_quest_checkpoint_owner::submit_owned(player_native_quest_checkpoint_token const&, critical_command, std::span<unsigned char const, 18446744073709551615ul>, bool*)");
+}
+bool player_save_native_quest_publication_owner::checkpoint_recovery_context(
+	const critical_native_recovery_envelope &expected,
+	const critical_native_recovery_envelope &successor) noexcept {
+    linkage_external_leaf_unexpected("player_save_native_quest_publication_owner::checkpoint_recovery_context(critical_native_recovery_envelope const&, critical_native_recovery_envelope const&)");
+}
+bool player_save_native_quest_publication_owner::copy_recovery_context(
+	const critical_command &command, critical_native_recovery_envelope *output) noexcept {
+    linkage_external_leaf_unexpected("player_save_native_quest_publication_owner::copy_recovery_context(critical_command const&, critical_native_recovery_envelope*)");
+}
+bool player_save_native_quest_publication_owner::publication_held_bodies(
+	const critical_command &command, std::vector<player_item_snapshot> *before,
+	std::vector<player_item_snapshot> *after,
+	player_native_quest_checkpoint_stage *stage) noexcept {
+    linkage_external_leaf_unexpected("player_save_native_quest_publication_owner::publication_held_bodies(critical_command const&, std::vector<player_item_snapshot, std::allocator<player_item_snapshot> >*, std::vector<player_item_snapshot, std::allocator<player_item_snapshot> >*, player_native_quest_checkpoint_stage*)");
+}
+bool player_save_native_quest_publication_owner::publish_native_quest(
+	const critical_command &original, const critical_completion &completion,
+	bool (*native_publish)(const critical_command &, const critical_completion &,
+			       void *) noexcept,
+	void *context) noexcept {
+    linkage_external_leaf_unexpected("player_save_native_quest_publication_owner::publish_native_quest(critical_command const&, critical_completion const&, bool (*)(critical_command const&, critical_completion const&, void*) noexcept, void*)");
+}
+bool player_save_native_quest_publication_owner::rebind_recovery_checkpoint(
+	const critical_native_recovery_envelope &original,
+	uint64_t actual_player_runtime_id) noexcept {
+    linkage_external_leaf_unexpected("player_save_native_quest_publication_owner::rebind_recovery_checkpoint(critical_native_recovery_envelope const&, unsigned long)");
+}
+bool player_save_pipeline_literal_inventory_hold(const player_literal_inventory_token &token,
+						 const critical_operation_id &operation_id) {
+    linkage_external_leaf_unexpected("player_save_pipeline_literal_inventory_hold(player_literal_inventory_token const&, critical_operation_id const&)");
+}
+bool player_save_pipeline_literal_inventory_release(const player_literal_inventory_token &token,
+						    const critical_operation_id &operation_id) {
+    linkage_external_leaf_unexpected("player_save_pipeline_literal_inventory_release(player_literal_inventory_token const&, critical_operation_id const&)");
+}
+bool player_save_pipeline_native_quest_checkpoint_cancel(
+	const player_native_quest_checkpoint_token &token) {
+    linkage_external_leaf_unexpected("player_save_pipeline_native_quest_checkpoint_cancel(player_native_quest_checkpoint_token const&)");
+}
+bool player_save_pipeline_native_quest_checkpoint_hold(
+	const player_native_quest_checkpoint_token &token,
+	const critical_operation_id &operation_id) {
+    linkage_external_leaf_unexpected("player_save_pipeline_native_quest_checkpoint_hold(player_native_quest_checkpoint_token const&, critical_operation_id const&)");
+}
+player_literal_inventory_state
+player_save_pipeline_native_quest_checkpoint_poll(const player_native_quest_checkpoint_token &token,
+						  P_char actor,
+						  player_native_quest_checkpoint_stage *stage_out) {
+    linkage_external_leaf_unexpected("player_save_pipeline_native_quest_checkpoint_poll(player_native_quest_checkpoint_token const&, char_data*, player_native_quest_checkpoint_stage*)");
+}
+bool player_save_pipeline_native_quest_checkpoint_release(
+	const player_native_quest_checkpoint_token &token,
+	const critical_operation_id &operation_id) {
+    linkage_external_leaf_unexpected("player_save_pipeline_native_quest_checkpoint_release(player_native_quest_checkpoint_token const&, critical_operation_id const&)");
+}
+bool player_save_restored_publication_owner::publish(const critical_completion &completion) noexcept {
+    linkage_external_leaf_unexpected("player_save_restored_publication_owner::publish(critical_completion const&)");
+}
+bool quest_native_coin_give_notice_owner::publish(P_char actor, P_char mobile, uint8_t denomination,
+						  int32_t quantity,
+						  int32_t original_room_vnum) noexcept {
+    linkage_external_leaf_unexpected("quest_native_coin_give_notice_owner::publish(char_data*, char_data*, unsigned char, int, int)");
+}
+bool quest_native_frozen_continuation_owner::publish(const critical_command &command,
+						     const quest_reward_obligation_record &record,
+						     uint64_t original_player_runtime_id,
+						     bool *started) noexcept {
+    linkage_external_leaf_unexpected("quest_native_frozen_continuation_owner::publish(critical_command const&, quest_reward_obligation_record const&, unsigned long, bool*)");
+}
+bool quest_native_frozen_continuation_owner::published(const critical_command &command) noexcept {
+    linkage_external_leaf_unexpected("quest_native_frozen_continuation_owner::published(critical_command const&)");
+}
+quest_reward_obligation_result
+quest_reward_obligation_repository_pending(MYSQL *connection, uint32_t player_pid,
+					   std::vector<quest_reward_obligation_record> *obligations,
+					   unsigned int *database_error_code,
+					   quest_reward_read_metrics *metrics) {
+    linkage_external_leaf_unexpected("quest_reward_obligation_repository_pending(st_mysql*, unsigned int, std::vector<quest_reward_obligation_record, std::allocator<quest_reward_obligation_record> >*, unsigned int*, quest_reward_read_metrics*)");
+}
+int real_room(const int room) {
+    linkage_external_leaf_unexpected("real_room(int)");
+}
+void spell_ward_sync_timers(P_char ch) {
+    linkage_external_leaf_unexpected("spell_ward_sync_timers(char_data*)");
+}
+MYSQL *sql_pool_acquire(void) {
+    linkage_external_leaf_unexpected("sql_pool_acquire");
+}
+void sql_pool_discard_connection(MYSQL *conn) {
+    linkage_external_leaf_unexpected("sql_pool_discard_connection");
+}
+void sql_pool_release(MYSQL *conn) {
+    linkage_external_leaf_unexpected("sql_pool_release");
+}
+bool summoned_pet_capture(P_char pet, std::string *encoded) {
+    linkage_external_leaf_unexpected("summoned_pet_capture(char_data*, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >*)");
+}
+// Actual fixture game-thread identity, matching nevent_require_game_thread.
+bool nevent_is_game_thread() {
+    return std::this_thread::get_id() == fixture_game_thread;
+}
+// The original authority fixture has no active accounting projection.
+bool economic_gameplay_authority::active_regular_sql() { return active(); }
+extern "C" unsigned long mysql_thread_id(MYSQL *) { linkage_external_leaf_unexpected("mysql_thread_id"); }
+extern "C" unsigned int mysql_errno(MYSQL *) { linkage_external_leaf_unexpected("mysql_errno"); }
+extern "C" int mysql_get_option(MYSQL *, enum mysql_option, void *) { linkage_external_leaf_unexpected("mysql_get_option"); }
+extern "C" int mysql_real_query(MYSQL *, const char *, unsigned long) { linkage_external_leaf_unexpected("mysql_real_query"); }
+P_desc descriptor_list = nullptr;
+// Declared fixture world tables. Original cases install no affected wear-off
+// messages or pets; callback branches are independently fail-loud above.
+Skill skills[MAX_SKILLS]{};
+int top_of_mobt = -1;
+#ifndef DURIS_PROMPT_HAS_MOB_INDEX
+P_index mob_index = nullptr;
+#endif
+P_obj unequip_char(P_char ch, int pos, bool saving) {
+    linkage_external_leaf_unexpected("unequip_char(char_data*, int, bool)");
+}
+#pragma GCC diagnostic pop
+'''
+
 def main() -> int:
     """Compile and execute the item-movement queue regression."""
+    mysql_cflags = shlex.split(
+        subprocess.check_output(["mysql_config", "--cflags"], text=True)
+    )
     harness = "\n".join([
         PRELUDE,
+        LINKAGE_EXTERNALS,
         SEARCH,
         COMMAND_NUMBER,
         DEPENDS,
@@ -1619,14 +1907,28 @@ def main() -> int:
                 "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-g",
                 "-O1", "-ffunction-sections", "-fdata-sections",
                 "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie",
-                "-pthread", "-Isrc", "-Itests/async", str(source),
+                "-pthread", "-Isrc", "-Itests/async", *mysql_cflags, str(source),
                 rel("account/character_identity.c"),
-                rel("item_movement_transaction.c"),
+                rel("item_movement_transaction.c"), rel("item/held_retirement_publication.c"),
                 rel("item_ownership_runtime.c"),
                 rel("item_transfer_command.c"), rel("quest_mobile_native_reference.c"), rel("economic_source_event.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
                 rel("critical_command.c"),
                 rel("player_snapshot_capture.c"),
                 rel("player_snapshot_codec.c"),
+                rel("economy/native_quest_cost.c"),
+                rel("economy/native_quest_coin_give.c"),
+                rel("economy/shop_trade_recovery_manifest.c"),
+                rel("world/native_quest_recovery_context.c"),
+                rel("item/lockpick_retirement_continuation.c"),
+                rel("item/held_retirement_recovery.c"),
+                rel("cmd/lockpick_retirement.c"),
+                rel("item/item_actions.c"),
+                rel("world/quest_mobile_native.c"),
+                rel("world/quest_mobile_native_binding.c"),
+                rel("economy/item_transfer_accounting.c"),
+                rel("economy/economic_accounting_intent.c"),
+                rel("economy/economic_accounting_plan.c"),
+                rel("economy/economic_accounting_types.c"),
                 "-Wl,--gc-sections", "-lcrypto", "-o", str(binary),
             ],
             cwd=ROOT,

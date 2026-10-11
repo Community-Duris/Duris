@@ -2064,13 +2064,19 @@
       "id": "flatfile_restore_economic_authority",
       "path": "tests/async/test_flatfile_restore_economic_authority.py",
       "provider": "offline",
-      "engines": ["once"],
+      "engines": [
+        "once"
+      ],
       "mode": "script",
-      "required_cases": ["script"],
+      "required_cases": [
+        "script"
+      ],
       "arguments": [],
       "environment": {},
       "timeout_seconds": 900,
-      "covers": ["test_flatfile_restore_economic_authority.py"],
+      "covers": [
+        "test_flatfile_restore_economic_authority.py"
+      ],
       "required_markers": [
         "\"economic_bytes_unchanged\": true",
         "\"native_metadata_comparisons\": 1058",
@@ -2888,6 +2894,29 @@
         "test_reconcile_economy_accounting.py"
       ],
       "required_markers": []
+    },
+    {
+      "id": "held_retirement_publication_policy",
+      "path": "tests/async/test_held_retirement_publication_policy.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script",
+        "main"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "held_retirement_publication_policy_harness.cpp"
+      ],
+      "required_markers": [
+        "held-retirement publication policy sql: PASS",
+        "held-retirement publication policy flat: PASS"
+      ]
     }
   ]
 }

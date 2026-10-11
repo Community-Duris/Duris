@@ -4662,3 +4662,8 @@ Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
 ## Additive Cost and six native fee/money Source providers - 2026-10-11
 
 [Item provider integration](NATIVE_FEE_MONEY_COST_SOURCE_PROVIDER_INTEGRATION_2026-10-11.md) records genuine finite Source and changed-line formatted review, full production SQL/flat links for the combined raw snapshot and four unsupported-profile objects. Only Item2 is published in this milestone. All 931 writer policies, 482 unowned pins of 484 and census 2,911 remain unchanged. Generic Item, HRT, whole-host/runtime/SQL durability/restore/architecture/release gates remain open; accounting stays inactive/CLOSED with incomplete coverage and BLOCKED release.
+
+
+## Held retirement publication policy responsibility - 2026-10-11
+
+[Extraction candidate and evidence](HELD_RETIREMENT_POLICY_EXTRACTION_2026-10-11.md) records five production/build paths and seven fixtures/runners with original stages, tokens, locks and algorithms preserved. Adoption requires genuine registered-policy execution bound to the final 20-file freeze and received format/metadata reviews. The historical nine-case index is separate from the current Item snapshot; two combined raw production links and four profile objects are separate build evidence. Preserve the published Cost/native6 milestone, all 931 policies, 481 unowned pins and census 2,911. Architecture, whole-host/runtime/SQL durability/cold restoration/shutdown/release qualification remains open; accounting inactive/CLOSED, coverage incomplete, release BLOCKED.

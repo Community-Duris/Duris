@@ -167,7 +167,7 @@
       "scripts/validate_data_lifecycle.py": "3a294a1a9d7ee432558d916859706932c3541fe74e99d4b297d5c150dbdced38",
       "scripts/validate_economy_accounting.py": "90b8811f1d3785cdc26a9590e90a048c078e078e6db45e07be336faccbf43f3b",
       "scripts/validate_runtime_compatibility.py": "d37537443fc920c3b49b61efa9e6b4d2629e0eb4b51902d1daf5d82158ce46de",
-      "src/Makefile": "5fd2a18e3ea5c2730a2f166a8882b8db005e266a8ec00f72f7212946f86eb6be",
+      "src/Makefile": "b6c448b635f4a3671a36e6e9c3d553808d051cd07e9fe861972444f04218bb8c",
       "src/account/character_identity.c": "a2bde31e9458217bbbefc2e8f0148092d7b38a9c4bf63f40be7037d34ad17549",
       "src/account/character_identity.h": "a79f84fe9984b730dfd22180dd3cbb91d316f0f93a9cf6eef5b56234673dbe59",
       "src/classes/drannak.c": "17fcfe72dc3941c79ccc1a5e550a146a10badb064d10312b155dc649ec0e8a87",
@@ -400,13 +400,16 @@
       "src/item/craft_recipe_continuation.h": "f5ea9d7eb3e31d04fb036d8c73e138089304fa9af5e36fb1380308c4de646047",
       "src/item/enhance.c": "dc50a3fc114c29d63cba855f1e3c790420724274911693a01bf971717aa60f12",
       "src/item/enhance.h": "64c7a481af537d453c6c2ba745cee0aa1b8526170b81b31b26de3686385f7443",
+      "src/item/held_retirement_publication.c": "5c777b221ec8736133d7363370565548eecd82826f43582dbb618aa7200a1426",
+      "src/item/held_retirement_publication_internal.h": "c78061004cfeabc125235c0999f1f1bbbd091bbd50b99f5e86400c017fbb6453",
       "src/item/held_retirement_recovery.c": "b7a461c95179077ec9e4a5ba404cd7929fc033376ad6e9bfb722a8b12324f9c3",
       "src/item/held_retirement_recovery.h": "d3b94fb478ae8e402e8808ea022ada04d0e5c3aee1e4ade8904c316325928e1d",
       "src/item/held_retirement_transport.h": "2913004e568257a2ea95a43d824363038b10ecb7d6c1795ff0ea2801afc991c0",
       "src/item/item_actions.c": "b1c7a68f53c9260fb738586d63df43115ed54120f87a5a3945ced5091d23180c",
       "src/item/item_actions.h": "8de94240e7d314dd87dc01f3ec23dca24d5731a8e18771a644e84661a802c2fc",
       "src/item/item_command_policy.c": "50a3706763988cc5f4b73dd4219607b984a060b912ad07f9d0c47d7b1b88b82b",
-      "src/item/item_movement_transaction.c": "ada2ca800f348556265d571e1bdce3ca88aafaad3fb1cd51e668c91bb2206ce3",
+      "src/item/item_movement_state_internal.h": "48582b82577bddb801749bd46df6f201adde09f935e69aa762f0f081a279ea74",
+      "src/item/item_movement_transaction.c": "d364528af832ffcda36d8c7cf23a7cd9a87a6fcbdd2f870f136d2bca2ebf96a6",
       "src/item/item_movement_transaction.h": "7bc490625f82791421be800b326ffd4c7240ecc2171d6d7de2664194d667ccca",
       "src/item/item_ownership_runtime.c": "425338b74818c740fa4ff177b238199843f670f2fe65ca57a2f501d8d107eff9",
       "src/item/item_ownership_runtime.h": "166de0a1b87e026e7e925f6312187bd128ceef3e2e77e7a1e636b3cefeb62423",
@@ -591,6 +594,7 @@
       "tests/async/economic_sql_lifecycle_owner_mysql_harness.cpp": "115f2a9c5eb7a368194d1b35f8182ea9cefde3466afd645ff3f49df2201e4be3",
       "tests/async/flatfile_collector_native_unavailable.cpp": "cb14d724a011867f42f4a6ee9a3804a7756d1d27aca20f20a2ecb8900884ffeb",
       "tests/async/flatfile_collector_repository_harness.cpp": "95bfd2db52b586fddec45f514026e94f5853f75d499c7306dfee1cae7f034ece",
+      "tests/async/held_retirement_publication_policy_harness.cpp": "634ccfc5cb4ed427e3a722a189653e2f8d52132895fd680eb795ec6bcc12d6a7",
       "tests/async/inert_money_literal_harness.cpp": "c0d2a1c1322a6321fd9f86280b8cd87abcbb41f4c9b578e673711df27c57c3a2",
       "tests/async/lifecycle_persisted_union_cases.inc": "f20c45d924a506826d659bd52e371c5afc83e624f64c7733d796aac960d40050",
       "tests/async/modern_room_component_cases.inc": "47a6edfbade0cee7df14d11cd268519a961ba3b927bede5322dbe93eef45190b",
@@ -605,24 +609,30 @@
       "tests/async/sql_room_item_payload_test.cpp": "3a04e5ca7e347314bb032baa2f50ab8056571d8b0978c8d4dc808f3ee0386f60",
       "tests/async/test_auction_retained_seller_fee.py": "6229e32f084d90f019af7b187dc82c5fa62262873768e7e335275bcf14e4de16",
       "tests/async/test_coin_transfer_shared_bank_accounting.py": "f48cd0bf3fcd980a6ee3a41eb94c42898aa3f6deaf60058f56d71e955cd79da8",
+      "tests/async/test_craft_publication_ack_retention.py": "e69eed0caca3e9ad09511a9bc3bcf2737d8d80e9023628e26d1bdfb4a32d4f47",
       "tests/async/test_data_lifecycle_manifest.py": "3ec3020da2b1c102e10329d6e77de307dd2d89e82c0f6e1ee756c35d82e70d05",
       "tests/async/test_economic_sql_lifecycle_activation_contract.py": "186f0327fa342eb3b6a6833177b449eb9728e3907e86e1acd03c93e1f85c1e44",
       "tests/async/test_economic_sql_uid_scope.py": "901242f7d071d57041740195c7d06dd53cf2181852ace4dc7e14a48b20d343b7",
       "tests/async/test_economy_writer_coverage_contract.py": "089f47d41bf9c0883c1fd3b99ecc150037a0796c81c28f82b32524195c42279c",
       "tests/async/test_flatfile_collector_repository.py": "0a38db332267215177db3a38c9b594657b6f3c5d3c90a3ca3abb86b81f88cbfe",
+      "tests/async/test_held_retirement_publication_policy.py": "f2ad079f6a8fcda953f32af6a6cdb3fe41832f7ae4ab04d382f91fa15fcd024d",
       "tests/async/test_immutable_migration_runner.py": "b8fe07002ef91a27c1ca379a816008ae09482c6980e78a7afee3f68fbdc8f220",
       "tests/async/test_inert_money_literal.py": "92ad092458d7ad5ef4ca15200a53e8532f69d36f3f0831fc723fca82eda0da70",
       "tests/async/test_item_equipment_reconciliation.py": "22fa4d61539c18fa7f8c5518d494d8d9c4bd2ee890a58c352a61f64781f1efa8",
+      "tests/async/test_item_movement_input_queue.py": "09f36720de4b9de76260cd5f42d4c79076bf0c62a888ac979514678ec1509381",
+      "tests/async/test_item_movement_prompt_runtime.py": "4bb624536db82fe3594b379c822a8979a8be42362a890a0c0c5bd0b5179a8800",
       "tests/async/test_item_ownership_runtime.py": "98d7fde83b4cf1357e53b1f9712af05b408b2c013fa1de476945938c9a1c5c02",
       "tests/async/test_persistence_backup.py": "7a330310230f808c7a840709f1af5a551637f10c14df7c904c286ea6bc5b3c81",
       "tests/async/test_persistence_mode.py": "c5e2eb9dd405e7a4e05e5100ae2b03209facf15113ce8267c7a8b6987b47485b",
       "tests/async/test_plan5_child_identity.py": "b90e28215109a9234b4d09ce0ea5408c6da631d45dc0e76397d695fcd97e1e67",
       "tests/async/test_player_save_journal.py": "52cfe3a4c6ac0998d7546b55d362817fa3309f4818e7478775d749bef26325d5",
+      "tests/async/test_publication_ack_checkpoint.py": "c9d34251986e5e4cbe72bf9396e882b7451a85acfe4bb5b6dd622b17f322d0ef",
+      "tests/async/test_publication_retention_runtime.py": "6b6582f9511e4b375caef046c9f8b1321fa8debcbabe65ef768f07e14645367b",
       "tests/async/test_reconcile_economy_accounting.py": "ba7cb643673bf445c625c243313ec4e498213d3a52e73d909cbad6ebbca3c9c9",
       "tests/async/test_spell_component_retirement_publication.py": "dbb84c30138984db14db13a695ea5d7130937c0dc7b7339085955136897ef0b8",
       "tests/async/test_staging_migration_fork_mysql.py": "908ab9a227cf732b86bd3503aa0d3ccec07e0d2f35998568ea41d56543ba723d",
       "tests/async/test_txn_publication_copyover_drain.py": "64d323b2b5041115c0f70602d6f51bbdc83ac337d9309838095391baa745a843",
-      "tests/integration_manifest.json": "f55167389e3778fa17fc55ba43bec2fe5709333ef33b73b5dfbf134ddc1e5c10"
+      "tests/integration_manifest.json": "a1c78d916a646baf5e668365a877dc5bd83f5f9bec205237c4dfd9a63cc68741"
     },
     "status": "source_integrated_unqualified"
   },
@@ -17637,7 +17647,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          964
+          914
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_craft",
@@ -17687,7 +17697,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1029
+          979
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_craft_outputs",
@@ -17775,7 +17785,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3651
+          3601
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit_craft",
@@ -18213,8 +18223,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4010,
-          4022
+          3960,
+          3972
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_submit_to_player_with_completion",
@@ -18276,7 +18286,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1557
+          1507
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_batch_completion",
@@ -18338,7 +18348,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1457
+          1407
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_completion",
@@ -18523,7 +18533,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1338
+          1288
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_creation_queue",
@@ -19645,7 +19655,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1179
+          1129
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_creation_roots",
@@ -19707,7 +19717,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1186
+          1136
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_displaced_creation_objects",
@@ -20780,7 +20790,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4258
+          4208
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_cancel_batch_before_entry",
@@ -20842,7 +20852,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4070
+          4020
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_prepare_pulse",
@@ -21828,7 +21838,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2907
+          2857
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit",
@@ -22606,7 +22616,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1833
+          1783
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_corpse_batch",
@@ -22668,7 +22678,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1389
+          1339
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_creation_grant",
@@ -23036,7 +23046,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1244
+          1194
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "reconcile_creation_grant_batch",
@@ -54902,7 +54912,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7878
+          7828
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_native_quest_publication_owner::native_publish",

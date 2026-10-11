@@ -21,7 +21,7 @@ import time
 ROOT = Path(__file__).resolve().parents[2]
 ACK_SYMBOL = "_Z52critical_command_coordinator_acknowledge_publicationRK21critical_operation_id"
 SOURCES = (
-    "account/character_identity.c", "item/item_movement_transaction.c", "item/item_transfer_command.c", "world/quest_mobile_native_reference.c",
+    "account/character_identity.c", "item/item_movement_transaction.c", "item/held_retirement_publication.c", "item/item_transfer_command.c", "world/quest_mobile_native_reference.c",
     "item/craft_pouch_mutation.c", "combat/chaos_pouch_ledger.c", "combat/chaos_pouch_publication.c",
     "player/player_snapshot_codec.c", "economy/item_transfer_accounting.c",
     "economy/economic_accounting_types.c", "economy/economic_accounting_plan.c", "economy/economic_source_event.c",
@@ -31,6 +31,43 @@ SOURCES = (
     "economy/coin_transfer_command.c", "persistence/critical_command.c",
     "persistence/critical_command_journal.c", "persistence/critical_command_coordinator.c",
     "economy/craft_progression.c",
+    "economy/native_quest_cost.c",
+    "economy/native_quest_coin_give.c",
+    "economy/shop_trade_recovery_manifest.c",
+    "world/native_quest_recovery_context.c",
+    "economy/native_mobile_birth_recovery.c",
+    "economy/native_mobile_birth_result.c",
+    "economy/native_mobile_birth_cash_role_result.c",
+    "economy/native_mobile_birth_recipe.c",
+    "economy/native_mobile_birth_constructor_recipe.c",
+    "economy/native_mobile_birth_command.c",
+    "economy/native_mobile_birth_cash_role_recipe.c",
+    "economy/native_mobile_birth_cash_role_command.c",
+    "economy/native_mobile_birth_accounting.c",
+    "economy/native_mobile_birth_cash_role_accounting.c",
+    "world/quest_mobile_native.c",
+    "world/quest_mobile_native_birth.c",
+    "economy/zone_reset_item_command.c",
+    "item/lockpick_retirement_continuation.c",
+    "item/held_retirement_recovery.c",
+    "cmd/lockpick_retirement.c",
+    "flatfile/flatfile_accounting_native_mobile_birth_ordinary_transaction.c",
+    "flatfile/flatfile_accounting_native_mobile_birth_shared_shop_transaction.c",
+    "flatfile/flatfile_accounting_zone_reset_item_transaction.c",
+    "flatfile/flatfile_shopkeeper_repository.c",
+    "persistence/persistence_mode.c",
+    "economy/collector_accounting.c",
+    "economy/collector_command.c",
+    "economy/collector_codec.c",
+    "economy/collector_policy.c",
+    "economy/auction_repository.c",
+    "economy/auction_accounting.c",
+    "economy/auction_listing_accounting.c",
+    "economy/auction_item_claim_accounting.c",
+    "economy/auction_money_claim_accounting.c",
+    "economy/auction_settlement_accounting.c",
+    "economy/auction_command.c",
+    "economy/auction_native_command_context.c",
 )
 SCENARIOS = (
     "basic_applied_ack_retry", "basic_rejected_ack_retry", "recipe_applied_ack_retry",
@@ -664,7 +701,7 @@ def harness(root):
     leaves = leaves.replace("object->loc_p = LOC_CARRIED;", "++placements;\n    object->loc_p = LOC_CARRIED;", 1)
     faults = literal(root, "test_critical_admission_owner_release.py", "FAULTS")
     faults = faults[:faults.index("static size_t replay_count()")]
-    return leaves + '\n#include "persistence/critical_command_journal.h"\n#include <cerrno>\n' + faults + NATIVE
+    return leaves + '\n#include "persistence/critical_command_journal.h"\n#include <cerrno>\n' + faults + NATIVE + '\n#define DURIS_CRAFT_ACK_HAS_ACT_FIXTURE\nP_index mob_index = nullptr;\nint top_of_mobt = -1;\n' + literal(root, "test_publication_retention_runtime.py", "LINKAGE_EXTERNALS")
 
 
 def bounded(command, seconds, **kwargs):
@@ -784,7 +821,7 @@ def main():
                             "harness_sha256": native_hash, "linked_sources": list(SOURCES),
                             "compile_link_argv": command, "compile_cwd": str(root),
                             "backend": backend, "scenarios": list(SCENARIOS),
-                            "scope": "21 actual native units: journal/coordinator/item owner/craft progression; controlled execution/custody/graph capture/world/skills/save leaves; no services; matching saved-hook injection is not persistence completion"}
+                            "scope": f"{len(SOURCES)} actual native units: journal/coordinator/item owner/craft progression; controlled execution/custody/graph capture/world/skills/save leaves; no services; matching saved-hook injection is not persistence completion"}
                 binary.with_suffix(".json").write_text(json.dumps(metadata, sort_keys=True, indent=2) + "\n")
                 print(json.dumps({key: metadata[key] for key in ("binary_sha256", "compile_seconds", "compile_budget_seconds")}))
                 return
