@@ -3313,3 +3313,27 @@ bound by delivery. No shared edits/requests, no experimental-accounting push.
 Current schema65/restore/authority/retention/erasure/recovery/load/R1-R8/release
 OPEN, goalACTIVE/inactiveCLOSED. Additive curator input only; no notebook
 application or primary/release acknowledgment claimed.
+
+
+## 2026-10-11 — Native Linux MariaDB data profile verified
+
+[Paired data-storage result](PLAN5_MARIADB_DATA_STORAGE_REPAIR_2026-10-11.md):
+source a60f5dcce0c6496e687a0806ee7d0c559579e4fb and unchanged original staging
+block, sameactualMaria10.11.19/image/caps/defaultoptions/SQLmode/checkenforcement.
+Control Windows-bound v9fs reproduced0060 item_owner_revision missing-source
+rename; fresh Linux local-volume ext2/ext3 passed append/rerun/preservation/count
+and exact65state9e81f924...534f97. Automaticcase2vs0 remains part of the profile;
+no independently isolated kernel or immutableSQL mechanism asserted. Native
+session57476 terminalexit1 retains failedcontrol/positiveLinux; cleanup0,
+source6901 unchanged, no privateflags/reportwrites, no compiled/fullmatrix/restore
+or release proof. Evidence seal0dc00da9c1240b365ff62ec8e4594b2da3511ac2380c321cf0e2f203fb198961
+covers6946members/550808899bytes at D:/Dev/Tests/Duris/accounting-plan5/ACC-02-MARIADB-FS-01.
+BothownedDBs gracefulexit0/OOMfalse/remove0; exactowned independentinventory0empty,
+sevenunrelated IDs preservedrunning; matchingglobalFS-01lock released afterseal.
+Passive labeledLinuxvolume plan5-acc02-maria-fs01-linux-data andprivatestoppeddata
+retained with0consumers, not backup/restorequalification. Base d7571a7e11459695f0e5e68cdef0bbc3388e2c35;
+result/verifiedremote bound by delivery. No sharedfields changed/requested.
+Next originalfulltwoengine65 matrix uses reviewedLinuxMariastorage transport,
+freshsource/evidence/build anddistinctgrant; no fullretrylaunched. Native65
+measurement/boot/tamper, authority/restore/retention/erasure/recovery/load/R1-R8
+release remainOPEN, goalACTIVE/inactiveCLOSED. Additivecurator input only.
