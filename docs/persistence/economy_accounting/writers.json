@@ -66815,7 +66815,7 @@
       "src/world/zone_reset_item_owner.h": "8810f219f07ead9b1361610733468abdebccdc502c35f22f25ae8c8f6d8ad974",
       "src/flatfile/flatfile_accounting_shop_transaction.h": "984ce532f3ccefe922ed304515c9f3954ea8d3a2b38cd8e96b858045ed42f2af",
       "src/persistence/economic_sql_zone_reset_item_transaction.c": "c3ad5ca77cb863ec554b4452e1c9f5397ffaa210ac0c5549d565de891beccdf8",
-      "tests/async/test_persistence_backup.py": "a0e72514232b836ae62961fb51599a757bed02abfb82c40ddd621ad356edc804",
+      "tests/async/test_persistence_backup.py": "003f9e1ed4a14aeb988063a20bad827cba5b8cbabaf32b390bcd82fd5ca84364",
       "src/classes/drannak.c": "17fcfe72dc3941c79ccc1a5e550a146a10badb064d10312b155dc649ec0e8a87",
       "src/classes/salchemist.c": "b4230b88b2b638d1a6dcf083742a5fa168856974b019f7fb410138c77e1a81df",
       "src/economy/economic_accounting_intent.c": "7b6ce00e52fefc95521e4cdbcfbfe2497b5f8137844bc58270900c4ce8b0de22",
@@ -66908,7 +66908,9 @@
       "src/economy/auction_money_claim_accounting.h": "ee75e879d9b34b575b6b2f5645ff0ddceaf74892ccd9e0ea4bda4dca9d53413b",
       "src/economy/economic_currency_adapter.c": "318279863a7be67d1131229704571f3b6e6efbf0318c7e299565a7d64ae931fd",
       "src/economy/economic_currency_adapter.h": "09071b1c1d7fc99d5bca587aabc55981981ec2e60b0478202a9d16648208613c",
-      "tests/async/test_data_lifecycle_manifest.py": "3ec3020da2b1c102e10329d6e77de307dd2d89e82c0f6e1ee756c35d82e70d05"
+      "tests/async/test_data_lifecycle_manifest.py": "3ec3020da2b1c102e10329d6e77de307dd2d89e82c0f6e1ee756c35d82e70d05",
+      "scripts/qualify_database_restore.py": "61eee5a95b79bb6302c77b18400aa8873e4c0248c1bcf4088182ba53142aab3a",
+      "tests/async/test_immutable_migration_runner.py": "909d9403ad652ae099df42483b1e831501df9286ca8cc75299c4065692d7efcb"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {
