@@ -3,6 +3,8 @@
 #include <iostream>
 #include <thread>
 #include <type_traits>
+#include <cstring>
+#include "item/quest_reward_continuation.h"
 
 // Generated exact Quest descriptor/helpers/adapter follow here. This fixture TU
 // includes the actual Item implementation, so its genuine private registries and
@@ -14,6 +16,9 @@ class quest_native_completion_owner
 {
 public:
     static bool reserve_cost_projection(size_t, void *) noexcept;
+    static bool build_original_command(critical_command *, critical_operation_id,
+				       const quest_cost_prepare_live &,
+				       const quest_reward_continuation &) noexcept;
     static player_snapshot_codec_result encode_selected_items(
         std::vector<uint8_t> *, const quest_selected_encode_live &) noexcept;
     static native_quest_cost_projection_result project_cost_projection(
@@ -32,6 +37,7 @@ namespace
 @QUEST_ADAPTER@
 @QUEST_COMPLETION_METHODS@
 @QUEST_SELECTED_METHOD@
+@QUEST_BUILDER_METHOD@
 
 namespace
 {
@@ -265,6 +271,504 @@ void selected_cases()
 }
 }
 
+namespace
+{
+// Passive native command values. These checks do not transfer custody or execute SQL.
+critical_operation_id builder_id(uint8_t byte)
+{
+	critical_operation_id value{};
+	value.bytes[0] = byte;
+	return value;
+}
+
+item_transfer_payload builder_payload(unsigned kind, uint8_t string_mask = 15)
+{
+	item_transfer_payload value{};
+	value.from_owner = { item_owner_type::player, 10, 0 };
+	value.to_owner = { item_owner_type::native_mobile, 9000, 0 };
+	value.reason = item_transfer_reason::quest_offering;
+	value.reason_id = 9001;
+	value.expected_from_revision = 3;
+	value.expected_to_revision = 5;
+	value.selected_item_uid = value.target_root_item_uid = 100;
+	value.item_count = 2;
+	value.items[0] = { 100, 100, 0, 2, 9001, item_custody_state::active };
+	value.items[1] = { 101, 100, 100, 3, 9001, item_custody_state::active };
+	std::vector<player_item_snapshot> items(2);
+	for (size_t index = 0; index < items.size(); ++index)
+	{
+		items[index].object_uid = 100 + index;
+		items[index].parent_index = index ? 0 : PLAYER_SNAPSHOT_NO_PARENT;
+		items[index].vnum = 9001;
+		items[index].string_mask = string_mask;
+		items[index].name = "synthetic retained item";
+	}
+	std::vector<uint8_t> wire;
+	assert(player_item_snapshot_list_encode(items, &wire) == player_snapshot_codec_result::ok);
+	value.item_blob_size = static_cast<uint32_t>(wire.size());
+	std::copy(wire.begin(), wire.end(), value.item_blob.begin());
+	value.native_mobile.present = true;
+	value.native_mobile.action = item_native_mobile_action::acceptance;
+	value.native_mobile.final_giver_pid = 10;
+	auto &reference = value.native_mobile.reference;
+	reference.mobile_instance_id = 9000;
+	reference.birth_operation = builder_id(1);
+	reference.birth_source = { economic_source_kind::npc_generation, builder_id(2),
+				   builder_id(3), 4, 5 };
+	reference.mobile_vnum = 9001;
+	reference.reset_zone_vnum = 1;
+	reference.provenance = quest_mobile_birth_provenance::reset;
+	reference.mobile_revision = 5;
+	reference.stock_revision = 7;
+	if (kind)
+	{
+		value.from_owner = value.to_owner;
+		value.to_owner = { item_owner_type::destruction, 0, 0 };
+		value.reason = item_transfer_reason::quest_turnin;
+		value.multi_root = true;
+		value.selected_item_uid = value.target_root_item_uid = 0;
+		value.native_mobile.action = item_native_mobile_action::consumption;
+	}
+	if (kind >= 2)
+	{
+		value.native_cost.present = true;
+		value.native_cost.wallet_mapping_id = 17;
+		const std::array<native_quest_cost_requirement, 1> requirements{ { { 0, 1 } } };
+		assert(native_quest_cost_project({ 100, 0, 0, 0 }, 31, requirements,
+						 &value.native_cost.projection) ==
+		       native_quest_cost_projection_result::ok);
+	}
+	if (kind == 3)
+	{
+		// Actual original fee-only no-continuation failed-prefix representation.
+		value.native_cost.fee_only = true;
+		value.multi_root = false;
+		value.to_owner = { item_owner_type::player, 10, 0 };
+		value.expected_from_revision = reference.stock_revision;
+		value.expected_to_revision = 3;
+		value.item_count = 0;
+		value.item_blob_size = 0;
+	}
+	return value;
+}
+
+// Exact transient values; timestamp0 is not an accepted command envelope.
+bool builder_command_value_equal(const critical_command &left, const critical_command &right)
+{
+	if (left.schema_version != right.schema_version ||
+	    left.operation_id.bytes != right.operation_id.bytes || left.type != right.type ||
+	    left.payload_version != right.payload_version ||
+	    left.source_site != right.source_site || left.deadline_class != right.deadline_class ||
+	    left.accepted_at_usec != right.accepted_at_usec ||
+	    left.publication_required != right.publication_required ||
+	    left.payload != right.payload || left.accounting_intent != right.accounting_intent ||
+	    left.keys.size() != right.keys.size() ||
+	    left.expected_revisions.size() != right.expected_revisions.size())
+		return false;
+	for (size_t index = 0; index < left.keys.size(); ++index)
+		if (!critical_entity_key_equal(left.keys[index], right.keys[index]))
+			return false;
+	for (size_t index = 0; index < left.expected_revisions.size(); ++index)
+		if (!critical_entity_key_equal(left.expected_revisions[index].key,
+					       right.expected_revisions[index].key) ||
+		    left.expected_revisions[index].revision !=
+			    right.expected_revisions[index].revision)
+			return false;
+	return true;
+}
+
+critical_command builder_sentinel(size_t payload_capacity = 256)
+{
+	critical_command value{};
+	value.schema_version = 1;
+	value.operation_id = builder_id(99);
+	value.type = critical_command_type::test;
+	value.payload_version = 1;
+	value.source_site = critical_source_site::operator_repair;
+	value.deadline_class = critical_deadline_class::background;
+	value.accepted_at_usec = 91;
+	value.keys = { { critical_entity_type::player, 777 } };
+	value.keys.reserve(32);
+	value.expected_revisions = { { { critical_entity_type::player, 777 }, 123 } };
+	value.expected_revisions.reserve(32);
+	value.payload = { 17, 19, 23 };
+	value.payload.reserve(payload_capacity);
+	value.accounting_intent = { 29, 31 };
+	value.accounting_intent.reserve(128);
+	value.publication_required = true;
+	return value;
+}
+
+template <class Call> bool builder_strong_call(critical_command &output, Call call)
+{
+	std::array<unsigned char, sizeof(critical_command)> image{};
+	std::memcpy(image.data(), &output, image.size());
+	const critical_command prior = output;
+	const bool ok = call();
+	if (!ok)
+	{
+		assert(std::memcmp(image.data(), &output, image.size()) == 0);
+		assert(output.payload == prior.payload &&
+		       output.accounting_intent == prior.accounting_intent);
+		assert(output.keys.size() == prior.keys.size() &&
+		       output.expected_revisions.size() == prior.expected_revisions.size());
+		for (size_t index = 0; index < output.keys.size(); ++index)
+			assert(critical_entity_key_equal(output.keys[index], prior.keys[index]));
+		for (size_t index = 0; index < output.expected_revisions.size(); ++index)
+		{
+			assert(critical_entity_key_equal(output.expected_revisions[index].key,
+							 prior.expected_revisions[index].key));
+			assert(output.expected_revisions[index].revision ==
+			       prior.expected_revisions[index].revision);
+		}
+	}
+	return ok;
+}
+
+struct builder_trace
+{
+	size_t calls = 0, refuse_at = 0;
+	std::array<size_t, 4096> requests{};
+};
+bool builder_reserve(size_t request, void *opaque) noexcept
+{
+	auto &trace = *static_cast<builder_trace *>(opaque);
+	++trace.calls;
+	assert(trace.calls <= trace.requests.size());
+	trace.requests[trace.calls - 1] = request;
+	if (trace.calls == trace.refuse_at)
+		native_quest_birth_retained_bytes = PLAYER_SAVE_PIPELINE_MAX_BYTES;
+	const size_t driver = native_quest_gameplay_retained_bytes,
+		     birth = native_quest_birth_retained_bytes;
+	const bool accepted =
+		quest_native_completion_owner::reserve_cost_projection(request, nullptr);
+	assert(native_quest_gameplay_retained_bytes == driver &&
+	       native_quest_birth_retained_bytes == birth);
+	return accepted;
+}
+
+struct builder_inputs
+{
+	item_transfer_payload payload = builder_payload(2);
+	std::vector<player_item_snapshot> native_items, selected;
+	std::vector<native_quest_cost_requirement> attempted_costs = { { 0, 1 } };
+	std::vector<uint64_t> ordered_roots = { 100 }, roots = { 100 };
+	std::unordered_set<uint64_t> consumed = { 100 };
+	std::vector<int32_t> indexes = { 0 };
+	std::vector<uint8_t> selected_bytes = { 3, 5, 7 };
+	quest_reward_continuation fee_terms{};
+	size_t prior_payload_capacity = 256;
+	builder_inputs()
+	{
+		native_items.resize(1);
+		native_items[0].name = std::string(64, 'n');
+		selected = native_items;
+		fee_terms.character_name = std::string(32, 'c');
+		fee_terms.definition_id = std::string(48, 'd');
+	}
+	quest_cost_prepare_live live(size_t extra = 0) const
+	{
+		return { extra,	   0,	    native_items, attempted_costs, ordered_roots, consumed,
+			 selected, indexes, roots,	  selected_bytes,  payload };
+	}
+	bool invoke(size_t driver = 0, size_t birth = 0, size_t extra = 0)
+	{
+		critical_command output = builder_sentinel(prior_payload_capacity);
+		native_quest_gameplay_retained_bytes = driver;
+		native_quest_birth_retained_bytes = birth;
+		const bool ok = builder_strong_call(
+			output,
+			[&]
+			{
+				return quest_native_completion_owner::build_original_command(
+					&output, builder_id(33), live(extra), fee_terms);
+			});
+		assert(native_quest_gameplay_retained_bytes == driver &&
+		       native_quest_birth_retained_bytes == birth);
+		if (ok)
+		{
+			critical_command golden{};
+			assert(item_transfer_command_build_native_mobile(
+				&golden, builder_id(33), payload, critical_source_site::command,
+				critical_deadline_class::interactive));
+			assert(output.accepted_at_usec == 0 && golden.accepted_at_usec == 0);
+			assert(builder_command_value_equal(output, golden));
+		}
+		return ok;
+	}
+};
+
+[[maybe_unused]] size_t builder_parent_frontier(builder_inputs &inputs)
+{
+	constexpr size_t birth = 17;
+	size_t low = 0, high = PLAYER_SAVE_PIPELINE_MAX_BYTES;
+	assert(inputs.invoke(low, birth));
+	assert(!inputs.invoke(high, birth));
+	while (high - low > 1)
+	{
+		const size_t middle = low + (high - low) / 2;
+		if (inputs.invoke(middle, birth))
+			low = middle;
+		else
+			high = middle;
+	}
+	assert(inputs.invoke(low, birth));
+	for (size_t delta = 1; delta <= 3; ++delta)
+		assert(!inputs.invoke(low + delta, birth));
+	assert(!inputs.invoke(low, birth + 1));
+	assert(inputs.invoke(low + 1, birth - 1));
+	return low;
+}
+
+void builder_cases()
+{
+	clear_inputs();
+	builder_inputs parent;
+	size_t source = SIZE_MAX, supplement = SIZE_MAX, initial = SIZE_MAX;
+	assert(!item_transfer_command_build_native_mobile_complete_source_frame_bytes(nullptr));
+	assert(!item_transfer_command_build_native_mobile_complete_source_supplement_frame_bytes(
+		nullptr));
+	assert(!item_transfer_command_build_native_mobile_complete_initial_inline_bytes(nullptr));
+#if defined(_GLIBCXX_ASSERTIONS) || defined(_GLIBCXX_PARALLEL) || defined(_GLIBCXX_DEBUG)
+	assert(!item_transfer_command_build_native_mobile_complete_source_frame_bytes(&source) &&
+	       source == SIZE_MAX);
+	assert(!item_transfer_command_build_native_mobile_complete_source_supplement_frame_bytes(
+		       &supplement) &&
+	       supplement == SIZE_MAX);
+	assert(!item_transfer_command_build_native_mobile_complete_initial_inline_bytes(&initial) &&
+	       initial == SIZE_MAX);
+	auto output = builder_sentinel();
+	builder_trace untouched;
+	assert(!builder_strong_call(
+		output,
+		[&]
+		{
+			return item_transfer_command_build_native_mobile_complete_bounded(
+				&output, builder_id(33), parent.payload,
+				critical_source_site::command, critical_deadline_class::interactive,
+				builder_reserve, &untouched, 0);
+		}));
+	assert(untouched.calls == 0 && !parent.invoke(7, 11));
+	std::cout << "QUEST_NATIVE_BUILDER {\"unsupported_no_writes\":true}\n";
+#elif defined(__NO_MYSQL__)
+	// The pure child profile is portable; the actual Quest admission selector remains SQL-only.
+	assert(item_transfer_command_build_native_mobile_complete_source_frame_bytes(&source) &&
+	       source > 0);
+	assert(item_transfer_command_build_native_mobile_complete_source_supplement_frame_bytes(
+		       &supplement) &&
+	       supplement == 0);
+	assert(item_transfer_command_build_native_mobile_complete_initial_inline_bytes(&initial) &&
+	       initial > 0);
+	auto output = builder_sentinel();
+	builder_trace refused;
+	assert(!builder_strong_call(
+		output,
+		[&]
+		{
+			return item_transfer_command_build_native_mobile_complete_bounded(
+				&output, builder_id(33), parent.payload,
+				critical_source_site::command, critical_deadline_class::interactive,
+				builder_reserve, &refused, 0);
+		}));
+	assert(refused.calls == 1 && !parent.invoke(7, 11));
+	std::cout
+		<< "QUEST_NATIVE_BUILDER {\"parent_unsupported_no_writes\":true,\"child_admission_refused\":true,"
+		<< "\"initial_nonzero\":true,\"supplement_zero\":true,\"strong_output\":true}\n";
+#else
+	assert(item_transfer_command_build_native_mobile_complete_source_frame_bytes(&source) &&
+	       source > 0);
+	assert(item_transfer_command_build_native_mobile_complete_source_supplement_frame_bytes(
+		       &supplement) &&
+	       supplement == 0);
+	assert(item_transfer_command_build_native_mobile_complete_initial_inline_bytes(&initial) &&
+	       initial > 0);
+	// Retain the historical mask1 fixture as real native validation refusal.
+	const auto invalid_mask_payload = builder_payload(0, 1);
+	auto invalid_mask_original = builder_sentinel();
+	assert(!builder_strong_call(invalid_mask_original,
+				    [&]
+				    {
+					    return item_transfer_command_build_native_mobile(
+						    &invalid_mask_original, builder_id(33),
+						    invalid_mask_payload,
+						    critical_source_site::command,
+						    critical_deadline_class::interactive);
+				    }));
+	auto invalid_mask_complete = builder_sentinel();
+	builder_trace invalid_mask_trace;
+	assert(!builder_strong_call(
+		invalid_mask_complete,
+		[&]
+		{
+			return item_transfer_command_build_native_mobile_complete_bounded(
+				&invalid_mask_complete, builder_id(33), invalid_mask_payload,
+				critical_source_site::command, critical_deadline_class::interactive,
+				builder_reserve, &invalid_mask_trace, 4096);
+		}));
+	assert(native_quest_gameplay_retained_bytes == 0 && native_quest_birth_retained_bytes == 0);
+	size_t refusals = 0;
+	for (unsigned kind = 0; kind < 4; ++kind)
+	{
+		clear_inputs();
+		const auto payload = builder_payload(kind);
+		critical_command golden{};
+		assert(item_transfer_command_build_native_mobile(
+			&golden, builder_id(33), payload, critical_source_site::command,
+			critical_deadline_class::interactive));
+		auto output = builder_sentinel();
+		builder_trace trace;
+		auto invoke = [&](builder_trace &record, size_t outer)
+		{
+			return builder_strong_call(
+				output,
+				[&]
+				{
+					return item_transfer_command_build_native_mobile_complete_bounded(
+						&output, builder_id(33), payload,
+						critical_source_site::command,
+						critical_deadline_class::interactive,
+						builder_reserve, &record, outer);
+				});
+		};
+		const bool accepted = invoke(trace, 4096);
+		if (!accepted)
+			std::cerr << "Quest builder real admission refused: kind=" << kind
+				  << " calls=" << trace.calls << " last_request="
+				  << (trace.calls ? trace.requests[trace.calls - 1] : 0) << '\n';
+		assert(accepted && "actual complete native builder invocation refused");
+		assert(trace.calls > 0 && "actual builder reserve callback not reached");
+		assert(output.accepted_at_usec == 0 && golden.accepted_at_usec == 0);
+		assert(builder_command_value_equal(output, golden));
+		// Passive codec copies only. The real builders and originals remain
+		// unstamped; no accounting intent or acceptance authority is issued.
+		critical_command expected_envelope = golden, actual_envelope = output;
+		expected_envelope.accepted_at_usec = actual_envelope.accepted_at_usec = 1;
+		std::vector<uint8_t> expected_wire, actual_wire;
+		assert(critical_command_encode(expected_envelope, &expected_wire) ==
+		       critical_command_codec_result::ok);
+		assert(critical_command_encode(actual_envelope, &actual_wire) ==
+		       critical_command_codec_result::ok);
+		assert(output.accepted_at_usec == 0 && golden.accepted_at_usec == 0);
+		assert(actual_wire == expected_wire);
+		item_transfer_payload decoded{};
+		std::vector<uint8_t> canonical;
+		assert(item_transfer_command_decode_payload(output, &decoded));
+		assert(item_transfer_command_encode_native_mobile(decoded, &canonical));
+		assert(canonical == golden.payload);
+		assert(trace.requests[0] > 4096 + initial);
+		output = builder_sentinel();
+		builder_trace extra;
+		assert(invoke(extra, 4096 + 37) && extra.calls == trace.calls);
+		for (size_t index = 0; index < trace.calls; ++index)
+			assert(extra.requests[index] - trace.requests[index] == 37);
+		for (size_t point = 1; point <= trace.calls; ++point)
+		{
+			clear_inputs();
+			output = builder_sentinel();
+			builder_trace denied;
+			denied.refuse_at = point;
+			assert(!invoke(denied, 4096) && denied.calls == point);
+			++refusals;
+		}
+		clear_inputs();
+		output = builder_sentinel();
+		builder_trace overflow;
+		assert(!invoke(overflow, SIZE_MAX) && overflow.calls == 0);
+		parent.payload = payload;
+		assert(parent.invoke());
+	}
+	clear_inputs();
+	parent.payload = builder_payload(2);
+	auto output = builder_sentinel();
+	builder_trace invalid;
+	assert(!builder_strong_call(
+		output,
+		[&]
+		{
+			return item_transfer_command_build_native_mobile_complete_bounded(
+				&output, {}, parent.payload, critical_source_site::command,
+				critical_deadline_class::interactive, builder_reserve, &invalid, 0);
+		}));
+	assert(invalid.calls == 0);
+	assert(!item_transfer_command_build_native_mobile_complete_bounded(
+		nullptr, builder_id(33), parent.payload, critical_source_site::command,
+		critical_deadline_class::interactive, builder_reserve, &invalid, 0));
+	assert(!builder_strong_call(
+		output,
+		[&]
+		{
+			return item_transfer_command_build_native_mobile_complete_bounded(
+				&output, builder_id(33), parent.payload,
+				critical_source_site::command, critical_deadline_class::interactive,
+				nullptr, nullptr, 0);
+		}));
+	auto malformed = parent.payload;
+	malformed.item_blob_size = UINT32_MAX;
+	assert(!builder_strong_call(
+		output,
+		[&]
+		{
+			return item_transfer_command_build_native_mobile_complete_bounded(
+				&output, builder_id(33), malformed, critical_source_site::command,
+				critical_deadline_class::interactive, builder_reserve, &invalid, 0);
+		}));
+	const size_t before = builder_parent_frontier(parent);
+	const size_t old_name = parent.native_items[0].name.capacity();
+	parent.native_items[0].name.reserve(old_name + 4096);
+	size_t frontier = builder_parent_frontier(parent);
+	assert(before - frontier == parent.native_items[0].name.capacity() - old_name);
+	auto grow_string = [&](auto &text)
+	{
+		const size_t capacity = text.capacity();
+		text.reserve(capacity + 2048);
+		const size_t next = builder_parent_frontier(parent);
+		assert(frontier - next == text.capacity() - capacity);
+		frontier = next;
+	};
+	grow_string(parent.fee_terms.character_name);
+	grow_string(parent.fee_terms.definition_id);
+	const size_t output_capacity = parent.prior_payload_capacity;
+	parent.prior_payload_capacity += 2048;
+	const size_t next = builder_parent_frontier(parent);
+	assert(frontier - next == parent.prior_payload_capacity - output_capacity);
+	assert(!parent.invoke(0, 0, SIZE_MAX));
+	assert(!quest_native_completion_owner::build_original_command(
+		nullptr, builder_id(33), parent.live(), parent.fee_terms));
+	auto registered = [&]
+	{
+		assert(!parent.invoke());
+		clear_inputs();
+	};
+	native_quest_flat_global_observer = forbidden_observer;
+	registered();
+	native_quest_flat_global_scope = &parent;
+	registered();
+	native_quest_flat_literal_pool_owned = true;
+	registered();
+	native_quest_coordinator_observer = forbidden_observer;
+	registered();
+	native_quest_coordinator_reserve = forbidden_reserve;
+	registered();
+	native_quest_coordinator_lender = &parent;
+	registered();
+	native_quest_coordinator_guard = &parent;
+	registered();
+	native_quest_coordinator_borrowed_bytes = 1;
+	registered();
+	bool foreign_success = true;
+	std::thread foreign([&] { foreign_success = parent.invoke(); });
+	foreign.join();
+	assert(!foreign_success);
+	clear_inputs();
+	std::cout
+		<< "QUEST_NATIVE_BUILDER {\"wire_cases\":4,\"child_refusal_points\":" << refusals
+		<< ",\"strong_output\":true,\"outer_once\":true,\"initial_nonzero\":true,"
+		<< "\"supplement_zero\":true,\"parent_cap_boundaries\":true,\"capacity_inputs\":true,"
+		<< "\"registered_states\":8,\"retained_once\":true}\n";
+#endif
+}
+}
+
 int main()
 {
     using result=native_quest_cost_projection_result;
@@ -396,4 +900,5 @@ int main()
              <<success.ordinal<<",\"cap_boundary\":true,\"registered_states\":8,\"no_retained_writes\":true}\n";
 #endif
     selected_cases();
+    builder_cases();
 }

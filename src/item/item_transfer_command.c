@@ -19613,3 +19613,219 @@ bool item_transfer_command_decode_payload_complete_initial_inline_bytes(size_t *
 	return false;
 }
 #endif
+
+// Complete strong-output companion for the original native-mobile value builder.
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&  \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) && \
+	!defined(_GLIBCXX_CONCEPT_CHECKS)
+namespace
+{
+using item_native_build_reserve = bool (*)(size_t, void *) noexcept;
+struct item_native_build_complete_budget
+{
+	item_native_build_reserve reserve;
+	void *context;
+	size_t outer, frames;
+	const std::vector<uint8_t> *encoded = nullptr;
+	const critical_command *candidate = nullptr;
+	bool command_heap(const critical_command &value, size_t &total) const noexcept
+	{
+		return payload_clone_add(total, sizeof(value)) &&
+		       payload_clone_vector_heap(value.keys, false, total) &&
+		       payload_clone_vector_heap(value.expected_revisions, false, total) &&
+		       payload_clone_vector_heap(value.payload, false, total) &&
+		       payload_clone_vector_heap(value.accounting_intent, false, total);
+	}
+	bool prefix(size_t &result, size_t extra = 0) const noexcept
+	{
+		size_t total = outer;
+		if (!payload_clone_add(total, sizeof(*this)) || !payload_clone_add(total, frames) ||
+		    (encoded && (!payload_clone_add(total, sizeof(*encoded)) ||
+				 !payload_clone_vector_heap(*encoded, false, total))) ||
+		    (candidate && !command_heap(*candidate, total)) ||
+		    !payload_clone_add(total, extra))
+			return false;
+		result = total;
+		return true;
+	}
+	bool peak(size_t extra = 0) const noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && reserve && reserve(total, context);
+	}
+};
+// Actual shared byte-vector MOVE CONSTRUCTION, not MOVE assignment:
+// vector/base moves2P each; impl/allocator/newallocator/data moves2P each;
+// completed std::move<_Vector_impl&>2P. Caller std::move<vector<byte>&>2P separate.
+constexpr size_t item_complete_native_builder_byte_move_constructor_source =
+	14 * sizeof(void *) + 2 * sizeof(void *);
+constexpr size_t item_complete_native_builder_lifecycle_source =
+	// K/R default candidate members, U encoded/accounting defaults share U.
+	item_complete_command_aggregate_default_source +
+	item_complete_native_builder_byte_move_constructor_source +
+	// Destructor receiver plus genuine K/R/U tails; encoded is null after
+	// transfer but may still be nonempty on pre-candidate refusal.
+	item_complete_command_cleanup_source + item_complete_command_move_source -
+	// Only same completed typed cleanup descendants are shared with the
+	// selected assignment's genuine internal temporary cleanup. Receiver stays.
+	(item_complete_command_cleanup_source - sizeof(void *)) +
+	2 * sizeof(void *); // Actual caller std::move<critical_command>&.
+constexpr size_t item_complete_native_builder_controller_source =
+	// prefix(this,result,extra,total,bool), peak(this,extra,total,bool),
+	// command_heap(this,value,total,bool). Physical controller remains INITIAL.
+	6 * sizeof(void *) + 4 * sizeof(size_t) + 3 * sizeof(bool) +
+	item_complete_sidecar_checked_add_source +
+	item_complete_general_vector_current_source<critical_entity_key> +
+	item_complete_general_vector_current_source<critical_expected_revision> +
+	item_complete_general_vector_current_source<uint8_t>;
+constexpr size_t item_complete_native_builder_adapter_source =
+	// Each actual adapter: value/output/context3P + callbackF, outer and
+	// six genuine N locals (query/source/initial/supp/request/child_outer).
+	2 * (3 * sizeof(void *) + sizeof(item_native_build_reserve) + 7 * sizeof(size_t) +
+	     sizeof(bool));
+constexpr size_t item_complete_native_builder_retained_source =
+	// command/payload/context/catch4P; operation/source/deadline real values;
+	// outer/frames/admission_prefix3N, callbackF and returned bool.
+	4 * sizeof(void *) + sizeof(critical_operation_id) + sizeof(critical_source_site) +
+	sizeof(critical_deadline_class) + sizeof(item_native_build_reserve) + 3 * sizeof(size_t) +
+	2 * sizeof(bool) + item_complete_native_builder_controller_source +
+	item_complete_native_builder_adapter_source +
+	item_complete_native_builder_lifecycle_source +
+	item_complete_collector_operation_zero_source +
+	3 * item_transfer_command_encode_native_mobile_complete_source_query_frame_bytes() +
+	3 * item_complete_general_validated_entities_source_query_frame_bytes();
+bool item_complete_native_builder_encode_child(const item_transfer_payload &value,
+					       std::vector<uint8_t> *output,
+					       item_native_build_reserve reserve, void *context,
+					       size_t outer) noexcept
+{
+	constexpr size_t query =
+		3 * item_transfer_command_encode_native_mobile_complete_source_query_frame_bytes();
+	size_t source = 0, initial = 0, supplement = 0, request = outer;
+	if (!reserve || !payload_clone_add(request, query) || !reserve(request, context) ||
+	    !item_transfer_command_encode_native_mobile_complete_source_frame_bytes(&source) ||
+	    !item_transfer_command_encode_native_mobile_complete_initial_inline_bytes(&initial) ||
+	    !item_transfer_command_encode_native_mobile_complete_source_supplement_frame_bytes(
+		    &supplement))
+		return false;
+	request = outer;
+	if (!payload_clone_add(request, source) || !payload_clone_add(request, initial) ||
+	    !reserve(request, context))
+		return false;
+	size_t child_outer = outer;
+	if (!payload_clone_add(child_outer, supplement))
+		return false;
+	return item_transfer_command_encode_native_mobile_complete_bounded(value, output, reserve,
+									   context, child_outer);
+}
+}
+bool item_transfer_command_build_native_mobile_complete_bounded(
+	critical_command *command, critical_operation_id operation_id,
+	const item_transfer_payload &payload, critical_source_site source_site,
+	critical_deadline_class deadline_class, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	if (!command || !reserve || !payload_clone_policy_supported() ||
+	    critical_operation_id_is_zero(operation_id))
+		return false;
+	constexpr size_t frames = item_complete_native_builder_retained_source;
+	item_native_build_complete_budget budget{ reserve, context, outer_live, frames };
+	try
+	{
+		if (!budget.peak(sizeof(std::vector<uint8_t>)))
+			return false;
+		std::vector<uint8_t> encoded;
+		budget.encoded = &encoded;
+		size_t admission_prefix = 0;
+		if (!budget.prefix(admission_prefix) ||
+		    !item_complete_native_builder_encode_child(payload, &encoded, reserve, context,
+							       admission_prefix))
+			return false;
+		if (!budget.peak(sizeof(critical_command)))
+			return false;
+		critical_command candidate = {
+			.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION,
+			.operation_id = operation_id,
+			.type = critical_command_type::item_transfer,
+			.payload_version =
+				payload.native_money.present ?
+					ITEM_TRANSFER_NATIVE_MOBILE_MONEY_PAYLOAD_VERSION :
+				payload.native_cost.present ?
+					ITEM_TRANSFER_NATIVE_MOBILE_COST_PAYLOAD_VERSION :
+					ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION,
+			.source_site = source_site,
+			.deadline_class = deadline_class,
+			.accepted_at_usec = 0,
+			.keys = {},
+			.expected_revisions = {},
+			.payload = std::move(encoded)
+		};
+		budget.candidate = &candidate;
+		// Successful authentic native encode validates the same payload first.
+		// Child's separate candidate remains child-owned, never this candidate.
+		if (!budget.prefix(admission_prefix) ||
+		    !item_complete_general_validated_entities_child(&candidate, payload, reserve,
+								    context, admission_prefix) ||
+		    !budget.peak())
+			return false;
+		static_assert(std::is_nothrow_move_assignable_v<critical_command>);
+		*command = std::move(candidate);
+		budget.encoded = nullptr;
+		budget.candidate = nullptr;
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+bool item_transfer_command_build_native_mobile_complete_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	size_t result = item_complete_native_builder_retained_source, child = 0;
+	if (!item_transfer_command_encode_native_mobile_complete_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child) ||
+	    !item_complete_general_validated_entities_source_frame_bytes(&child) ||
+	    !payload_clone_add(result, child))
+		return false;
+	*output = result;
+	return true;
+}
+bool item_transfer_command_build_native_mobile_complete_source_supplement_frame_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = 0;
+	return true;
+}
+bool item_transfer_command_build_native_mobile_complete_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !payload_clone_policy_supported())
+		return false;
+	*output = sizeof(item_native_build_complete_budget);
+	return true;
+}
+#else
+bool item_transfer_command_build_native_mobile_complete_bounded(
+	critical_command *, critical_operation_id, const item_transfer_payload &,
+	critical_source_site, critical_deadline_class, bool (*)(size_t, void *) noexcept, void *,
+	size_t) noexcept
+{
+	return false;
+}
+bool item_transfer_command_build_native_mobile_complete_source_frame_bytes(size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_command_build_native_mobile_complete_source_supplement_frame_bytes(
+	size_t *) noexcept
+{
+	return false;
+}
+bool item_transfer_command_build_native_mobile_complete_initial_inline_bytes(size_t *) noexcept
+{
+	return false;
+}
+#endif

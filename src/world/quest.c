@@ -2453,6 +2453,10 @@ class quest_native_completion_owner final
     private:
 	friend class quest_native_gameplay_owner;
 	static bool reserve_cost_projection(size_t, void *) noexcept;
+	[[maybe_unused]] static bool
+	build_original_command(critical_command *, critical_operation_id,
+			       const quest_cost_prepare_live &,
+			       const quest_reward_continuation &) noexcept;
 	[[maybe_unused]] static player_snapshot_codec_result
 	encode_selected_items(std::vector<uint8_t> *, const quest_selected_encode_live &) noexcept;
 	[[maybe_unused]] static native_quest_cost_projection_result
@@ -2823,9 +2827,31 @@ item_native_quest_preparation_state quest_native_completion_owner::prepare_origi
 			operation = *original_child;
 		if ((original_child ? critical_operation_id_is_zero(operation) :
 				      !critical_operation_id_generate(&operation)) ||
-		    !item_transfer_command_build_native_mobile(
-			    &original, operation, payload, critical_source_site::command,
-			    critical_deadline_class::interactive))
+		    !build_original_command(
+			    &original, operation,
+			    quest_cost_prepare_live{
+				    // Actual late-cut parent owners; consumed belongs table census.
+				    // Cost descriptor and success-block context have ended. Publication
+				    // strings/shared capture do not yet exist at this builder call.
+				    sizeof(mob) + sizeof(player) + sizeof(quester_id) +
+					    sizeof(completion_index) + sizeof(original_branch) +
+					    sizeof(original_child) + sizeof(output) +
+					    sizeof(triggering_acceptance) +
+					    sizeof(triggering_receipt) + sizeof(state) +
+					    sizeof(completion) + sizeof(reference) +
+					    sizeof(native_items) + sizeof(cash) +
+					    sizeof(cash_observed) + sizeof(attempted_costs) +
+					    sizeof(ordered_roots) + sizeof(success) +
+					    sizeof(invalid_cost_slot) + sizeof(select_pass) +
+					    sizeof(fee_only) + sizeof(fee_operation) +
+					    sizeof(selected) + sizeof(indexes) + sizeof(roots) +
+					    sizeof(selected_roots) + sizeof(selected_bytes) +
+					    sizeof(payload) + sizeof(native_owner_revision) +
+					    sizeof(fee_terms) + sizeof(operation) +
+					    sizeof(original),
+				    0, native_items, attempted_costs, ordered_roots, consumed,
+				    selected, indexes, roots, selected_bytes, payload },
+			    fee_terms))
 			return state::refused;
 		static_assert(ITEM_TRANSFER_NATIVE_MOBILE_MESSAGE_MAX_BYTES == MAX_STRING_LENGTH);
 		item_native_quest_publication_terms publication_terms;
@@ -6267,6 +6293,75 @@ player_snapshot_codec_result quest_native_completion_owner::encode_selected_item
 	(void)output;
 	(void)live;
 	return player_snapshot_codec_result::limit_exceeded;
+#endif
+}
+
+bool quest_native_completion_owner::build_original_command(
+	critical_command *output, critical_operation_id operation,
+	const quest_cost_prepare_live &live, const quest_reward_continuation &fee_terms) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && __cplusplus == 202002L &&       \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && !defined(__NO_MYSQL__)
+	if (!output)
+		return false;
+	// Allocation-free bootstrap metadata; no earlier reserved loan is claimed.
+	size_t callback_source = 0, callback_initial = 0, observer = 0, command_observer = 0;
+	size_t source = 0, initial = 0, supplement = 0, bytes = 0, request = 0, child_outer = 0;
+	constexpr size_t relay_source = sizeof(size_t) + sizeof(void *) + sizeof(bool);
+	// Existing cost CURRENT19P17N4B, actual text capacity14P+N+2B,
+	// actual nq_world_command(value,total,heap,bool)2P+N+B. Two text fields share
+	// completed char family; list observers remain two separate occurrences.
+	constexpr size_t current_source =
+		35 * sizeof(void *) + 19 * sizeof(size_t) + 7 * sizeof(bool);
+	constexpr size_t query =
+		3 * item_transfer_command_build_native_mobile_complete_source_query_frame_bytes();
+	size_t caller_source =
+		3 * sizeof(void *) + sizeof(critical_operation_id) + sizeof(bool) +
+		14 * sizeof(size_t) + current_source + relay_source +
+		item_native_quest_temporary_budget_owner::source_query_frame_bytes() +
+		item_native_quest_temporary_budget_owner::initial_query_frame_bytes() +
+		player_item_snapshot_list_current_heap_source_query_frame_bytes() +
+		(sizeof(void *) + sizeof(bool)) +
+		item_transfer_payload_current_heap_observer_frame_bytes() + sizeof(size_t);
+	if (!item_native_quest_temporary_budget_owner::source_frame_bytes(&callback_source) ||
+	    !item_native_quest_temporary_budget_owner::initial_inline_bytes(&callback_initial) ||
+	    !player_item_snapshot_list_current_heap_source_frame_bytes(&observer) ||
+	    !critical_command_current_heap_observer_frame_bytes(&command_observer))
+		return false;
+	if (!nq_world_add(caller_source, sizeof(live)) ||
+	    !nq_world_add(caller_source, callback_source) ||
+	    !nq_world_add(caller_source, callback_initial) ||
+	    !nq_world_add(caller_source, observer) || !nq_world_add(caller_source, observer) ||
+	    !nq_world_add(caller_source, command_observer) ||
+	    !quest_cost_prepare_current(live, bytes) || !nq_world_add(bytes, caller_source) ||
+	    !nq_world_text(bytes, fee_terms.character_name) ||
+	    !nq_world_text(bytes, fee_terms.definition_id) || !nq_world_command(bytes, *output))
+		return false;
+	request = bytes;
+	if (!nq_world_add(request, query) || !reserve_cost_projection(request, nullptr) ||
+	    !item_transfer_command_build_native_mobile_complete_source_frame_bytes(&source) ||
+	    !item_transfer_command_build_native_mobile_complete_initial_inline_bytes(&initial) ||
+	    !item_transfer_command_build_native_mobile_complete_source_supplement_frame_bytes(
+		    &supplement))
+		return false;
+	request = bytes;
+	if (!nq_world_add(request, source) || !nq_world_add(request, initial) ||
+	    !reserve_cost_projection(request, nullptr))
+		return false;
+	child_outer = bytes;
+	if (!nq_world_add(child_outer, supplement))
+		return false;
+	return item_transfer_command_build_native_mobile_complete_bounded(
+		output, operation, live.payload, critical_source_site::command,
+		critical_deadline_class::interactive,
+		&quest_native_completion_owner::reserve_cost_projection, nullptr, child_outer);
+#else
+	(void)output;
+	(void)operation;
+	(void)live;
+	(void)fee_terms;
+	return false;
 #endif
 }
 

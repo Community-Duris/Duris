@@ -8668,12 +8668,12 @@
       "minimum_cases": 1,
       "cpu": 2,
       "memory_mb": 8192,
-      "seconds": 179.1013223179907,
+      "seconds": 393.26489663598477,
       "timeout_seconds": 5400,
       "locks": [
         "native-compiler"
       ],
-      "purpose": "Three genuine final Quest cost/admission and selected-list profiles, original wire/refusal/cap/capacity/strong-output checks, whole production Quest/Item objects and current selectors. Component only; earlier preparation, builder, full producer and service/release gates remain open."
+      "purpose": "Three genuine Quest final cost/admission, selected-list and original late native builder profiles; original wire, real callback/cap/capacity/strong-output checks, three whole production objects and current selectors. Component only; earlier preparation, full producer and service/release gates remain open."
     },
     "test_currency_command_build_bounded.py": {
       "profile": "native",
