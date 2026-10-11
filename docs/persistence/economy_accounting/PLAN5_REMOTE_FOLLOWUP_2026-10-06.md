@@ -3359,3 +3359,33 @@ stayprimaryhandoffs. Ownedbase1e26f584314e74963a617381e209673891509625; no maint
 code/shared edits. This preparation is not native execution or qualification.
 Native65/restore/authority/retention/erasure/recovery/load/R1-R8 releaseOPEN,
 goalACTIVE/inactiveCLOSED. Additivecurator evidence only.
+
+## 2026-10-11 — RETRY-03 terminal original65 refusal evidence
+
+On frozen integration6bfa0f7ebdd5f2f46841047fdd10522e4d27dfea, original native
+session36854 endedexit1 after653transportcalls. All6906files/privatecontracts
+unchanged. MySQL first-half native histories/metadata/sessionfaults passed;
+Maria nullable65 canonical/staging/master histories/metadata passed under the
+fresh Linux datadir, including formerly failing0060. Authentic Maria original65
+apply returned2 with generic SQL/session diagnostic; matrixline570 expected a
+spaced zone-reset-item schema message. Exact SQL cause remains unproved, so
+expected refusal/recovery, no65receipt/prefix preservation after it, Mariafaults,
+finalreport/contractwrites/accepting65boot+tamper are not qualified.
+
+Report: [original refusal evidence](PLAN5_SCHEMA65_ORIGINAL_REFUSAL_FAILURE_2026-10-11.md).
+Base dc1cc3ddf14dc022757a3aa291a59213608fbeb1; result/verifiedremote via
+D:/Dev/Tests/Duris/accounting-plan5/ACC-02-6bfa0f7e-retry03/delivery/result.json.
+Seal9ccf2bb70b209c0b01f1d63b4d81ed0308239430e0876d10421b0eb31ec47359,
+6997members/550562942bytes. BothownedDBs gracefulexit0/removal; independent
+owner/job and retainedLinuxvolume consumerinventories0empty. Matchingglobal
+lock releasedonlyafterseal/reverification; passivevolume/rawDdata preserved,
+sevenunrelatedserviceIDs running. Sealhelperv1/v2 failures/corrections retained;
+no native predicate/source changed. Onlyreport/additivefollowup committed.
+
+No shared runner/matrix/schema fix or full retry. Next is a focused independent
+exact-error/history/no-receipt diagnostic with transport-negative controls and
+distinct resource receipt. Reduced three-session setup preserves primary final
+integration and independentPlan5; proposed WORLD/SHOP runtime ACK withdrawn.
+Broader65/restore/authority/retention/erasure/recovery/load/release OPEN;
+accountinginactive/admissionCLOSED/fullgoalACTIVE. Additivecuratorinput; no
+notebook import, measuredcontract adoption or combined release claim.
