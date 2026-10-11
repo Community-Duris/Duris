@@ -1,4 +1,59 @@
-# Accounting acceleration charter - 2026-10-11
+# Accounting qualification coordination - 2026-10-11
+
+## Current human-approved arrangement
+
+The human user approved "go with the useful parts" in launch-readiness chat
+01a104b8-0bcd-7863-b720-a15cad96df41 on 2026-10-11. This section supersedes the
+historical five-session proposal, its standing domain assignments and its
+primary delegation acknowledgment requirement. Preserve the useful work already
+completed; no implementation or evidence is reverted by this adjustment.
+
+| Ongoing owner | Current assignment |
+| --- | --- |
+| Remote RGitGoin, existing Plans 1-4 owner | Maintained implementation, shared runtime/interfaces, required architecture work, final experimental-accounting integration |
+| Existing Plan 5 owner, 01a104cf-6aba-7021-b5cd-56345f75cf10 | Established independent audit/operator, database, restore/recovery and release evidence |
+| Qualification/review coordinator, 01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0 | Reviewed helper candidate on codex/accounting-accel-integration, meaningful-batch qualification, exact primary handoffs |
+
+The proposed WORLD and SHOP runtime file leases are WITHDRAWN. RGitGoin retains
+existing source ownership and can continue Plans 1-4 without acknowledging a
+workload transfer. Established Plan 5 work also proceeds without that delegation
+acknowledgment. Primary review/integration, exact source ownership and actual
+release acceptance requirements remain in force.
+
+Park world/quest chat 01a129b4-a57a-76e0-baec-42b3dd2fe62f and shop/backend chat
+01a129b4-a553-78e0-85c2-69e34d8e0d59 after preserving current handoffs. Use these
+two existing helpers only on demand for an exact bounded failed-test task or
+independently owned deliverable: record source, allowed files/ownership, finish
+condition, checks and resource receipt, then return the helper to idle. No shared
+runtime or migration edits follow from an on-demand test ticket. ACC-04-TX and
+other unused preparation remain possible future tickets, not standing dispatches.
+The three old preparation/coordinator chats remain parked; their original
+heartbeat stays PAUSED. No new chats or subagents are authorized.
+
+Keep the existing coordinator heartbeat ACTIVE at its current 15-minute cadence
+and Sol6.1/xhigh settings. It coordinates qualification and reviewed handoffs;
+it does not seek runtime delegation or repeatedly audit unchanged blockers.
+Existing bounded coordination-message authorization is retained for this team.
+Publish routine progress in the board; notify the human only for terminal gate
+results, material reviewed fixes/diagnoses, substantive primary adoption or a
+specific human-required action.
+
+Finish any already-running test on its original native session and exclusive
+resource lease. Capture its actual terminal state, seal results and verify owned
+container/lease cleanup. Broader qualification follows meaningful source batches;
+focused verification follows real repairs. Preserve frozen-source proof limits,
+all failures, completed fixes, worktrees/branches/dirty files, passive diagnostic
+volumes, D: evidence and unrelated services. Follow existing D: storage and
+container-ownership rules. No activation, deployment, production operation,
+PR merge or acceptance waiver is authorized.
+
+Evaluate after the current database run and its reviewed handoff. The historical
+25-40 percent implementation-speedup assumption depended on delegation and is
+withdrawn; it is not a current forecast. Retain all original implementation,
+architecture and release gates. The coordinator board and reports remain the
+source of exact test pins, actual results and remaining requirements.
+
+## Historical five-session proposal - superseded 2026-10-11
 
 ## Authorization and objective
 
@@ -98,15 +153,15 @@ commit. The orchestrator authenticates that primary-authored publication, the
 exact source pin and accepted paths, then grants the corresponding worker ticket.
 An orchestrator's observation is not a substitute for acknowledgment.
 
-PRIMARY_ACK: PENDING
+PRIMARY_ACK: NOT_REQUIRED (runtime delegation proposal withdrawn)
 
-PRIMARY_ACK_SOURCE: UNSET
+PRIMARY_ACK_SOURCE: NOT_APPLICABLE (human-approved reduced arrangement)
 
-WORLD_LEASE: PROPOSED, not active
+WORLD_LEASE: WITHDRAWN, no runtime implementation grant
 
-SHOP_LEASE: PROPOSED, not active
+SHOP_LEASE: WITHDRAWN, no runtime implementation grant
 
-PRIMARY_PROTECTED_WIP_AND_EXCLUSIONS: awaiting primary disclosure
+PRIMARY_PROTECTED_WIP_AND_EXCLUSIONS: existing ownership retained; no delegation disclosure required
 
 ## Immediate work and executable evidence
 

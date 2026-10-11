@@ -1,3 +1,39 @@
+## Current arrangement: three ongoing sessions; primary ownership retained - 2026-10-11
+
+The human user approved "go with the useful parts" in launch-readiness chat
+01a104b8-0bcd-7863-b720-a15cad96df41. This supersedes the five-session delegation
+proposal and its PRIMARY_ACTION/PRIMARY_ACK requests below. Read the current
+[coordination charter](ACCOUNTING_ACCELERATION_CHARTER_2026-10-11.md).
+
+- RGitGoin, the existing remote Plans 1-4 owner, continues maintained accounting
+  implementation, shared interfaces, required architecture work and final
+  experimental-accounting integration under its existing ownership.
+- The established Plan 5 owner continues independent audit/operator tooling,
+  database qualification, restore/recovery and release evidence.
+- The new orchestrator continues reviewed helper integration, qualification of
+  meaningful batches and exact source-pinned primary handoffs.
+
+WORLD and SHOP runtime assignments are WITHDRAWN. No primary delegation
+acknowledgment is required for this arrangement or continued Plans 1-4/Plan 5
+work. Shared runtime and migration ownership is retained by its existing owner;
+ordinary review and actual release acceptance remain required.
+
+Park the new world/shop helpers after preserving their completed handoffs.
+They may return only for an exact bounded failed-test task or independently
+owned deliverable, with source/files, acceptance, owner and resource receipt,
+then return to idle. The old preparation helpers and coordinator remain parked;
+the old heartbeat remains paused. Do not create further sessions or subagents.
+
+Let any active bounded test finish on its original session/lease, capture its
+actual terminal result, seal evidence and perform guarded cleanup. Keep useful
+fixes, branches, worktrees, dirty files, failed runs, storage profiles and D:
+evidence. Schedule broader qualification after meaningful batches, with focused
+checks for repairs; avoid per-commit full reruns and unchanged blocker loops.
+Evidence stays limited to its exact frozen source and observed gates. The earlier
+25-40 percent implementation-speedup assumption is withdrawn; reassess after the
+current database result and reviewed handoff. Accounting remains inactive/CLOSED
+until the maintained implementation, architecture and release gates are met.
+
 ## Reader transport unit milestone — 2026-10-11
 
 [PLAN5_READER_TRANSPORT_PRIMARY_INTEGRATION_2026-10-11.md](PLAN5_READER_TRANSPORT_PRIMARY_INTEGRATION_2026-10-11.md) records actual Linux reader checks:
