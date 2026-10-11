@@ -1036,14 +1036,20 @@ bool zone_reset_item_owner::rebase_warm_command_scratch(warm_command_scratch &sc
 	return true;
 }
 
+// Pure INITIAL INLINE for the actual registered callback's first object.
+// This is not a complete ROOT SOURCE or a retained global/charge allowance.
+bool zone_reset_item_owner::flat_common_budget_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output)
+		return false;
+	*output = sizeof(flat_common_dispatch_workspace);
+	return true;
+}
+
 bool zone_reset_item_owner::reserve_flat_common_budget(size_t bytes, void *context) noexcept
 {
-	struct dispatch_observation_frame
-	{
-		flat_common_budget_guard *guard;
-		size_t exclusive, live, globals;
-		bool accepted;
-	} work{ static_cast<flat_common_budget_guard *>(context), 0, 0, 0, false };
+	flat_common_dispatch_workspace work{ static_cast<flat_common_budget_guard *>(context), 0, 0,
+					     0, false };
 	if (!work.guard || !work.guard->active || !nevent_is_game_thread() ||
 	    persistence_mode_requires_mysql() ||
 	    !economic_gameplay_authority::active_regular_flat())
@@ -6207,4 +6213,366 @@ bool zone_reset_item_owner::startup_budget_guard::handoff_preallowed_while_locke
 	// Caller unlocks only after the original init sequence; then refreshes fresh
 	// surviving ownership after the guard and replay descriptors actually die.
 	return registered;
+}
+
+#include <cstddef>
+#include <cstdint>
+#include <initializer_list>
+#include <mutex>
+// PRIVATE composable declared own scopes, not a full/global SOURCE export.
+// All descendants are bound to global-controls/FRAGMENTS.json. Child headers,
+// predicates and external declaration carriers must be added before exporting
+// a complete getter. Each row uses only that function's actual declarations.
+namespace flat_root_global_own_source
+{
+constexpr size_t P = sizeof(void *), N = sizeof(size_t), B = sizeof(bool);
+constexpr size_t U = sizeof(uintptr_t), I = sizeof(int);
+
+// output, bytes, found, pool-list entry and returned bool. The loop is a raw
+// pointer loop, not a hidden std range or an allocator call.
+constexpr size_t event_pool = 2 * P + N + 2 * B;
+// output, bytes and returned bool; map helpers are separate child scopes.
+constexpr size_t reschedule = P + N + B;
+// output, bytes/heap, slow/fast/descriptor and returned bool.
+constexpr size_t output_queue = 4 * P + 2 * N + B;
+// output, bytes; actual __range, begin/end and pointer-valued game variable.
+constexpr size_t zombies = 5 * P + N + B;
+// output, candidate, returned bool. This observer does not call the thread gate.
+constexpr size_t ownership = P + N + B;
+// output, bytes, returned bool; three actual sequential ranges: zones,
+// zone_regions, object_connections. Each has range ref, begin/end and row ref.
+// Actual node/vector child fields are excluded from these own fields.
+constexpr size_t activity = 13 * P + N + B;
+// output, actual automatic constexpr own and returned bool; no map query.
+constexpr size_t identity = P + N + B;
+// output and returned bool; static globals are observed, not freshly constructed.
+constexpr size_t maintenance = P + B;
+// output and returned bool; vector capacity is a separate genuine child.
+constexpr size_t cancel = P + B;
+// output/bool exist in either configured branch; only the enabled branch
+// declares current and the actual automatic constexpr own.
+constexpr size_t report = P + B
+#ifndef __NO_REDIS__
+			  + 2 * N
+#endif
+	;
+
+// Literal initializer-list's actual two pointer backing entries and descriptor
+// are objects. __range, begin/end, pool and nested entry are real caller fields.
+// slow/fast, output, bytes, found and returned bool are distinctly present.
+constexpr size_t literal_pools = 10 * P + sizeof(std::initializer_list<mm_ds *>) + N + 2 * B;
+// output, slow/fast, selected/entry, bytes/request, returned bool. No pool
+// allocation is performed by this observer; malloc-storage helper is separate.
+constexpr size_t mobile_pool = 5 * P + 2 * N + B;
+// output; bytes/file_storage/extent/buffer_storage/length/request;
+// file_begin/buffer_begin; rnum; four-column actual array and its __range,
+// begin/end and text pointer. The FILE branch and row branch are sequential;
+// conservative distinct declaration ownership keeps each actual field once.
+constexpr size_t mobile_catalog =
+	5 * P + 6 * N + 2 * U + I + B + sizeof(std::array<const char *, 4>);
+constexpr size_t object_catalog =
+	5 * P + 6 * N + 2 * U + I + B + sizeof(std::array<const char *, 4>);
+// output, slow/fast/mob, bytes/request and returned bool.
+constexpr size_t published_npc = 4 * P + 2 * N + B;
+
+// Exact local scalar/macro helper scopes. No child library rows, controller
+// aliases, uncalled standard-library special members or runtime predicate
+// returns for mandatory-constant-evaluation expressions occur in these rows.
+constexpr size_t checked_add = P + N + B;
+constexpr size_t checked_rows = P + 2 * N + B;
+constexpr size_t reschedule_map = 2 * P + N + B; // value/bytes, width, return
+constexpr size_t string_heap = 2 * P + 2 * U + B; // value/output,data/object
+constexpr size_t queue_heap = 4 * P + 5 * N + B; // refs,last/node,5 scalar locals
+constexpr size_t allocation_header = N; // literal_raw_header_bytes return only
+constexpr size_t hash_heap = 2 * P + B; // value/bytes, return; node is type alias
+constexpr size_t node_bytes = N; // hydrate_node_bytes return only
+constexpr size_t ownership_cache = P + B; // bytes ref, return
+constexpr size_t mobile_malloc = 2 * P + N + B
+#ifdef MEMCHK
+				 + P // actual const ALLOCATION_HEADER *header
+#endif
+	;
+constexpr size_t artifact_string = 2 * P + B; // text/total refs, bool result
+constexpr size_t artifact_same_value = 2 * P + 2 * N + 2 * B + 4 * P;
+// value, local_limit, pending_limit, index, include_worker, returned bool;
+// one actual local_cache range (__range/begin/end/entry), no materialized copy.
+constexpr size_t artifact_value = 2 * P + B;
+constexpr size_t artifact_job = 2 * P + B;
+// output,total/deque_heap/index/prior, job ref, seen, actual local_cache range.
+constexpr size_t artifact_current = 6 * P + 4 * N + 2 * B;
+// output, bool result and the real std::lock_guard on the unborrowed branch.
+// mutex/owns_lock, constructor/destructor and pthread boundary remain children.
+constexpr size_t artifact_retained = P + B + sizeof(std::lock_guard<std::mutex>);
+
+// Both wrapper functions have output, bytes/current and bool result. Their
+// actual ten/five child functions, thread/checked-add and returned values are
+// genuine required joins, not funded by either wrapper's local subtotal.
+constexpr size_t base_wrapper = P + 2 * N + B;
+constexpr size_t literal_wrapper = P + 2 * N + B;
+} // namespace flat_root_global_own_source
+
+// PRIVATE selected GNU13 library/declaration families for the 15 observers.
+// This fragment owns reached declarations only. It is not a native/library
+// implementation proof and is not a complete ROOT/global getter by itself.
+// Caller hidden range objects and actual referenced rows remain in own-scopes.
+namespace flat_root_global_library_source
+{
+constexpr size_t P = sizeof(void *), N = sizeof(size_t), B = sizeof(bool);
+constexpr size_t D = sizeof(std::ptrdiff_t), I = sizeof(int);
+
+// vector::capacity has this and size_type return. Built-in pointer subtraction
+// does not introduce another declared function/result carrier.
+constexpr size_t vector_capacity = P + N;
+// map/unordered_map/unordered_set public query and actual tree/table query:
+// both own a receiver and returned size_type. No allocator query is reached.
+constexpr size_t associative_size = 2 * (P + N);
+constexpr size_t hash_buckets = 2 * (P + N);
+
+// Only runtime-selected string capacity path. Public capacity(this/result),
+// is_local(this/bool), data and local_data(this/pointer each), pointer_to,
+// addressof and __addressof(input ref/returned pointer each) are genuine.
+constexpr size_t string_capacity = 11 * P + N + B;
+constexpr size_t string_data = 4 * P; // public data -> internal _M_data
+// Runtime char_traits<char>::length pointer/result + actual runtime
+// __is_constant_evaluated bool. Its false arm is a compiler builtin, not an
+// invented C strlen frame or the unselected constexpr recursive traits loop.
+constexpr size_t traits_length = P + N + B;
+constexpr size_t c_strlen_declaration = P + N;
+constexpr size_t malloc_usable_declaration = P + N;
+
+// Actual mutable vector begin/end return prvalues directly into caller's real
+// hidden iterators. Each receiver and normal_iterator(this, pointer-ref) owns
+// 3P. The reference binds the stored pointer member, not a const-conversion
+// pointer temporary. The zombie and activity-zone vector ranges are mutable;
+// world_activity's zone_regions range is an actual std::array, mapped below.
+constexpr size_t vector_range_construction = 6 * P;
+// == refs/result and its two base(this/returned pointer-ref) calls; ++ and *
+// each receiver/returned ref. No same-type implicit iterator copy or dtor body.
+constexpr size_t vector_range_queries = 10 * P + B;
+constexpr size_t vector_range = vector_range_construction + vector_range_queries;
+
+// Const four-column arrays: begin/end each this/returned pointer, sharing
+// genuine data(this/pointer). Actual captured array data returns _M_elems;
+// no _S_ptr/_S_ref helper or trivial-array destructor is reached.
+constexpr size_t const_array_range = 6 * P;
+// The mutable region array has the same declared begin/end/data carriers. Its
+// raw pointer comparison/increment/dereference introduce no function scopes.
+constexpr size_t mutable_array_range = 6 * P;
+// initializer_list begin/end receivers/results, and size receiver/result.
+// end's calls are those same real begin/size declarations. Backing/descriptor
+// and loop pointer objects are separately owned by literal_pools own scope.
+constexpr size_t initializer_list_range = 5 * P + N;
+
+// Mutable unordered_map range: public/table begin, _M_begin pointer return,
+// Node_iterator and Node_iterator_base constructor formals; end omits _M_begin.
+constexpr size_t hash_range_construction = 14 * P;
+// _M_v -> _M_valptr -> aligned_buffer::_M_ptr -> _M_addr: each this/ref or
+// pointer return, 8P; actual iterator * adds this/returned ref 2P.
+constexpr size_t hash_range_dereference = 10 * P;
+// ++ this/ref -> _M_incr(this) -> node::_M_next(this/pointer), and == refs/bool.
+constexpr size_t hash_range_queries = 7 * P + B;
+constexpr size_t hash_range = hash_range_construction + hash_range_dereference + hash_range_queries;
+
+// Mutable map public begin/end(this) -> tree begin/end(this) -> actual iterator
+// pointer constructor(this/node), 4P each. * -> node::_M_valptr -> aligned
+// membuf::_M_ptr -> _M_addr, 8P. ++ receiver/ref plus real out-of-line
+// _Rb_tree_increment declaration pointer/result, 4P; == refs/result, 2P+B.
+constexpr size_t tree_range = 22 * P + B;
+// _Rb_tree_increment implementation is an external qualification boundary;
+// its genuine argument/result declarations are included above, no fake body.
+
+// No owning shared_ptr is copied in the Redis CURRENT scan. Actual get() is
+// this/pointer. bool owns this/bool. * and -> each own this/ref-or-pointer and
+// _M_get -> derived get (2P per function); no control block lifecycle follows.
+constexpr size_t shared_get = 2 * P;
+constexpr size_t shared_present = P + B;
+// Normal non-assertion constexpr assertion executes this genuine query.
+// Its false result prevents evaluation of the _M_get condition.
+constexpr size_t runtime_constexpr_assert_query = B;
+constexpr size_t shared_dereference = 6 * P;
+constexpr size_t shared_arrow = 6 * P;
+
+// player_retained_deque<T>::current_heap_bytes: this/output/impl ref; maximum,
+// nodes,elements,block,map_bytes,node_bytes; bool return. Runtime const maximum
+// selects numeric_limits::max returned N and buf_size owns size/returned N.
+constexpr size_t deque_current = 3 * P + 9 * N + B;
+// deque::size receiver/result, iterator difference two refs/difference result,
+// _S_buffer_size return and __deque_buf_size(size/result).
+constexpr size_t deque_size = 3 * P + 4 * N + D;
+// deque [] receiver/index/ref, iterator [] receiver/difference/ref, plus's
+// __x ref/__n difference/actual4P __tmp and optional non-NRVO4P return object,
+// explicit same-type copy ctor this/source-ref, += this/difference/__offset/
+// __node_offset/ref, _M_set_node this/node, * this/ref and buffer-size family.
+// These are actual declared objects; no trivial iterator dtor is fabricated.
+constexpr size_t deque_index = 21 * P + 4 * N + 5 * D;
+
+// unique_lock borrowed observer calls own mutex() this/pointer and owns_lock
+// this/bool. No second lock object or lock/unlock call follows that arm.
+constexpr size_t borrowed_lock_queries = 3 * P + B;
+// Actual lock_guard ctor(this/ref), mutex lock(this/__e), real gthread and
+// pthread lock/unlock declarations/active_p results, destructor(this), mutex
+// unlock(this). External implementations remain OPEN; exception error's
+// __throw_system_error declaration owns its actual int argument separately.
+constexpr size_t lock_guard_queries = 9 * P + 7 * I;
+constexpr size_t lock_error_declaration = I;
+} // namespace flat_root_global_library_source
+
+// PRIVATE composition of the genuine selected fifteen-global observer graph.
+// Scope: supported GNU13/Linux/C++20 headers; no observer is executed here.
+// Thread gate is an explicitly separate dependency, not a numeric allowance.
+// All other rows are named actual own/child declarations in the captured graph.
+// This is not the registered ROOT guard, authority load/destruction or charge.
+namespace flat_root_global_graph_source
+{
+namespace own = flat_root_global_own_source;
+namespace lib = flat_root_global_library_source;
+
+constexpr size_t event_pool_without_thread = own::event_pool;
+// Two genuine map template instantiations; checked add is the shared non-template
+// function. Repeated value.size calls do not invent a new function family.
+constexpr size_t reschedule_without_thread =
+	own::reschedule + 2 * (own::reschedule_map + lib::associative_size) + own::checked_add;
+constexpr size_t output_without_thread = own::output_queue + own::string_heap + lib::string_data +
+					 lib::string_capacity + own::queue_heap +
+					 own::allocation_header + lib::c_strlen_declaration;
+// vector<ZombieGame*> and vector<P_char> are different actual query types.
+constexpr size_t zombies_without_thread =
+	own::zombies + 2 * lib::vector_capacity + lib::vector_range;
+constexpr size_t ownership =
+	own::ownership + own::ownership_cache +
+	2 * (own::hash_heap + own::node_bytes + lib::associative_size + lib::hash_buckets) +
+	own::checked_rows + own::checked_add;
+// Four actual hash types: connection-id, object-connection, controlled-room,
+// zone NPC set. Three actual vector query types: activity_zone, int, exit-array.
+// The region range selects array begin/end/data, never normal_iterator.
+constexpr size_t activity_without_thread =
+	own::activity + 4 * (own::hash_heap + lib::associative_size + lib::hash_buckets) +
+	own::checked_rows + own::checked_add + 3 * lib::vector_capacity + lib::vector_range +
+	lib::mutable_array_range + lib::hash_range;
+constexpr size_t identity_without_thread = own::identity;
+constexpr size_t maintenance_without_thread = own::maintenance;
+constexpr size_t cancel_without_thread = own::cancel + lib::vector_capacity;
+
+#ifdef __NO_REDIS__
+constexpr size_t report = own::report;
+#else
+// Redis scans references to existing owning shared_ptrs; they are not copied or
+// destroyed by this graph. cache_job and const string are two actual types.
+// The job.get() lhs survives the second get() in the pointer comparison; own
+// that one genuine additional result slot separately from the get() family.
+// cache_job is TU-private; P is its object-pointer slot under the selected
+// GNU13/Linux LP64 contract, not a fabricated cache_job surrogate declaration.
+constexpr size_t redis_pointer_comparison_lhs = own::P;
+constexpr size_t report = own::report + own::artifact_retained + own::artifact_current +
+			  own::artifact_string + own::artifact_value + own::artifact_job +
+			  own::artifact_same_value + own::checked_add + lib::string_capacity +
+			  2 * lib::shared_present + 2 * lib::shared_get + lib::shared_arrow +
+			  lib::shared_dereference + lib::tree_range + lib::deque_current +
+			  lib::deque_size + lib::deque_index + lib::borrowed_lock_queries +
+			  lib::lock_guard_queries + lib::lock_error_declaration +
+			  lib::runtime_constexpr_assert_query + redis_pointer_comparison_lhs;
+#endif
+
+constexpr size_t literal_pools_without_thread = own::literal_pools + lib::initializer_list_range +
+						own::checked_add + own::allocation_header;
+#ifdef MM_STATS
+constexpr size_t mobile_pool_without_thread =
+	own::mobile_pool + own::mobile_malloc + own::checked_add;
+#else
+// In this configured branch the original observer returns before declaring
+// any pool/range/byte/request fields or calling either helper.
+constexpr size_t mobile_pool_without_thread = own::P + own::B;
+#endif
+constexpr size_t mobile_catalog_without_thread =
+	own::mobile_catalog + lib::malloc_usable_declaration + own::checked_add +
+	lib::const_array_range + lib::traits_length + own::mobile_malloc;
+constexpr size_t object_catalog_without_thread =
+	own::object_catalog + lib::malloc_usable_declaration + own::checked_add +
+	lib::const_array_range + lib::traits_length + own::mobile_malloc;
+constexpr size_t published_npc_without_thread =
+	own::published_npc + own::mobile_malloc + own::checked_add;
+
+// These pure private sums are the actual observer forest, excluding the named
+// thread dependency. No incomplete sum is exported as a complete public getter.
+constexpr size_t base_without_thread = own::base_wrapper + own::checked_add +
+				       event_pool_without_thread + reschedule_without_thread +
+				       output_without_thread + zombies_without_thread + ownership +
+				       activity_without_thread + identity_without_thread +
+				       maintenance_without_thread + cancel_without_thread + report;
+constexpr size_t literal_without_thread =
+	own::literal_wrapper + own::checked_add + base_without_thread +
+	literal_pools_without_thread + mobile_pool_without_thread + mobile_catalog_without_thread +
+	object_catalog_without_thread + published_npc_without_thread;
+} // namespace flat_root_global_graph_source
+
+#include <thread>
+
+namespace flat_root_complete_global_header_source
+{
+// Actual ordinary GNU13 get_id -> explicit id(native_handle) -> gthread_self
+// -> pthread_self. get_id's class prvalue directly initializes equality's
+// right by-value parameter; no third id or undeclared copy/dtor is invented.
+// The two declared native scalar returns are distinct from ctor's formal.
+constexpr size_t thread = 2 * sizeof(std::thread::id) + sizeof(void *) +
+			  3 * sizeof(std::thread::native_handle_type) + 2 * sizeof(bool);
+// Sequential game-thread calls reuse the same selected declaration graph.
+constexpr size_t base = flat_root_global_graph_source::base_without_thread + thread;
+constexpr size_t literal = flat_root_global_graph_source::literal_without_thread + thread;
+} // namespace flat_root_complete_global_header_source
+
+bool zone_reset_item_owner::flat_global_current_header_source_frame_bytes(size_t *output) noexcept
+{
+#if !defined(__linux__) || !defined(__GLIBC__) || !defined(_GLIBCXX_RELEASE) ||            \
+	_GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) ||                      \
+	_GLIBCXX_USE_CXX11_ABI != 1 || __cplusplus < 202002L || defined(_GLIBCXX_DEBUG) || \
+	defined(_GLIBCXX_ASSERTIONS) || !defined(_GLIBCXX_HAS_GTHREADS) ||                 \
+	defined(_GLIBCXX_NATIVE_THREAD_ID)
+	(void)output;
+	return false;
+#else
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(std::ptrdiff_t) != 8 ||
+	    sizeof(std::thread::id) != 8 || sizeof(std::thread::native_handle_type) != 8 ||
+	    sizeof(uintptr_t) != 8 || sizeof(int) != 4 || sizeof(bool) != 1)
+		return false;
+	const size_t candidate = flat_root_complete_global_header_source::base;
+	*output = candidate;
+	return true;
+#endif
+}
+
+bool zone_reset_item_owner::flat_global_literal_current_header_source_frame_bytes(
+	size_t *output) noexcept
+{
+#if !defined(__linux__) || !defined(__GLIBC__) || !defined(_GLIBCXX_RELEASE) ||            \
+	_GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) ||                      \
+	_GLIBCXX_USE_CXX11_ABI != 1 || __cplusplus < 202002L || defined(_GLIBCXX_DEBUG) || \
+	defined(_GLIBCXX_ASSERTIONS) || !defined(_GLIBCXX_HAS_GTHREADS) ||                 \
+	defined(_GLIBCXX_NATIVE_THREAD_ID)
+	(void)output;
+	return false;
+#else
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(std::ptrdiff_t) != 8 ||
+	    sizeof(std::thread::id) != 8 || sizeof(std::thread::native_handle_type) != 8 ||
+	    sizeof(uintptr_t) != 8 || sizeof(int) != 4 || sizeof(bool) != 1)
+		return false;
+	const size_t candidate = flat_root_complete_global_header_source::literal;
+	*output = candidate;
+	return true;
+#endif
+}
+
+bool zone_reset_item_owner::flat_global_current_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output)
+		return false;
+	*output = 0;
+	return true;
+}
+
+bool zone_reset_item_owner::flat_global_literal_current_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output)
+		return false;
+	*output = 0;
+	return true;
 }

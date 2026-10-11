@@ -18855,3 +18855,13 @@ and protected WIP remain preserved. Inventory481/931/2911/2853,0new/unmapped
 does not establish completion. Full host/native/gameplay/persistence/recovery/
 R1-R8/release stay OPEN; targeted compiler proof is recorded above.
 Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Integrate global observer header source providers implemented - 2026-10-10
+
+[Source checkpoint](GLOBALS_HEADER_SOURCE_PROVIDER_INTEGRATION_2026-10-10.md) Global observer HEADER Source providers and exact workspace type extraction integrated; provider and game-loop objects compile in both production modes. Full ROOT/caller composition and runtime qualification remain open.
+Independent RAW and actual formatted source reviews passed; original behavior
+and protected WIP remain preserved. Inventory481/931/2911/2853,0new/unmapped
+does not establish completion. Full host/native/gameplay/persistence/recovery/
+R1-R8/release stay OPEN; targeted compiler proof is recorded above.
+Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
