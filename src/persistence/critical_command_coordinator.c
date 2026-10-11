@@ -57,7 +57,55 @@ class critical_room_shared_budget_lender final
 			    bool (*actual_reserve)(size_t, void *) noexcept, void *actual_guard,
 			    size_t exclusive_live, size_t *current_output = nullptr) noexcept;
 	static bool reset_before_replay(const std::unique_lock<std::mutex> &actual_lock) noexcept;
+
+	using operation_callback = bool (*)(bool (*)(size_t, void *) noexcept, void *, size_t,
+					    void *) noexcept;
+	static bool invoke(const std::unique_lock<std::mutex> &, bool (*)(size_t, void *) noexcept,
+			   void *, size_t, operation_callback, void *) noexcept;
+	static size_t operation_frame_bytes() noexcept;
+	static bool callback_matches(const std::unique_lock<std::mutex> &,
+				     bool (*)(size_t, void *) noexcept, void *) noexcept;
+	static constexpr size_t retained_storage_bytes() noexcept
+	{
+		return sizeof(active_operation_);
+	}
+
+    private:
+	struct operation_borrow_frame;
+	struct callback_borrow_frame;
+	static operation_borrow_frame *active_operation_;
 };
+
+struct critical_room_shared_budget_lender::callback_borrow_frame
+{
+	const std::unique_lock<std::mutex> &lock;
+	bool (*reserve)(size_t, void *) noexcept;
+	void *guard;
+	size_t *output;
+	size_t current = 0, full = 0;
+	bool borrowed = false, accepted = false, ended = false;
+};
+
+// A genuine stack object remains registered across the complete native operation.
+// Access to active_operation_ is serialized by the original coordinator mutex.
+struct critical_room_shared_budget_lender::operation_borrow_frame
+{
+	const std::unique_lock<std::mutex> &lock;
+	bool (*reserve)(size_t, void *) noexcept;
+	void *guard;
+	operation_callback operation;
+	void *operation_context;
+	size_t outer, current = 0;
+	bool accepted = false, ended = false;
+	static bool relay(size_t bytes, void *context) noexcept
+	{
+		auto &scope = *static_cast<operation_borrow_frame *>(context);
+		return critical_room_shared_budget_lender::reserve(scope.lock, scope.reserve,
+								   scope.guard, bytes);
+	}
+};
+critical_room_shared_budget_lender::operation_borrow_frame
+	*critical_room_shared_budget_lender::active_operation_ = nullptr;
 
 namespace
 {
@@ -7512,6 +7560,7 @@ bool room_coordinator_current_storage_bytes_locked(size_t *output) noexcept
 		return false;
 	size_t total =
 		sizeof(active_mixed_startup_owner) + sizeof(coordinator_mutex) +
+		critical_room_shared_budget_lender::retained_storage_bytes() +
 		sizeof(work_available) + sizeof(result_available) + sizeof(admission_available) +
 		sizeof(publication_checkpoint_finished) + sizeof(publication_checkpoints_inflight) +
 		sizeof(guarded_publications_inflight) + sizeof(operations) + sizeof(pending) +
@@ -7637,21 +7686,15 @@ bool critical_room_shared_budget_lender::reserve(const std::unique_lock<std::mut
 	if (!actual_reserve || actual_lock.mutex() != &coordinator_mutex ||
 	    !actual_lock.owns_lock())
 		return false;
-	struct actual_borrow_frame
-	{
-		const std::unique_lock<std::mutex> &lock;
-		bool (*reserve)(size_t, void *) noexcept;
-		void *guard;
-		size_t *output;
-		size_t current = 0, full = 0;
-		bool borrowed = false, accepted = false, ended = false;
-	} scope{ actual_lock, actual_reserve, actual_guard, current_output };
+	callback_borrow_frame scope{ actual_lock, actual_reserve, actual_guard, current_output };
 	if (!room_coordinator_current_storage_bytes_locked(&scope.current))
 		return false;
 	if (scope.output)
 		*scope.output = scope.current;
 	scope.full = exclusive_live;
-	if (!room_storage_add(scope.full, sizeof(actual_borrow_frame)) ||
+	// Whole-operation profile already owns this actual callback carrier.
+	// Original one-callback callers retain their original carrier addition.
+	if ((!active_operation_ && !room_storage_add(scope.full, sizeof(callback_borrow_frame))) ||
 	    !room_storage_add(scope.full, scope.current))
 		return false;
 	// Original unregistered callbacks receive the complete prefix, never a
@@ -7659,10 +7702,24 @@ bool critical_room_shared_budget_lender::reserve(const std::unique_lock<std::mut
 	// the real shared owner authenticates callback/context/exact actual guard.
 	if (item_native_quest_coordinator_budget_scope_owner::registered())
 	{
-		if (!item_native_quest_coordinator_budget_scope_owner::begin_borrow(
-			    &scope, scope.reserve, scope.guard, scope.current))
-			return false;
-		scope.borrowed = true;
+		if (active_operation_)
+		{
+			// The entire operation owns the loan. Refresh its exact identity with
+			// CURRENT scanned under the same actual lock; never create a second loan.
+			if (&active_operation_->lock != &scope.lock ||
+			    active_operation_->reserve != scope.reserve ||
+			    active_operation_->guard != scope.guard ||
+			    !item_native_quest_coordinator_budget_scope_owner::refresh_borrow(
+				    active_operation_, scope.reserve, scope.guard, scope.current))
+				return false;
+		}
+		else
+		{
+			if (!item_native_quest_coordinator_budget_scope_owner::begin_borrow(
+				    &scope, scope.reserve, scope.guard, scope.current))
+				return false;
+			scope.borrowed = true;
+		}
 	}
 	// noexcept callback, no allocating work or early return between scalar begin
 	// and scalar end. ROOT exclusive_prefix subtracts only this exact CURRENT C
@@ -7682,6 +7739,10 @@ bool critical_room_shared_budget_lender::reset_before_replay(
 
 namespace
 {
+bool mixed_startup_checkpoint_size_bounded(const critical_native_recovery_envelope &, size_t *,
+					   bool (*)(size_t, void *) noexcept, void *,
+					   size_t) noexcept;
+
 // One genuine live owner, including all original local carriers, lock and
 // lookup/capacity scratch. No probe containers or guessed resize state.
 struct room_submit_workspace
@@ -8026,6 +8087,13 @@ struct room_replay_workspace
 bool room_replay_reserve_locked(size_t exclusive_live, void *opaque) noexcept
 {
 	auto &work = *static_cast<room_replay_workspace *>(opaque);
+	// A genuine whole-operation callback already refreshes CURRENT C under
+	// this exact lock. Forward its actual relay/context, never reborrow using
+	// the relay itself as if it were the registered ROOT callback/guard pair.
+	if (critical_room_shared_budget_lender::callback_matches(work.lock, work.reserve,
+								 work.context))
+		return work.reserve(exclusive_live, work.context);
+	// Preserve the original single-callback path outside a matching operation.
 	return critical_room_shared_budget_lender::reserve(work.lock, work.reserve, work.context,
 							   exclusive_live);
 }
@@ -8258,6 +8326,1650 @@ enqueue_room_native_replayed_bounded(const critical_native_recovery_envelope &or
 
 namespace
 {
+namespace mixed_replay_state_construction_source
+{
+constexpr size_t P = sizeof(void *);
+constexpr size_t N = sizeof(size_t);
+// Actual default vector: vector, _Vector_base, _Vector_impl,
+// allocator, __new_allocator and _Vector_impl_data receivers.
+constexpr size_t vector_default = 6 * P;
+// unique_ptr -> __uniq_ptr_data -> __uniq_ptr_impl -> tuple -> both
+// _Tuple_impl levels -> both _Head_base levels -> default_delete.
+// The scalar pointer head has no further class constructor.
+constexpr size_t unique_default = 9 * P;
+// Mutable impl pointer/deleter accessor -> get -> __get_helper ->
+// _Tuple_impl::_M_head -> _Head_base::_M_head, each receiver/ref + result ref.
+constexpr size_t tuple_member = 5 * (2 * P);
+// Raw-pointer unique constructor and inherited data constructor, impl pointer
+// constructor, six tuple/default-head/deleter defaults, mutable pointer access.
+constexpr size_t pointer_unique = 3 * (2 * P) + 6 * P + tuple_member;
+// Returned make_unique temporary is null after transfer. Its destructor owns
+// this and pointer-ref, mutable pointer access, then the implicit data/impl/
+// tuple/two impl/two head/deleter destructor receivers. No deleter body runs.
+constexpr size_t moved_temporary_cleanup = 2 * P + tuple_member + 8 * P;
+// Destination is the genuine default-null work.state or state.native field.
+// Unique/data/impl assignments each this, source and returned ref; release
+// owns this/local/result and two ptr accessors; reset owns this/new/old and two
+// ptr accessors. Both deleter accessors, forward(ref/result), generated empty
+// default_delete assignment(this/source/returned ref), null temporary cleanup.
+// Binding make_unique's prvalue to && does NOT call std::move.
+constexpr size_t null_destination_transfer = 3 * (3 * P) + (3 * P + 2 * tuple_member) +
+					     (3 * P + 2 * tuple_member) + 2 * tuple_member + 2 * P +
+					     3 * P + moved_temporary_cleanup;
+// operation_state's actual generated default receiver; command receiver;
+// four command vectors; four unique fields (native + three transaction slots);
+// two completion receivers. Each default-initialized operation_id invokes its
+// implicit id and array default receivers (three occurrences). The explicitly
+// brace-initialized fixed completion arrays are aggregates, not extra calls.
+constexpr size_t state_default =
+	P + P + 4 * vector_default + 4 * unique_default + 2 * P + 3 * (2 * P);
+// Actual native context generated default receiver and attachment vector.
+constexpr size_t context_default = P + vector_default;
+// No make_unique argument formal exists for the zero-argument overload. The
+// operator-new size/result and new-expression result carrier are N+2P. Object
+// and returned unique object storage are the original explicit heap/INLINE,
+// not SOURCE. Out-of-line allocation runtime qualification remains separate.
+constexpr size_t allocation_call = N + 2 * P;
+constexpr size_t state_window =
+	allocation_call + state_default + pointer_unique + null_destination_transfer;
+// Context's assignment destination is state->native: actual unique arrow/get
+// const tuple chain is seven receiver/result pairs. It is separate from the
+// null destination assignment's own receiver and from actual native heap.
+constexpr size_t context_window = allocation_call + context_default + pointer_unique +
+				  null_destination_transfer + 7 * (2 * P);
+#if defined(__linux__) && defined(__GLIBCXX__) && defined(_GLIBCXX_RELEASE) &&               \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&                         \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) && \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                      \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                   \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0)
+constexpr bool supported = sizeof(void *) == 8 && sizeof(size_t) == 8 &&
+			   sizeof(std::ptrdiff_t) == 8;
+#else
+constexpr bool supported = false;
+#endif
+} // namespace mixed_replay_state_construction_source
+} // namespace
+
+namespace
+{
+namespace mixed_replay_command_assignment_source
+{
+constexpr size_t P = sizeof(void *), N = sizeof(size_t), D = sizeof(std::ptrdiff_t);
+constexpr size_t B = sizeof(bool);
+constexpr size_t max_source(size_t a, size_t b) noexcept
+{
+	return a > b ? a : b;
+}
+// Real selected normal_iterator generated copy/move receiver + source; dtor receiver.
+constexpr size_t iterator_copy = 2 * P, iterator_move = 2 * P, iterator_cleanup = P;
+constexpr size_t iterator_named_value_lifetime = iterator_copy + iterator_cleanup;
+// Const begin/end: this, result iterator, iterator(this,const pointer-ref),
+// actual T* -> const T* conversion temporary. Mutable endpoints use stored
+// pointer lvalues and have no conversion temporary.
+constexpr size_t const_endpoint = 2 * P + 2 * P + P;
+constexpr size_t mutable_endpoint = 2 * P + 2 * P;
+constexpr size_t vector_query = P + N + D;
+constexpr size_t allocator_access = 2 * P;
+// cpp_type_traits::__miter_base: by-value iterator and returned iterator,
+// true named-lvalue copy + parameter destructor + non-NRVO return move.
+constexpr size_t miter_normal = 2 * P + iterator_named_value_lifetime + iterator_move;
+// stl_iterator::__niter_base(normal_iterator): formal/returned pointer,
+// actual base(this,ref), named-argument copy and parameter cleanup.
+constexpr size_t niter_normal = 2 * P + 2 * P + iterator_named_value_lifetime;
+constexpr size_t niter_pointer = 2 * P;
+constexpr size_t niter_wrap_pointer = 3 * P;
+// Iterator destination wrap has from/result/returned iterator, named from
+// copy/destruction, its actual niter_base, member +(this,difference,result),
+// pointer/count iterator constructor and genuine pointer prvalue temporary.
+constexpr size_t niter_wrap_iterator =
+	3 * P + iterator_named_value_lifetime + niter_normal + 2 * P + D + 2 * P + P;
+// Trivial memmove specialization owns three pointers + returned pointer,
+// actual _Num difference local. expect has genuine long argument/return ABI;
+// memmove has destination/source/size/result interface. Their out-of-line
+// runtime/emitted bodies remain ROOT qualification, not a guessed SRC margin.
+constexpr size_t expect_interface = 3 * sizeof(long);
+constexpr size_t memmove_interface = 3 * P + N;
+template <class T> constexpr size_t scalar_assignment_source() noexcept
+{
+	if constexpr (std::is_same_v<T, critical_expected_revision>)
+		return 3 * P + 3 * P; // generated revision + key this/source/result refs
+	if constexpr (std::is_same_v<T, critical_entity_key>)
+		return 3 * P;
+	return 0; // byte assignment is builtin, no generated DTO call
+}
+template <class T> constexpr size_t trivial_copy_leaf() noexcept
+{
+	return 4 * P + D + expect_interface +
+	       max_source(memmove_interface, 2 * P + scalar_assignment_source<T>());
+}
+// std::copy -> two real miter normal calls -> copy_move_a -> niter wrap;
+// a1/a2 each three pointers + returned pointer; a2 invokes constant-evaluation
+// query (ordinary runtime false). No iterator_category tag is materialized by
+// that type-only dispatch. Normal parameters are actual one-pointer values.
+template <class T> constexpr size_t copy_to_pointer() noexcept
+{
+	constexpr size_t copy_entry = 4 * P + 2 * iterator_named_value_lifetime;
+	constexpr size_t copy_a = 4 * P + 2 * iterator_cleanup;
+	return copy_entry + 2 * miter_normal + copy_a + 2 * niter_normal + niter_pointer +
+	       niter_wrap_pointer + 2 * (4 * P) + B + trivial_copy_leaf<T>();
+}
+template <class T> constexpr size_t copy_to_iterator_from_endpoints() noexcept
+{
+	// Empty original vector assignment passes three endpoint prvalues: no
+	// generated entry copies, but each actual by-value parameter is destroyed.
+	constexpr size_t copy_entry = 4 * P + 3 * iterator_cleanup;
+	// copy_move_a takes two miter prvalues plus named destination iterator.
+	constexpr size_t copy_a = 4 * P + 2 * iterator_cleanup + iterator_named_value_lifetime;
+	return copy_entry + 2 * miter_normal + copy_a + 3 * niter_normal + niter_wrap_iterator +
+	       2 * (4 * P) + B + trivial_copy_leaf<T>();
+}
+// Genuine allocation interfaces of vector/base, std allocator_traits,
+// C++20 allocator + constant query, new_allocator + max_size/expect and new.
+// Alignment of the three actual element types selects ordinary unaligned new.
+constexpr size_t allocate_source = (2 * P + N) + (2 * P + N) + (2 * P + N + B) + (3 * P + N) +
+				   (P + N) + expect_interface + (P + N);
+constexpr size_t deallocate_source =
+	(2 * P + N) + (2 * P + N) + (2 * P + N + B) + (2 * P + N) + (P + N);
+// allocator-specialized _Destroy -> two-arg _Destroy -> trivial destroy_aux,
+// plus actual vector allocator getter. No element destructor executes.
+constexpr size_t destroy_pointer_source = 3 * P + 2 * P + B + 2 * P + allocator_access;
+// First allocator _Destroy receives two prvalues; both are cleaned. Its child
+// two-arg _Destroy and true aux receive named lvalues and really copy/clean two
+// iterators each. Object bytes of the vector remain outer-owned, not SOURCE.
+constexpr size_t destroy_iterator_source =
+	3 * P + 2 * iterator_cleanup + (2 * P + 2 * iterator_named_value_lifetime + B) +
+	(2 * P + 2 * iterator_named_value_lifetime) + allocator_access;
+template <class T> constexpr size_t allocation_copy_branch() noexcept
+{
+	// _M_allocate_and_copy: this/n/first/last/result local/returned pointer;
+	// the two true endpoint prvalues are parameters, with cleanup only.
+	constexpr size_t allocate_copy_entry = 5 * P + N + 2 * iterator_cleanup;
+	// allocator specialization -> public uninitialized_copy -> true helper;
+	// each receives named first/last and therefore copies/cleans both. Public
+	// uninitialized_copy also owns real __can_memmove and __assignable bools.
+	constexpr size_t uninitialized = (5 * P + B + 2 * iterator_named_value_lifetime) +
+					 (4 * P + 2 * B + 2 * iterator_named_value_lifetime) +
+					 (4 * P + 2 * iterator_named_value_lifetime);
+	return 2 * const_endpoint + allocate_copy_entry + allocate_source + allocator_access +
+	       uninitialized + copy_to_pointer<T>() + destroy_pointer_source + deallocate_source;
+}
+template <class T> constexpr size_t empty_copy_branch() noexcept
+{
+	return 2 * const_endpoint + 2 * mutable_endpoint + copy_to_iterator_from_endpoints<T>() +
+	       destroy_iterator_source;
+}
+template <class T> constexpr size_t fresh_vector_const_assignment() noexcept
+{
+	// operator=(const vector&): this/source/result ref, __xlen and __tmp.
+	// addressof(arg,result), false _S_propagate_on_copy_assign bool, source
+	// size and destination capacity, then actual nonempty/empty alternatives.
+	return 4 * P + N + 2 * P + B + 2 * vector_query +
+	       max_source(allocation_copy_branch<T>(), vector_query + empty_copy_branch<T>());
+}
+// Same typed selected vector move/default allocator/temp/swap/cleanup graph as
+// independently reviewed stock14, now instantiated only for these actual
+// trivial command member types. No normalize envelope is used as credit.
+template <class T> constexpr size_t vector_cleanup_source() noexcept
+{
+	constexpr size_t destruction = 10 * P + B;
+	constexpr size_t deallocation = 11 * P + 5 * N + B;
+	return destruction + deallocation + 3 * P;
+}
+template <class T> constexpr size_t vector_move_source() noexcept
+{
+	constexpr size_t entry = 3 * P + 2 * B + 2 * P + 2 * P + sizeof(std::true_type) + 2 * P;
+	constexpr size_t get_allocator = 7 * P + sizeof(std::allocator<T>);
+	constexpr size_t const_allocator_constructor = 11 * P;
+	constexpr size_t data_swap = 2 * P + 3 * sizeof(T *) + P + 3 * (2 * P) + P;
+	constexpr size_t allocator_move = 10 * P + 2 * (2 * P);
+	return entry + sizeof(std::vector<T>) + get_allocator + 2 * P +
+	       const_allocator_constructor + 2 * data_swap + allocator_move +
+	       vector_cleanup_source<T>();
+}
+// Generated command assignment, id assignment and std::array assignment each
+// owns this/source/returned ref. Scalar fields invoke no member function.
+constexpr size_t command_generated_assignment = 3 * (3 * P);
+constexpr size_t command_copy = command_generated_assignment +
+				fresh_vector_const_assignment<critical_entity_key>() +
+				fresh_vector_const_assignment<critical_expected_revision>() +
+				2 * fresh_vector_const_assignment<uint8_t>() + 7 * (2 * P);
+constexpr size_t command_move = command_generated_assignment +
+				vector_move_source<critical_entity_key>() +
+				vector_move_source<critical_expected_revision>() +
+				2 * vector_move_source<uint8_t>() + 2 * P + 7 * (2 * P);
+// state->native->attachment destination has two real unique arrow/get chains.
+constexpr size_t attachment_copy = fresh_vector_const_assignment<uint8_t>() + 2 * (7 * (2 * P));
+#if defined(__STDCPP_DEFAULT_NEW_ALIGNMENT__)
+constexpr bool layout =
+	sizeof(long) == 8 && sizeof(bool) == 1 && sizeof(std::allocator<uint8_t>) == 1 &&
+	sizeof(std::allocator<critical_entity_key>) == 1 &&
+	sizeof(std::allocator<critical_expected_revision>) == 1 &&
+	std::is_trivial_v<critical_entity_key> && std::is_trivial_v<critical_expected_revision> &&
+	std::is_trivial_v<uint8_t> && sizeof(std::vector<uint8_t>::iterator) == P &&
+	sizeof(std::vector<uint8_t>::const_iterator) == P &&
+	sizeof(std::vector<critical_entity_key>::iterator) == P &&
+	sizeof(std::vector<critical_entity_key>::const_iterator) == P &&
+	sizeof(std::vector<critical_expected_revision>::iterator) == P &&
+	sizeof(std::vector<critical_expected_revision>::const_iterator) == P &&
+	alignof(critical_entity_key) <= __STDCPP_DEFAULT_NEW_ALIGNMENT__ &&
+	alignof(critical_expected_revision) <= __STDCPP_DEFAULT_NEW_ALIGNMENT__;
+#else
+constexpr bool layout = false;
+#endif
+} // namespace mixed_replay_command_assignment_source
+} // namespace
+
+namespace
+{
+namespace mixed_replay_fence_queue_construction_source
+{
+using namespace mixed_replay_command_assignment_source;
+// Actual inherited/default constructors: native queue, deque, base, impl,
+// allocator, new_allocator, impl_data and two real deque iterator members.
+constexpr size_t defaults = 9 * P;
+// _M_get_map_allocator: this and returned allocator object; true const
+// tp-allocator getter(this,ref), rebind allocator converting ctor(this,ref)
+// and its default new_allocator base receiver. Local/return value objects
+// are summed across genuine selected source scopes, no retained heap here.
+constexpr size_t map_allocator_value =
+	P + sizeof(std::allocator<std::string *>) + 2 * P + 2 * P + P;
+constexpr size_t allocator_cleanup = 2 * P;
+// Same original std allocator_traits/std allocator/new_allocator graph, with
+// the vector-specific _M_allocate/_M_deallocate wrapper explicitly excluded.
+constexpr size_t allocator_allocate = allocate_source - (2 * P + N);
+constexpr size_t allocator_deallocate = deallocate_source - (2 * P + N);
+constexpr size_t allocate_map = 2 * P + N + sizeof(std::allocator<std::string *>) +
+				map_allocator_value + allocator_allocate + allocator_cleanup;
+constexpr size_t deallocate_map = 2 * P + N + sizeof(std::allocator<std::string *>) +
+				  map_allocator_value + allocator_deallocate + allocator_cleanup;
+// _M_allocate_node this/result, true buf_size input/return, then allocator.
+constexpr size_t allocate_node = 2 * P + 2 * N + allocator_allocate;
+// _M_create_nodes has this/nstart/nfinish/cur. A default deque's exact one
+// node means an allocation failure destroys an EMPTY [nstart,cur) range.
+// _M_destroy_nodes still executes its this/nstart/nfinish/n loop controller;
+// no node deallocator is invoked for that genuinely empty failure range.
+constexpr size_t create_nodes = 4 * P + allocate_node;
+constexpr size_t failed_node_destroy = 4 * P;
+// _M_set_node(this,new_node) -> _S_buffer_size return -> __deque_buf_size
+// input/return, plus actual difference_type cast. Called on start and finish.
+constexpr size_t set_node = 2 * P + 3 * N + D;
+// Failed base construction destroys only completed impl subobjects: impl,
+// data, two iterator members, allocator and new_allocator, six receivers.
+constexpr size_t failed_impl_cleanup = 6 * P;
+// _M_initialize_map owns this, num_elements, num_nodes, nstart, nfinish.
+// First buffer calculation, genuine max(arg refs/result + bool) and its two
+// materialized size_t arguments; map + actual one-node creation. Success adds
+// two set_node and final modulo buffer query. Failure follows original empty
+// node cleanup, map release and implicit completed-impl cleanup.
+constexpr size_t initialize =
+	3 * P + 2 * N + 2 * N + (3 * P + B + 2 * N) + allocate_map + create_nodes +
+	max_source(2 * set_node + 2 * N,
+		   failed_node_destroy + deallocate_map + failed_impl_cleanup);
+constexpr size_t window = defaults + initialize;
+constexpr bool layout = sizeof(std::string) == 32 && sizeof(std::allocator<std::string>) == 1 &&
+			sizeof(std::allocator<std::string *>) == 1 &&
+			sizeof(std::deque<std::string>::iterator) == 4 * P &&
+			sizeof(std::deque<std::string>::const_iterator) == 4 * P;
+} // namespace mixed_replay_fence_queue_construction_source
+} // namespace
+
+namespace
+{
+namespace mixed_replay_table_forecast_source
+{
+using namespace mixed_replay_command_assignment_source;
+constexpr size_t policy_bytes = sizeof(std::__detail::_Prime_rehash_policy);
+constexpr size_t pair_bytes = sizeof(std::pair<bool, size_t>);
+// Actual native table helper has this/key/output, fresh/text/extra, result,
+// genuine copied policy and original returned pair. No mapped heap here.
+constexpr size_t own = 3 * P + 3 * N + B + policy_bytes + pair_bytes;
+constexpr size_t count = P + N;
+// Hashtable -> node allocator -> EBO const getter and C++20 specialized
+// allocator_traits::max_size (no C++17 allocator.max_size branch).
+constexpr size_t max_size = P + N + 2 * P + 2 * P + P + N;
+constexpr size_t key_size = P + N;
+constexpr size_t policy_value = 2 * P + 2 * P + P; // policy getter/copy/dtor.
+// Actual reference-returning std::max, including its real two prvalue arguments.
+constexpr size_t scalar_max = 3 * P + B + 2 * N;
+constexpr size_t floor_interface = 2 * sizeof(double);
+// GCC13.3 authentic release _M_need_rehash: this + bucket/element/insertion
+// parameters and its actual min_bkts double. Returned pair lives in own above.
+// Genuine forwarding pair ctor owns this/first/second refs, both std::forward
+// calls, and materialized bool/size_t arguments. Short false/int branches fit
+// this typed maximum; no second physical returned pair is invented.
+constexpr size_t pair_construct = 3 * P + 4 * P + B + N;
+constexpr size_t need_rehash =
+	P + 3 * N + sizeof(double) + 2 * scalar_max + floor_interface + pair_construct;
+// Real raw-pointer lower_bound: named first/last/value/result; helper's
+// first/last/value/middle/result, len/half and actual one-byte comparator.
+// Public factory result is elided into the genuine parameter object.
+constexpr size_t raw_distance =
+	2 * P + D + P + 2 * P + D + sizeof(std::random_access_iterator_tag) + 8 * P;
+// advance(ref,n) keeps its actual __d; category + raw RA __advance. One real
+// random tag has four-level ctor/dtor receivers; builtin_constant_p result int.
+constexpr size_t raw_advance =
+	P + 2 * D + P + P + D + sizeof(std::random_access_iterator_tag) + 8 * P + sizeof(int);
+constexpr size_t lower_bound = 4 * P + 5 * P + 2 * D + sizeof(__gnu_cxx::__ops::_Iter_less_val) +
+			       raw_distance + raw_advance + (3 * P + B) + P + P;
+// Actual _M_next_bkt: this/input/result, genuine n_primes constexpr scalar,
+// last_prime and next_bkt pointers. Immutable release prime/fast arrays are
+// library static data, not an additional live caller frame or copied heap.
+constexpr size_t next_bucket = 3 * P + 3 * N + lower_bound + floor_interface;
+// Original helper invokes size once in the limit check and once in rehash args;
+// key.size three times on the allocating branch, bucket once. Sum genuine sequential scopes, not iteration.
+constexpr size_t window = own + 2 * count + max_size + 3 * key_size + count + policy_value +
+			  need_rehash + next_bucket + P; // returned pair destructor.
+constexpr bool layout =
+	policy_bytes == 16 && pair_bytes == 16 && sizeof(__gnu_cxx::__ops::_Iter_less_val) == 1 &&
+	sizeof(std::random_access_iterator_tag) == 1 && sizeof(double) == 8 && sizeof(int) == 4;
+} // namespace mixed_replay_table_forecast_source
+} // namespace
+
+namespace
+{
+namespace mixed_replay_string_value_source
+{
+using namespace mixed_replay_command_assignment_source;
+using namespace mixed_replay_fence_queue_construction_source;
+// Actual selected char-allocator value copy/destruction closures only.
+// Table/deque controllers and complete host/native qualification remain separate.
+constexpr size_t A = sizeof(std::allocator<char>), C = sizeof(char);
+constexpr size_t allocator_get = 2 * P;
+constexpr size_t local_data = 8 * P; // local_data/pointer_to/addressof/__addressof.
+constexpr size_t is_local = P + B + max_source(2 * P, P + local_data);
+constexpr size_t allocator_copy = 4 * P; // allocator/new_allocator(this,source).
+// One genuine selected allocator temporary, elided through return wrappers.
+constexpr size_t select_allocator = 2 * P + A + allocator_copy;
+constexpr size_t hider = 3 * P + 2 * P + allocator_copy;
+constexpr size_t hider_cleanup = 3 * P;
+constexpr size_t max_size = P + N + allocator_get + P + N;
+constexpr size_t allocate = 3 * P + N + allocator_allocate;
+// Fresh-copy _M_create always receives old capacity0: genuine growth condition
+// cannot enter its doubling branch. The original valid-domain max_size runs once.
+constexpr size_t create = 3 * P + N + max_size + allocator_get + allocate;
+constexpr size_t init_local = P + B;
+constexpr size_t raw_distance =
+	2 * P + D + P + 2 * P + D + sizeof(std::random_access_iterator_tag) + 8 * P;
+constexpr size_t traits_copy = 3 * P + N + B + 3 * P + N;
+constexpr size_t traits_assign = 2 * P + B;
+constexpr size_t copy_chars =
+	3 * P + D + 2 * P + N + max_source(traits_assign, traits_copy) + 2 * P;
+constexpr size_t set_length = P + N + P + N + 2 * P + traits_assign + C;
+// Actual forward tag has forward/input two-level ctor+destructor, not random
+// access's four-level graph. Real one-pointer guard local and ctor/dtor remain.
+constexpr size_t construct = 3 * P + N + sizeof(std::forward_iterator_tag) + P + 3 * P + 4 * P +
+			     raw_distance + max_source(init_local, create + 2 * P + P + N) +
+			     copy_chars + set_length;
+// Both source _M_data invocations and length are genuine selected entry calls.
+// A failing _M_create destroys completed hider subobjects; guard is constructed
+// only afterward and its successful cleanup sees _M_guarded==nullptr.
+constexpr size_t copy = 2 * P + local_data + allocator_get + select_allocator + hider + 2 * P +
+			4 * P + P + N + construct + hider_cleanup;
+constexpr size_t destruction =
+	P + P + is_local + P + N + allocator_get + 2 * P + allocator_deallocate + hider_cleanup;
+// Completed string destruction is phase-exclusive with its completed copy;
+// copy failure already owns hider cleanup above. No populated value dies while
+// the same value is still executing that constructor. Later container cleanup
+// retains this same named typed lifetime window, not another object/buffer.
+constexpr size_t window = max_source(copy, destruction);
+constexpr bool layout = sizeof(std::allocator<char>) == 1 && sizeof(char) == 1 &&
+			sizeof(std::forward_iterator_tag) == 1 &&
+			std::is_same_v<std::char_traits<char>::char_type, char>;
+} // namespace mixed_replay_string_value_source
+} // namespace
+
+namespace
+{
+namespace mixed_replay_populated_state_cleanup_source
+{
+using namespace mixed_replay_command_assignment_source;
+// Genuine existing typed vector controller instantiations. Command's three
+// actual types share the proven controller shape; compare their exact typed
+// expressions rather than referring to a nonexistent untyped alias.
+constexpr size_t byte_vector_cleanup = vector_cleanup_source<uint8_t>();
+constexpr size_t command_vector_cleanup = max_source(
+	vector_cleanup_source<critical_entity_key>(),
+	max_source(vector_cleanup_source<critical_expected_revision>(), byte_vector_cleanup));
+// For authority operations, the true/false Destroy auxiliary has the same
+// first/last receiver shape. Its actual nontrivial descent is added explicitly
+// in authority_operations_cleanup below; no element lifetime is hidden here.
+constexpr size_t authority_vector_cleanup_controller =
+	vector_cleanup_source<flatfile_authority_operation>();
+constexpr size_t tuple_member = mixed_replay_state_construction_source::tuple_member;
+// Exact unique_ptr destructor -> ptr-reference access, get_deleter wrapper and
+// real mutable tuple access, std::move(ref/result), default_delete(this,ptr),
+// sized delete interface, then data/impl/tuple/two impl/two heads/deleter tail.
+// Physical pointee and returned pointer are already actual retained owners.
+constexpr size_t unique_destruction =
+	2 * P + tuple_member + 2 * P + tuple_member + 2 * P + 2 * P + P + N + 8 * P;
+constexpr size_t unique_reset = 2 * P + 3 * P + 2 * tuple_member + tuple_member + 2 * P + P + N;
+constexpr size_t id_cleanup = 2 * P; // id -> its actual array member.
+constexpr size_t completion_cleanup = P + max_source(id_cleanup, P);
+// All generated member cleanup calls are sequential under the same parent
+// receiver. Reuse one true maximum: fields are not dynamic callbacks or locks.
+constexpr size_t command_cleanup = P + max_source(id_cleanup, command_vector_cleanup);
+constexpr size_t native_context_cleanup = P + byte_vector_cleanup;
+constexpr size_t envelope_cleanup = P + max_source(command_cleanup, byte_vector_cleanup);
+constexpr size_t record_cleanup = P + max_source(command_cleanup, byte_vector_cleanup);
+// Actual vector<authority_operation> false-destroy branch reaches addressof,
+// _Destroy(T*), destroy_at(T*) before the actual operation destructor. Unlike
+// a byte/key/revision vector its destructor really invokes each element body.
+constexpr size_t authority_operation_cleanup =
+	P + max_source(mixed_replay_string_value_source::destruction, byte_vector_cleanup);
+constexpr size_t authority_operations_cleanup =
+	authority_vector_cleanup_controller + 4 * P + authority_operation_cleanup;
+// Exact fixed ordinary result -> shared participant -> its coin array, or
+// a digest array. Only source receivers here, never another fixed DTO/heap.
+constexpr size_t cash_result_cleanup = P + max_source(2 * P, P);
+// All three existing private implementations have root/original/record/
+// operations. Ordinary additionally has its fixed cash result. Identity and
+// authority members are BORROWED pointers and have no lock destructor here.
+constexpr size_t implementation_cleanup =
+	P + max_source(max_source(mixed_replay_string_value_source::destruction, envelope_cleanup),
+		       max_source(record_cleanup,
+				  max_source(authority_operations_cleanup, cash_result_cleanup)));
+constexpr size_t transaction_cleanup = P + unique_destruction + implementation_cleanup;
+constexpr size_t state_cleanup =
+	P +
+	max_source(command_cleanup, max_source(unique_destruction + native_context_cleanup,
+					       max_source(unique_destruction + transaction_cleanup,
+							  completion_cleanup)));
+constexpr size_t private_reset = unique_reset + state_cleanup;
+// Actual operations node pair destroys key and state-pointer sequentially.
+// Table node/allocator erasure controllers remain separate Source closures.
+constexpr size_t operation_pair_cleanup =
+	P + max_source(mixed_replay_string_value_source::destruction,
+		       unique_destruction + state_cleanup);
+constexpr size_t cleanup_window = max_source(private_reset, operation_pair_cleanup);
+// Source value copies and completed rollback cleanup are distinct sequential
+// mutation phases; reuse their real maximum rather than add string cleanup
+// again on top of the same actual descendant included above.
+constexpr size_t value_lifetime_window =
+	max_source(mixed_replay_string_value_source::window, cleanup_window);
+} // namespace mixed_replay_populated_state_cleanup_source
+} // namespace
+
+namespace
+{
+namespace mixed_replay_queue_push_source
+{
+using namespace mixed_replay_command_assignment_source;
+namespace base = mixed_replay_fence_queue_construction_source;
+// Actual size(this,returned size) -> deque difference(two refs,returned diff,
+// actual bool conversion) -> _S_buffer_size(return) -> buf-size(input,return).
+constexpr size_t size_query = P + N + 2 * P + D + B + 3 * N;
+// max_size(this,result) -> allocator getter -> _S_max_size(allocator-ref,
+// diffmax,allocmax,result) -> real C++20 traits max(ref,result) -> min(refs,
+// result-ref,bool). Numeric traits value is static, not a heap request.
+constexpr size_t max_size_query = P + N + 2 * P + P + 3 * N + P + N + 3 * P + B;
+constexpr size_t scalar_max = 3 * P + B;
+// Real map copy/copy_backward uses raw string** pointers. Both selected typed
+// graphs have public/copy_a/a1/a2 four pointer carriers, two raw miter and
+// three raw niter input/results, raw niter_wrap(from,res,result), then genuine
+// trivial leaf(_Num,expect,memmove or one builtin pointer assignment). No
+// deque iterator or string element copy executes when copying this map.
+constexpr size_t raw_map_copy = 4 * P + 2 * (2 * P) + 4 * P + 3 * (2 * P) + 3 * P + 2 * (4 * P) +
+				B + 4 * P + D + expect_interface +
+				max_source(memmove_interface, 2 * P);
+// Original map growth owns this,nodes,front,old/new counts,new_nstart,
+// new_map_size,new_map. Only one original relocation branch executes.
+constexpr size_t map_reallocate =
+	3 * P + 4 * N + B +
+	max_source(raw_map_copy,
+		   scalar_max + base::allocate_map + raw_map_copy + base::deallocate_map) +
+	2 * base::set_node;
+constexpr size_t map_reserve = P + N + map_reallocate;
+constexpr size_t node_deallocate = 2 * P + 2 * N + base::allocator_deallocate;
+// Actual inherited std::allocator_traits::construct(allocator,location,arg)
+// -> forward(ref,result) -> construct_at(location,arg) -> forward(ref,result)
+// -> placement new(size,location,result). String ctor SOURCE is credited ONCE
+// by the retained value-lifetime window; its string object/buffer are heap G/P.
+constexpr size_t element_construct_controller = 3 * P + 2 * P + 2 * P + 2 * P + N + 2 * P;
+constexpr size_t push_slow_controller = 2 * P + size_query + max_size_query + map_reserve +
+					base::allocate_node + 2 * P + element_construct_controller +
+					max_source(base::set_node, node_deallocate);
+constexpr size_t push_controller =
+	2 * P + max_source(element_construct_controller, push_slow_controller);
+// Actual custom forecast: this,identity,out,actual-ref, text/block/peak/index/
+// nodes/new_map/request/old_map. Max's second argument is an actual N prvalue.
+constexpr size_t forecast_controller =
+	4 * P + 8 * N + B + size_query + max_size_query + 3 * (P + N) + 2 * N + scalar_max + N;
+// Forecast finishes before push; one phase-exclusive maximum of their exact
+// graphs is retained before the first original callback. Real fresh map/block/
+// string requests still come only from the unchanged actual peak forecast.
+constexpr size_t window = max_source(forecast_controller, push_controller);
+} // namespace mixed_replay_queue_push_source
+} // namespace
+
+namespace
+{
+namespace mixed_replay_key_value_source
+{
+using namespace mixed_replay_command_assignment_source;
+namespace text = mixed_replay_string_value_source;
+// pointer/count string's CONST allocator hider differs from const string copy:
+// hider(this,data,allocator-ref), allocator/new_allocator const-copy4P; no
+// invented std::move in this const hider. Default allocator temp ctor/dtor2P
+// each and its genuine one-byte object are not another string object/heap.
+constexpr size_t pointer_count_construct =
+	3 * P + N + 2 * P + 2 * P + sizeof(std::allocator<char>) + 3 * P + text::allocator_copy +
+	text::local_data + text::construct + text::hider_cleanup;
+constexpr size_t array_data = 2 * P, array_size = P + N, array_index = 2 * P + N;
+constexpr size_t operation_key = P + array_data + array_size + pointer_count_construct;
+// Original aggregate {} initialization is builtin, not a fabricated array
+// default ctor. Non-NRVO return permits the real generated array move pair;
+// the array payload is already in the original two-array admission.
+constexpr size_t entity_bytes = P + sizeof(unsigned int) + array_index + 2 * P + P;
+constexpr size_t entity_key =
+	P + entity_bytes + array_data + array_size + P + pointer_count_construct;
+// Actual true/equal std::allocator<char> move: __alloc_on_move(two refs),
+// std::move(ref,result), generated allocator/base assignments(three refs each).
+constexpr size_t allocator_move = 10 * P;
+constexpr size_t use_local = 2 * P + P + B + text::local_data;
+constexpr size_t short_move = expect_interface + 2 * P + (P + N) + (2 * P + N) + 4 * P + (P + N) +
+			      max_source(text::traits_assign, text::traits_copy) +
+			      text::set_length + (P + N);
+// Complete generic equal-allocator long branch: actual optional reused data,
+// receiver/source getters, setters and either source reuse or local-data reset.
+constexpr size_t long_move = B + text::is_local + 2 * P + 2 * P + 2 * P + (P + N) + (P + N) +
+			     (P + N) + max_source(2 * P + P + N, use_local + 2 * P);
+constexpr size_t move_assignment = 3 * P + B + P + N + B + text::is_local + B +
+				   2 * text::allocator_get + allocator_move + text::is_local +
+				   max_source(short_move, long_move) + P + text::set_length;
+constexpr size_t window = max_source(operation_key, max_source(entity_key, move_assignment));
+// Existing value window1476 genuinely dominates these named complete paths
+// (not an unrelated heap/controller allowance). Preserve its exact admission.
+constexpr size_t admitted_window =
+	max_source(mixed_replay_populated_state_cleanup_source::value_lifetime_window, window);
+constexpr bool layout =
+	sizeof(unsigned int) == 4 && sizeof(std::array<char, 9>) == 9 &&
+	std::allocator_traits<std::allocator<char>>::is_always_equal::value &&
+	std::allocator_traits<std::allocator<char>>::propagate_on_container_move_assignment::value;
+} // namespace mixed_replay_key_value_source
+namespace mixed_replay_queue_cleanup_source
+{
+using namespace mixed_replay_command_assignment_source;
+namespace base = mixed_replay_fence_queue_construction_source;
+constexpr size_t I = sizeof(std::deque<std::string>::iterator);
+constexpr size_t iterator_parameter_lifetime = 2 * P + P;
+// String element body is credited by same retained value-lifetime window once.
+// Real _Destroy(allocator/first/last), _Destroy(first/last,bool), false aux
+// (first/last), addressof,_Destroy(T*),destroy_at(T*), allocator getter.
+constexpr size_t element_destroy_controller = 3 * P + 2 * P + B + 2 * P + 4 * P + 2 * P;
+// Actual aux(this,first,last,node) owns true by-value 4-pointer iterators,
+// materialized copies/destructors and buffer-size source, then raw destroy.
+constexpr size_t destroy_aux_controller = 2 * P + 2 * I + 3 * N + element_destroy_controller;
+constexpr size_t destroy_data_controller =
+	2 * P + 2 * I + 2 * iterator_parameter_lifetime + destroy_aux_controller;
+// Actual begin()/end() each owns this and returned four-pointer iterator.
+// They construct that return from stored lvalues (copy2P), then the actual
+// by-value Destroy parameters clean up(P); guaranteed prvalue transfer does
+// not add another generated copy. Returned formal Source P+I was absent.
+constexpr size_t endpoint_query = P + I;
+constexpr size_t deque_body_controller =
+	P + 2 * endpoint_query + 2 * iterator_parameter_lifetime + destroy_data_controller + 2 * P;
+// Actual all-node loop(this,nstart,nfinish,n) -> complete node deallocate;
+// after map release, completed impl/data/two iterators/allocator bases clean.
+constexpr size_t destroy_nodes_controller = 4 * P + mixed_replay_queue_push_source::node_deallocate;
+constexpr size_t base_cleanup_controller =
+	P + destroy_nodes_controller + base::deallocate_map + base::failed_impl_cleanup;
+constexpr size_t window = P + deque_body_controller + base_cleanup_controller;
+// Populated deque destruction is sequential with its prior completed push.
+// Reuse the actual max controllers, not double-count current map/block/text.
+constexpr size_t mutation_window = max_source(mixed_replay_queue_push_source::window, window);
+} // namespace mixed_replay_queue_cleanup_source
+} // namespace
+
+namespace
+{
+namespace mixed_replay_table_key_lookup_source
+{
+using namespace mixed_replay_command_assignment_source;
+constexpr size_t C = sizeof(char), J = sizeof(int), V = sizeof(std::string_view);
+// CONDITIONAL external definition: authentic GCC13.3 LP64 _Hash_bytes source,
+// not proof of installed libstdc++14 ABI/emitted compatibility (ROOT OPEN).
+constexpr size_t hash_unaligned = P + 2 * N + 3 * P + N;
+constexpr size_t hash_shift = 2 * N;
+constexpr size_t hash_tail = P + J + 2 * N;
+constexpr size_t hash_bytes =
+	4 * P + 6 * N + max_source(hash_unaligned + hash_shift, max_source(hash_tail, hash_shift));
+constexpr size_t hash_impl = P + 3 * N + hash_bytes;
+constexpr size_t string_hash = 2 * P + N + 4 * P + (P + N) + hash_impl;
+// Actual string -> view operator: this,data->_M_data,length,ptr-count view.
+// Its view object is the actual hash argument, not a second string/view heap.
+constexpr size_t string_view_conversion = 8 * P + 2 * N;
+constexpr size_t view_hash = P + V + N + (2 * P) + (P + N) + hash_impl;
+constexpr size_t entity_hash = P + V + N + sizeof(std::hash<std::string_view>) + 2 * P + view_hash +
+			       string_view_conversion; // selected declared view copy only.
+constexpr size_t hash_get = 2 * P + 2 * P; // hash wrapper -> EBO cget.
+constexpr size_t key_hash = 2 * P + N + hash_get + max_source(string_hash, entity_hash);
+// _M_v -> _M_valptr -> actual aligned_buffer::_M_ptr -> _M_addr, four
+// receiver/result/ref pairs, no aligned_membuf/launder substitute.
+constexpr size_t node_value = 8 * P;
+constexpr size_t select_first = sizeof(std::__detail::_Select1st) + 2 * P + 3 * P;
+constexpr size_t range_hash = sizeof(std::__detail::_Mod_range_hashing) + P + 3 * N;
+constexpr size_t code_bucket = P + 2 * N + P + 3 * N + range_hash;
+constexpr size_t cached_node_bucket = 2 * P + N + 2 * P + 2 * N + range_hash;
+constexpr size_t uncached_node_bucket =
+	2 * P + N + 2 * P + 2 * N + select_first + node_value + key_hash + range_hash;
+constexpr size_t node_bucket = max_source(cached_node_bucket, uncached_node_bucket);
+// Actual string equality: equal_to(this,two refs,bool), string== refs/bool,
+// three size queries, two data->_M_data queries, char_traits::compare and its
+// actual char_traits body. Its __builtin_memcmp has no invented interface
+// or source locals; the constant-evaluation loop is not selected.
+constexpr size_t string_equal =
+	3 * P + B + 2 * P + B + 3 * (P + N) + 2 * (4 * P) + (2 * P + N + J + B);
+// True equal_to<void> adds two std::forward(ref,result) calls. No closure or
+// function-pointer adapter is invented for this original typed comparator.
+constexpr size_t equal = string_equal + 4 * P;
+constexpr size_t eq_get = 2 * P + 2 * P;
+constexpr size_t key_equal = 3 * P + B + eq_get + select_first + node_value + equal;
+constexpr size_t hash_cached_equal = P + N + B;
+constexpr size_t node_equal = 3 * P + N + B + hash_cached_equal + key_equal;
+constexpr size_t node_next = 2 * P;
+constexpr size_t find_before_bucket = 5 * P + 2 * N + node_equal + node_next + node_bucket;
+constexpr size_t find_node = 4 * P + 2 * N + find_before_bucket;
+constexpr size_t iterator_constructor = 4 * P; // iterator then base this/node.
+// Node/base implicit trivial copy and destructor have no declared source body.
+constexpr size_t iterator_copy = 0, iterator_destructor = 0;
+constexpr size_t begin = 2 * P + 2 * P + iterator_constructor;
+constexpr size_t end = 2 * P + iterator_constructor;
+constexpr size_t iterator_compare = 2 * P + B;
+constexpr size_t iterator_increment = 2 * P + P + node_next;
+// Real slow-hash small-table scan or original bucketed lookup. End scopes are
+// sequential repeated calls to the same genuine body; one named closure plus
+// actual local/return iterator lifetime covers their controller storage.
+constexpr size_t small_scan = begin + end + iterator_destructor + iterator_compare +
+			      iterator_increment + key_equal + iterator_copy + iterator_destructor;
+constexpr size_t bucketed_find = key_hash + code_bucket + find_node + iterator_constructor;
+constexpr size_t find_window =
+	4 * P + 2 * N + (P + N) + 2 * N + max_source(small_scan, bucketed_find);
+// Actual Map_base::at(this,key,result-ref,local iterator) -> same find,
+// iterator arrow(this,result), valptr/ptr/addr(three receiver/result pairs),
+// completed iterator/base destruction. Original observer only selects valid
+// retained identity; original out-of-range exception remains runtime OPEN.
+constexpr size_t at_window = 4 * P + find_window + 8 * P + iterator_destructor;
+constexpr size_t window = max_source(find_window, at_window);
+// Only standard std::string-key find selected by both genuine enqueue bodies.
+// Transparent string_view rollback lookup remains a separate missing graph.
+constexpr bool layout = sizeof(int) == 4 && sizeof(std::string_view) == 2 * P &&
+			sizeof(std::hash<std::string_view>) == 1 &&
+			sizeof(std::__detail::_Select1st) == 1 &&
+			sizeof(std::__detail::_Mod_range_hashing) == 1;
+} // namespace mixed_replay_table_key_lookup_source
+} // namespace
+
+namespace
+{
+namespace mixed_replay_table_node_storage_source
+{
+using namespace mixed_replay_command_assignment_source;
+// These are the two actual table node types, not a guessed generic node.
+using operation_node =
+	std::__detail::_Hash_node<std::pair<const std::string, std::unique_ptr<operation_state>>,
+				  true>;
+using fence_node =
+	std::__detail::_Hash_node<std::pair<const std::string, native_identity_queue>, false>;
+constexpr size_t A = sizeof(std::allocator<void *>);
+// _M_node_allocator -> _Hashtable_ebo_helper::_M_get, this/ref at both levels.
+constexpr size_t node_allocator_get = 4 * P;
+// _M_valptr -> aligned_buffer::_M_ptr -> _M_addr, this/result at all three levels.
+constexpr size_t value_pointer = 6 * P;
+// Only selected DECLARED constructors: _Hash_node_base() policy313 and
+// __aligned_buffer()=default aligned_buffer98. The aggregate node/value/cache,
+// storage union and empty aligned_storage base have no separate declared source.
+// No implicit trivial node/storage destructor body is invented.
+constexpr size_t node_default = 2 * P;
+constexpr size_t node_destructor = 0;
+// Genuine raw __to_address(ptr,result), pointer_to(ref,result) ->
+// addressof(ref,result) -> __addressof(ref,result).
+constexpr size_t raw_address = 2 * P;
+constexpr size_t pointer_to = 6 * P;
+constexpr size_t placement = N + 2 * P;
+// Both genuine selected allocators are std::allocator, same typed allocate /
+// deallocate controller already authenticated by the deque/vector providers.
+// Their node alignment is checked below, so the aligned-new branch is not selected.
+constexpr size_t allocator_allocate =
+	mixed_replay_fence_queue_construction_source::allocator_allocate;
+constexpr size_t allocator_deallocate =
+	mixed_replay_fence_queue_construction_source::allocator_deallocate;
+template <size_t R> constexpr size_t construct_controller()
+{
+	// allocator_traits::construct(allocator,location,args...), forwards;
+	// construct_at(location,args...,returned pointer), forwards; placement new(size,ptr,result).
+	// Actual pair construction is a SEPARATE child, not this controller.
+	return (2 + R) * P + 2 * R * P + (2 + R) * P + 2 * R * P + placement;
+}
+template <size_t R> constexpr size_t allocate_node_controller()
+{
+	// this, R argument references, __nptr, __n and result; exact allocator get,
+	// raw address and node default; value pointer and forwards to value construct.
+	// Failed value construction releases the real allocated node before rethrow.
+	return (4 + R) * P + node_allocator_get + allocator_allocate + raw_address + placement +
+	       node_default + value_pointer + 2 * R * P + construct_controller<R>() +
+	       node_allocator_get + allocator_deallocate;
+}
+template <size_t R> constexpr size_t scoped_allocate_controller()
+{
+	// Scoped-node this, hashtable pointer and R refs; forwards to actual allocation.
+	// Its TWO retained pointer fields are priced separately as actual local INLINE.
+	return (2 + R) * P + 2 * R * P + allocate_node_controller<R>();
+}
+// ~Scoped_node(this) -> deallocate_node(this,node), allocator getter / value ptr,
+// traits::destroy(allocator,location) -> destroy_at(location). Actual pair/member
+// destruction is ALREADY retained by the value/queue cleanup families, not repeated.
+// deallocate_node_ptr(this,node,__ptr) -> pointer_to, real generated node teardown,
+// allocator getter and real typed deallocation. No copy of node/value bytes here.
+constexpr size_t scoped_node_cleanup = P + 2 * P + node_allocator_get + value_pointer + 2 * P + P +
+				       3 * P + pointer_to + node_destructor + node_allocator_get +
+				       allocator_deallocate;
+// operations.emplace has two actual value refs; fences operator[] uses the actual
+// piecewise tag and two tuples (three refs). This bound maps BOTH own controller
+// instantiations. The pair / tuple / unique move child is explicitly not closed here.
+constexpr size_t scoped_node_fields = 2 * P;
+constexpr size_t node_window =
+	scoped_node_fields +
+	max_source(scoped_allocate_controller<2>(),
+		   max_source(scoped_allocate_controller<3>(), scoped_node_cleanup));
+// Complete _Hashtable_alloc bucket allocate/deallocate primitive: local rebind
+// allocator plus its converting ctor/new_allocator base and cleanup. No vector
+// or deque wrappers are substituted for these actual controller locals.
+constexpr size_t rebind_allocator_construct = 3 * P;
+constexpr size_t allocator_cleanup = 2 * P;
+constexpr size_t bucket_allocate =
+	4 * P + N + A + node_allocator_get + rebind_allocator_construct + allocator_allocate +
+	raw_address +
+	allocator_cleanup; // __builtin_memset introduces no source interface/declared locals.
+constexpr size_t bucket_deallocate = 3 * P + N + A + pointer_to + node_allocator_get +
+				     rebind_allocator_construct + allocator_deallocate +
+				     allocator_cleanup;
+constexpr size_t window = max_source(node_window, max_source(bucket_allocate, bucket_deallocate));
+#if defined(_GLIBCXX_INLINE_VERSION) && _GLIBCXX_INLINE_VERSION == 0 && \
+	defined(__STDCPP_DEFAULT_NEW_ALIGNMENT__)
+constexpr bool layout = A == 1 && alignof(operation_node) <= __STDCPP_DEFAULT_NEW_ALIGNMENT__ &&
+			alignof(fence_node) <= __STDCPP_DEFAULT_NEW_ALIGNMENT__;
+#else
+constexpr bool layout = false;
+#endif
+} // namespace mixed_replay_table_node_storage_source
+} // namespace
+
+namespace
+{
+namespace mixed_replay_table_value_construction_source
+{
+using namespace mixed_replay_command_assignment_source;
+constexpr size_t T = sizeof(std::tuple<std::string &&>);
+constexpr size_t E = sizeof(std::tuple<>);
+constexpr size_t Z = sizeof(std::piecewise_construct_t);
+constexpr size_t K = sizeof(std::_Index_tuple<>);
+// Genuine unique_ptr MOVE CONSTRUCTION, not null-destination move assignment.
+// unique/data/impl(this,source); one std::move; tuple and both impl/head defaulted
+// move receiver/source pairs; no undeclared default_delete move; source impl pointer get.
+constexpr size_t unique_move = 3 * (2 * P) + 2 * P + 2 * P + 2 * (2 * P) + 2 * (2 * P) +
+			       mixed_replay_state_construction_source::tuple_member;
+// Operation pair(this,x,y), two forward(ref,result). Concepts-mode empty
+// __pair_base has no declared constructor or destructor in this selected mode.
+// Both original member constructors are sequential under this controller. Existing
+// value lifetime1476 dominates string-copy1023 and unique-move224 separately; no
+// second string/unique graph or their actual object bytes are added here.
+constexpr size_t operation_pair_controller = 3 * P + 2 * (2 * P);
+// Existing nontrivial member cleanup is retained by the reviewed value window.
+// Empty concepts-mode pair base has no separate declared cleanup source.
+constexpr size_t pair_base_cleanup = 0;
+// Actual fence argument expressions: std::move(ref,result), forward_as_tuple
+// (arg/result tuple), its forward, tuple forwarding ctor+forward, impl ctor+forward,
+// head ctor+forward; selected declared tuple<> default(receiver and one-byte object).
+// The prvalue tuple<string&&> materializes once for the outer Scoped_node argument.
+constexpr size_t fence_arguments = 2 * P + (P + T + 2 * P) + 3 * (2 * P + 2 * P) + P + E;
+// Piecewise wrapper owns this and actual by-value tag/first tuple/empty tuple.
+// The one-reference tuple selects declared tuple/impl/head moves6P. Empty tuple
+// has no declared copy/move, and none of these trivial tag/tuple types declares
+// a destructor. Their object storage stays owned, with no invented source calls.
+constexpr size_t piecewise_wrapper = P + Z + T + E + 6 * P;
+// Delegating pair(tuple1&,tuple2&,index1,index2): this/two refs, two actual empty
+// index objects only (no declared special members). get<0> -> __get_helper -> impl
+// head -> head-base head (four ref/result pairs), one forward; no empty-base call.
+constexpr size_t piecewise_delegate = 3 * P + 2 * K + 4 * (2 * P) + 2 * P;
+// Exact string MOVE CONSTRUCTION from basic_string.h, not its move assignment:
+// own receiver/source, local-data and source allocator getters, std::move/hider,
+// source is_local; actual short init/copy/length or long pointer/capacity setters;
+// common source length/destination length, source use-local/data/set-length.
+constexpr size_t string_move =
+	2 * P + mixed_replay_string_value_source::local_data + 2 * P +
+	mixed_replay_string_value_source::allocator_get + mixed_replay_string_value_source::hider +
+	mixed_replay_string_value_source::is_local +
+	max_source(mixed_replay_string_value_source::init_local +
+			   mixed_replay_string_value_source::traits_copy + P + N,
+		   2 * P + 2 * P + P + N) +
+	(P + N) + (P + N) + mixed_replay_key_value_source::use_local + 2 * P +
+	mixed_replay_string_value_source::set_length;
+// First member string move completes before second deque default. If second fails,
+// the original completed string destructor runs. Both branches are dominated by
+// already-retained value1476: max(string move558, deque856 + string destructor258).
+// Actual deque856 still appears in the unchanged original absent-fence extra
+// forecast/admission. Do not remove that existing credit/request or add it again.
+constexpr size_t fence_member_child =
+	max_source(string_move, mixed_replay_fence_queue_construction_source::window +
+					mixed_replay_string_value_source::destruction);
+constexpr size_t operation_member_child =
+	max_source(mixed_replay_string_value_source::copy, unique_move);
+constexpr size_t operation_window = operation_pair_controller + pair_base_cleanup;
+constexpr size_t fence_window =
+	fence_arguments + piecewise_wrapper + piecewise_delegate + pair_base_cleanup;
+constexpr size_t window = max_source(operation_window, fence_window);
+constexpr bool layout =
+	T == P && E == 1 && Z == 1 && K == 1 && sizeof(std::_Index_tuple<0>) == K &&
+	operation_member_child <=
+		mixed_replay_populated_state_cleanup_source::value_lifetime_window &&
+	fence_member_child <= mixed_replay_populated_state_cleanup_source::value_lifetime_window;
+} // namespace mixed_replay_table_value_construction_source
+} // namespace
+
+namespace
+{
+namespace mixed_replay_table_insert_source
+{
+using namespace mixed_replay_command_assignment_source;
+namespace lookup = mixed_replay_table_key_lookup_source;
+constexpr size_t Q = sizeof(std::pair<bool, size_t>);
+constexpr size_t R = sizeof(std::pair<decltype(operations)::iterator, bool>);
+// The genuine data-free native_admission_string_table inherits __umap_hashtable
+// DIRECTLY. There is no std::unordered_map wrapper call on either selected table.
+// Actual _Hashtable.emplace has this/two refs, two forwards and real unique-tag
+// object parameter only; no integral_constant aggregate ctor/dtor call.
+// Its returned prvalue initializes ONE elided result below.
+constexpr size_t table_emplace = 3 * P + 2 * (2 * P);
+// _M_emplace: this/two arg refs/key ref/loop iterator/found node/pos iterator,
+// code/bucket locals, true tag parameter and two forwards into Scoped_node.
+// The scoped-node physical fields and node/value construction are parent-owned.
+constexpr size_t emplace_body = 7 * P + 2 * N + B + 2 * (2 * P);
+// Actual returned pair(iterator,bool): declared pair forwarding ctor and two
+// forwards; max branch selects iterator(node), with pointer/bool materializations.
+// Undeclared trivial iterator copy, pair/base/iterator cleanup has no source call.
+// The final pair object has ONE elided lifetime through actual table dispatch.
+constexpr size_t returned_pair = R + (3 * P + 2 * (2 * P)) + lookup::iterator_constructor + P + B;
+// Shared actual lookup descendants for this body: initial key extraction/value,
+// sequential size/threshold probes; real small scan OR code/hash/bucket/find.
+// The already-retained genuine lookup1904 dominates the complete selected child
+// set below. Do not add another full lookup envelope for the same descendants.
+constexpr size_t emplace_lookup_child =
+	2 * ((P + N) + 2 * N) +
+	max_source(lookup::select_first + lookup::node_value,
+		   max_source(lookup::small_scan,
+			      lookup::key_hash + lookup::code_bucket + lookup::find_node));
+// _M_insert_unique_node own this/node/saved-state reference, bkt/code/n_elt,
+// actual do_rehash pair object. _M_state(this,returned _State) materializes the
+// genuine saved-state value bound by const reference; no second saved-state DTO.
+// _M_store_code has this/node/code formals in BOTH true and false cache lanes.
+constexpr size_t insert_unique_body = 3 * P + 3 * N + Q + (P + N) + (2 * P + N);
+// _M_rehash(this,count,state-ref), actual unique-tag parameter storage only;
+// failure calls real _M_reset(this,state). No alternate growth policy/source.
+// The unique tag prvalue initializes the ONE aux parameter, whose B is below.
+constexpr size_t rehash_body = 2 * P + N + (P + N);
+// _M_rehash_aux true: this/new_buckets/p/next, count/bbegin/bkt, actual tag;
+// _M_begin(this,result), _M_next(this,result). Original node bucket hash graph
+// is lookup-owned; bucket allocation/free primitives are node-storage-owned.
+constexpr size_t rehash_aux_body = 4 * P + 3 * N + B + 2 * P + 2 * P;
+// Actual hashtable wrappers, not duplicate _Hashtable_alloc primitive frames:
+// allocate(this,count,result); __builtin_expect has no declared Source interface;
+// zero-arg deallocate(this) -> deallocate(this,buckets,count) ->
+// uses_single_bucket(this,buckets,bool). Single-bucket branch is preserved.
+constexpr size_t allocate_bucket_wrapper = 2 * P + N;
+constexpr size_t deallocate_bucket_wrapper = P + (2 * P + N) + (2 * P + B);
+// _M_insert_bucket_begin(this,node,bucket); its actual next-node/bucket child
+// is again lookup-owned. Returned iterator construction is genuine4P.
+constexpr size_t insert_bucket_body = 2 * P + N;
+constexpr size_t insert_unique_window =
+	insert_unique_body +
+	max_source(rehash_body + rehash_aux_body + allocate_bucket_wrapper +
+			   deallocate_bucket_wrapper,
+		   insert_bucket_body) +
+	lookup::iterator_constructor;
+// Actual inherited Map_base body this/key/h/found-node/pos/result-ref, code/bucket.
+// The original direct hashtable owner has NO std::unordered_map operator[] wrapper.
+// Its private
+// Scoped_node/tuple fields, value ctor and selected lookup descendants are already
+// separately owned; no duplicated map/node/tuple/deque/string object or heap.
+constexpr size_t subscript_body = 6 * P + 2 * N;
+constexpr size_t emplace_window =
+	table_emplace + emplace_body + returned_pair + insert_unique_window;
+constexpr size_t subscript_window = subscript_body + insert_unique_window;
+// Original coordinator call expression std::move(work.state) or
+// std::move(work.fence_key) is outside the STL wrapper's own std::move.
+constexpr size_t caller_move = 2 * P;
+constexpr size_t window = caller_move + max_source(emplace_window, subscript_window);
+constexpr bool layout = Q == 2 * P && R == 2 * P && sizeof(std::true_type) == B &&
+			emplace_lookup_child <= lookup::window &&
+			mixed_replay_table_node_storage_source::layout &&
+			mixed_replay_table_value_construction_source::layout;
+} // namespace mixed_replay_table_insert_source
+} // namespace
+
+namespace
+{
+namespace mixed_replay_table_iterator_erase_source
+{
+using namespace mixed_replay_command_assignment_source;
+namespace lookup = mixed_replay_table_key_lookup_source;
+// Direct inherited Hashtable::erase(iterator), not an unordered_map wrapper:
+// receiver; by-value iterator parameter; converted const-iterator parameter;
+// actual ignored output iterator (separate from non-NRVO _M_erase local result).
+// Const conversion selects declared const-node/base constructors4P. Trivial
+// implicit parameter copy/destructors have no declared source; receiver and actual
+// parameter/output iterator values remain retained4P.
+constexpr size_t overload_lifetimes = 4 * P + 4 * P;
+// erase(const_iterator) own this/node/previous-node and actual bucket local;
+// its by-value parameter object is already owned once by the converter above.
+constexpr size_t const_erase_body = 3 * P + N;
+// _M_get_previous_node(this,bucket,node,previous,result) follows raw _M_nxt;
+// there is no invented node-next method call in that actual loop.
+constexpr size_t previous_node = 4 * P + N;
+// _M_erase(this,prev,node,result-iterator,bucket,next-bucket); actual bucket-
+// removal controller, result iterator(node-next), permitted non-NRVO generated
+// iterator/base move and cleanup of that real named local. The output is already
+// owned once above. Actual node allocator/value destructor is a separate child.
+constexpr size_t remove_bucket_begin = 2 * P + 2 * N;
+constexpr size_t erase_body = 4 * P + 2 * N + remove_bucket_begin + lookup::iterator_constructor +
+			      lookup::iterator_copy + lookup::iterator_destructor;
+constexpr size_t window = overload_lifetimes + const_erase_body + previous_node + erase_body;
+// Erasure's actual cached/uncached bucket and at most two sequential next() calls
+// are subsets of already retained lookup1904. Node storage802 and member value1476
+// plus queue1533 own their genuine teardown separately, not counted again here.
+constexpr size_t lookup_child = lookup::node_bucket + 2 * lookup::node_next;
+constexpr bool layout = sizeof(decltype(operations)::iterator) == P &&
+			sizeof(decltype(operations)::const_iterator) == P &&
+			sizeof(decltype(fences)::iterator) == P &&
+			sizeof(decltype(fences)::const_iterator) == P &&
+			lookup_child <= lookup::window && mixed_replay_table_insert_source::layout;
+} // namespace mixed_replay_table_iterator_erase_source
+} // namespace
+
+namespace
+{
+namespace mixed_replay_transparent_table_lookup_source
+{
+using namespace mixed_replay_command_assignment_source;
+namespace old = mixed_replay_table_key_lookup_source;
+constexpr size_t V = sizeof(std::string_view), J = sizeof(int);
+// Captured string_view copy ctor is declared; its trivial destructor is not.
+constexpr size_t view_copy = 2 * P, view_destructor = 0;
+constexpr size_t traits_compare = 2 * P + N + J + B;
+// string_view::_S_compare actual n1/n2, difference_type __diff, returned int.
+constexpr size_t length_compare = 2 * N + D + J;
+// compare(this, by-value view, rlen, __ret, returned int), min(two refs,result-ref),
+// char_traits/memcmp and S_compare; real view parameter copy/cleanup.
+constexpr size_t view_compare =
+	P + V + N + 2 * J + 3 * P + traits_compare + length_compare + view_copy + view_destructor;
+// equality's two actual by-value views/bool, two size queries, compare,
+// left parameter copy and both parameter cleanup. RHS is original string's
+// actual data/size/ptr-count conversion, not an invented alternative byte check.
+constexpr size_t view_equal = 2 * V + B + 2 * (P + N) + view_compare + view_copy +
+			      2 * view_destructor + old::string_view_conversion;
+constexpr size_t equal = 3 * P + B + 2 * (2 * P) + view_equal;
+constexpr size_t key_equal = 3 * P + B + old::eq_get + old::select_first + old::node_value + equal;
+constexpr size_t node_equal = 3 * P + N + B + old::hash_cached_equal + key_equal;
+constexpr size_t find_before = 5 * P + 2 * N + node_equal + old::node_next + old::node_bucket;
+constexpr size_t find_node = 4 * P + 2 * N + find_before;
+// Actual view-key hash replaces string->view conversion with genuine initial
+// entity parameter copy+cleanup. All other named source scopes are identical.
+// This authentic typed substitution remains below existing old key_hash457.
+constexpr size_t entity_hash =
+	old::entity_hash - old::string_view_conversion + view_copy + view_destructor;
+constexpr size_t key_hash = 2 * P + N + old::hash_get + entity_hash;
+// Original remove_fences forms actual view temporary from its encoded array;
+// that array itself remains an explicitly separate rollback local owner.
+constexpr size_t view_argument = V + (2 * P + N) + 2 * P + (P + N) + view_destructor;
+constexpr size_t forwarding_owner = 2 * P; // native table find(this,key const-ref).
+constexpr size_t find_body = 3 * P + 2 * N; // actual this/key/output iterator, code/bucket.
+constexpr size_t full_window = view_argument + forwarding_owner + find_body + key_hash +
+			       old::code_bucket + find_node + old::iterator_constructor;
+// Existing lookup credit owns the same selected controller/forward and traits
+// leaves. Recompute the exact predicate difference from the corrected old and
+// transparent expressions together; actual new forwarding16 and view argument72
+// remain uncovered. Original find also has an actual small-scan iterator local
+// that is absent from the transparent body (3P+2N, not4P+2N).
+// Retain ONLY this genuine missing supplement, not a second full lookup envelope.
+constexpr size_t predicate_supplement = equal - old::equal;
+constexpr size_t supplement = predicate_supplement + forwarding_owner + view_argument;
+constexpr size_t window = supplement;
+constexpr bool layout = V == 2 * P && J == 4 && equal >= old::equal && key_hash <= old::key_hash &&
+			full_window <= old::window + supplement &&
+			mixed_replay_table_iterator_erase_source::layout;
+} // namespace mixed_replay_transparent_table_lookup_source
+} // namespace
+
+namespace
+{
+namespace mixed_replay_deque_tail_erase_source
+{
+using namespace mixed_replay_command_assignment_source;
+constexpr size_t I = sizeof(native_identity_queue::iterator);
+// Captured declared _Deque_iterator copy constructor owns this/source.
+// The selected defaulted assignment is declared separately; no implicit dtor body.
+constexpr size_t iterator_copy = 2 * P;
+constexpr size_t buffer_query = 3 * N; // _S_buffer_size return; deque_buf_size input/return.
+constexpr size_t iterator_pointer_construct = 3 * P + buffer_query;
+constexpr size_t const_iterator_conversion = P + I + iterator_pointer_construct;
+constexpr size_t const_cast_without_result = const_iterator_conversion - I;
+constexpr size_t endpoint = P + I + iterator_copy;
+constexpr size_t endpoint_without_result = endpoint - I;
+constexpr size_t equal = 2 * P + B; // C++20 != rewrites selected ==, no second helper.
+constexpr size_t difference = 2 * P + D + buffer_query;
+// operator+= actual receiver/n/result reference/offset/node_offset; the real
+// _M_set_node source is the existing captured receiver/node/buffer/cast chain.
+constexpr size_t set_node = 2 * P + buffer_query;
+constexpr size_t plus_assign = 2 * P + 3 * D + buffer_query + set_node;
+// Both nonmember operators own input reference/n/local iterator/result object.
+// Actual non-NRVO return selects declared copy; implicit iterator dtor is absent.
+constexpr size_t arithmetic_own = P + D + 2 * I;
+constexpr size_t plus = arithmetic_own + iterator_copy + plus_assign + iterator_copy;
+constexpr size_t minus_assign = 2 * P + D;
+constexpr size_t minus =
+	arithmetic_own + iterator_copy + minus_assign + plus_assign + iterator_copy;
+// _M_erase_at_end(this,by-value pos); endpoint and real allocator reference query.
+// The _M_destroy_data / _M_destroy_nodes children remain separately covered by
+// the already retained named queue destruction source, never charged twice.
+// Finish=pos selects the DECLARED defaulted assignment (this,source,result-ref)
+// at captured stl_deque172, so its genuine3P belongs here.
+// end() output is the same elided second destroy_data parameter already child-owned.
+// Named __pos -> first destroy_data parameter selects a real copy2P.
+constexpr size_t erase_end_own = P + I + endpoint_without_result + 2 * P + 3 * P + iterator_copy;
+// begin() output initializes the exact at_end parameter: only one I retained.
+constexpr size_t clear_own = P + endpoint_without_result + erase_end_own;
+// Genuine _M_erase first/last/result iterator values + this + n/elems_before.
+constexpr size_t erase_body_own = P + 3 * I;
+constexpr size_t common_equal = equal;
+constexpr size_t full_branch = 2 * (endpoint + equal) + clear_own + endpoint_without_result;
+// Partial first==begin is false (kept>0), so full conjunction short-circuits;
+// no second endpoint/comparison at that cut. Both difference calls are named
+// occurrences, a conservative explicit sequential overestimate of shared48.
+// Arithmetic output aliases at_end parameter (minus) or final output (plus),
+// already retained in erase_end_own/erase_body_own; subtract exactly that I.
+constexpr size_t partial_own = endpoint + 2 * difference +
+			       mixed_replay_queue_push_source::size_query + endpoint + equal +
+			       endpoint + (minus - I) + erase_end_own + endpoint + (plus - I);
+constexpr size_t partial_branch = endpoint + equal + 2 * D + partial_own;
+constexpr size_t erase_body = erase_body_own + common_equal +
+			      max_source(iterator_copy, max_source(full_branch, partial_branch));
+// Public erase(this,two const-iterator params,result), two selected converting
+// const-iterator constructors, and both genuine _M_const_cast child calls.
+// Public return prvalue aliases _M_erase return, and both const_cast outputs
+// alias the two _M_erase parameters. Each physical I appears exactly once below.
+constexpr size_t public_own = P + 2 * I + 2 * (2 * P) + 2 * const_cast_without_result;
+constexpr size_t supplement = public_own + erase_body;
+constexpr size_t destroy_children = mixed_replay_queue_cleanup_source::destroy_data_controller +
+				    mixed_replay_queue_cleanup_source::destroy_nodes_controller;
+constexpr size_t full = supplement + destroy_children;
+constexpr size_t window = supplement, full_window = full;
+// Exact ORIGINAL lexical domain: erase(remove(begin,end,identity),end).
+// Empty removal returns first. Full removal selects clear. Partial removal has
+// kept>0, elems_before=kept and size-n=kept, so kept<=kept/2 is false; last==end
+// prevents MOVE3. No deque shift/backward branch is priced or substituted.
+constexpr bool layout = I == 4 * P && sizeof(native_identity_queue::const_iterator) == I &&
+			destroy_children <= mixed_replay_queue_cleanup_source::mutation_window;
+} // namespace mixed_replay_deque_tail_erase_source
+} // namespace
+
+namespace
+{
+namespace mixed_replay_std_remove_source
+{
+using namespace mixed_replay_command_assignment_source;
+namespace tail = mixed_replay_deque_tail_erase_source;
+constexpr size_t I = sizeof(native_identity_queue::iterator);
+using predicate_type = __gnu_cxx::__ops::_Iter_equals_val<const std::string>;
+constexpr size_t O = sizeof(predicate_type), T = sizeof(std::random_access_iterator_tag);
+// Factory's prvalue adapter initializes remove_if's exact by-value parameter.
+// O is owned by remove_if, so only value-ref and declared ctor formals here.
+constexpr size_t predicate_factory = P + 2 * P;
+// Declared adapter operator(this,iterator param,bool), actual iterator copy
+// from lvalue and dereference(this,result-ref). String equality is a named child.
+constexpr size_t predicate_controller = P + I + B + tail::iterator_copy + 2 * P;
+constexpr size_t increment = 2 * P + tail::set_node;
+// Category return tag aliases RA parameter; only actual const-ref formal here.
+// The aggregate tag has no invented constructor/destructor Source interfaces.
+constexpr size_t iterator_category = P;
+// RA first/last/pred/trip_count/tag. Its output aliases wrapper's actual return
+// temporary; declared lvalue-return copy remains charged once here. Both actual
+// named iterator arguments select the captured user-written copy constructor.
+constexpr size_t random_find_controller = 2 * I + O + D + T + 2 * tail::iterator_copy +
+					  tail::iterator_copy + tail::difference + increment +
+					  predicate_controller;
+// Wrapper owns first/last/pred and actual returned iterator temporary assigned
+// into remove_if first. RA prvalue return aliases that ONE iterator object.
+constexpr size_t find_wrapper_controller =
+	3 * I + O + 2 * tail::iterator_copy + iterator_category + random_find_controller;
+// remove_if first/last/pred/local __result; final output aliases remove output.
+// Initial find assignment uses declared/defaulted iterator assignment3P.
+// Empty return-copy and populated __result construction/loop/return are separate
+// branches. Repeated increment/equality helper calls reuse their named closure;
+// their actual receiver targets remain in first/result fields already owned.
+constexpr size_t populated_loop = tail::iterator_copy + increment + predicate_controller +
+				  2 * (2 * P) + 2 * P + tail::equal + tail::iterator_copy;
+constexpr size_t remove_if_controller = 3 * I + O + find_wrapper_controller + 3 * P + tail::equal +
+					max_source(tail::iterator_copy, populated_loop);
+// Public remove first/last/value-ref/final output. Adapter output is already the
+// remove_if parameter; every returned prvalue up this chain is the ONE output.
+constexpr size_t supplement =
+	3 * I + P + 2 * tail::iterator_copy + predicate_factory + remove_if_controller;
+// Actual string== has two const refs/bool, three size queries, two data/Mdata
+// chains and char_traits compare. It selects no equal_to<void> wrapper. These
+// exact descendants are already retained once by table predicate source.
+constexpr size_t equality_child =
+	2 * P + B + 3 * (P + N) + 2 * (4 * P) + (2 * P + N + sizeof(int) + B);
+constexpr size_t move_child = mixed_replay_key_value_source::move_assignment;
+constexpr size_t full = supplement + max_source(equality_child, move_child);
+constexpr size_t window = supplement, full_window = full;
+constexpr bool layout =
+	O == P && T == 1 && I == 4 * P &&
+	equality_child <= mixed_replay_table_key_lookup_source::equal &&
+	move_child <= mixed_replay_populated_state_cleanup_source::value_lifetime_window &&
+	tail::layout;
+// Caller begin/end objects alias public remove parameters. Their genuine
+// receiver/copy source belongs the separate rollback caller controller, not an
+// extra I in this callee. No iterator/adaptor implicit trivial dtor is invented.
+} // namespace mixed_replay_std_remove_source
+} // namespace
+
+namespace
+{
+namespace mixed_replay_rollback_controller_source
+{
+using namespace mixed_replay_command_assignment_source;
+namespace tail = mixed_replay_deque_tail_erase_source;
+// Actual command.keys const range: hidden range reference, two iterators and
+// named key reference and identities reference. The actual local found node
+// aliases the transparent find returned iterator ALREADY owned by that profile;
+// do not charge it again. identity/command formals are separate from five locals.
+constexpr size_t fence_own = 7 * P;
+// Original entity_key_bytes(key): key ref, unsigned index and direct array[]
+// (this/index/result-ref). The captured GNU13 array indexes its _M_elems
+// directly: no invented __array_traits::_S_ref call. Its local/output arrays
+// stay in the original separately admitted 2*sizeof(array<char,9>) credit.
+constexpr size_t encode_key = P + sizeof(unsigned int) + (2 * P + N);
+// This exact encoded.data()/size()/view constructor occurrence is ALREADY
+// owned by transparent::view_argument retained in the lookup supplement.
+// Its actual view object stays in the original rollback fixed-inline credit.
+// Keep the named correspondence but do not add this56 to the new window.
+constexpr size_t encoded_view = 2 * P + (P + N) + (2 * P + N);
+// const vector begin/end returns initialize the hidden iterators directly.
+// Each const endpoint materializes a const-pointer P from its stored mutable
+// pointer: receiverP + conversionP + constructor2P =4P. The return object is
+// its existing hidden field, not another resultP in addition to that conversion.
+// != rewrites ==: two refs/result plus both base(this,result-ref) calls.
+// Prefix ++ and dereference each have this plus result-reference formals.
+constexpr size_t key_range_queries =
+	2 * (2 * P + 2 * P) + (2 * P + B + 2 * (2 * P)) + 2 * P + 2 * P;
+// Genuine data-free table end(this,returned node iterator), captured node/base
+// pointer constructors(two this/arg pairs); == has two refs/result bool.
+constexpr size_t table_end = 2 * P + 4 * P;
+constexpr size_t table_equal = 2 * P + B;
+// -> -> value_base::_M_valptr -> aligned_buffer::_M_ptr -> _M_addr.
+// Each has the captured receiver and pointer return; builtin &storage adds no
+// synthetic interface. Actual aligned-buffer source has no addressof call.
+constexpr size_t node_arrow = 4 * (2 * P);
+// Caller begin/end/end outputs initialize the remove/tail child parameters.
+// Their physical returned iterators are already owned by those exact child
+// profiles. Only receiver and genuine declared copy-constructor formals here.
+constexpr size_t deque_callers = 3 * tail::endpoint_without_result;
+// deque::empty compares stored finish/start directly (stl_deque1347). It does
+// NOT call begin/end and materializes no iterator: this/bool and two refs/bool.
+constexpr size_t deque_empty = P + B + tail::equal;
+constexpr size_t table_size = P + N;
+constexpr size_t remove_fences_own = fence_own + encode_key + key_range_queries + table_end +
+				     table_equal + node_arrow + deque_callers + deque_empty +
+				     table_size;
+// work.found->second->command: real node arrow plus unique arrow/get/const tuple
+// chain. Six actual const accessors each have receiver/ref and returned ptr/ref.
+constexpr size_t unique_arrow = 2 * P + 6 * (2 * P);
+constexpr size_t operations_callers = table_end + table_equal + node_arrow + unique_arrow;
+// Complete legacy/native rollback controller(work ref,bool result), fence
+// helper and pending remove/erase caller endpoint scopes. Genuine lookup,
+// node/iterator erasure, stdremove/tail and populated state reset children are
+// retained separately by their named existing windows before the first callback.
+// encode_key explicitly represents the separate real rollback invocation,
+// versus the parent key window's earlier pre-insertion entity-key occurrence.
+// Table end/compare below find and arrow after find are genuine OUTSIDE-callee
+// occurrences, distinct from those inside the old lookup/small-scan/at graph.
+// These sequential occurrences are conservatively summed, never numerical
+// slack substituted for a missing descendant. update_depth remains a separate
+// actual child; this provider does not pretend to close its clock/thread graph.
+constexpr size_t window = P + B + operations_callers + remove_fences_own + deque_callers;
+constexpr bool layout = sizeof(unsigned int) == 4 &&
+			sizeof(std::vector<critical_entity_key>::const_iterator) == P &&
+			sizeof(decltype(operations)::iterator) == P &&
+			sizeof(decltype(fences)::iterator) == P && tail::layout;
+} // namespace mixed_replay_rollback_controller_source
+} // namespace
+
+namespace
+{
+namespace mixed_replay_update_depth_header_source
+{
+using namespace mixed_replay_command_assignment_source;
+// Actual update_depth retains oldest/now, range reference, two node iterators,
+// pair-binding reference and the named identity/state member bindings.
+// pair's captured tuple_size specialization selects tuple protocol; each
+// get<const pair>(ref)->member-ref calls __pair_get::__const_get(ref)->ref.
+constexpr size_t own = 2 * N + 6 * P;
+// Direct selected native table mutable begin/end (global table is nonconst,
+// even though each pair binding is const). Iterator output objects are
+// the two hidden loop fields above: price only receiver/_M_begin and captured
+// iterator/base pointer-constructor formals here, not second output objects.
+constexpr size_t node_begin = P + 2 * P + 4 * P;
+constexpr size_t node_end = P + 4 * P;
+constexpr size_t node_equal = 2 * P + B;
+constexpr size_t node_increment = 2 * P + P + 2 * P;
+// Node * -> _M_v -> _M_valptr -> buffer::_M_ptr -> buffer::_M_addr.
+constexpr size_t node_dereference = 5 * (2 * P);
+constexpr size_t range_queries =
+	node_begin + node_end + node_equal + node_increment + node_dereference;
+constexpr size_t pair_binding = 2 * (2 * P + 2 * P);
+// Repeated actual unique arrow/dereference/get/const tuple accesses reuse their
+// genuine selected closure. Each operation_is_* has one const ref and bool.
+constexpr size_t state_access = 2 * P + 6 * (2 * P);
+constexpr size_t phase_predicate = P + B;
+constexpr size_t state_queries = state_access + phase_predicate;
+// Actual now_usec header-owned graph only. One steady time_point prvalue,
+// one time_since_epoch nanosecond duration, one returned microsecond duration
+// and the cast rep materialized for duration(const Rep&) are distinct objects.
+// duration_cast/__cast/rep-constructor prvalues alias ONE microsecond object.
+// steady_clock::now's OUT-OF-LINE implementation is not in these headers and
+// remains an explicit separate external leaf, never an invented frame margin.
+constexpr size_t clock_objects = 4 * N;
+constexpr size_t epoch_query = P + 2 * P; // receiver plus declared duration copy.
+constexpr size_t cast_query = P + P + (P + N) + 2 * P;
+constexpr size_t final_count = P + N;
+// duration declares ~duration()=default. Its actual selected receivers are
+// epoch duration, microseconds and the time_point's duration member. No implicit
+// time_point destructor interface is invented in addition to those members.
+constexpr size_t clock_cleanup = 3 * P;
+constexpr size_t clock_headers =
+	N + clock_objects + epoch_query + cast_query + final_count + clock_cleanup;
+// Two genuine max(ref,ref)->ref calls. The operation-count RHS sum is one
+// actual uint64 temporary; the retained-byte RHS is an existing lvalue.
+constexpr size_t high_water = (3 * P + N) + 3 * P;
+// completed_cache is actual std::unordered_map, unlike native operations.
+constexpr size_t completed_size = 2 * (P + N);
+// joinable(this,bool) -> id() -> operator==(id,id)->bool. The prvalue default id
+// initializes the right by-value equality parameter, counted ONCE. Left member
+// copy is implicit/undeclared and adds no invented constructor Source body.
+constexpr size_t thread_joinable = P + B + P + 2 * sizeof(std::thread::id) + B;
+constexpr size_t window = own + range_queries + pair_binding + state_queries + clock_headers +
+			  high_water + completed_size + thread_joinable;
+constexpr bool layout = sizeof(std::chrono::steady_clock::time_point) == N &&
+			sizeof(std::chrono::steady_clock::duration) == N &&
+			sizeof(std::chrono::steady_clock::rep) == N &&
+			std::chrono::steady_clock::period::num == 1 &&
+			std::chrono::steady_clock::period::den == 1000000000 &&
+			sizeof(std::chrono::microseconds) == N &&
+			sizeof(std::chrono::microseconds::rep) == N &&
+			sizeof(std::thread::id) == P && sizeof(uint64_t) == N &&
+			sizeof(decltype(operations)::const_iterator) == P;
+} // namespace mixed_replay_update_depth_header_source
+} // namespace
+
+namespace
+{
+namespace mixed_replay_workspace_entry_source
+{
+using namespace mixed_replay_command_assignment_source;
+namespace text = mixed_replay_string_value_source;
+// Actual default-string ctor(this) -> local_data, rvalue-allocator hider,
+// one default allocator temporary, local-buffer init and set_length(0).
+// GNU13 allocator has NO declared move ctor: std::move selects its real const
+// copy ctor and __new_allocator const copy, exactly text::allocator_copy.
+// Temporary allocator owns one byte, explicit allocator/base defaults2P and
+// explicit ~allocator receiverP. C++20 __new_allocator has NO declared dtor.
+// No implicit _Alloc_hider destructor interface is added to this ctor chain.
+constexpr size_t default_allocator = sizeof(std::allocator<char>) + 2 * P + P;
+constexpr size_t default_string = P + text::local_data + 3 * P + 2 * P + text::allocator_copy +
+				  default_allocator + text::init_local + text::set_length;
+// Null unique default: unique_ptr, explicitly defaulted __uniq_ptr_impl,
+// tuple, both declared Tuple_impl and Head_base default ctors, default_delete.
+// __uniq_ptr_data has no declared no-arg ctor body: no extra receiver invented.
+constexpr size_t null_unique_default = 8 * P;
+constexpr size_t vector_default = mixed_replay_state_construction_source::vector_default;
+// Node_iterator()=default and its declared Node_iterator_base() each thisP.
+// Iterator physical fields themselves are already in sizeof(actual workspace).
+constexpr size_t node_iterator_default = 2 * P;
+// These empty/default member constructors run sequentially, under one actual
+// workspace ctor. No allocation or reserve callback overlaps them; use their
+// named full maximum, not a multiplier for the two string members.
+constexpr size_t member_construction =
+	max_source(default_string, max_source(null_unique_default,
+					      max_source(vector_default, node_iterator_default)));
+// ROOM ctor: this/lock-ref/callback/opaque/caller_outer.
+// Legacy ctor: this/input-ref/replay/observer/lock-ref/callback/opaque/outer.
+constexpr size_t room_constructor = 4 * P + N;
+constexpr size_t legacy_constructor = 7 * P + N;
+constexpr size_t construction =
+	max_source(room_constructor, legacy_constructor) + member_construction;
+// Before the initial input-heap refusal, members are genuinely empty and no
+// callback or original mutation has happened. The selecting caller's preentry
+// capacity covers this entire call until SOURCE becomes self-retained. Price
+// the actual no-deallocator paths, rather than borrowing later populated1476.
+// Local string: dtor/dispose/is_local (data+const_local_data)/allocator dtor.
+constexpr size_t empty_string_cleanup = P + P + (P + B + 2 * P + text::local_data) + P;
+// Empty byte vector: dtor, allocator getter, allocator/range Destroy and true
+// aux, base dtor, NULL _M_deallocate and explicit allocator dtor. No nonnull
+// allocation-traits/deallocator branch is reached on that early return.
+constexpr size_t empty_vector_cleanup = P + 2 * P + 3 * P + 2 * P + B + 2 * P + P + (2 * P + N) + P;
+// Null unique: destructor/ptr-ref and exact five mutable accessor pairs.
+// It calls no deleter and has no declared data/aggregate destructor body.
+constexpr size_t null_unique_cleanup = 2 * P + mixed_replay_state_construction_source::tuple_member;
+constexpr size_t early_cleanup =
+	max_source(empty_string_cleanup, max_source(empty_vector_cleanup, null_unique_cleanup));
+constexpr size_t window = max_source(construction, early_cleanup);
+// Completed member destruction is already owned by the genuine persistent
+// populated value lifetime: workspace unique destructor reaches exactly the
+// same unique_destruction+state_cleanup child as operation_pair_cleanup,
+// without its pair receiver. Strings/encoded vector run sequentially and use
+// the same genuine destruction children, not a new workspace destructor body.
+constexpr size_t cleanup_child =
+	max_source(text::destruction,
+		   max_source(mixed_replay_populated_state_cleanup_source::byte_vector_cleanup,
+			      mixed_replay_populated_state_cleanup_source::unique_destruction +
+				      mixed_replay_populated_state_cleanup_source::state_cleanup));
+constexpr bool layout =
+	sizeof(std::allocator<char>) == 1 && default_string == 244 && null_unique_default == 64 &&
+	cleanup_child <= mixed_replay_populated_state_cleanup_source::value_lifetime_window;
+// Selecting caller must preadmit this SOURCE and actual initial-inline query
+// before invoking the entry. Actual entry self-retains SOURCE308 in work.outer
+// through callbacks; sizeof(workspace), strings/vector/pointee actual heap
+// remain in the original private CURRENT prefix, not a second Source DTO copy.
+} // namespace mixed_replay_workspace_entry_source
+} // namespace
+
+namespace
+{
+namespace native_birth_submit_workspace_source
+{
+using namespace mixed_replay_command_assignment_source;
+namespace members = mixed_replay_workspace_entry_source;
+// Actual room_submit_workspace ctor: this/callback/opaque/output and caller N.
+// Envelope's vector members, both local strings, null state and three default
+// node iterators construct sequentially. Reuse their exact selected member
+// declaration maxima; physical members remain in sizeof(room_submit_workspace).
+constexpr size_t constructor = 4 * P + N;
+// unique_lock(mutex&,defer_lock_t): this/mutex and actual by-value empty tag;
+// std::__addressof(ref)->pointer is the ONLY reached address helper. The global
+// defer_lock object is not newly constructed and has no declared copy/dtor call.
+constexpr size_t defer_lock_constructor = 2 * P + sizeof(std::defer_lock_t) + 2 * P;
+constexpr size_t member_construction =
+	max_source(members::member_construction, defer_lock_constructor);
+constexpr size_t construction = constructor + member_construction;
+// On the overflow return before lock(), all owning members are still empty
+// and unique_lock::_M_owns is false. Its actual destructor has only this;
+// the unlock branch is unselected. No external mutex body is invented here.
+constexpr size_t early_cleanup = max_source(members::early_cleanup, P);
+constexpr size_t window = max_source(construction, early_cleanup);
+constexpr bool layout = members::layout && sizeof(std::defer_lock_t) == 1 &&
+			sizeof(std::unique_lock<std::mutex>) == 2 * P && construction == 284 &&
+			early_cleanup == 121;
+// This entry window is retained through the real first callback. Later populated
+// ownership/cleanup, held-lock destruction, actual table/queue and external
+// callbacks still require their own genuine caller/submit profiles.
+} // namespace native_birth_submit_workspace_source
+} // namespace
+
+namespace
+{
+namespace native_birth_submit_clone_state_source
+{
+using namespace mixed_replay_command_assignment_source;
+// Existing command_copy names one seven-pair unique arrow/get/tuple destination
+// chain for state->command. Direct work.envelope.command does not call it.
+// Keep all genuine typed fresh assignment scopes and the original independently
+// reviewed conservative generated-command/id/array credits unchanged.
+constexpr size_t destination_unique_access = 7 * (2 * P);
+constexpr size_t direct_command_copy = command_copy - destination_unique_access;
+// The direct envelope attachment invokes exactly fresh byte-vector assignment;
+// neither state nor native unique pointer is accessed at this direct destination.
+constexpr size_t direct_attachment_copy = fresh_vector_const_assignment<uint8_t>();
+// These two genuine member-copy occurrences are conservatively summed under
+// envelope assignment. No undeclared aggregate receiver/dtor is invented.
+constexpr size_t envelope_copy = direct_command_copy + direct_attachment_copy;
+constexpr size_t state_construction = mixed_replay_state_construction_source::state_window;
+constexpr size_t context_construction = mixed_replay_state_construction_source::context_window;
+// state->command = std::move(envelope.command) is the exact earlier typed move,
+// including its real caller move(ref,result) and one destination unique chain.
+constexpr size_t command_transfer = command_move;
+// state->native->attachment = std::move(envelope.attachment): actual byte move,
+// caller move(ref,result), and two destination unique arrow/get/tuple chains.
+constexpr size_t attachment_transfer =
+	vector_move_source<uint8_t>() + 2 * P + 2 * destination_unique_access;
+constexpr size_t populated_cleanup =
+	mixed_replay_populated_state_cleanup_source::value_lifetime_window;
+// All these operations and later private-member cleanup are sequential phases.
+// Persistent Source stays live across every recensus; member/pointee/capacity
+// bytes remain the real existing private CURRENT/explicit allocation requests.
+constexpr size_t window = max_source(
+	envelope_copy,
+	max_source(state_construction,
+		   max_source(context_construction,
+			      max_source(command_transfer,
+					 max_source(attachment_transfer, populated_cleanup)))));
+constexpr bool layout = mixed_replay_command_assignment_source::layout &&
+			native_birth_submit_workspace_source::layout;
+} // namespace native_birth_submit_clone_state_source
+} // namespace
+
+namespace
+{
+namespace native_birth_submit_mutation_children_source
+{
+using namespace mixed_replay_command_assignment_source;
+namespace clone = native_birth_submit_clone_state_source;
+namespace rollback = mixed_replay_rollback_controller_source;
+// Native submit uses the SAME genuine operations/fences custom tables,
+// std::string-key find/at, unique-state emplace, string-rvalue fence subscript,
+// node allocation/deallocation and original Prime forecast as replay. No
+// completed_cache unordered_map wrapper is included by this table child map.
+constexpr size_t tables = mixed_replay_table_forecast_source::window +
+			  mixed_replay_table_key_lookup_source::window +
+			  mixed_replay_table_node_storage_source::window +
+			  mixed_replay_table_value_construction_source::window +
+			  mixed_replay_table_insert_source::window +
+			  mixed_replay_table_iterator_erase_source::window +
+			  mixed_replay_transparent_table_lookup_source::window;
+// Both pending_admission and each genuine fence value use the exact existing
+// native_identity_queue<string> forecast/push and populated cleanup children.
+// The rollback pending remove + tail erase selects the same typed string moves,
+// predicates/iterators and true tail-only domain, not prefix shifting/MOVE3.
+constexpr size_t queues = mixed_replay_queue_cleanup_source::mutation_window +
+			  mixed_replay_deque_tail_erase_source::window +
+			  mixed_replay_std_remove_source::window;
+// Actual remove_fences controller/array-key/transparent-view/range/end/arrow
+// and pending begin/end expression occurrences are unchanged. Retain these
+// exact descendants; the legacy rollback's enclosing work-ref/bool-return row
+// is NOT the native submit disposition/controller and is excluded here.
+constexpr size_t rollback_children =
+	rollback::operations_callers + rollback::remove_fences_own + rollback::deque_callers;
+// initial_heap_bytes has output pointer and bool result; its only selected
+// child __deque_buf_size(size)->size owns input/result sizes. The static map
+// constant and builtin sizeof/multiplication introduce no callable wrapper.
+constexpr size_t initial_heap_query = P + B + 2 * N;
+// The clone slice already retains the actual shared value-lifetime maximum:
+// same key string construction/assignment, queue string copy/destruction,
+// populated state cleanup, operation string-copy/unique-move and the genuine
+// fence deque default+completed-string failure cleanup. Prove their named
+// subsets rather than charging that same descendant lifetime a second time.
+constexpr size_t shared_value = clone::populated_cleanup;
+constexpr size_t window = tables + queues + rollback_children + initial_heap_query;
+constexpr bool layout =
+	clone::layout && mixed_replay_fence_queue_construction_source::layout &&
+	mixed_replay_table_forecast_source::layout && mixed_replay_string_value_source::layout &&
+	mixed_replay_key_value_source::layout && mixed_replay_table_key_lookup_source::layout &&
+	mixed_replay_table_node_storage_source::layout &&
+	mixed_replay_table_value_construction_source::layout &&
+	mixed_replay_table_insert_source::layout &&
+	mixed_replay_table_iterator_erase_source::layout &&
+	mixed_replay_transparent_table_lookup_source::layout &&
+	mixed_replay_deque_tail_erase_source::layout && mixed_replay_std_remove_source::layout &&
+	rollback::layout && mixed_replay_key_value_source::window <= shared_value &&
+	mixed_replay_string_value_source::window <= shared_value &&
+	mixed_replay_table_value_construction_source::operation_member_child <= shared_value &&
+	mixed_replay_table_value_construction_source::fence_member_child <= shared_value;
+} // namespace native_birth_submit_mutation_children_source
+} // namespace
+
+namespace
+{
+namespace mixed_replay_enqueue_entry_controller_source
+{
+using namespace mixed_replay_command_assignment_source;
+// Actual borrowed entry arguments and returned bool. Workspace fields belong
+// its existing INLINE. The validation profile local/returned size_t are Source.
+constexpr size_t legacy_entry = 6 * P + N + B;
+constexpr size_t native_entry = 5 * P + N + B;
+constexpr size_t validation_profile =
+	2 * N + P + B; // own_source/validation_source and fixed retained query
+// The genuine critical_command_valid_frame_bytes() return N is already priced
+// by that preserved getter's +sizeof(size_t), not a third new enclosing local.
+// unique_lock::mutex(this,returned mutex*) and owns_lock(this,bool).
+constexpr size_t lock_queries = 2 * P + P + B;
+// Actual observer selection locals: borrowed, observer_reserve, observer_context.
+constexpr size_t observer_selection = B + 2 * P;
+// Each _admit has work reference, request and bool, around the unchanged prefix
+// and actual reserve relay. The full prefix and forwarding are separately held.
+constexpr size_t admit_controller = P + N + B;
+constexpr size_t observer_readiness = B; // actual no-argument ready predicates
+constexpr size_t scalar_field_classifier = P + B;
+constexpr size_t vector_size = P + N + sizeof(std::ptrdiff_t);
+constexpr size_t vector_index = 2 * P + N;
+constexpr size_t array_size = P + N;
+constexpr size_t table_size = P + N;
+// Full held_retirement_transport_command: command/bytes references, actual
+// reference-capturing integer closure, blob_size and item_section/tail/terms.
+// integer(this,offset,count) has i/result plus its declared uint64 return.
+// No undeclared lambda destructor is invented. Repeated sequential wire reads
+// reuse exactly this selected integer/size/index closure, not a wire-size margin.
+constexpr size_t held_classifier = 3 * P + 3 * N + sizeof(uint64_t) + B +
+				   (P + 3 * N + 2 * sizeof(uint64_t)) + vector_size + vector_index;
+constexpr size_t transport_classifier =
+	scalar_field_classifier + 4 * scalar_field_classifier + held_classifier;
+
+// Genuine SHOP any_of -> none_of -> find_if -> THREE-argument __find_if ->
+// random-access __find_if. Ordinary GNU13 stateless lambda and _Iter_pred are
+// each one byte. Actual const-vector endpoints convert stored key* to const
+// key* before binding normal_iterator(const Iterator&); the returned iterator
+// aliases the by-value any_of parameter. No implicit trivial copy/dtor body.
+constexpr size_t predicate_value = sizeof(char);
+constexpr size_t adapter_value = sizeof(char);
+constexpr size_t random_tag = sizeof(std::random_access_iterator_tag);
+constexpr size_t const_endpoint = P + P + 2 * P;
+constexpr size_t any_of_controller = 2 * P + predicate_value + B;
+constexpr size_t none_of_controller = 2 * P + predicate_value + B;
+constexpr size_t find_if_controller = 3 * P + predicate_value;
+// Both forwarding returns alias the one find_if result object already above.
+constexpr size_t find_dispatch = 2 * P + adapter_value;
+constexpr size_t random_find = 2 * P + adapter_value + sizeof(std::ptrdiff_t) + random_tag;
+// Returned category tag aliases the random-find by-value tag parameter.
+constexpr size_t iterator_category = P;
+// Returned adapter aliases the three-arg dispatch parameter above.
+constexpr size_t adapter_factory = predicate_value;
+constexpr size_t adapter_constructor = P + predicate_value;
+constexpr size_t adapter_moves = 2 * (2 * P);
+constexpr size_t predicate_call = (2 * P + B) + // adapter(this,iterator,bool)
+				  (2 * P + B) + // actual lambda(this,key reference,bool)
+				  2 * P; // normal_iterator::operator*(this,returned key reference)
+constexpr size_t iterator_increment = 2 * P;
+constexpr size_t iterator_difference = 2 * P + sizeof(std::ptrdiff_t) + 2 * (2 * P);
+constexpr size_t iterator_equal = 2 * P + B + 2 * (2 * P);
+constexpr size_t shared_shop_classifier =
+	2 * scalar_field_classifier + 2 * const_endpoint + any_of_controller + none_of_controller +
+	find_if_controller + find_dispatch + random_find + iterator_category + adapter_factory +
+	adapter_constructor + adapter_moves + predicate_call + iterator_increment +
+	iterator_difference + iterator_equal;
+// Transport and SHOP tests are distinct actual call occurrences. Later typed
+// birth/zone/auction/origin field tests reuse the named field-only closure.
+constexpr size_t classification = transport_classifier + shared_shop_classifier;
+constexpr size_t own_callers = max_source(legacy_entry, native_entry) + validation_profile +
+			       lock_queries + observer_selection + admit_controller +
+			       observer_readiness + classification + vector_size + vector_index +
+			       array_size + table_size;
+// New genuine legacy codec preflight helper: work ref/bool plus source, initial,
+// supplement, live and the actual automatic constexpr query local (five N).
+// The query value is compile-time initialized, so no accessor call is invented;
+// its declared local storage remains Source. Query formals/return and checked
+// add are separate. The returned codec status stays in its genuine child Source.
+constexpr size_t codec_preflight = P + B + 5 * N + (P + B) + (P + N + B);
+constexpr bool layout = sizeof(void *) == 8 && sizeof(size_t) == 8 && sizeof(std::ptrdiff_t) == 8 &&
+			predicate_value == 1 && adapter_value == 1 && random_tag == 1 &&
+			sizeof(std::vector<critical_entity_key>::const_iterator) == P;
+// One automatic constexpr query local survives each native validity
+// preflight/callback block. Those four real occurrences are sequential;
+// their named scalar lifetime maximum is one N, not four inline DTOs.
+constexpr size_t native_validator_query_local = N;
+constexpr size_t supplement = own_callers + codec_preflight + native_validator_query_local;
+} // namespace mixed_replay_enqueue_entry_controller_source
+} // namespace
+
+namespace
+{
+namespace native_birth_submit_header_controller_source
+{
+using namespace mixed_replay_command_assignment_source;
+namespace replay = mixed_replay_enqueue_entry_controller_source;
+namespace lookup = mixed_replay_table_key_lookup_source;
+constexpr size_t E = sizeof(critical_submit_result), J = sizeof(int);
+// Actual room_submit_admit(work&, request)->bool and locked reserve relay
+// (partial,opaque)->bool with its real work reference. The local-prefix graph
+// is already retained by submit_private_current_source_frames; the actual
+// CURRENT-C/lender/ROOT callbacks are separate whole-operation dependencies.
+constexpr size_t admit = P + N + B;
+constexpr size_t relay = 2 * P + N + B;
+// room_submit_return(work&, disposition): work reference and the by-value enum
+// parameter are distinct. Its returned prvalue is the SAME outer submit result
+// already priced by native_birth_submit_source_frames, not another enum object.
+// room_submit_rollback(work&) likewise returns that same outer disposition.
+constexpr size_t returned_disposition_controller = P + E;
+constexpr size_t rollback_controller = P;
+// Unlike operations/fences, completed_cache is a real std::unordered_map.
+// Its find(this,key&)->iterator and end(this)->iterator wrappers forward to the
+// exact same selected string-key Hashtable children already retained by the
+// mutation lookup. Each wrapper return aliases its underlying return, rather
+// than creating an additional result object. The actual end temporary and
+// comparison outside find are separately owned by their named typed rows.
+constexpr size_t completed_wrappers = 2 * P + P + lookup::end + lookup::iterator_compare;
+// Actual direct array size for the original 17-byte identity request, key-vector
+// size/index for the accepting fence loop, and operations/fences size limits.
+// Same selected typed declarations execute sequentially; their genuine source
+// is kept separately from existing workspace fields and original heap requests.
+constexpr size_t direct_accessors = (P + N) + (P + N) + (2 * P + N) + (P + N);
+// The unchanged shared-family classifier uses the SAME reviewed any_of/none_of/
+// find_if/random-adapter graph, including its separately preserved original
+// conservative endpoint credit. It also names typed-command field predicates.
+// Initial dispatch's formals/return are already in the original native submit
+// source query; the no-argument original validators_ready bool is distinct.
+constexpr size_t classification = replay::shared_shop_classifier + B;
+// Only exact captured unique_lock/mutex HEADER controllers are named here:
+// lock receiver; mutex::lock receiver+__e; destructor receiver -> unlock receiver
+// -> mutex::unlock receiver; catch's owns_lock receiver+bool. No fabricated
+// __gthread/pthread/throw_system_error body is supplied by these direct rows.
+constexpr size_t direct_lock_headers = P + (P + J) + P + P + P + (P + B);
+// Actual update_depth declaration/header graph and its now_usec chrono subtree
+// are unchanged. The earlier queued_at now_usec invocation is sequential and
+// reuses that exact named clock header subtree; no second out-of-line body.
+constexpr size_t depth_headers = mixed_replay_update_depth_header_source::window;
+constexpr size_t window = admit + relay + returned_disposition_controller + rollback_controller +
+			  completed_wrappers + direct_accessors + classification +
+			  direct_lock_headers + depth_headers;
+constexpr bool layout = replay::layout && native_birth_submit_mutation_children_source::layout &&
+			mixed_replay_update_depth_header_source::layout &&
+			sizeof(decltype(completed_cache)::iterator) == P && E == 4 && J == 4;
+} // namespace native_birth_submit_header_controller_source
+} // namespace
+
+namespace
+{
+bool mixed_replay_enqueue_retained_source(size_t *) noexcept;
+}
+namespace
+{
 // Real journal callback parameter is borrowed, not cloned. Its inline and all
 // remaining journal/caller frames remain in outer throughout this real scope.
 struct legacy_replay_workspace
@@ -8298,6 +10010,13 @@ struct legacy_replay_workspace
 bool legacy_replay_reserve_locked(size_t exclusive_live, void *opaque) noexcept
 {
 	auto &work = *static_cast<legacy_replay_workspace *>(opaque);
+	// A genuine whole-operation callback already refreshes CURRENT C under
+	// this exact lock. Forward its actual relay/context, never reborrow using
+	// the relay itself as if it were the registered ROOT callback/guard pair.
+	if (critical_room_shared_budget_lender::callback_matches(work.lock, work.reserve,
+								 work.context))
+		return work.reserve(exclusive_live, work.context);
+	// Preserve the original single-callback path outside a matching operation.
 	return critical_room_shared_budget_lender::reserve(work.lock, work.reserve, work.context,
 							   exclusive_live);
 }
@@ -8332,6 +10051,28 @@ bool legacy_replay_admit(legacy_replay_workspace &work, size_t request = 0) noex
 {
 	return legacy_replay_local_prefix(work, request) &&
 	       legacy_replay_reserve_locked(work.partial, &work);
+}
+
+bool legacy_replay_encode_complete_source(legacy_replay_workspace &work) noexcept
+{
+	size_t source = 0, initial = 0, supplement = 0, live = 0;
+	constexpr size_t query = critical_command_startup_codec_complete_source_query_frame_bytes();
+	if (!legacy_replay_admit(work, query) ||
+	    !critical_command_startup_codec_complete_source_frame_bytes(&source) ||
+	    !critical_command_startup_codec_initial_inline_bytes(&initial) ||
+	    !critical_command_startup_codec_source_supplement_frame_bytes(&supplement) ||
+	    !room_storage_add(source, initial) || !legacy_replay_admit(work, source) ||
+	    !legacy_replay_local_prefix(work))
+		return false;
+	// Full Source/initial preentry is transient; the unchanged codec owns its
+	// existing INLINE/heap requests, but requires its genuine Source supplement
+	// through every callback. Actual input and old encoded capacity stay prefix.
+	live = work.partial;
+	if (!room_storage_add(live, supplement))
+		return false;
+	return critical_command_encode_bounded(work.input, &work.encoded,
+					       legacy_replay_reserve_locked, &work,
+					       live) == critical_command_codec_result::ok;
 }
 
 bool legacy_replay_rollback(legacy_replay_workspace &work) noexcept
@@ -8375,12 +10116,59 @@ enqueue_legacy_replayed_bounded(critical_command &actual_journal_parameter,
 	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
 	return false;
 #else
+	if constexpr (!mixed_replay_state_construction_source::supported ||
+		      !mixed_replay_command_assignment_source::layout ||
+		      !mixed_replay_fence_queue_construction_source::layout ||
+		      !mixed_replay_table_forecast_source::layout ||
+		      !mixed_replay_string_value_source::layout ||
+		      !mixed_replay_key_value_source::layout ||
+		      !mixed_replay_table_key_lookup_source::layout ||
+		      !mixed_replay_table_node_storage_source::layout ||
+		      !mixed_replay_table_value_construction_source::layout ||
+		      !mixed_replay_table_insert_source::layout ||
+		      !mixed_replay_table_iterator_erase_source::layout ||
+		      !mixed_replay_transparent_table_lookup_source::layout ||
+		      !mixed_replay_deque_tail_erase_source::layout ||
+		      !mixed_replay_std_remove_source::layout ||
+		      !mixed_replay_rollback_controller_source::layout ||
+		      !mixed_replay_update_depth_header_source::layout ||
+		      !mixed_replay_workspace_entry_source::layout ||
+		      !mixed_replay_enqueue_entry_controller_source::layout)
+		return false;
+	size_t own_source = 0;
+	const size_t validation_source = critical_command_valid_frame_bytes();
+	// Selecting caller preadmits the complete owned entry/query/INLINE before
+	// this pure profile and construction. Source remains internally held below.
+	if (!mixed_replay_enqueue_retained_source(&own_source))
+		return false;
 	legacy_replay_workspace work(actual_journal_parameter, replay, actual_bounded_observer,
 				     actual_init_lock, reserve, budget_context, exclusive_outer);
 	try
 	{
 		if (!room_storage_command(work.input_heap, work.input) ||
-		    work.input_heap > work.outer || !legacy_replay_admit(work))
+		    work.input_heap > work.outer ||
+		    !room_storage_add(work.outer, mixed_replay_table_forecast_source::window) ||
+		    !room_storage_add(work.outer, mixed_replay_key_value_source::admitted_window) ||
+		    !room_storage_add(work.outer,
+				      mixed_replay_queue_cleanup_source::mutation_window) ||
+		    !room_storage_add(work.outer, mixed_replay_table_key_lookup_source::window) ||
+		    !room_storage_add(work.outer, mixed_replay_table_node_storage_source::window) ||
+		    !room_storage_add(work.outer,
+				      mixed_replay_table_value_construction_source::window) ||
+		    !room_storage_add(work.outer, mixed_replay_table_insert_source::window) ||
+		    !room_storage_add(work.outer,
+				      mixed_replay_table_iterator_erase_source::window) ||
+		    !room_storage_add(work.outer,
+				      mixed_replay_transparent_table_lookup_source::window) ||
+		    !room_storage_add(work.outer, mixed_replay_deque_tail_erase_source::window) ||
+		    !room_storage_add(work.outer, mixed_replay_std_remove_source::window) ||
+		    !room_storage_add(work.outer,
+				      mixed_replay_rollback_controller_source::window) ||
+		    !room_storage_add(work.outer,
+				      mixed_replay_update_depth_header_source::window) ||
+		    !room_storage_add(work.outer, mixed_replay_workspace_entry_source::window) ||
+		    !room_storage_add(work.outer, own_source) ||
+		    !room_storage_add(work.outer, validation_source) || !legacy_replay_admit(work))
 			return false;
 		if (native_transport_command(work.input))
 			return false;
@@ -8394,10 +10182,10 @@ enqueue_legacy_replayed_bounded(critical_command &actual_journal_parameter,
 		       extension_validator_bounded_callback(
 			       work.input, legacy_replay_reserve_locked, &work, work.partial))))
 			return false;
-		if (!legacy_replay_admit(work) ||
-		    critical_command_encode_bounded(
-			    work.input, &work.encoded, legacy_replay_reserve_locked, &work,
-			    work.partial) != critical_command_codec_result::ok)
+		// Pure validation has returned; release precisely its phase allowance
+		// before the encoder's full Source replaces the same predicate child.
+		work.outer -= validation_source;
+		if (!legacy_replay_encode_complete_source(work))
 			return false;
 		if (!legacy_replay_admit(work))
 			return false;
@@ -8412,11 +10200,14 @@ enqueue_legacy_replayed_bounded(critical_command &actual_journal_parameter,
 		    operations.size() >= CRITICAL_COORDINATOR_MAX_OPERATIONS ||
 		    work.encoded.size() > CRITICAL_COORDINATOR_MAX_BYTES - health.retained_bytes)
 			return false;
-		if (!legacy_replay_admit(work, sizeof(operation_state) +
-						       sizeof(std::unique_ptr<operation_state>)))
+		if (!legacy_replay_admit(
+			    work, sizeof(operation_state) +
+					  sizeof(std::unique_ptr<operation_state>) +
+					  mixed_replay_state_construction_source::state_window))
 			return legacy_replay_rollback(work);
 		work.state = std::make_unique<operation_state>();
-		if (!legacy_replay_admit(work))
+		if (!legacy_replay_admit(work,
+					 mixed_replay_command_assignment_source::command_move))
 			return legacy_replay_rollback(work);
 		// This is the original MOVE, not a deep copy. Scalar ownership selection
 		// is immediate and nonfallible before the next complete CURRENT prefix.
@@ -8459,6 +10250,9 @@ enqueue_legacy_replayed_bounded(critical_command &actual_journal_parameter,
 				if (!native_identity_queue::initial_heap_bytes(&work.fresh) ||
 				    !fences.next_unique_insert_extra_peak(
 					    work.fence_key, work.fresh, &work.extra) ||
+				    !room_storage_add(
+					    work.extra,
+					    mixed_replay_fence_queue_construction_source::window) ||
 				    !legacy_replay_admit(work, work.extra))
 					return legacy_replay_rollback(work);
 				work.fence_queue = &fences[std::move(work.fence_key)];
@@ -8480,9 +10274,16 @@ enqueue_legacy_replayed_bounded(critical_command &actual_journal_parameter,
 			if (!legacy_replay_local_prefix(work))
 				return legacy_replay_rollback(work);
 			work.observer_started = true;
-			if (!work.bounded_observer(
-				    operations.at(work.identity)->command, work.replay->context,
-				    legacy_replay_reserve_locked, &work, work.partial))
+			const bool borrowed = critical_room_shared_budget_lender::callback_matches(
+				work.lock, work.reserve, work.context);
+			const auto observer_reserve = borrowed ? work.reserve :
+								 legacy_replay_reserve_locked;
+			void *const observer_context = borrowed ? work.context : &work;
+			// work.partial retains the real workspace and moved input census;
+			// exact callback identity survives into the mandatory SAME-scope owner.
+			if (!work.bounded_observer(operations.at(work.identity)->command,
+						   work.replay->context, observer_reserve,
+						   observer_context, work.partial))
 				return legacy_replay_rollback(work);
 		}
 		// Original no-observer branch remains accepted. Successful real observer
@@ -8749,9 +10550,10 @@ namespace
 // These are real nullable paired companions of the original full initial
 // dispatch. Historical callbacks/readiness stay mandatory and unchanged; no
 // readiness flag, raw accept result or old allocating predicate is substituted.
-bool native_birth_submit_initial_bounded(const critical_native_recovery_envelope &envelope,
-					 bool (*reserve)(size_t, void *) noexcept, void *context,
-					 size_t outer) noexcept
+[[maybe_unused]] bool
+native_birth_submit_initial_bounded(const critical_native_recovery_envelope &envelope,
+				    bool (*reserve)(size_t, void *) noexcept, void *context,
+				    size_t outer) noexcept
 {
 	if (native_birth_shared_shop_command(envelope.command))
 		return native_birth_validators.shared_shop_initial_bounded &&
@@ -8765,10 +10567,87 @@ bool native_birth_submit_initial_bounded(const critical_native_recovery_envelope
 			native_birth_validators.initial_bounded(envelope, reserve, context, outer));
 }
 
+// New complete provider only. Old three callbacks/readiness and the old owning
+// initial dispatcher above remain unchanged. All predicate and callback order
+// follows shared-any-SHOP (including malformed), then cash-v4, then historical.
+// Fixed profiles are queried ONLY after exact registered target identity.
+bool native_birth_submit_initial_complete_bounded(room_submit_workspace &work) noexcept
+{
+	if (native_birth_shared_shop_command(work.envelope.command))
+	{
+		if (native_birth_validators.shared_shop_initial_fixed_bounded !=
+		    native_mobile_birth_shared_shop_recovery_initial_fixed_bounded)
+			return false;
+		// Required constant evaluation: one real local N, no runtime accessor.
+		constexpr size_t query =
+			native_mobile_birth_shared_shop_recovery_initial_fixed_bounded_source_query_frame_bytes();
+		if (!room_submit_admit(work, query) ||
+		    !native_mobile_birth_shared_shop_recovery_initial_fixed_bounded_source_frame_bytes(
+			    &work.extra) ||
+		    !native_mobile_birth_shared_shop_recovery_initial_fixed_bounded_initial_inline_bytes(
+			    &work.fresh) ||
+		    !room_storage_add(work.extra, work.fresh) ||
+		    !room_submit_admit(work, work.extra) || !room_submit_local_prefix(work))
+			return false;
+		// Exact child owns Source/INITIAL internally; the real caller-only
+		// prefix excludes completed transient preflight supplements.
+		return native_birth_validators.shared_shop_initial_fixed_bounded(
+			work.envelope, room_submit_reserve_locked, &work, work.partial);
+	}
+	else if (work.envelope.command.payload_version ==
+		 NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION)
+	{
+		if (native_birth_validators.cash_role_initial_fixed_bounded !=
+		    native_mobile_birth_cash_role_recovery_initial_fixed_bounded)
+			return false;
+		// Required constant evaluation: one real local N, no runtime accessor.
+		constexpr size_t query =
+			native_mobile_birth_cash_role_recovery_initial_fixed_bounded_source_query_frame_bytes();
+		if (!room_submit_admit(work, query) ||
+		    !native_mobile_birth_cash_role_recovery_initial_fixed_bounded_source_frame_bytes(
+			    &work.extra) ||
+		    !native_mobile_birth_cash_role_recovery_initial_fixed_bounded_initial_inline_bytes(
+			    &work.fresh) ||
+		    !room_storage_add(work.extra, work.fresh) ||
+		    !room_submit_admit(work, work.extra) || !room_submit_local_prefix(work))
+			return false;
+		// Exact child owns Source/INITIAL internally; the real caller-only
+		// prefix excludes completed transient preflight supplements.
+		return native_birth_validators.cash_role_initial_fixed_bounded(
+			work.envelope, room_submit_reserve_locked, &work, work.partial);
+	}
+	else
+	{
+		if (native_birth_validators.historical_initial_fixed_bounded !=
+		    native_mobile_birth_recovery_initial_fixed_bounded)
+			return false;
+		// Required constant evaluation: one real local N, no runtime accessor.
+		constexpr size_t query =
+			native_mobile_birth_recovery_initial_fixed_bounded_source_query_frame_bytes();
+		if (!room_submit_admit(work, query) ||
+		    !native_mobile_birth_recovery_initial_fixed_bounded_source_frame_bytes(
+			    &work.extra) ||
+		    !native_mobile_birth_recovery_initial_fixed_bounded_initial_inline_bytes(
+			    &work.fresh) ||
+		    !room_storage_add(work.extra, work.fresh) ||
+		    !room_submit_admit(work, work.extra) || !room_submit_local_prefix(work))
+			return false;
+		// Exact child owns Source/INITIAL internally; the real caller-only
+		// prefix excludes completed transient preflight supplements.
+		return native_birth_validators.historical_initial_fixed_bounded(
+			work.envelope, room_submit_reserve_locked, &work, work.partial);
+	}
+}
+
 // Complete original native_matches + critical_command_equal algorithms. Both
 // original command encodes now pass through their genuine bounded encoders;
 // the first actual encoded capacity remains owned through the second call.
 // No reserve around the original allocating equality function is used.
+bool native_birth_submit_matches_complete_bounded(const operation_state &,
+						  const critical_native_recovery_envelope &,
+						  bool (*)(size_t, void *) noexcept, void *,
+						  size_t) noexcept;
+
 bool native_birth_submit_matches_bounded(const operation_state &state,
 					 const critical_native_recovery_envelope &envelope,
 					 bool (*reserve)(size_t, void *) noexcept, void *context,
@@ -8809,6 +10688,64 @@ size_t native_birth_submit_source_frames() noexcept
 }
 } // namespace: original mobile birth full bounded submit companions
 
+namespace
+{
+namespace native_birth_submit_admitted_trace_source
+{
+using namespace mixed_replay_command_assignment_source;
+constexpr size_t J = sizeof(int), U = sizeof(uint64_t);
+// Only persistence_command_trace(command,command_admitted): actual DMI event
+// default construction has a generated nontrivial receiver. Its event object
+// and optional non-NRVO return/recorder parameter are the original TWO E heap-
+// free objects admitted at the tail. No implicit array/id/event copy, assignment
+// or destructor callable is invented. Nested brace initialization is storage.
+constexpr size_t builder_own = P + sizeof(persistence_trace_stage) + N + P;
+constexpr size_t vector_size = P + N;
+constexpr size_t vector_key_index = 2 * P + N;
+constexpr size_t array_key_index = 2 * P + N;
+constexpr size_t array_key_size = P + N;
+constexpr size_t key_min = 3 * P;
+// min's array.size() prvalue is the same returned size_t bound to its const
+// reference. No second temporary N is introduced for that expression.
+constexpr size_t builder =
+	builder_own + vector_size + vector_key_index + array_key_index + array_key_size + key_min;
+// unique_lock(mutex,try_to_lock_t) directly invokes mutex::try_lock. It does
+// NOT call unique_lock::try_lock. Static tag has only its true by-value formal;
+// lock's device/owns fields are in the original physical lock request.
+constexpr size_t try_constructor = 2 * P + sizeof(std::try_to_lock_t);
+constexpr size_t address_of = 2 * P;
+constexpr size_t mutex_try = P + B;
+constexpr size_t owns_query = P + B;
+constexpr size_t lock_cleanup = 3 * P; // ~unique_lock -> unlock -> mutex::unlock.
+constexpr size_t lock_headers =
+	try_constructor + address_of + mutex_try + owns_query + lock_cleanup;
+// Two actual sequential gthread trylock/unlock occurrences, each owns its
+// pointer formal/int return and active_p's int return. active_p's pointer is
+// STATIC storage. pthread implementations remain separate out-of-line leaves.
+constexpr size_t gthread_headers = 2 * (P + J + J);
+// Selected event-array ring index and size declarations; repeated key-array
+// size uses the named builder declaration above. incident=false makes the
+// original incident ring/equality/loop subtree unreachable on this route.
+constexpr size_t ring_headers = (2 * P + N) + (P + N);
+// uint64_t specialization inherits this exact __atomic_base::fetch_add.
+// No additional atomic wrapper, static constructor or builtin callee body.
+constexpr size_t drop_atomic = P + U + sizeof(std::memory_order) + U;
+// trace_now is the exact now_usec chrono-header expression, executed
+// sequentially with queued_at/update_depth. Its distinct physical durations,
+// declared header calls reuse depth's genuine clock helper/type-object144.
+// Its OWN wrapper return uint64_t is distinct from now_usec's return and is
+// retained here. steady_clock::now's body remains OPEN.
+constexpr size_t shared_clock_helpers = mixed_replay_update_depth_header_source::clock_headers - N;
+constexpr size_t trace_now_return = U;
+constexpr size_t window =
+	builder + lock_headers + gthread_headers + ring_headers + drop_atomic + trace_now_return;
+constexpr bool layout = mixed_replay_update_depth_header_source::layout &&
+			native_birth_submit_header_controller_source::layout &&
+			sizeof(persistence_trace_stage) == 1 && sizeof(std::try_to_lock_t) == 1 &&
+			sizeof(std::memory_order) == 4 && J == 4 && U == N;
+} // namespace native_birth_submit_admitted_trace_source
+} // namespace
+
 critical_submit_result critical_native_mobile_birth_publication_owner::submit_bounded(
 	const critical_native_recovery_envelope &original, bool (*reserve)(size_t, void *) noexcept,
 	void *context, size_t outer, size_t *current_coordinator_bytes) noexcept
@@ -8825,8 +10762,63 @@ critical_submit_result critical_native_mobile_birth_publication_owner::submit_bo
 	// Caller owns its complete input/current/journal/registry prefix. Real new
 	// source parameter/helper carriers are additive; workspace itself and its
 	// current private heaps remain owned by the existing complete local prefix.
-	if (!room_storage_add(work.outer, native_birth_submit_source_frames()))
+	if (!submit_private_current_source_frames(&work.extra) ||
+	    !room_storage_add(work.outer, work.extra) ||
+	    !room_storage_add(work.outer, native_birth_submit_workspace_source::window) ||
+	    !room_storage_add(work.outer, native_birth_submit_source_frames()))
 		return critical_submit_result::overloaded;
+	if (!submit_clone_state_source_frames(&work.extra) ||
+	    !room_storage_add(work.outer, work.extra))
+		return critical_submit_result::overloaded;
+	if (!submit_mutation_child_source_frames(&work.extra) ||
+	    !room_storage_add(work.outer, work.extra))
+		return critical_submit_result::overloaded;
+	if (!submit_header_controller_source_frames(&work.extra) ||
+	    !room_storage_add(work.outer, work.extra))
+		return critical_submit_result::overloaded;
+	// The SAME complete pure CURRENT-C census runs on the first locked
+	// lender call and every later callback/return. Retain its actual Source
+	// before that first observation; C bytes themselves stay lender-owned.
+	if (!submit_coordinator_current_source_frames(&work.extra) ||
+	    !room_storage_add(work.outer, work.extra))
+		return critical_submit_result::overloaded;
+	// Actual command_admitted diagnostics Source; original two event objects
+	// and recorder lock stay in the unchanged tail request. Exact chrono header
+	// Source is shared with the persistently retained depth profile, once.
+	if (!submit_admitted_trace_source_frames(&work.extra) ||
+	    !room_storage_add(work.outer, work.extra))
+		return critical_submit_result::overloaded;
+	// New helper owns its work reference, bool return, and one real constexpr
+	// local query N across mutually exclusive branches. Original conservative
+	// old-dispatch carrier credits stay unchanged, never repurposed as slack.
+	if (!room_storage_add(work.outer, sizeof(void *) + sizeof(bool) + sizeof(size_t)))
+		return critical_submit_result::overloaded;
+	// Actual automatic constexpr query local in the later shared-only branch.
+	// Retain before first callback; no runtime nested accessor is invoked.
+	if (!room_storage_add(work.outer, sizeof(size_t)))
+		return critical_submit_result::overloaded;
+	// Exact original allocation-free critical valid/envelope/legacy closure.
+	// Its published allowance already includes its runtime getter return N.
+	// Store that returned allowance in existing scratch, without another local
+	// or returned-size charge. All original predicates/evaluation order below
+	// remain byte-identical; the Source persists through the real callbacks.
+	if (!submit_command_validation_source_frames(&work.extra) ||
+	    !room_storage_add(work.outer, work.extra))
+		return critical_submit_result::overloaded;
+	// Local/header lender and actual scalar loan descendants persist before
+	// the first callback. CURRENT-C Source is separately retained above; the
+	// actual configured ROOT callback and external pthread body stay separate.
+	if (!submit_lender_header_source_frames(&work.extra) ||
+	    !room_storage_add(work.outer, work.extra))
+		return critical_submit_result::overloaded;
+	// Actual submit lock/unlock gthread header and pthread declarations are
+	// distinct from the already retained unique/mutex header controllers.
+	if (!submit_lock_gthread_header_source_frames(&work.extra) ||
+	    !room_storage_add(work.outer, work.extra))
+		return critical_submit_result::overloaded;
+	// Existing inline scratch returns to its original empty value before
+	// locking/callbacks; only Source in outer survives the pure query.
+	work.extra = 0;
 	try
 	{
 		// All complete canonical proofs and genuine clone allocations now run
@@ -8836,8 +10828,9 @@ critical_submit_result critical_native_mobile_birth_publication_owner::submit_bo
 		if (!room_submit_admit(work))
 			return room_submit_rollback(work);
 		if (!room_submit_local_prefix(work) ||
-		    !room_checkpoint_size_bounded(original, &work.retained,
-						  room_submit_reserve_locked, &work, work.partial))
+		    !mixed_startup_checkpoint_size_bounded(original, &work.retained,
+							   room_submit_reserve_locked, &work,
+							   work.partial))
 			return work.denied ?
 				       room_submit_rollback(work) :
 				       room_submit_return(work, critical_submit_result::invalid);
@@ -8859,8 +10852,23 @@ critical_submit_result critical_native_mobile_birth_publication_owner::submit_bo
 			return room_submit_rollback(work);
 		if (native_birth_shared_shop_command(work.envelope.command))
 		{
+			// Same original shared occurrence; fixed Source belongs ONLY to this
+			// exact target. Missing/custom identities refuse only the new provider.
 			if (!shared_native_apply_callback ||
-			    !native_birth_validators.shared_shop_valid_bounded ||
+			    native_birth_validators.shared_shop_valid_bounded !=
+				    native_mobile_birth_shared_shop_recovery_valid_fixed_bounded)
+				return room_submit_return(work, critical_submit_result::invalid);
+			// Required compile-time accessor evaluation, with one actual local N.
+			constexpr size_t shared_query =
+				native_mobile_birth_shared_shop_recovery_fixed_valid_source_query_frame_bytes();
+			if (!room_submit_admit(work, shared_query) ||
+			    !native_mobile_birth_shared_shop_recovery_fixed_valid_source_frame_bytes(
+				    &work.extra) ||
+			    !native_mobile_birth_shared_shop_recovery_fixed_valid_initial_inline_bytes(
+				    &work.fresh) ||
+			    !room_storage_add(work.extra, work.fresh) ||
+			    !room_submit_admit(work, work.extra) ||
+			    !room_submit_local_prefix(work) ||
 			    !native_birth_validators.shared_shop_valid_bounded(
 				    work.envelope, room_submit_reserve_locked, &work, work.partial))
 				return work.denied ?
@@ -8883,8 +10891,7 @@ critical_submit_result critical_native_mobile_birth_publication_owner::submit_bo
 		// The mutually exclusive zone/auction predicates are false for this
 		// original private typed-birth wrapper, just as in native_recovery_submit.
 		if (!room_submit_local_prefix(work) || !native_birth_validators_ready() ||
-		    !native_birth_submit_initial_bounded(work.envelope, room_submit_reserve_locked,
-							 &work, work.partial))
+		    !native_birth_submit_initial_complete_bounded(work))
 			return work.denied ?
 				       room_submit_rollback(work) :
 				       room_submit_return(work, critical_submit_result::invalid);
@@ -8906,10 +10913,22 @@ critical_submit_result critical_native_mobile_birth_publication_owner::submit_bo
 		work.found = operations.find(work.identity);
 		if (work.found != operations.end())
 		{
+			constexpr size_t match_query = submit_matches_source_query_frames();
+			size_t match_source = 0, match_initial = 0;
+			// These three actual caller locals remain Source until this branch
+			// returns. Full helper Source/INITIAL preentry is transient; the
+			// helper owns its own Source and real vector capacities internally.
+			if (!room_storage_add(work.outer, 3 * sizeof(size_t)) ||
+			    !room_submit_admit(work, match_query) ||
+			    !submit_matches_source_frames(&match_source) ||
+			    !submit_matches_initial_inline_bytes(&match_initial) ||
+			    !room_storage_add(match_source, match_initial) ||
+			    !room_submit_admit(work, match_source))
+				return room_submit_rollback(work);
 			if (!room_submit_local_prefix(work) ||
-			    !native_birth_submit_matches_bounded(*work.found->second, work.envelope,
-								 room_submit_reserve_locked, &work,
-								 work.partial))
+			    !native_birth_submit_matches_complete_bounded(
+				    *work.found->second, work.envelope, room_submit_reserve_locked,
+				    &work, work.partial))
 				return work.denied ?
 					       room_submit_rollback(work) :
 					       room_submit_return(
@@ -10413,3 +12432,1712 @@ enqueue_ordinary_native_replayed_bounded(const critical_native_recovery_envelope
 #endif
 }
 } // namespace
+
+// This profile is additional to the actual CURRENT-C getter's independent
+// closure. Selecting ROOT preadmits it before entering the first retained scan.
+size_t critical_room_shared_budget_lender::operation_frame_bytes() noexcept
+{
+	// Real operation scope; invoke formals and bool return; relay formals/local
+	// reference/result; exact scalar begin/refresh/end formal and result carriers.
+	return sizeof(operation_borrow_frame) + sizeof(callback_borrow_frame) +
+	       // Nested reserve formals/result, genuine lock/registered getters and
+	       // both original checked additions. CURRENT-C lower closure is separate.
+	       4 * sizeof(void *) + sizeof(size_t) + sizeof(bool) + 3 * sizeof(void *) +
+	       2 * sizeof(bool) + 2 * (sizeof(void *) + sizeof(size_t) + sizeof(bool)) +
+	       5 * sizeof(void *) + sizeof(size_t) + sizeof(bool) + 2 * sizeof(void *) +
+	       sizeof(size_t) + sizeof(bool) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+	       2 * sizeof(void *) + sizeof(bool);
+}
+
+bool critical_room_shared_budget_lender::invoke(const std::unique_lock<std::mutex> &actual_lock,
+						bool (*actual_reserve)(size_t, void *) noexcept,
+						void *actual_guard, size_t outer,
+						operation_callback operation,
+						void *operation_context) noexcept
+{
+	if (!actual_reserve || !actual_guard || !operation || active_operation_ ||
+	    actual_lock.mutex() != &coordinator_mutex || !actual_lock.owns_lock() ||
+	    !item_native_quest_coordinator_budget_scope_owner::registered())
+		return false;
+	operation_borrow_frame scope{ actual_lock, actual_reserve,    actual_guard,
+				      operation,   operation_context, outer };
+	if (!room_coordinator_current_storage_bytes_locked(&scope.current) ||
+	    !item_native_quest_coordinator_budget_scope_owner::begin_borrow(
+		    &scope, scope.reserve, scope.guard, scope.current))
+		return false;
+	active_operation_ = &scope;
+	// The real noexcept provider and all its native capacity checks execute while
+	// the loan remains installed. There is no early exit between begin and end.
+	scope.accepted = scope.operation(operation_borrow_frame::relay, &scope, scope.outer,
+					 scope.operation_context);
+	active_operation_ = nullptr;
+	scope.ended = item_native_quest_coordinator_budget_scope_owner::end_borrow(&scope);
+	return scope.accepted && scope.ended;
+}
+
+size_t critical_mixed_startup_replay_owner::coordinator_operation_frame_bytes() noexcept
+{
+	return critical_room_shared_budget_lender::operation_frame_bytes() +
+	       // Actual pure profile return, plus the invoking owner method's this,
+	       // callback/context/outer/provider/provider-context formals and result.
+	       6 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool);
+}
+
+bool critical_mixed_startup_replay_owner::invoke_coordinator_operation(
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer,
+	bool (*operation)(bool (*)(size_t, void *) noexcept, void *, size_t, void *) noexcept,
+	void *operation_context) const noexcept
+{
+	return held() && critical_room_shared_budget_lender::invoke(
+				 init_lock_, reserve, context, outer, operation, operation_context);
+}
+
+bool critical_room_shared_budget_lender::callback_matches(
+	const std::unique_lock<std::mutex> &actual_lock, bool (*callback)(size_t, void *) noexcept,
+	void *context) noexcept
+{
+	// Read only after the authentic mixed owner proves the held initializer.
+	// The callback/context are the actual loan's relay and stack identity;
+	// an ordinary physical-guard callback or fabricated context never matches.
+	return active_operation_ && callback == operation_borrow_frame::relay &&
+	       context == active_operation_ && &actual_lock == &active_operation_->lock &&
+	       actual_lock.mutex() == &coordinator_mutex && actual_lock.owns_lock() &&
+	       item_native_quest_coordinator_budget_scope_owner::borrowed_for(
+		       active_operation_->guard, active_operation_->reserve);
+}
+
+bool critical_mixed_startup_replay_owner::coordinator_operation_callback_matches(
+	bool (*reserve)(size_t, void *) noexcept, void *context) const noexcept
+{
+	return held() &&
+	       critical_room_shared_budget_lender::callback_matches(init_lock_, reserve, context);
+}
+
+namespace
+{
+// ROOT complete native startup insertion; unselected until full host joins.
+[[maybe_unused]] bool
+enqueue_native_replayed_bounded(const critical_native_recovery_envelope &original,
+				const replay_observer_context &replay,
+				const std::unique_lock<std::mutex> &actual_init_lock,
+				bool (*reserve)(size_t, void *) noexcept, void *budget_context,
+				size_t exclusive_outer) noexcept
+{
+	if (!reserve || !replay.native_observer || !replay.native_bounded_observer ||
+	    actual_init_lock.mutex() != &coordinator_mutex || !actual_init_lock.owns_lock())
+		return false;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	return false;
+#else
+	if constexpr (!mixed_replay_state_construction_source::supported ||
+		      !mixed_replay_command_assignment_source::layout ||
+		      !mixed_replay_fence_queue_construction_source::layout ||
+		      !mixed_replay_table_forecast_source::layout ||
+		      !mixed_replay_string_value_source::layout ||
+		      !mixed_replay_key_value_source::layout ||
+		      !mixed_replay_table_key_lookup_source::layout ||
+		      !mixed_replay_table_node_storage_source::layout ||
+		      !mixed_replay_table_value_construction_source::layout ||
+		      !mixed_replay_table_insert_source::layout ||
+		      !mixed_replay_table_iterator_erase_source::layout ||
+		      !mixed_replay_transparent_table_lookup_source::layout ||
+		      !mixed_replay_deque_tail_erase_source::layout ||
+		      !mixed_replay_std_remove_source::layout ||
+		      !mixed_replay_rollback_controller_source::layout ||
+		      !mixed_replay_update_depth_header_source::layout ||
+		      !mixed_replay_workspace_entry_source::layout ||
+		      !mixed_replay_enqueue_entry_controller_source::layout)
+		return false;
+	size_t own_source = 0;
+	const size_t validation_source = critical_command_valid_frame_bytes();
+	// Selecting caller preadmits the complete owned entry/query/INLINE before
+	// this pure profile and construction. Source remains internally held below.
+	if (!mixed_replay_enqueue_retained_source(&own_source))
+		return false;
+	room_replay_workspace work(actual_init_lock, reserve, budget_context, exclusive_outer);
+	try
+	{
+		if (!room_storage_add(work.outer, mixed_replay_table_forecast_source::window) ||
+		    !room_storage_add(work.outer, mixed_replay_key_value_source::admitted_window) ||
+		    !room_storage_add(work.outer,
+				      mixed_replay_queue_cleanup_source::mutation_window) ||
+		    !room_storage_add(work.outer, mixed_replay_table_key_lookup_source::window) ||
+		    !room_storage_add(work.outer, mixed_replay_table_node_storage_source::window) ||
+		    !room_storage_add(work.outer,
+				      mixed_replay_table_value_construction_source::window) ||
+		    !room_storage_add(work.outer, mixed_replay_table_insert_source::window) ||
+		    !room_storage_add(work.outer,
+				      mixed_replay_table_iterator_erase_source::window) ||
+		    !room_storage_add(work.outer,
+				      mixed_replay_transparent_table_lookup_source::window) ||
+		    !room_storage_add(work.outer, mixed_replay_deque_tail_erase_source::window) ||
+		    !room_storage_add(work.outer, mixed_replay_std_remove_source::window) ||
+		    !room_storage_add(work.outer,
+				      mixed_replay_rollback_controller_source::window) ||
+		    !room_storage_add(work.outer,
+				      mixed_replay_update_depth_header_source::window) ||
+		    !room_storage_add(work.outer, mixed_replay_workspace_entry_source::window) ||
+		    !room_storage_add(work.outer, own_source) ||
+		    !room_storage_add(work.outer, validation_source) || !room_replay_admit(work))
+			return false;
+		// Complete original execution decision. Conservative SHOP dispatch
+		// never falls through ordinary, and requires its actual shared worker.
+		// The original shared validity proof occurs here AND below after size;
+		// neither original validation is replaced by an INITIAL-only proof.
+		if (!room_replay_local_prefix(work))
+			return false;
+		if (native_birth_shared_shop_command(original.command))
+		{
+			if (!shared_native_apply_callback ||
+			    !native_birth_validators.shared_shop_valid_bounded ||
+			    native_birth_validators.shared_shop_valid_bounded !=
+				    native_mobile_birth_shared_shop_recovery_valid_fixed_bounded)
+				return false;
+			constexpr size_t validator_query =
+				native_mobile_birth_shared_shop_recovery_fixed_valid_source_query_frame_bytes();
+			// Exact target was proved before these genuine pure queries.
+			// Full child Source + INITIAL is transient preentry; reset
+			// the prefix before entering its self-owning validator.
+			if (!room_replay_admit(work, validator_query) ||
+			    !native_mobile_birth_shared_shop_recovery_fixed_valid_source_frame_bytes(
+				    &work.extra) ||
+			    !native_mobile_birth_shared_shop_recovery_fixed_valid_initial_inline_bytes(
+				    &work.fresh) ||
+			    !room_storage_add(work.extra, work.fresh) ||
+			    !room_replay_admit(work, work.extra) ||
+			    !room_replay_local_prefix(work) ||
+			    !native_birth_validators.shared_shop_valid_bounded(
+				    original, room_replay_reserve_locked, &work, work.partial))
+				return false;
+		}
+		else if (!(critical_command_valid(original.command) ||
+			   (original.command.schema_version ==
+				    CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+			    critical_command_envelope_valid(original.command) &&
+			    extension_validator_callback && extension_validator_bounded_callback &&
+			    extension_validator_bounded_callback(original.command,
+								 room_replay_reserve_locked, &work,
+								 work.partial))))
+			return false;
+		// Completed pure execution proof is no longer live during checkpoint
+		// encoding. The genuine child owns its full codec Source itself.
+		work.outer -= validation_source;
+		if (!room_replay_admit(work) ||
+		    !mixed_startup_checkpoint_size_bounded(original, &work.retained,
+							   room_replay_reserve_locked, &work,
+							   work.partial))
+			return false;
+		// Preserve original family ordering/readiness and full historical
+		// execution, progressed and terminal continuation validation. Held
+		// retirement execution-only remains enforced by the full size helper.
+		if (native_birth_typed_command(original.command))
+		{
+			if (!room_replay_admit(work) || !native_birth_validators_ready())
+				return false;
+			if (native_birth_shared_shop_command(original.command))
+			{
+				if (!native_birth_validators.shared_shop_valid_bounded ||
+				    native_birth_validators.shared_shop_valid_bounded !=
+					    native_mobile_birth_shared_shop_recovery_valid_fixed_bounded)
+					return false;
+				constexpr size_t validator_query =
+					native_mobile_birth_shared_shop_recovery_fixed_valid_source_query_frame_bytes();
+				// Exact target was proved before these genuine pure queries.
+				// Full child Source + INITIAL is transient preentry; reset
+				// the prefix before entering its self-owning validator.
+				if (!room_replay_admit(work, validator_query) ||
+				    !native_mobile_birth_shared_shop_recovery_fixed_valid_source_frame_bytes(
+					    &work.extra) ||
+				    !native_mobile_birth_shared_shop_recovery_fixed_valid_initial_inline_bytes(
+					    &work.fresh) ||
+				    !room_storage_add(work.extra, work.fresh) ||
+				    !room_replay_admit(work, work.extra) ||
+				    !room_replay_local_prefix(work) ||
+				    !native_birth_validators.shared_shop_valid_bounded(
+					    original, room_replay_reserve_locked, &work,
+					    work.partial))
+					return false;
+			}
+			else if (original.command.payload_version ==
+				 NATIVE_MOBILE_BIRTH_CASH_ROLE_PAYLOAD_VERSION)
+			{
+				if (!native_birth_validators.cash_role_valid_bounded ||
+				    native_birth_validators.cash_role_valid_bounded !=
+					    native_mobile_birth_cash_role_recovery_valid_fixed_bounded)
+					return false;
+				constexpr size_t validator_query =
+					native_mobile_birth_cash_role_recovery_fixed_valid_source_query_frame_bytes();
+				// Exact target was proved before these genuine pure queries.
+				// Full child Source + INITIAL is transient preentry; reset
+				// the prefix before entering its self-owning validator.
+				if (!room_replay_admit(work, validator_query) ||
+				    !native_mobile_birth_cash_role_recovery_fixed_valid_source_frame_bytes(
+					    &work.extra) ||
+				    !native_mobile_birth_cash_role_recovery_fixed_valid_initial_inline_bytes(
+					    &work.fresh) ||
+				    !room_storage_add(work.extra, work.fresh) ||
+				    !room_replay_admit(work, work.extra) ||
+				    !room_replay_local_prefix(work) ||
+				    !native_birth_validators.cash_role_valid_bounded(
+					    original, room_replay_reserve_locked, &work,
+					    work.partial))
+					return false;
+			}
+			else
+			{
+				if (!native_birth_validators.valid_bounded ||
+				    native_birth_validators.valid_bounded !=
+					    native_mobile_birth_recovery_valid_bounded)
+					return false;
+				constexpr size_t validator_query =
+					native_mobile_birth_recovery_historical_valid_source_query_frame_bytes();
+				// Exact target was proved before these genuine pure queries.
+				// Full child Source + INITIAL is transient preentry; reset
+				// the prefix before entering its self-owning validator.
+				if (!room_replay_admit(work, validator_query) ||
+				    !native_mobile_birth_recovery_historical_valid_source_frame_bytes(
+					    &work.extra) ||
+				    !native_mobile_birth_recovery_historical_valid_initial_inline_bytes(
+					    &work.fresh) ||
+				    !room_storage_add(work.extra, work.fresh) ||
+				    !room_replay_admit(work, work.extra) ||
+				    !room_replay_local_prefix(work) ||
+				    !native_birth_validators.valid_bounded(
+					    original, room_replay_reserve_locked, &work,
+					    work.partial))
+					return false;
+			}
+		}
+		if (zone_reset_typed_command(original.command) &&
+		    (!room_replay_admit(work) || !zone_reset_validators_ready() ||
+		     !zone_reset_validators.valid_bounded ||
+		     !zone_reset_validators.valid_bounded(original, room_replay_reserve_locked,
+							  &work, work.partial)))
+			return false;
+		if (native_auction_typed_command(original.command) &&
+		    (!room_replay_admit(work) || !native_auction_validators_ready() ||
+		     !native_auction_validators.valid_bounded ||
+		     !native_auction_validators.valid_bounded(original, room_replay_reserve_locked,
+							      &work, work.partial)))
+			return false;
+		if (!room_replay_admit(work))
+			return false;
+		// Original operation_key return/local coexistence. Its actual 16-byte
+		// GCC13 string requests 17 bytes; assignment consumes the returned string.
+		work.extra = sizeof(std::string);
+		if (!room_storage_add(work.extra, original.command.operation_id.bytes.size() + 1) ||
+		    !room_replay_admit(work, work.extra))
+			return false;
+		work.identity = operation_key(original.command.operation_id);
+		if (!room_replay_admit(work))
+			return false;
+		if (operations.find(work.identity) != operations.end() ||
+		    operations.size() >= CRITICAL_COORDINATOR_MAX_OPERATIONS ||
+		    work.retained > CRITICAL_COORDINATOR_MAX_BYTES - health.retained_bytes)
+			return false;
+		work.continuation = original.phase ==
+				    critical_native_recovery_phase::continuation_pending;
+		work.holds_fences = !work.continuation ||
+				    native_birth_origin_command(original.command) ||
+				    zone_reset_typed_command(original.command);
+		if (!room_replay_admit(
+			    work, sizeof(operation_state) +
+					  sizeof(std::unique_ptr<operation_state>) +
+					  mixed_replay_state_construction_source::state_window))
+			return room_replay_rollback(work);
+		work.state = std::make_unique<operation_state>();
+		if (!room_replay_admit(work))
+			return room_replay_rollback(work);
+		// Fresh default state owns no vector capacity. This genuine source profile
+		// reserves ALL command/attachment copy requests and the original native
+		// allocation before that complete original copy sequence. There is no
+		// callback inside the sequence, and its resulting private state is censused
+		// at the next cut using actual vector capacities, not encoded byte length.
+		work.fresh = 0;
+		if (!room_checkpoint_heap(original, true, work.fresh) ||
+		    !room_storage_add(work.fresh, sizeof(native_operation_context)) ||
+		    !room_storage_add(work.fresh,
+				      sizeof(std::unique_ptr<native_operation_context>)) ||
+		    !room_storage_add(work.fresh,
+				      mixed_replay_state_construction_source::context_window) ||
+		    !room_storage_add(work.fresh,
+				      mixed_replay_command_assignment_source::command_copy) ||
+		    !room_storage_add(work.fresh,
+				      mixed_replay_command_assignment_source::attachment_copy) ||
+		    !room_replay_admit(work, work.fresh))
+			return room_replay_rollback(work);
+		work.state->command = original.command;
+		work.state->native = std::make_unique<native_operation_context>();
+		work.state->native->revision = original.revision;
+		work.state->native->phase = original.phase;
+		work.state->native->attachment = original.attachment;
+		work.state->retained_bytes = work.retained;
+		work.state->queued_at_usec = now_usec();
+		work.state->attempt = 1;
+		work.state->attachments = 0;
+		work.state->phase = work.continuation ?
+					    critical_operation_phase::native_continuation_pending :
+					    critical_operation_phase::queued;
+		work.state->retain_until_publication = true;
+		work.state->admission_failure_queued = false;
+		work.state->native_physical_released = work.continuation;
+		work.rollback_cleanup_reserved = true;
+		if (!operations.next_unique_insert_extra_peak(work.identity, 0, &work.extra) ||
+		    !room_replay_admit(work, work.extra))
+			return room_replay_rollback(work);
+		operations.emplace(work.identity, std::move(work.state));
+		work.inserted = true;
+		// state is now genuinely owned by CURRENT C; the moved-from pointer is
+		// excluded from private scratch before any pending/fence request.
+		if (!room_replay_admit(work))
+			return room_replay_rollback(work);
+		if (!work.continuation)
+		{
+			if (!pending.push_back_extra_peak(work.identity, &work.extra) ||
+			    !room_replay_admit(work, work.extra))
+				return room_replay_rollback(work);
+			pending.push_back(work.identity);
+			if (!room_replay_admit(work))
+				return room_replay_rollback(work);
+		}
+		if (work.holds_fences)
+		{
+			work.found = operations.find(work.identity);
+			for (work.key_index = 0;
+			     work.key_index < work.found->second->command.keys.size();
+			     ++work.key_index)
+			{
+				if (!room_replay_admit(work,
+						       sizeof(std::string) +
+							       2 * sizeof(std::array<char, 9>)))
+					return room_replay_rollback(work);
+				work.fence_key = entity_key(
+					work.found->second->command.keys[work.key_index]);
+				work.fence_found = fences.find(work.fence_key);
+				if (work.fence_found == fences.end())
+				{
+					if (!native_identity_queue::initial_heap_bytes(
+						    &work.fresh) ||
+					    !fences.next_unique_insert_extra_peak(
+						    work.fence_key, work.fresh, &work.extra) ||
+					    !room_storage_add(
+						    work.extra,
+						    mixed_replay_fence_queue_construction_source::
+							    window) ||
+					    !room_replay_admit(work, work.extra))
+						return room_replay_rollback(work);
+					work.fence_queue = &fences[std::move(work.fence_key)];
+					if (!room_replay_admit(work))
+						return room_replay_rollback(work);
+				}
+				else
+					work.fence_queue = &work.fence_found->second;
+				if (!work.fence_queue->push_back_extra_peak(work.identity,
+									    &work.extra) ||
+				    !room_replay_admit(work, work.extra))
+					return room_replay_rollback(work);
+				work.fence_queue->push_back(work.identity);
+				if (!room_replay_admit(work))
+					return room_replay_rollback(work);
+			}
+			health.fenced_keys = fences.size();
+		}
+		// The complete actual native dispatcher is mandatory, exactly as the
+		// original observer. It registers every original native family under
+		// its genuine SAME scope, with domain partial holds left untouched.
+		if (!room_replay_local_prefix(work))
+			return room_replay_rollback(work);
+		const bool borrowed = critical_room_shared_budget_lender::callback_matches(
+			work.lock, work.reserve, work.context);
+		const auto observer_reserve = borrowed ? work.reserve : room_replay_reserve_locked;
+		void *const observer_context = borrowed ? work.context : &work;
+		// Full journal input and every real private/copy capacity remain in
+		// work.partial. The operation relay itself supplies fresh CURRENT C once.
+		if (!replay.native_bounded_observer(original, replay.context, observer_reserve,
+						    observer_context, work.partial))
+			return room_replay_rollback(work);
+		// No fallible callback after successful new ROOT registry attachment.
+		// Exact original successful tail is nonallocating.
+		update_depth();
+		return true;
+	}
+	catch (...)
+	{
+		// Genuine allocation exceptions only; actual init lock remains owned.
+		// Partially copied private state and actual inserted nodes are removed,
+		// while real surviving bucket/deque capacity stays in CURRENT C.
+		return room_replay_rollback(work);
+	}
+#endif
+}
+} // namespace: complete original native passive replay insertion
+
+namespace
+{
+// Complete ADDITIONAL source of the actual callback_matches branch. Existing
+// replay workspace/formals/census/child/lender sources remain selecting-owner
+// responsibilities. Physical retained C/G/J and input heaps are not SOURCE.
+constexpr size_t mixed_replay_forwarding_match_source =
+	// callback_matches: lock/reserve/context and bool result.
+	3 * sizeof(void *) + sizeof(bool) +
+	// Genuine unique_lock::mutex(this,result), owns_lock(this,bool).
+	2 * sizeof(void *) + sizeof(void *) + sizeof(bool) +
+	// Actual borrowed_for(guard,reserve,bool), before its scheduler query.
+	2 * sizeof(void *) + sizeof(bool) +
+	// nevent_is_game_thread bool; get_id returns the genuine id; operator==
+	// receives two by-value ids. Include the optional temporary id distinctly.
+	3 * sizeof(std::thread::id) +
+	// id(native_handle) this; both real generated id copies(this,source), and
+	// cleanup receivers of all three ids. No duplicate id storage is in P.
+	8 * sizeof(void *) +
+	// __gthread_self / pthread_self native results + id native-handle formal;
+	// actual scheduler and thread-id equality returned booleans.
+	3 * sizeof(std::thread::native_handle_type) + 2 * sizeof(bool);
+// Both observer forwarding cuts have genuine selected bool and two named
+// callback/context locals. Match queries execute sequentially, so one complete
+// typed match closure dominates each invocation without inventing heap/state.
+constexpr size_t mixed_replay_forwarding_source_supplement =
+	mixed_replay_forwarding_match_source + 2 * sizeof(void *) + sizeof(bool);
+}
+
+bool critical_mixed_startup_replay_owner::replay_forwarding_source_supplement(
+	size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&       \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && defined(__linux__) && \
+	defined(__GLIBC__) && defined(__x86_64__)
+	if (!output)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(std::thread::id) != 8 ||
+	    sizeof(std::thread::native_handle_type) != 8)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	*output = mixed_replay_forwarding_source_supplement;
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
+
+namespace
+{
+// Actual size-helper entry, local source/live scalars and returned bool.
+// The encoded vector is INLINE, not part of this source subtotal.
+constexpr size_t mixed_checkpoint_entry_source =
+	4 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool);
+constexpr size_t mixed_checkpoint_checked_add_source =
+	sizeof(void *) + sizeof(size_t) + sizeof(bool);
+constexpr size_t mixed_checkpoint_vector_size_source =
+	sizeof(void *) + sizeof(size_t) + sizeof(std::ptrdiff_t);
+constexpr size_t mixed_checkpoint_vector_index_source = 2 * sizeof(void *) + sizeof(size_t);
+// Actual const vector::empty -> const begin/end -> normal_iterator(const
+// iterator_type&). Each stored uint8_t* converts to const uint8_t*, with its
+// distinct materialized pointer bound to the constructor's const reference.
+// Two returned iterator objects survive equality, then their implicit dtors.
+constexpr size_t mixed_checkpoint_vector_empty_source =
+	sizeof(void *) + sizeof(bool) +
+	2 * (2 * sizeof(void *) + 2 * sizeof(void *) + sizeof(void *)) +
+	// Equality lhs/rhs references and bool, each genuine base(this/ref result).
+	2 * sizeof(void *) + sizeof(bool) + 2 * (2 * sizeof(void *)) + 2 * sizeof(void *);
+
+// Full held_retirement_transport.h classification: command and bytes refs,
+// actual one-reference lambda object, blob_size, item_section/tail/terms and bool result.
+// The direct integer call has this/offset/count/i, uint64 local and result.
+// It does not copy its closure. Closure destruction owns its actual receiver.
+constexpr size_t mixed_checkpoint_held_classification_source =
+	2 * sizeof(void *) + sizeof(void *) + sizeof(uint64_t) + 3 * sizeof(size_t) + sizeof(bool) +
+	sizeof(void *) + (sizeof(void *) + 3 * sizeof(size_t) + 2 * sizeof(uint64_t)) +
+	mixed_checkpoint_vector_size_source + mixed_checkpoint_vector_index_source;
+constexpr size_t mixed_checkpoint_classification_source =
+	// native_transport_command plus the four remaining real field-only
+	// predicates (quest, birth, auction, zone). The subsequent held-phase
+	// check invokes the same full held classifier sequentially; summing both
+	// genuine call sites conservatively preserves the enclosing transport call.
+	5 * (sizeof(void *) + sizeof(bool)) + 2 * mixed_checkpoint_held_classification_source;
+
+constexpr size_t mixed_checkpoint_encoded_vector_cleanup_source =
+	// Exact uint8 vector/~base/get-allocator/_Destroy range/aux chain.
+	sizeof(std::vector<uint8_t> *) + sizeof(std::vector<uint8_t> *) +
+	sizeof(std::allocator<uint8_t> *) + 2 * sizeof(uint8_t *) +
+	sizeof(std::allocator<uint8_t> *) + 2 * sizeof(uint8_t *) + 2 * sizeof(uint8_t *) +
+	sizeof(bool) +
+	// _Vector_base/_M_deallocate -> traits/allocator/new_allocator, sized
+	// delete, C++20 constant-evaluation bool, allocator and implicit impl/data/
+	// new_allocator cleanup. uint8 trivial _Destroy has no element destructor.
+	sizeof(void *) + sizeof(std::vector<uint8_t> *) + sizeof(uint8_t *) + sizeof(size_t) +
+	sizeof(std::allocator<uint8_t> *) + sizeof(uint8_t *) + sizeof(size_t) +
+	sizeof(std::allocator<uint8_t> *) + sizeof(uint8_t *) + sizeof(size_t) +
+	sizeof(std::allocator<uint8_t> *) + sizeof(uint8_t *) + sizeof(size_t) + sizeof(void *) +
+	sizeof(size_t) + sizeof(bool) + sizeof(std::allocator<uint8_t> *) + 3 * sizeof(void *);
+constexpr size_t mixed_checkpoint_own_source =
+	mixed_checkpoint_entry_source + mixed_checkpoint_classification_source +
+	// Own encoded default construction reaches six real this receivers.
+	6 * sizeof(void *) + mixed_checkpoint_encoded_vector_cleanup_source +
+	mixed_checkpoint_vector_size_source + mixed_checkpoint_vector_empty_source +
+	mixed_checkpoint_checked_add_source;
+
+constexpr size_t mixed_checkpoint_profile_query_source =
+	// Export wrapper(output,bool), internal profile(output,bool,codec N),
+	// genuine lower query(output,bool), and checked-add(ref,amount,bool).
+	// initial_inline's named source N is the larger genuine query alternative.
+	2 * (sizeof(void *) + sizeof(bool)) + 2 * sizeof(size_t) +
+	critical_command_startup_codec_complete_source_query_frame_bytes() +
+	mixed_checkpoint_checked_add_source;
+
+bool mixed_checkpoint_source(size_t *output) noexcept
+{
+	if (!output)
+		return false;
+#if defined(__linux__) && defined(__GLIBCXX__) && defined(_GLIBCXX_RELEASE) &&               \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&                         \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) && \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                      \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                   \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0)
+	if constexpr (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(std::ptrdiff_t) != 8 ||
+		      sizeof(uint64_t) != 8 || sizeof(std::allocator<uint8_t>) != 1)
+		return false;
+	size_t codec = 0;
+	// Published full startup codec source is explicitly the genuine bounded
+	// encode/decode envelope. Its documented disjoint codec branch excess is
+	// retained; no old DTO/heap/working-vector request is charged as source.
+	if (!critical_command_startup_codec_complete_source_frame_bytes(&codec) ||
+	    !room_storage_add(codec, mixed_checkpoint_own_source))
+		return false;
+	*output = codec;
+	return true;
+#else
+	return false;
+#endif
+}
+
+// Complete original retained-size algorithm, with SOURCE admitted before any
+// actual predicate/codec/vector lifetime. Caller owns authentic envelope,
+// callback/context descendants and old output. The same-lock replay relay still
+// supplies fresh CURRENT C once. No lock, borrowed scope or authority is minted.
+bool mixed_startup_checkpoint_size_bounded(const critical_native_recovery_envelope &envelope,
+					   size_t *retained,
+					   bool (*reserve)(size_t, void *) noexcept, void *context,
+					   size_t outer) noexcept
+{
+	size_t source = 0, live = outer;
+	if (!reserve || !retained || !room_storage_add(live, mixed_checkpoint_entry_source) ||
+	    !room_storage_add(live, mixed_checkpoint_profile_query_source) ||
+	    !room_storage_add(live, mixed_checkpoint_checked_add_source) ||
+	    !reserve(live, context) || !mixed_checkpoint_source(&source))
+		return false;
+	live = outer;
+	if (!room_storage_add(live, source) ||
+	    !room_storage_add(live, sizeof(std::vector<uint8_t>)) || !reserve(live, context))
+		return false;
+	if (!native_transport_command(envelope.command) ||
+	    (held_retirement_transport_command(envelope.command) &&
+	     envelope.phase != critical_native_recovery_phase::execution_pending) ||
+	    !envelope.command.publication_required || !envelope.revision ||
+	    (envelope.phase != critical_native_recovery_phase::execution_pending &&
+	     envelope.phase != critical_native_recovery_phase::continuation_pending) ||
+	    envelope.attachment.empty() ||
+	    envelope.attachment.size() > CRITICAL_NATIVE_RECOVERY_MAX_ATTACHMENT_BYTES)
+		return false;
+	std::vector<uint8_t> encoded;
+	if (critical_command_encode_bounded(envelope.command, &encoded, reserve, context, live) !=
+		    critical_command_codec_result::ok ||
+	    encoded.size() >
+		    CRITICAL_COORDINATOR_MAX_BYTES - NATIVE_COORDINATOR_ENVELOPE_OVERHEAD ||
+	    envelope.attachment.size() > CRITICAL_COORDINATOR_MAX_BYTES -
+						 NATIVE_COORDINATOR_ENVELOPE_OVERHEAD -
+						 encoded.size())
+		return false;
+	// Last reservation retained the original fresh encoder result capacity;
+	// move transfer merely changes ownership to encoded. That local ownership
+	// ends at scope cleanup; no encoded buffer survives the scalar output, and
+	// no new callback or retained-capacity baseline is required here.
+	*retained =
+		encoded.size() + envelope.attachment.size() + NATIVE_COORDINATOR_ENVELOPE_OVERHEAD;
+	return true;
+}
+} // namespace
+
+bool critical_mixed_startup_replay_owner::native_checkpoint_size_source_frames(
+	size_t *output) noexcept
+{
+	return mixed_checkpoint_source(output);
+}
+bool critical_mixed_startup_replay_owner::native_checkpoint_size_initial_inline_bytes(
+	size_t *output) noexcept
+{
+	if (!output)
+		return false;
+	size_t source = 0;
+	if (!mixed_checkpoint_source(&source))
+		return false;
+	*output = sizeof(std::vector<uint8_t>);
+	return true;
+}
+
+namespace
+{
+namespace mixed_coordinator_current_source
+{
+constexpr size_t P = sizeof(void *), N = sizeof(size_t), B = sizeof(bool);
+constexpr size_t D = sizeof(std::ptrdiff_t);
+constexpr size_t maximum(size_t a, size_t b) noexcept
+{
+	return a > b ? a : b;
+}
+
+// The unchanged pure census calls no allocator, codec, mutex or user callback.
+// All values below price actual signatures/locals/returns and range lifetime,
+// not the persistent C bytes reported by that census. Sequential alternatives
+// share an explicit maximum; genuine nested parent carriers persist.
+constexpr size_t add = P + N + B;
+constexpr size_t array = P + 2 * N + B + add;
+constexpr size_t vector_capacity = P + N + D;
+// capacity -> _M_is_local -> _M_data/_M_local_data -> pointer_to ->
+// addressof -> __addressof. The left pointer result survives the right chain.
+constexpr size_t string_capacity =
+	P + N + P + B + maximum(2 * P, P + 2 * P + 2 * P + 2 * P + 2 * P);
+constexpr size_t string = 2 * P + B + maximum(string_capacity, add);
+constexpr size_t command = 2 * P + B + maximum(array + vector_capacity, add + vector_capacity);
+
+// Actual _Node_const_iterator -> _Node_iterator_base construction and cleanup.
+// Direct _Hashtable const begin calls _M_begin, end materializes nullptr.
+constexpr size_t node_begin = 2 * P + 2 * P + 2 * P + 2 * P;
+constexpr size_t node_end = 2 * P + 2 * P + 2 * P;
+constexpr size_t node_equal = 2 * P + B;
+constexpr size_t node_increment = 2 * P + P + 2 * P;
+// * -> _M_v -> _M_valptr -> __aligned_buffer::_M_ptr -> _M_addr.
+// The actual aligned buffer uses builtin &storage, with no addressof call.
+constexpr size_t node_dereference = 5 * (2 * P);
+constexpr size_t node_cleanup = 2 * (P + P);
+constexpr size_t node_range_live = 2 * P + 2 * sizeof(decltype(operations)::const_iterator);
+// Sum the actual sequential begin/end/comparison/increment/dereference/dtor
+// scopes conservatively; no generic iterator envelope or iteration multiplier.
+constexpr size_t node_range = node_range_live + node_begin + node_end + node_equal +
+			      node_increment + node_dereference + node_cleanup;
+// Only genuine std::unordered_map adds these two begin/end wrapper signatures.
+constexpr size_t unordered_range = node_range + 2 * (2 * P);
+constexpr size_t table_count = P + N;
+constexpr size_t unordered_count = 2 * (P + N);
+constexpr size_t table_map = 2 * P + B + maximum(array + table_count, node_range + string);
+constexpr size_t unordered_map =
+	2 * P + B + maximum(array + unordered_count, unordered_range + string);
+
+// Native identity queue: this/output/actual refs; bytes/blocks/block_bytes;
+// actual node pointer-difference value; returned bool; __deque_buf_size arg/N.
+constexpr size_t identity_own = 3 * P + 3 * N + D + B;
+constexpr size_t deque_buffer = 2 * N;
+constexpr size_t identity_range_live = 2 * P + 2 * sizeof(native_identity_queue::const_iterator);
+// Each deque const begin/end converts the actual stored iterator by const-ref
+// constructor. It returns its genuine four-pointer const_iterator.
+constexpr size_t deque_endpoint = P + sizeof(native_identity_queue::const_iterator) + 2 * P;
+constexpr size_t deque_equal = 2 * P + B;
+// ++ -> _M_set_node(this/newnode) -> _S_buffer_size(result N) ->
+// __deque_buf_size(arg/result N), including the actual difference_type cast.
+constexpr size_t deque_increment = 2 * P + 2 * P + N + 2 * N + D;
+constexpr size_t deque_dereference = 2 * P;
+constexpr size_t deque_cleanup = 2 * P;
+constexpr size_t identity_range_queries =
+	2 * deque_endpoint + deque_equal + deque_increment + deque_dereference + deque_cleanup;
+constexpr size_t identity = identity_own + deque_buffer + identity_range_live +
+			    identity_range_queries + string_capacity;
+
+// player_retained_deque<critical_completion> has no element scan. Its genuine
+// current getter declares impl ref and six size_t locals, calls max()/buffer,
+// and computes the real node pointer difference. No element-owned heap here.
+constexpr size_t completion = 3 * P + 6 * N + B + N + deque_buffer + D;
+
+// const unique_ptr get -> __uniq_ptr_impl::_M_ptr -> const tuple get<0> ->
+// __get_helper -> _Tuple_impl::_M_head -> _Head_base::_M_head, each real
+// receiver/reference and returned pointer/reference. No deleter runs in C scan.
+constexpr size_t unique_get = 6 * (2 * P);
+constexpr size_t unique_present = P + B + unique_get;
+constexpr size_t unique_access = 2 * P + unique_get;
+// Actual operations loop retains state ref and three genuine branch-local
+// slots definitions (conservative sum of those sequential source alternatives).
+// sizeof(*transaction) is unevaluated: it invokes no transaction dereference.
+constexpr size_t operations_body =
+	P + 3 * N +
+	maximum(unique_present,
+		maximum(unique_access + command, maximum(unique_access + vector_capacity, add)));
+
+// Root output/total/heap/result plus the actual retained_storage_bytes return.
+// Each whole map helper and later range is a genuine sequential root branch.
+constexpr size_t own = P + 2 * N + B + N;
+constexpr size_t scalar_scans =
+	maximum(maximum(table_map, unordered_map),
+		maximum(array + vector_capacity, maximum(identity, completion)));
+constexpr size_t range_scans =
+	maximum(unordered_range + string,
+		maximum(node_range + maximum(identity, add),
+			maximum(unordered_range + command, node_range + operations_body)));
+constexpr size_t selected = own + maximum(scalar_scans, range_scans);
+} // namespace mixed_coordinator_current_source
+} // namespace
+
+bool critical_mixed_startup_replay_owner::coordinator_current_source_frames(size_t *output) noexcept
+{
+	if (!output)
+		return false;
+#if defined(__linux__) && defined(__GLIBCXX__) && defined(_GLIBCXX_RELEASE) &&               \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&                         \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) && \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                      \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                   \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&             \
+	(!defined(_GLIBCXX_INLINE_VERSION) || _GLIBCXX_INLINE_VERSION == 0)
+	if constexpr (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(std::ptrdiff_t) != 8 ||
+		      sizeof(decltype(operations)::const_iterator) != sizeof(void *) ||
+		      sizeof(decltype(fences)::const_iterator) != sizeof(void *) ||
+		      sizeof(decltype(active_keys)::const_iterator) != sizeof(void *) ||
+		      sizeof(decltype(completed_cache)::const_iterator) != sizeof(void *) ||
+		      sizeof(native_identity_queue::const_iterator) != 4 * sizeof(void *))
+		return false;
+	*output = mixed_coordinator_current_source::selected;
+	return true;
+#else
+	return false;
+#endif
+}
+
+namespace
+{
+namespace mixed_replay_private_current_source
+{
+using namespace mixed_coordinator_current_source;
+// Each prefix has actual workspace ref, request value and bool result. All
+// workspace fields/object storage remain existing INLINE, not this SOURCE.
+constexpr size_t prefix_entry = P + N + B;
+// Native private state accesses have two real nested unique_ptr receivers.
+// The pointers are read, not copied or destroyed by either census.
+constexpr size_t native_prefix =
+	prefix_entry +
+	maximum(string, maximum(unique_present,
+				maximum(unique_access + command,
+					maximum(unique_access + unique_present,
+						2 * unique_access + vector_capacity + add))));
+constexpr size_t legacy_prefix =
+	prefix_entry + maximum(string, maximum(unique_present, unique_access + command));
+constexpr size_t prefixes = maximum(native_prefix, legacy_prefix);
+// room_checkpoint_heap has envelope/bytes/command refs, fresh flag, keys and
+// revisions locals and returned bool. Actual size and capacity alternatives
+// have identical typed scalar/difference query carriers; only real heap request
+// counts differ. room_retire_add has the same P+N+B source signature as add.
+constexpr size_t fresh_request = 3 * P + 2 * N + 2 * B + vector_capacity + add;
+} // namespace mixed_replay_private_current_source
+} // namespace
+
+bool critical_mixed_startup_replay_owner::replay_private_current_source_frames(
+	size_t *output) noexcept
+{
+	if (!output)
+		return false;
+#if defined(__linux__) && defined(__GLIBCXX__) && defined(_GLIBCXX_RELEASE) &&               \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&                         \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) && \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                      \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                   \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0)
+	if constexpr (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(std::ptrdiff_t) != 8)
+		return false;
+	*output = mixed_replay_private_current_source::prefixes;
+	return true;
+#else
+	return false;
+#endif
+}
+
+bool critical_mixed_startup_replay_owner::replay_fresh_copy_request_source_frames(
+	size_t *output) noexcept
+{
+	if (!output)
+		return false;
+#if defined(__linux__) && defined(__GLIBCXX__) && defined(_GLIBCXX_RELEASE) &&               \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&                         \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) && \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                      \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                   \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0)
+	if constexpr (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(std::ptrdiff_t) != 8)
+		return false;
+	*output = mixed_replay_private_current_source::fresh_request;
+	return true;
+#else
+	return false;
+#endif
+}
+
+bool critical_mixed_startup_replay_owner::replay_state_construction_source_frames(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported)
+		return false;
+	*output = mixed_replay_state_construction_source::state_window;
+	return true;
+}
+
+bool critical_mixed_startup_replay_owner::replay_native_context_construction_source_frames(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported)
+		return false;
+	*output = mixed_replay_state_construction_source::context_window;
+	return true;
+}
+
+bool critical_mixed_startup_replay_owner::replay_command_copy_source_frames(size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_command_assignment_source::layout)
+		return false;
+	*output = mixed_replay_command_assignment_source::command_copy;
+	return true;
+}
+
+bool critical_mixed_startup_replay_owner::replay_command_move_source_frames(size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_command_assignment_source::layout)
+		return false;
+	*output = mixed_replay_command_assignment_source::command_move;
+	return true;
+}
+
+bool critical_mixed_startup_replay_owner::replay_attachment_copy_source_frames(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_command_assignment_source::layout)
+		return false;
+	*output = mixed_replay_command_assignment_source::attachment_copy;
+	return true;
+}
+
+bool critical_mixed_startup_replay_owner::replay_fence_queue_construction_source_frames(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_command_assignment_source::layout ||
+	    !mixed_replay_fence_queue_construction_source::layout)
+		return false;
+	*output = mixed_replay_fence_queue_construction_source::window;
+	return true;
+}
+
+bool critical_mixed_startup_replay_owner::replay_table_forecast_source_frames(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_command_assignment_source::layout ||
+	    !mixed_replay_table_forecast_source::layout)
+		return false;
+	*output = mixed_replay_table_forecast_source::window;
+	return true;
+}
+
+bool critical_mixed_startup_replay_owner::replay_string_value_source_frames(size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_command_assignment_source::layout ||
+	    !mixed_replay_string_value_source::layout)
+		return false;
+	*output = mixed_replay_string_value_source::window;
+	return true;
+}
+
+bool critical_mixed_startup_replay_owner::replay_operation_state_cleanup_source_frames(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_command_assignment_source::layout ||
+	    !mixed_replay_string_value_source::layout)
+		return false;
+	*output = mixed_replay_populated_state_cleanup_source::cleanup_window;
+	return true;
+}
+bool critical_mixed_startup_replay_owner::replay_value_lifetime_source_frames(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_command_assignment_source::layout ||
+	    !mixed_replay_string_value_source::layout)
+		return false;
+	*output = mixed_replay_populated_state_cleanup_source::value_lifetime_window;
+	return true;
+}
+
+bool critical_mixed_startup_replay_owner::replay_queue_push_source_frames(size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_command_assignment_source::layout ||
+	    !mixed_replay_fence_queue_construction_source::layout ||
+	    !mixed_replay_string_value_source::layout)
+		return false;
+	*output = mixed_replay_queue_push_source::window;
+	return true;
+}
+
+bool critical_mixed_startup_replay_owner::replay_key_value_source_frames(size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_command_assignment_source::layout ||
+	    !mixed_replay_string_value_source::layout || !mixed_replay_key_value_source::layout)
+		return false;
+	*output = mixed_replay_key_value_source::window;
+	return true;
+}
+bool critical_mixed_startup_replay_owner::replay_queue_cleanup_source_frames(size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_command_assignment_source::layout ||
+	    !mixed_replay_fence_queue_construction_source::layout)
+		return false;
+	*output = mixed_replay_queue_cleanup_source::window;
+	return true;
+}
+
+bool critical_mixed_startup_replay_owner::replay_table_key_lookup_source_frames(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_command_assignment_source::layout ||
+	    !mixed_replay_string_value_source::layout ||
+	    !mixed_replay_table_key_lookup_source::layout)
+		return false;
+	*output = mixed_replay_table_key_lookup_source::window;
+	return true;
+}
+
+bool critical_mixed_startup_replay_owner::replay_table_node_storage_source_frames(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_command_assignment_source::layout ||
+	    !mixed_replay_string_value_source::layout ||
+	    !mixed_replay_table_node_storage_source::layout)
+		return false;
+	*output = mixed_replay_table_node_storage_source::window;
+	return true;
+}
+
+bool critical_mixed_startup_replay_owner::replay_table_value_construction_source_frames(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_command_assignment_source::layout ||
+	    !mixed_replay_string_value_source::layout ||
+	    !mixed_replay_table_node_storage_source::layout ||
+	    !mixed_replay_table_value_construction_source::layout)
+		return false;
+	*output = mixed_replay_table_value_construction_source::window;
+	return true;
+}
+
+bool critical_mixed_startup_replay_owner::replay_table_insert_source_frames(size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_command_assignment_source::layout ||
+	    !mixed_replay_string_value_source::layout || !mixed_replay_table_insert_source::layout)
+		return false;
+	*output = mixed_replay_table_insert_source::window;
+	return true;
+}
+
+bool critical_mixed_startup_replay_owner::replay_table_iterator_erase_source_frames(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_command_assignment_source::layout ||
+	    !mixed_replay_string_value_source::layout ||
+	    !mixed_replay_table_iterator_erase_source::layout)
+		return false;
+	*output = mixed_replay_table_iterator_erase_source::window;
+	return true;
+}
+
+bool critical_mixed_startup_replay_owner::replay_transparent_lookup_source_supplement_frames(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_command_assignment_source::layout ||
+	    !mixed_replay_string_value_source::layout ||
+	    !mixed_replay_transparent_table_lookup_source::layout)
+		return false;
+	*output = mixed_replay_transparent_table_lookup_source::window;
+	return true;
+}
+
+bool critical_mixed_startup_replay_owner::replay_transparent_lookup_full_source_frames(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_command_assignment_source::layout ||
+	    !mixed_replay_string_value_source::layout ||
+	    !mixed_replay_transparent_table_lookup_source::layout)
+		return false;
+	*output = mixed_replay_transparent_table_lookup_source::full_window;
+	return true;
+}
+
+bool critical_mixed_startup_replay_owner::replay_deque_tail_erase_source_supplement_frames(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_command_assignment_source::layout ||
+	    !mixed_replay_string_value_source::layout ||
+	    !mixed_replay_deque_tail_erase_source::layout)
+		return false;
+	*output = mixed_replay_deque_tail_erase_source::window;
+	return true;
+}
+
+bool critical_mixed_startup_replay_owner::replay_deque_tail_erase_full_source_frames(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_command_assignment_source::layout ||
+	    !mixed_replay_string_value_source::layout ||
+	    !mixed_replay_deque_tail_erase_source::layout)
+		return false;
+	*output = mixed_replay_deque_tail_erase_source::full_window;
+	return true;
+}
+
+bool critical_mixed_startup_replay_owner::replay_std_remove_source_supplement_frames(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_command_assignment_source::layout ||
+	    !mixed_replay_string_value_source::layout || !mixed_replay_std_remove_source::layout)
+		return false;
+	*output = mixed_replay_std_remove_source::window;
+	return true;
+}
+
+bool critical_mixed_startup_replay_owner::replay_std_remove_full_source_frames(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_command_assignment_source::layout ||
+	    !mixed_replay_string_value_source::layout || !mixed_replay_std_remove_source::layout)
+		return false;
+	*output = mixed_replay_std_remove_source::full_window;
+	return true;
+}
+
+bool critical_mixed_startup_replay_owner::replay_rollback_controller_source_supplement_frames(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_command_assignment_source::layout ||
+	    !mixed_replay_std_remove_source::layout ||
+	    !mixed_replay_rollback_controller_source::layout)
+		return false;
+	*output = mixed_replay_rollback_controller_source::window;
+	return true;
+}
+
+bool critical_mixed_startup_replay_owner::replay_update_depth_header_source_supplement_frames(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_command_assignment_source::layout ||
+	    !mixed_replay_std_remove_source::layout ||
+	    !mixed_replay_update_depth_header_source::layout)
+		return false;
+	*output = mixed_replay_update_depth_header_source::window;
+	return true;
+}
+
+bool critical_mixed_startup_replay_owner::replay_workspace_entry_source_frames(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_command_assignment_source::layout ||
+	    !mixed_replay_std_remove_source::layout || !mixed_replay_workspace_entry_source::layout)
+		return false;
+	*output = mixed_replay_workspace_entry_source::window;
+	return true;
+}
+
+bool critical_mixed_startup_replay_owner::replay_workspace_initial_inline_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_workspace_entry_source::layout)
+		return false;
+	*output = sizeof(room_replay_workspace) > sizeof(legacy_replay_workspace) ?
+			  sizeof(room_replay_workspace) :
+			  sizeof(legacy_replay_workspace);
+	return true;
+}
+
+namespace
+{
+namespace mixed_replay_enqueue_owned_source
+{
+using namespace mixed_replay_command_assignment_source;
+// Exact Source families already retained by both complete replay entries.
+// Overlapping string/copy/cleanup and queue push/cleanup queries select their
+// authenticated maxima, not sums of the overlapping public family getters.
+constexpr size_t persistent = mixed_replay_table_forecast_source::window +
+			      mixed_replay_key_value_source::admitted_window +
+			      mixed_replay_queue_cleanup_source::mutation_window +
+			      mixed_replay_table_key_lookup_source::window +
+			      mixed_replay_table_node_storage_source::window +
+			      mixed_replay_table_value_construction_source::window +
+			      mixed_replay_table_insert_source::window +
+			      mixed_replay_table_iterator_erase_source::window +
+			      mixed_replay_transparent_table_lookup_source::window +
+			      mixed_replay_deque_tail_erase_source::window +
+			      mixed_replay_std_remove_source::window +
+			      mixed_replay_rollback_controller_source::window +
+			      mixed_replay_update_depth_header_source::window +
+			      mixed_replay_workspace_entry_source::window;
+// Newly retained disjoint actual enclosing/relay/current scopes. CURRENT C and
+// the user's callback implementation remain external to this private scratch.
+constexpr size_t supplement = mixed_replay_enqueue_entry_controller_source::supplement +
+			      mixed_replay_private_current_source::prefixes +
+			      mixed_replay_private_current_source::fresh_request +
+			      mixed_replay_forwarding_source_supplement;
+// Original make_unique state, legacy command move, and native command/context/
+// attachment copy are separate phases. Each real transient was already admitted
+// at its precise cut; the selecting preentry needs their genuine maximum too.
+constexpr size_t transient =
+	max_source(mixed_replay_state_construction_source::state_window,
+		   max_source(mixed_replay_command_assignment_source::command_move,
+			      mixed_replay_state_construction_source::context_window +
+				      mixed_replay_command_assignment_source::command_copy +
+				      mixed_replay_command_assignment_source::attachment_copy));
+constexpr size_t own_without_validation = persistent + supplement + transient;
+constexpr bool layout =
+	mixed_replay_state_construction_source::supported &&
+	mixed_replay_command_assignment_source::layout &&
+	mixed_replay_fence_queue_construction_source::layout &&
+	mixed_replay_table_forecast_source::layout && mixed_replay_string_value_source::layout &&
+	mixed_replay_key_value_source::layout && mixed_replay_table_key_lookup_source::layout &&
+	mixed_replay_table_node_storage_source::layout &&
+	mixed_replay_table_value_construction_source::layout &&
+	mixed_replay_table_insert_source::layout &&
+	mixed_replay_table_iterator_erase_source::layout &&
+	mixed_replay_transparent_table_lookup_source::layout &&
+	mixed_replay_deque_tail_erase_source::layout && mixed_replay_std_remove_source::layout &&
+	mixed_replay_rollback_controller_source::layout &&
+	mixed_replay_update_depth_header_source::layout &&
+	mixed_replay_workspace_entry_source::layout &&
+	mixed_replay_enqueue_entry_controller_source::layout;
+} // namespace mixed_replay_enqueue_owned_source
+
+bool mixed_replay_enqueue_retained_source(size_t *output) noexcept
+{
+	if (!output || !mixed_replay_enqueue_owned_source::layout)
+		return false;
+	*output = mixed_replay_enqueue_owned_source::supplement;
+	return true;
+}
+} // namespace
+
+bool critical_mixed_startup_replay_owner::replay_enqueue_owned_source_frames(size_t *output) noexcept
+{
+	if (!output || !mixed_replay_enqueue_owned_source::layout)
+		return false;
+	size_t total = mixed_replay_enqueue_owned_source::own_without_validation;
+	// This existing actual lower getter prices exactly the unchanged pure
+	// envelope/legacy/zero/key/binary-search predicate graph, not a codec heap.
+	// Its size_t return and this checked add are owned by the query contract.
+	if (!room_storage_add(total, critical_command_valid_frame_bytes()))
+		return false;
+	*output = total;
+	return true;
+}
+
+bool critical_mixed_startup_replay_owner::replay_enqueue_owned_source_supplement_frames(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_enqueue_owned_source::layout)
+		return false;
+	size_t total = mixed_replay_enqueue_owned_source::supplement;
+	if (!room_storage_add(total, critical_command_valid_frame_bytes()))
+		return false;
+	*output = total;
+	return true;
+}
+
+bool critical_mixed_startup_replay_owner::replay_enqueue_initial_inline_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_enqueue_owned_source::layout)
+		return false;
+	*output = sizeof(room_replay_workspace) > sizeof(legacy_replay_workspace) ?
+			  sizeof(room_replay_workspace) :
+			  sizeof(legacy_replay_workspace);
+	return true;
+}
+
+namespace
+{
+namespace native_birth_duplicate_matches_source
+{
+using namespace mixed_replay_command_assignment_source;
+// New helper has state/envelope/reserve/context, outer and returned bool;
+// live/source/initial/supplement/child_outer and its automatic constexpr query.
+constexpr size_t helper = 4 * P + 7 * N + B;
+constexpr size_t checked_add = P + N + B;
+constexpr size_t capacity = P + N;
+constexpr size_t child_getter = P + B;
+// Existing independently reviewed selected get/ptr/tuple chain. Distinct
+// native presence and -> uses are sequential; the access maximum covers both.
+constexpr size_t native_access = mixed_coordinator_current_source::unique_access;
+// C++20 vector<uint8_t>::operator== has two vector refs/returned bool, two
+// genuine size(this,returned size) calls, and three const endpoints. The
+// returned normal_iterator objects alias equal's three by-value parameters.
+// Stored pointer const lvalues bind through reference-compatible qualification
+// directly to the constructor's const pointer reference, without a pointer
+// prvalue materialization. Each endpoint owns this and its declared constructor.
+constexpr size_t vector_equal = 2 * P + B;
+constexpr size_t vector_sizes = 2 * (P + N);
+constexpr size_t const_endpoints = 3 * (P + 2 * P);
+constexpr size_t equal_entry = 3 * P + B;
+constexpr size_t equal_aux = 3 * P + B;
+// Actual __niter_base(normal_iterator by value)->pointer, then base(this)->ref.
+// The first 2P are the by-value CI object and declared returned pointer.
+constexpr size_t unwrap = 3 * (2 * P + 2 * P);
+// __equal_aux1 has three raw pointers, real automatic __simple bool and result.
+constexpr size_t equal_aux1 = 3 * P + 2 * B;
+// Actual selected __equal<true>::equal: three raw pointers, __len and bool.
+constexpr size_t equal_memcmp_controller = 3 * P + N + B;
+// std::__memcmp is a captured HEADER function: pointer/pointer/count/int result
+// and is_constant_evaluated bool. Its __builtin_memcmp implementation is the
+// existing shared external-library/runtime qualification, not an invented row.
+constexpr size_t header_memcmp = 2 * P + N + sizeof(int) + B;
+constexpr size_t byte_equal = vector_equal + vector_sizes + const_endpoints + equal_entry +
+			      equal_aux + unwrap + equal_aux1 + equal_memcmp_controller +
+			      header_memcmp;
+#if __cpp_lib_three_way_comparison
+// The selected C++20 != expression rewrites operator==, with no separate
+// declared operator!=. No implicit trivial iterator special member is invented.
+constexpr size_t byte_compare = byte_equal;
+#else
+// Actual alternative declaration has two vector refs and bool before ==.
+constexpr size_t byte_compare = 2 * P + B + byte_equal;
+#endif
+// Preserve the genuine previously reviewed vector cleanup Source credit;
+// each actual output vector selects six default-construction receivers and
+// that typed cleanup chain. The two real sequential lifetimes are explicitly
+// conservatively summed. Their object storage belongs INITIAL, not SOURCE.
+constexpr size_t outputs_lifetime = 2 * (6 * P + vector_cleanup_source<uint8_t>());
+constexpr size_t local_source = helper + checked_add + capacity + child_getter + native_access +
+				byte_compare + outputs_lifetime;
+constexpr bool layout = mixed_replay_command_assignment_source::layout &&
+			sizeof(std::vector<uint8_t>::const_iterator) == P && sizeof(int) == 4;
+
+bool complete_source(size_t *output) noexcept
+{
+	if (!output || !layout)
+		return false;
+	size_t codec = 0;
+	if (!critical_command_startup_codec_complete_source_frame_bytes(&codec))
+		return false;
+	size_t total = local_source;
+	if (!room_storage_add(total, codec))
+		return false;
+	*output = total;
+	return true;
+}
+} // namespace native_birth_duplicate_matches_source
+
+bool native_birth_submit_matches_complete_bounded(const operation_state &state,
+						  const critical_native_recovery_envelope &envelope,
+						  bool (*reserve)(size_t, void *) noexcept,
+						  void *context, size_t outer) noexcept
+{
+	// The selecting submit cut preadmits the complete Source/actual INITIAL
+	// before this helper. Preserve the original pure mismatch decision BEFORE
+	// any vector construction or reserve call inside the helper.
+	if (!state.native || state.native->revision != envelope.revision ||
+	    state.native->phase != envelope.phase ||
+	    state.native->attachment != envelope.attachment)
+		return false;
+	std::vector<uint8_t> left_encoded;
+	std::vector<uint8_t> right_encoded;
+	size_t live = outer, source = 0, initial = 0, supplement = 0, child_outer = 0;
+	constexpr size_t query = critical_command_startup_codec_complete_source_query_frame_bytes();
+	if (!room_storage_add(live, 2 * sizeof(std::vector<uint8_t>)) ||
+	    !room_storage_add(live, native_birth_duplicate_matches_source::local_source) ||
+	    !reserve || !reserve(live, context))
+		return false;
+	// Pure query scopes and full codec Source+initial are transient. Only the
+	// unchanged codec's genuine missing supplement enters its callback outer;
+	// its original DTO/writer Source and actual private heaps remain its own.
+	if (!room_storage_add(child_outer = live, query) || !reserve(child_outer, context) ||
+	    !critical_command_startup_codec_complete_source_frame_bytes(&source) ||
+	    !critical_command_startup_codec_initial_inline_bytes(&initial) ||
+	    !critical_command_startup_codec_source_supplement_frame_bytes(&supplement) ||
+	    !room_storage_add(source, initial) || !room_storage_add(child_outer = live, source) ||
+	    !reserve(child_outer, context) || !room_storage_add(child_outer = live, supplement))
+		return false;
+	if (critical_command_encode_bounded(state.command, &left_encoded, reserve, context,
+					    child_outer) != critical_command_codec_result::ok)
+		return false;
+	if (!room_storage_add(live, left_encoded.capacity()))
+		return false;
+	// Genuine first encoded capacity remains live beside both output objects
+	// through the complete second encode. Requery the same real provider, not
+	// a stale recorded peak or an encoded-size approximation of retained heap.
+	if (!room_storage_add(child_outer = live, query) || !reserve(child_outer, context) ||
+	    !critical_command_startup_codec_complete_source_frame_bytes(&source) ||
+	    !critical_command_startup_codec_initial_inline_bytes(&initial) ||
+	    !critical_command_startup_codec_source_supplement_frame_bytes(&supplement) ||
+	    !room_storage_add(source, initial) || !room_storage_add(child_outer = live, source) ||
+	    !reserve(child_outer, context) || !room_storage_add(child_outer = live, supplement))
+		return false;
+	return critical_command_encode_bounded(envelope.command, &right_encoded, reserve, context,
+					       child_outer) == critical_command_codec_result::ok &&
+	       left_encoded == right_encoded;
+}
+} // namespace
+
+bool critical_native_mobile_birth_publication_owner::submit_matches_source_frames(
+	size_t *output) noexcept
+{
+	return native_birth_duplicate_matches_source::complete_source(output);
+}
+
+bool critical_native_mobile_birth_publication_owner::submit_matches_initial_inline_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !native_birth_duplicate_matches_source::layout)
+		return false;
+	*output = 2 * sizeof(std::vector<uint8_t>);
+	return true;
+}
+
+bool critical_native_mobile_birth_publication_owner::submit_workspace_entry_source_frames(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_command_assignment_source::layout ||
+	    !native_birth_submit_workspace_source::layout)
+		return false;
+	*output = native_birth_submit_workspace_source::window;
+	return true;
+}
+
+bool critical_native_mobile_birth_publication_owner::submit_workspace_initial_inline_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_command_assignment_source::layout ||
+	    !native_birth_submit_workspace_source::layout)
+		return false;
+	*output = sizeof(room_submit_workspace);
+	return true;
+}
+
+bool critical_native_mobile_birth_publication_owner::submit_private_current_source_frames(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !mixed_replay_command_assignment_source::layout ||
+	    !native_birth_submit_workspace_source::layout)
+		return false;
+	// The real submit and replay prefixes have the same work/ref/request/result,
+	// string, mutable unique/state/native, command, capacity and checked-add graph.
+	// Submit additionally scans its private envelope command and attachment,
+	// sequentially before the same nested native state branch. The existing
+	// native_prefix explicitly dominates those direct command/capacity/add paths.
+	// No callback/lender/C scan belongs to this private local owner getter.
+	*output = mixed_replay_private_current_source::native_prefix;
+	return true;
+}
+
+bool critical_native_mobile_birth_publication_owner::submit_clone_state_source_frames(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !native_birth_submit_clone_state_source::layout)
+		return false;
+	*output = native_birth_submit_clone_state_source::window;
+	return true;
+}
+
+bool critical_native_mobile_birth_publication_owner::submit_mutation_child_source_frames(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !native_birth_submit_mutation_children_source::layout)
+		return false;
+	*output = native_birth_submit_mutation_children_source::window;
+	return true;
+}
+
+bool critical_native_mobile_birth_publication_owner::submit_header_controller_source_frames(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !native_birth_submit_header_controller_source::layout)
+		return false;
+	*output = native_birth_submit_header_controller_source::window;
+	return true;
+}
+
+bool critical_native_mobile_birth_publication_owner::submit_coordinator_current_source_frames(
+	size_t *output) noexcept
+{
+	if (!output)
+		return false;
+#if defined(__linux__) && defined(__GLIBCXX__) && defined(_GLIBCXX_RELEASE) &&               \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&                         \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) && \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                      \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                   \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&             \
+	(!defined(_GLIBCXX_INLINE_VERSION) || _GLIBCXX_INLINE_VERSION == 0)
+	if constexpr (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(std::ptrdiff_t) != 8 ||
+		      sizeof(decltype(operations)::const_iterator) != sizeof(void *) ||
+		      sizeof(decltype(fences)::const_iterator) != sizeof(void *) ||
+		      sizeof(decltype(active_keys)::const_iterator) != sizeof(void *) ||
+		      sizeof(decltype(completed_cache)::const_iterator) != sizeof(void *) ||
+		      sizeof(native_identity_queue::const_iterator) != 4 * sizeof(void *))
+		return false;
+	*output = mixed_coordinator_current_source::selected;
+	return true;
+#else
+	return false;
+#endif
+}
+
+bool critical_native_mobile_birth_publication_owner::submit_admitted_trace_source_frames(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported ||
+	    !native_birth_submit_admitted_trace_source::layout)
+		return false;
+	*output = native_birth_submit_admitted_trace_source::window;
+	return true;
+}
+
+bool critical_native_mobile_birth_publication_owner::submit_command_validation_source_frames(
+	size_t *output) noexcept
+{
+	if (!output || !mixed_replay_state_construction_source::supported)
+		return false;
+	// Exact existing published entire allocation-free validation contract.
+	// It includes its getter's size_t return; no second result/local N here.
+	*output = critical_command_valid_frame_bytes();
+	return true;
+}
+
+namespace native_birth_submit_lender_header_source
+{
+constexpr size_t P = sizeof(void *), N = sizeof(size_t), B = sizeof(bool);
+constexpr size_t H = sizeof(std::thread::native_handle_type);
+// Exact ordinary captured get_id overload: the right by-value comparison id
+// is the get_id return and thread::id construction output (one object). The
+// stored-id left comparison argument is distinct. No implicit id copy/dtor
+// Source is invented. The explicit native-handle constructor owns this P/H.
+// Scalar returns of __gthread_self and declared pthread_self remain separate
+// from that H formal; no scalar emitted-elimination assumption is made.
+constexpr size_t thread_identity = 2 * sizeof(std::thread::id) + P + 3 * H + 2 * B;
+// reserve(actual_lock,callback,guard,exclusive,current_output)->bool.
+// callback_borrow_frame is actual existing inline ownership, not Source here.
+constexpr size_t lender_own = 4 * P + N + B;
+// Exact unique_lock::mutex(this)->mutex* and owns_lock(this)->bool.
+constexpr size_t lock_identity = 2 * P + P + B;
+// The genuine scalar registered getter's bool is a separate sequential call.
+constexpr size_t registered = B;
+// begin and refresh: lender/callback/guard refs, current size, bool return.
+// end: lender ref and bool return. They run sequentially, so the named full
+// 33-byte begin/refresh window dominates end's 9 before/after ROOT callback.
+constexpr size_t loan = 3 * P + N + B;
+static_assert(loan >= P + B);
+constexpr size_t selected = lender_own + lock_identity + registered + loan + thread_identity;
+#if defined(_GLIBCXX_HAS_GTHREADS) && !defined(_GLIBCXX_NATIVE_THREAD_ID)
+constexpr bool supported = mixed_replay_state_construction_source::supported &&
+			   sizeof(std::thread::id) == 8 && H == 8;
+#else
+constexpr bool supported = false;
+#endif
+// Existing retained CURRENT-C Source names room_storage_add P+N+B and owns
+// its exact sequential scope through these lender calls; no second child or
+// physical C is added here. The loan parent's carriers coexist with thread
+// descendants; registered/lock scopes are explicit conservative occurrences.
+// get_id/gthread/pthread declarations authenticate the selected header graph,
+// not the external pthread_self implementation or runtime ABI qualification.
+}
+
+bool critical_native_mobile_birth_publication_owner::submit_lender_header_source_frames(
+	size_t *output) noexcept
+{
+	if (!output || !native_birth_submit_lender_header_source::supported)
+		return false;
+	*output = native_birth_submit_lender_header_source::selected;
+	return true;
+}
+
+namespace coordinator_current_storage_lock_header_source
+{
+constexpr size_t P = sizeof(void *), I = sizeof(int), B = sizeof(bool);
+// Original current_storage_bytes(output)->bool root signature. Physical lock
+// object is INITIAL, independent of the global coordinator mutex in CURRENT.
+constexpr size_t root = P + B;
+// lock_guard(this,mutex&); actual direct _M_device reference initialization
+// calls no addressof. mutex::lock owns this and actual local int __e.
+constexpr size_t construct = 2 * P;
+constexpr size_t lock = P + I;
+// Genuine gthread mutex helper pointer and int return, active_p int return;
+// actual static active pointer is not a per-call automatic object. Declared
+// pthread_mutex_lock pointer/int return are selected, external body excluded.
+constexpr size_t gthread = P + 2 * I;
+constexpr size_t pthread_declaration = P + I;
+// Actual destructor receiver -> mutex::unlock(receiver), then same selected
+// gthread/pthread declarations. No try_lock/adopt tag/mutex constructor path.
+constexpr size_t destroy = P;
+constexpr size_t unlock = P;
+constexpr size_t local = root + construct + lock + gthread + pthread_declaration + destroy +
+			 unlock + gthread + pthread_declaration;
+// __throw_system_error is reached only after real mutex error. Its actual
+// local __e is already lock's I. Callee declaration/body and exception-owned
+// storage remain shared external Source cuts; no unproved formals invented.
+}
+
+bool critical_zone_reset_item_publication_owner::current_storage_header_source_frames(
+	size_t *output) noexcept
+{
+	if (!output)
+		return false;
+#if defined(__linux__) && defined(__GLIBCXX__) && defined(_GLIBCXX_RELEASE) &&               \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&                         \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) && \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                      \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                   \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&             \
+	(!defined(_GLIBCXX_INLINE_VERSION) || _GLIBCXX_INLINE_VERSION == 0)
+	if constexpr (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(std::ptrdiff_t) != 8 ||
+		      sizeof(decltype(operations)::const_iterator) != sizeof(void *) ||
+		      sizeof(decltype(fences)::const_iterator) != sizeof(void *) ||
+		      sizeof(decltype(active_keys)::const_iterator) != sizeof(void *) ||
+		      sizeof(decltype(completed_cache)::const_iterator) != sizeof(void *) ||
+		      sizeof(native_identity_queue::const_iterator) != 4 * sizeof(void *))
+		return false;
+	if constexpr (sizeof(int) != 4 || sizeof(std::lock_guard<std::mutex>) != sizeof(void *))
+		return false;
+	*output = mixed_coordinator_current_source::selected +
+		  coordinator_current_storage_lock_header_source::local;
+	return true;
+#else
+	return false;
+#endif
+}
+
+bool critical_zone_reset_item_publication_owner::current_storage_initial_inline_bytes(
+	size_t *output) noexcept
+{
+	if (!output)
+		return false;
+#if defined(__linux__) && defined(__GLIBCXX__) && defined(_GLIBCXX_RELEASE) &&               \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&                         \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) && \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                      \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                   \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&             \
+	(!defined(_GLIBCXX_INLINE_VERSION) || _GLIBCXX_INLINE_VERSION == 0)
+	if constexpr (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(std::ptrdiff_t) != 8 ||
+		      sizeof(decltype(operations)::const_iterator) != sizeof(void *) ||
+		      sizeof(decltype(fences)::const_iterator) != sizeof(void *) ||
+		      sizeof(decltype(active_keys)::const_iterator) != sizeof(void *) ||
+		      sizeof(decltype(completed_cache)::const_iterator) != sizeof(void *) ||
+		      sizeof(native_identity_queue::const_iterator) != 4 * sizeof(void *))
+		return false;
+	if constexpr (sizeof(int) != 4 || sizeof(std::lock_guard<std::mutex>) != sizeof(void *))
+		return false;
+	*output = sizeof(std::lock_guard<std::mutex>);
+	return true;
+#else
+	return false;
+#endif
+}
+
+namespace native_birth_submit_lock_gthread_header_source
+{
+// Genuine two sequential submit lock/unlock occurrences, not the original
+// already-priced mutex receiver/error local/unique-lock controller scopes.
+// Existing matching observer namespace authenticates the exact same typed
+// __gthread_mutex_lock/unlock pointer/int-return/active_p int and declared
+// pthread_mutex_lock/unlock pointer/int-return. Actual static active pointer
+// is not a per-call object. Do not invent callable builtin wrappers.
+constexpr size_t selected =
+	2 * (coordinator_current_storage_lock_header_source::gthread +
+	     coordinator_current_storage_lock_header_source::pthread_declaration);
+constexpr bool supported = native_birth_submit_lender_header_source::supported && sizeof(int) == 4;
+}
+
+bool critical_native_mobile_birth_publication_owner::submit_lock_gthread_header_source_frames(
+	size_t *output) noexcept
+{
+	if (!output || !native_birth_submit_lock_gthread_header_source::supported)
+		return false;
+	*output = native_birth_submit_lock_gthread_header_source::selected;
+	return true;
+}
+
+bool critical_native_mobile_birth_publication_owner::submit_owned_source_frames(
+	size_t *output) noexcept
+{
+	if (!output)
+		return false;
+	size_t total = 0, part = 0;
+	// EXACT same Source values retained in submit's actual work.outer before
+	// its first callback. Checked sequential queries introduce no heap/DTO.
+	// Input/current/heap/registry and actual external callbacks are separate.
+	if (!submit_private_current_source_frames(&part) || !room_storage_add(total, part) ||
+	    !submit_workspace_entry_source_frames(&part) || !room_storage_add(total, part) ||
+	    !room_storage_add(total, native_birth_submit_source_frames()) ||
+	    !submit_clone_state_source_frames(&part) || !room_storage_add(total, part) ||
+	    !submit_mutation_child_source_frames(&part) || !room_storage_add(total, part) ||
+	    !submit_header_controller_source_frames(&part) || !room_storage_add(total, part) ||
+	    !submit_coordinator_current_source_frames(&part) || !room_storage_add(total, part) ||
+	    !submit_admitted_trace_source_frames(&part) || !room_storage_add(total, part) ||
+	    // Actual NEW complete INITIAL helper workP/resultB/querylocalN17,
+	    // plus the later shared validity constexpr query localN8.
+	    !room_storage_add(total, sizeof(void *) + sizeof(bool) + sizeof(size_t)) ||
+	    !room_storage_add(total, sizeof(size_t)) ||
+	    !submit_command_validation_source_frames(&part) || !room_storage_add(total, part) ||
+	    !submit_lender_header_source_frames(&part) || !room_storage_add(total, part) ||
+	    !submit_lock_gthread_header_source_frames(&part) || !room_storage_add(total, part))
+		return false;
+	*output = total;
+	return true;
+}
+
+bool critical_native_mobile_birth_publication_owner::submit_owned_initial_inline_bytes(
+	size_t *output) noexcept
+{
+	// Exact original room_submit_workspace, never a fabricated whole Source.
+	return submit_workspace_initial_inline_bytes(output);
+}
+
+bool critical_native_mobile_birth_publication_owner::submit_owned_source_supplement_frames(
+	size_t *output) noexcept
+{
+	if (!output)
+		return false;
+	size_t full = 0;
+	if (!submit_owned_source_frames(&full))
+		return false;
+	// Genuine zero: the original owned entry now retains ALL those same
+	// checked components internally before first callback, exactly once.
+	// Caller first preadmits full owned Source+INITIAL prospectively, then
+	// excludes that ended preflight from its real outer passed to submit.
+	*output = 0;
+	return true;
+}
