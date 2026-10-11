@@ -8775,3 +8775,107 @@ bool diagnostic_wizlog_bounded(int level, bool *returned,
 	return false;
 #endif
 }
+
+// Passive Source companions only. The ORIGINAL logit, formatter, directory
+// creation and working/preflight bodies above are deliberately unchanged.
+namespace
+{
+constexpr size_t original_logit_source_pointer = sizeof(void *);
+constexpr size_t original_logit_source_size = sizeof(size_t);
+constexpr size_t original_logit_source_int = sizeof(int);
+// Two actual original logit layers (parent and one-hop LOG_FILE fallback).
+// The fallback's filename vararg is a separate real pointer. Arrays/va_list,
+// formatter copy, path storage and payload are already working-profile owned.
+constexpr size_t original_logit_source_layer = 4 * original_logit_source_pointer + sizeof(time_t);
+constexpr size_t original_logit_source_formatter = 8 * original_logit_source_pointer +
+						   2 * original_logit_source_size +
+						   original_logit_source_int;
+constexpr size_t original_logit_source_directories =
+	2 * original_logit_source_pointer + original_logit_source_size + sizeof(bool);
+// Genuine unique declared library invocation families selected by these paths;
+// compiler va/object-size intrinsics contribute no invented callee declarations.
+constexpr size_t original_logit_source_library =
+	34 * original_logit_source_pointer + 5 * original_logit_source_size +
+	6 * original_logit_source_int + sizeof(time_t) + sizeof(mode_t);
+constexpr size_t original_logit_additional_source =
+	2 * original_logit_source_layer + original_logit_source_pointer +
+	original_logit_source_formatter + original_logit_source_directories +
+	original_logit_source_library;
+// Actual working_bytes/helper/std::max/game-thread query declaration family.
+// scan{} remains solely preflight-owned. Two lexical max(sizeof(...),sizeof(...))
+// calls materialize four real size_t temporaries; no aggregate scan constructor.
+constexpr size_t original_logit_working_query_source =
+	16 * original_logit_source_pointer + 9 * original_logit_source_size +
+	3 * original_logit_source_int + 4 * sizeof(bool) + 2 * sizeof(std::thread::id) +
+	2 * sizeof(std::thread::native_handle_type);
+constexpr size_t original_logit_shared_query_library = 5 * original_logit_source_pointer +
+						       original_logit_source_size +
+						       2 * original_logit_source_int;
+constexpr size_t original_logit_with_queries_source =
+	original_logit_additional_source + original_logit_working_query_source + sizeof(size_t) -
+	original_logit_shared_query_library;
+static_assert(original_logit_additional_source == 53 * sizeof(void *) + 8 * sizeof(size_t) +
+							  7 * sizeof(int) + sizeof(bool) +
+							  3 * sizeof(time_t) + sizeof(mode_t));
+static_assert(original_logit_with_queries_source ==
+	      64 * sizeof(void *) + 17 * sizeof(size_t) + 8 * sizeof(int) + 5 * sizeof(bool) +
+		      3 * sizeof(time_t) + sizeof(mode_t) + 2 * sizeof(std::thread::id) +
+		      2 * sizeof(std::thread::native_handle_type));
+}
+
+#if defined(__GNUC__) && __GNUC__ == 13 && __GNUC_MINOR__ == 3 && !defined(__clang__) &&          \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && __cplusplus == 202002L && defined(__linux__) &&                 \
+	defined(__x86_64__) && defined(__LP64__) && defined(__GLIBC__) &&                         \
+	defined(__GLIBC_MINOR__) &&                                                               \
+	(__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 27)) && defined(MEMCHK) &&        \
+	MEMCHK == 1 && defined(__USE_FORTIFY_LEVEL) && __USE_FORTIFY_LEVEL == 3 &&                \
+	defined(_GLIBCXX_HAS_GTHREADS) && defined(_GLIBCXX_NATIVE_THREAD_ID) &&                   \
+	!defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&                              \
+	!defined(_GLIBCXX_PARALLEL) && !defined(_GLIBCXX_CONCEPT_CHECKS) &&                       \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__)
+#define DURIS_ORIGINAL_LOGIT_SOURCE_SUPPORTED 1
+#else
+#define DURIS_ORIGINAL_LOGIT_SOURCE_SUPPORTED 0
+#endif
+
+bool diagnostic_original_logit_additional_source_frame_bytes(size_t *output) noexcept
+{
+#if DURIS_ORIGINAL_LOGIT_SOURCE_SUPPORTED
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8)
+		return false;
+	*output = original_logit_additional_source;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
+
+bool diagnostic_original_logit_working_query_source_frame_bytes(size_t *output) noexcept
+{
+#if DURIS_ORIGINAL_LOGIT_SOURCE_SUPPORTED
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8)
+		return false;
+	*output = original_logit_working_query_source;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
+
+bool diagnostic_original_logit_with_queries_source_frame_bytes(size_t *output) noexcept
+{
+#if DURIS_ORIGINAL_LOGIT_SOURCE_SUPPORTED
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8)
+		return false;
+	*output = original_logit_with_queries_source;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
+
+#undef DURIS_ORIGINAL_LOGIT_SOURCE_SUPPORTED
