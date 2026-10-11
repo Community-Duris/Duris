@@ -4456,3 +4456,8 @@ and protected WIP remain preserved. Inventory481/931/2911/2853,0new/unmapped
 does not establish completion. Full host/native/gameplay/persistence/recovery/
 R1-R8/release stay OPEN; targeted compiler proof is recorded above.
 Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Strict database qualification reports integrated - 2026-10-10
+
+[Source integration](PLAN5_STRICT_REPORT_PRIMARY_INTEGRATION_2026-10-10.md): restore validates complete exact history/reconciliation success output at both qualification calls; incomplete, duplicate, extra or diagnostic reports refuse before qualification receipts. Two peer tests and one stdout fixture are integrated;53 other test bodies and schema65 refusal remain. Independent packet/installed Source reviews and pin refresh pass. Execution remains in the major-plan batch, room authority and release gates open. Inactive/CLOSED, release BLOCKED, goal ACTIVE.
