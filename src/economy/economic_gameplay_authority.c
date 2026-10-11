@@ -1832,3 +1832,453 @@ economic_gameplay_authority::prepare_native_mobile_birth_ordinary_wallet_flat_bo
 		return error::corrupt_evidence;
 	}
 }
+
+// Additive declaration Source profiles for the two unchanged observers above.
+// INITIAL owns only the outer selected shared_ptr. The real load-local __ret,
+// allocator and allocated_ptr locals below are Source, never additional heap.
+#include <limits>
+
+namespace
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&      \
+	_GLIBCXX_USE_CXX11_ABI && defined(_GLIBCXX_HAS_GTHREADS) &&                                \
+	defined(_GLIBCXX_ATOMIC_BUILTINS) && !defined(_GLIBCXX_DEBUG) &&                           \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && !defined(_GLIBCXX_TSAN) && \
+	defined(__linux__) && defined(__GLIBC__) && defined(__x86_64__) &&                         \
+	__cplusplus == 202002L && __has_include(<sys/single_threaded.h>)
+constexpr size_t authority_observation_max(size_t a, size_t b) noexcept
+{
+	return a > b ? a : b;
+}
+// This helper is used only in constant expressions. It is not a child of an
+// observer or a runtime Source query.
+using authority_observation_projection = admission_projection;
+using authority_observation_selected = std::shared_ptr<const admission_projection>;
+using authority_observation_base = std::_Sp_counted_base<__gnu_cxx::_S_atomic>;
+using authority_observation_control =
+	std::_Sp_counted_ptr_inplace<admission_projection, std::allocator<void>,
+				     __gnu_cxx::_S_atomic>;
+constexpr size_t authority_observation_p = sizeof(void *);
+constexpr size_t authority_observation_n = sizeof(size_t);
+constexpr size_t authority_observation_b = sizeof(bool);
+constexpr size_t authority_observation_m = sizeof(std::memory_order);
+constexpr size_t authority_observation_u = sizeof(uintptr_t);
+constexpr size_t authority_observation_i = sizeof(int);
+constexpr size_t authority_observation_w = sizeof(_Atomic_word);
+
+template <class T> constexpr size_t authority_observation_deallocate_source()
+{
+	// Three genuine typed declarations: allocator_traits::deallocate,
+	// allocator::deallocate, new_allocator::deallocate; each has two P + N.
+	// allocator's declared constant-evaluation query contributes one B.
+	// The real operator delete declaration supplies its actual arguments.
+	// Its implementation/ABI and allocator heap metadata remain external.
+	constexpr size_t delete_arguments =
+		authority_observation_p +
+#if __cpp_sized_deallocation
+		authority_observation_n +
+#endif
+#if __cpp_aligned_new
+		(alignof(T) > __STDCPP_DEFAULT_NEW_ALIGNMENT__ ? sizeof(std::align_val_t) : 0) +
+#endif
+		0;
+	return 6 * authority_observation_p + 3 * authority_observation_n + authority_observation_b +
+	       delete_arguments;
+}
+
+constexpr size_t authority_observation_string_destructor_source =
+	// string destructor receiver; dispose receiver; alternative is_local
+	// versus destroy. is_local's data and const-local pointer chain are
+	// conservatively summed, preserving surviving scalar getter results.
+	authority_observation_p +
+	authority_observation_max(
+		authority_observation_p +
+			authority_observation_max(
+				authority_observation_p + authority_observation_b +
+					2 * authority_observation_p + 8 * authority_observation_p,
+				// destroy(this,capacity), allocator getter and data getter,
+				// followed by actual typed char deallocation.
+				authority_observation_p + authority_observation_n +
+					4 * authority_observation_p +
+					authority_observation_deallocate_source<char>()),
+		// Nontrivial allocator-hider destructor and explicit allocator<char>
+		// destructor. C++20 new_allocator has no selected destructor body.
+		2 * authority_observation_p);
+
+template <class Map, bool Bank> constexpr size_t authority_observation_map_destructor_source()
+{
+	using value_type = typename Map::value_type;
+	using node_type = std::_Rb_tree_node<value_type>;
+	using tree_type =
+		std::_Rb_tree<typename Map::key_type, value_type, std::_Select1st<value_type>,
+			      typename Map::key_compare, typename Map::allocator_type>;
+	// Valid representable red-black cardinality bounds simultaneous erase
+	// frames INCLUDING the terminal null call. This is a container invariant,
+	// not a new admission gate or an allocate(1) aggregate-size guarantee.
+	constexpr size_t erase_depth =
+		2 * static_cast<size_t>(std::numeric_limits<typename Map::size_type>::digits);
+	constexpr size_t erase_own = sizeof(tree_type *) + sizeof(node_type *);
+	static_assert(erase_depth <= SIZE_MAX / erase_own);
+	// Wallet pair/account are trivial. Bank pair and key pair have real
+	// nontrivial generated destruction due to the key string, two receivers.
+	constexpr size_t value_destructor =
+		Bank ? 2 * authority_observation_p +
+				authority_observation_string_destructor_source :
+		       0;
+	// destroy_node(this,node), mutable node allocator getter and node value
+	// pointer -> aligned buffer pointer/address. Genuine getter results are
+	// conservatively retained through traits::destroy/destroy_at/value dtor.
+	// Raw node storage's trivial destructor never destroys value twice.
+	constexpr size_t destroy_node = 2 * authority_observation_p + 2 * authority_observation_p +
+					6 * authority_observation_p + 2 * authority_observation_p +
+					authority_observation_p + value_destructor;
+	constexpr size_t put_node = 2 * authority_observation_p + 2 * authority_observation_p +
+				    authority_observation_deallocate_source<node_type>();
+	constexpr size_t drop_node =
+		2 * authority_observation_p + authority_observation_max(destroy_node, put_node);
+	// Recursive right call occurs before local __y is declared. Therefore
+	// only one additional y can coexist with the active recursion frames;
+	// each suspended ancestor is still before its own y's declaration.
+	constexpr size_t erase = erase_depth * erase_own + sizeof(node_type *) +
+				 authority_observation_max(2 * authority_observation_p, drop_node);
+	// _M_begin -> _M_mbegin each owns this and a scalar pointer return.
+	constexpr size_t begin_tree = 4 * authority_observation_p;
+	// Actual nontrivial generated tree-impl cleanup plus allocator<Node>
+	// explicit destructor. Key compare/header/new_allocator are trivial.
+	constexpr size_t tree_impl_destructor = 2 * authority_observation_p;
+	return 2 * authority_observation_p +
+	       authority_observation_max(begin_tree,
+					 authority_observation_max(erase, tree_impl_destructor));
+}
+
+using authority_observation_wallets = decltype(admission_projection::wallets);
+using authority_observation_banks = decltype(admission_projection::banks);
+constexpr size_t authority_observation_projection_destructor_source =
+	authority_observation_p +
+	authority_observation_max(
+		authority_observation_map_destructor_source<authority_observation_banks, true>(),
+		authority_observation_map_destructor_source<authority_observation_wallets, false>());
+
+constexpr size_t authority_observation_control_allocator_source = 4 * authority_observation_p;
+constexpr size_t authority_observation_control_pointer_source = 6 * authority_observation_p;
+constexpr size_t authority_observation_dispose_source =
+	// _M_dispose receiver; _Impl::_M_alloc -> EBO::_S_get; _M_ptr ->
+	// aligned-buffer::_M_ptr -> _M_addr; traits<void>::destroy, _Destroy,
+	// destroy_at, actual projection cleanup. Genuine argument getters are
+	// retained conservatively rather than lending ended result carriers.
+	authority_observation_p + authority_observation_control_allocator_source +
+	authority_observation_control_pointer_source + 4 * authority_observation_p +
+	authority_observation_projection_destructor_source;
+
+constexpr size_t authority_observation_control_destroy_source =
+	// Real _M_destroy this + named rebound allocator __a and guard __guard_ptr.
+	authority_observation_p + sizeof(std::allocator<authority_observation_control>) +
+	sizeof(std::__allocated_ptr<std::allocator<authority_observation_control>>) +
+	authority_observation_max(
+		// Real allocator getter + converting allocator ctor(this,void const&)
+		// + declared new_allocator default receiver; not a void destructor.
+		authority_observation_control_allocator_source + 3 * authority_observation_p,
+		authority_observation_max(
+			// allocated_ptr ctor three parameters + __addressof ref/result.
+			5 * authority_observation_p,
+			authority_observation_max(
+				// Explicit CP destructor + virtual counted-base destructor.
+				// _Impl/EBO/void allocator/raw aligned storage are trivial.
+				2 * authority_observation_p,
+				authority_observation_max(
+					authority_observation_p +
+						authority_observation_deallocate_source<
+							authority_observation_control>(),
+					authority_observation_p))));
+
+constexpr size_t authority_observation_exchange_source =
+	// exchange dispatch(ptr,int,word result); actual single-thread predicate
+	// versus single(ptr,int,local word,result word) or atomic(ptr,int,word).
+	authority_observation_p + authority_observation_i + authority_observation_w +
+	authority_observation_max(authority_observation_b, authority_observation_p +
+								   authority_observation_i +
+								   2 * authority_observation_w);
+constexpr size_t authority_observation_last_use_source =
+	authority_observation_p +
+	authority_observation_max(
+		authority_observation_dispose_source,
+		authority_observation_max(authority_observation_exchange_source,
+					  authority_observation_control_destroy_source));
+constexpr size_t authority_observation_release_source =
+	// Genuine named constexpr lock_free/double_word/aligned and selected
+	// wordbits/shiftbits/unique_ref locals; __both_counts is a mutable pointer.
+	// Bare atomic builtins/fences do not manufacture declared callee frames.
+	2 * authority_observation_p + 3 * authority_observation_b + 2 * authority_observation_i +
+	sizeof(long long) +
+	authority_observation_max(
+		authority_observation_exchange_source,
+		authority_observation_max(
+			authority_observation_max(authority_observation_dispose_source,
+						  authority_observation_control_destroy_source),
+			authority_observation_p + authority_observation_last_use_source));
+constexpr size_t authority_observation_selected_destructor_source =
+	// shared_ptr / defaulted nontrivial __shared_ptr / count destructors.
+	3 * authority_observation_p + authority_observation_release_source;
+
+constexpr size_t authority_observation_atomic_word_load_source =
+	// this; formal and masked-local order; returned uintptr_t. Declared
+	// order& owns two orders+modifier. Two real constexpr-assert query calls
+	// are conservatively summed; their runtime RHS is not selected.
+	authority_observation_p + 4 * authority_observation_m +
+	sizeof(std::__memory_order_modifier) + authority_observation_u +
+	2 * authority_observation_b;
+constexpr size_t authority_observation_atomic_cas_source =
+	// this/expected-reference, desired uintptr_t, success/failure orders,
+	// bool result; actual no-assertions macro's declared constexpr-query B.
+	2 * authority_observation_p + authority_observation_u + 2 * authority_observation_m +
+	2 * authority_observation_b;
+constexpr size_t authority_observation_lock_source =
+	// private count this/order/current uintptr_t/returned Base*.
+	2 * authority_observation_p + authority_observation_m + authority_observation_u +
+	authority_observation_max(authority_observation_atomic_word_load_source,
+				  authority_observation_atomic_cas_source);
+// x86 __thread_relax is an argument-free void builtin-only body (zero Source).
+constexpr size_t authority_observation_unlock_source =
+	// count unlock(this,order) + uintptr fetch_sub(this,arg,order,result).
+	2 * authority_observation_p + 2 * authority_observation_m + 2 * authority_observation_u;
+constexpr size_t authority_observation_add_ref_source =
+	// _S_add_ref parameter/result, base add_ref receiver, dispatch(ptr,int),
+	// predicate or actual single/atomic(ptr,int) branch. No bare builtin frame.
+	4 * authority_observation_p + authority_observation_i +
+	authority_observation_max(authority_observation_b,
+				  authority_observation_p + authority_observation_i);
+constexpr size_t authority_observation_move_selected_source =
+	// shared_ptr move(this,source), std::move(ref,result), __sharedptr move
+	// (this,source), default count versus swap(this,source,named Base*tmp).
+	2 * authority_observation_p +
+	authority_observation_max(2 * authority_observation_p,
+				  2 * authority_observation_p + 3 * authority_observation_p);
+constexpr size_t authority_observation_load_source =
+	// atomic wrapper(this,order); _Sp_atomic load(this,order,__ret,__pi),
+	// actual no-assertions load constexpr-query B. No third returned S.
+	3 * authority_observation_p + 2 * authority_observation_m +
+	sizeof(authority_observation_selected) + authority_observation_b +
+	authority_observation_max(
+		3 * authority_observation_p,
+		authority_observation_max(
+			authority_observation_lock_source,
+			authority_observation_max(
+				authority_observation_add_ref_source,
+				authority_observation_max(
+					authority_observation_unlock_source,
+					authority_observation_max(
+						authority_observation_move_selected_source,
+						// Moved-from __ret destructor has null count, no release.
+						3 * authority_observation_p)))));
+constexpr size_t authority_observation_common_source = authority_observation_max(
+	authority_observation_load_source, authority_observation_selected_destructor_source);
+// Conservative distinct actual lexical wrapper calls. INITIAL is separate.
+// active: root P+return B; root getter P+mode enum; selected bool P+B;
+// two actual arrow chains (each6P). capture: three P+B; requires B+mode;
+// root getter P+selected bool P+B;six arrow6P;two zero predicates12P+u8+B.
+constexpr size_t authority_observation_active_source =
+	15 * authority_observation_p + sizeof(persistence_mode) + 2 * authority_observation_b +
+	authority_observation_common_source;
+constexpr size_t authority_observation_capture_source =
+	65 * authority_observation_p + sizeof(persistence_mode) + 5 * authority_observation_b +
+	2 * sizeof(uint8_t) + authority_observation_common_source;
+static_assert(authority_observation_capture_source <
+	      SIZE_MAX - sizeof(authority_observation_selected));
+#endif
+}
+
+bool economic_gameplay_authority::active_regular_flat_source_frame_bytes(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&      \
+	_GLIBCXX_USE_CXX11_ABI && defined(_GLIBCXX_HAS_GTHREADS) &&                                \
+	defined(_GLIBCXX_ATOMIC_BUILTINS) && !defined(_GLIBCXX_DEBUG) &&                           \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && !defined(_GLIBCXX_TSAN) && \
+	defined(__linux__) && defined(__GLIBC__) && defined(__x86_64__) &&                         \
+	__cplusplus == 202002L && __has_include(<sys/single_threaded.h>)
+	if (!output)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(bool) != 1 || sizeof(int) != 4 ||
+	    sizeof(_Atomic_word) != 4 || sizeof(long long) != 8 ||
+	    alignof(long long) > alignof(void *) ||
+	    __gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic ||
+	    !__atomic_always_lock_free(sizeof(long long), 0) ||
+	    !__atomic_always_lock_free(sizeof(_Atomic_word), 0))
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	*output = authority_observation_active_source;
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
+
+bool economic_gameplay_authority::active_regular_flat_source_supplement_frame_bytes(
+	size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&      \
+	_GLIBCXX_USE_CXX11_ABI && defined(_GLIBCXX_HAS_GTHREADS) &&                                \
+	defined(_GLIBCXX_ATOMIC_BUILTINS) && !defined(_GLIBCXX_DEBUG) &&                           \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && !defined(_GLIBCXX_TSAN) && \
+	defined(__linux__) && defined(__GLIBC__) && defined(__x86_64__) &&                         \
+	__cplusplus == 202002L && __has_include(<sys/single_threaded.h>)
+	if (!output)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(bool) != 1 || sizeof(int) != 4 ||
+	    sizeof(_Atomic_word) != 4 || sizeof(long long) != 8 ||
+	    alignof(long long) > alignof(void *) ||
+	    __gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic ||
+	    !__atomic_always_lock_free(sizeof(long long), 0) ||
+	    !__atomic_always_lock_free(sizeof(_Atomic_word), 0))
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	*output = authority_observation_active_source;
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
+
+bool economic_gameplay_authority::active_regular_flat_initial_inline_bytes(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&      \
+	_GLIBCXX_USE_CXX11_ABI && defined(_GLIBCXX_HAS_GTHREADS) &&                                \
+	defined(_GLIBCXX_ATOMIC_BUILTINS) && !defined(_GLIBCXX_DEBUG) &&                           \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && !defined(_GLIBCXX_TSAN) && \
+	defined(__linux__) && defined(__GLIBC__) && defined(__x86_64__) &&                         \
+	__cplusplus == 202002L && __has_include(<sys/single_threaded.h>)
+	if (!output)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(bool) != 1 || sizeof(int) != 4 ||
+	    sizeof(_Atomic_word) != 4 || sizeof(long long) != 8 ||
+	    alignof(long long) > alignof(void *) ||
+	    __gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic ||
+	    !__atomic_always_lock_free(sizeof(long long), 0) ||
+	    !__atomic_always_lock_free(sizeof(_Atomic_word), 0))
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	*output = sizeof(authority_observation_selected);
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
+
+bool economic_gameplay_authority::capture_flat_reset_projection_source_frame_bytes(
+	size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&      \
+	_GLIBCXX_USE_CXX11_ABI && defined(_GLIBCXX_HAS_GTHREADS) &&                                \
+	defined(_GLIBCXX_ATOMIC_BUILTINS) && !defined(_GLIBCXX_DEBUG) &&                           \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && !defined(_GLIBCXX_TSAN) && \
+	defined(__linux__) && defined(__GLIBC__) && defined(__x86_64__) &&                         \
+	__cplusplus == 202002L && __has_include(<sys/single_threaded.h>)
+	if (!output)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(bool) != 1 || sizeof(int) != 4 ||
+	    sizeof(_Atomic_word) != 4 || sizeof(long long) != 8 ||
+	    alignof(long long) > alignof(void *) ||
+	    __gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic ||
+	    !__atomic_always_lock_free(sizeof(long long), 0) ||
+	    !__atomic_always_lock_free(sizeof(_Atomic_word), 0))
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	*output = authority_observation_capture_source;
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
+
+bool economic_gameplay_authority::capture_flat_reset_projection_source_supplement_frame_bytes(
+	size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&      \
+	_GLIBCXX_USE_CXX11_ABI && defined(_GLIBCXX_HAS_GTHREADS) &&                                \
+	defined(_GLIBCXX_ATOMIC_BUILTINS) && !defined(_GLIBCXX_DEBUG) &&                           \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && !defined(_GLIBCXX_TSAN) && \
+	defined(__linux__) && defined(__GLIBC__) && defined(__x86_64__) &&                         \
+	__cplusplus == 202002L && __has_include(<sys/single_threaded.h>)
+	if (!output)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(bool) != 1 || sizeof(int) != 4 ||
+	    sizeof(_Atomic_word) != 4 || sizeof(long long) != 8 ||
+	    alignof(long long) > alignof(void *) ||
+	    __gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic ||
+	    !__atomic_always_lock_free(sizeof(long long), 0) ||
+	    !__atomic_always_lock_free(sizeof(_Atomic_word), 0))
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	*output = authority_observation_capture_source;
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
+
+bool economic_gameplay_authority::capture_flat_reset_projection_initial_inline_bytes(
+	size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&      \
+	_GLIBCXX_USE_CXX11_ABI && defined(_GLIBCXX_HAS_GTHREADS) &&                                \
+	defined(_GLIBCXX_ATOMIC_BUILTINS) && !defined(_GLIBCXX_DEBUG) &&                           \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && !defined(_GLIBCXX_TSAN) && \
+	defined(__linux__) && defined(__GLIBC__) && defined(__x86_64__) &&                         \
+	__cplusplus == 202002L && __has_include(<sys/single_threaded.h>)
+	if (!output)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(bool) != 1 || sizeof(int) != 4 ||
+	    sizeof(_Atomic_word) != 4 || sizeof(long long) != 8 ||
+	    alignof(long long) > alignof(void *) ||
+	    __gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic ||
+	    !__atomic_always_lock_free(sizeof(long long), 0) ||
+	    !__atomic_always_lock_free(sizeof(_Atomic_word), 0))
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	*output = sizeof(authority_observation_selected);
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}

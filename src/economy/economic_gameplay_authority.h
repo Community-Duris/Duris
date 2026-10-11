@@ -106,6 +106,42 @@ class economic_gameplay_authority
 	observe_flat_shop_checkpoint(uint32_t pid, std::string_view account_name, uint8_t racewar,
 				     economic_shop_checkpoint_projection *output) noexcept;
 
+	// Pure Source for the exact preserved regular-flat observers. These
+	// queries perform no load, I/O, readiness or authority change. Existing
+	// projection/control-block/map heaps are caller retained, not new heap.
+	// INITIAL is only the named outer selected shared_ptr; the load's __ret
+	// and destruction allocator/guard locals belong to Source. The old
+	// observers self-admit no Source, so supplement equals full Source.
+	// Both last/nonlast release branches are included; unsupported queries
+	// leave output unchanged. Native library/ABI qualification is separate.
+	static bool active_regular_flat_source_frame_bytes(size_t *) noexcept;
+	static bool active_regular_flat_source_supplement_frame_bytes(size_t *) noexcept;
+	static bool active_regular_flat_initial_inline_bytes(size_t *) noexcept;
+	static constexpr size_t active_regular_flat_source_query_frame_bytes() noexcept
+	{
+		// output/result; declared errno accessor pointer on refusal.
+		return 2 * sizeof(void *) + sizeof(bool);
+	}
+	static constexpr size_t active_regular_flat_initial_query_frame_bytes() noexcept
+	{
+		// output/result; declared errno accessor pointer on refusal.
+		return 2 * sizeof(void *) + sizeof(bool);
+	}
+
+	static bool capture_flat_reset_projection_source_frame_bytes(size_t *) noexcept;
+	static bool capture_flat_reset_projection_source_supplement_frame_bytes(size_t *) noexcept;
+	static bool capture_flat_reset_projection_initial_inline_bytes(size_t *) noexcept;
+	static constexpr size_t capture_flat_reset_projection_source_query_frame_bytes() noexcept
+	{
+		// output/result; declared errno accessor pointer on refusal.
+		return 2 * sizeof(void *) + sizeof(bool);
+	}
+	static constexpr size_t capture_flat_reset_projection_initial_query_frame_bytes() noexcept
+	{
+		// output/result; declared errno accessor pointer on refusal.
+		return 2 * sizeof(void *) + sizeof(bool);
+	}
+
     private:
 	friend class item_native_quest_preparation_owner;
 	static bool
