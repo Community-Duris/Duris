@@ -163,14 +163,15 @@ using result_error = economic_accounting_error;
 
 bool result_profile_supported() noexcept
 {
-#if defined(__linux__) && defined(__x86_64__) && defined(__GNUC__) && __GNUC__ == 13 && \
-	!defined(__clang__) && __cplusplus == 202002L && defined(_GLIBCXX_RELEASE) &&   \
-	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&                    \
-	_GLIBCXX_USE_CXX11_ABI == 1 && !defined(_GLIBCXX_DEBUG) &&                      \
-	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                 \
-	!(_GLIBCXX_SANITIZE_STD_ALLOCATOR && _GLIBCXX_SANITIZE_VECTOR) &&               \
-	!defined(OPENSSL_NO_DEPRECATED_3_0) && !defined(OPENSSL_NO_SHA256) &&           \
-	defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 &&                 \
+#if defined(__linux__) && defined(__x86_64__) && defined(__GNUC__) && __GNUC__ == 13 &&    \
+	!defined(__clang__) && __cplusplus == 202002L && defined(_GLIBCXX_RELEASE) &&      \
+	_GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) &&                       \
+	_GLIBCXX_USE_CXX11_ABI == 1 && !defined(_GLIBCXX_DEBUG) &&                         \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                    \
+	!(defined(_GLIBCXX_SANITIZE_STD_ALLOCATOR) && defined(_GLIBCXX_SANITIZE_VECTOR) && \
+	  _GLIBCXX_SANITIZE_STD_ALLOCATOR && _GLIBCXX_SANITIZE_VECTOR) &&                  \
+	!defined(OPENSSL_NO_DEPRECATED_3_0) && !defined(OPENSSL_NO_SHA256) &&              \
+	defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR == 3 &&                    \
 	defined(OPENSSL_VERSION_MINOR) && OPENSSL_VERSION_MINOR == 0
 	return sizeof(void *) == 8 && sizeof(size_t) == 8 && sizeof(std::ptrdiff_t) == 8 &&
 	       sizeof(unsigned int) == 4 && sizeof(unsigned long) == 8 && sizeof(SHA_LONG) == 4;
