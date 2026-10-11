@@ -5000,3 +5000,13 @@ Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
 ## Current schema65 fixture expectations integrated - 2026-10-10
 
 [Source integration](PLAN5_CURRENT_SCHEMA65_FIXTURE_PRIMARY_INTEGRATION_2026-10-10.md): five stale immutable-runner assertions now match actual completed65/native0065 history. Historical31/45,baseline170, receipts,locks,refusals and valid64 cases remain exact. Independent packet and installed Source reviews plus pin refresh pass. Tests remain deferred to the major-plan batch; no runtime or release qualification is claimed. Inactive/CLOSED, release BLOCKED, goal ACTIVE.
+
+
+## Integrate complete chaos pouch ledger admission contracts implemented - 2026-10-10
+
+[Source checkpoint](CHAOS_POUCH_LEDGER_SOURCE_PROVIDER_INTEGRATION_2026-10-10.md) Complete ledger provider contracts integrated; strict ledger object passes both production modes. Full producer/caller and recovery qualification remain open.
+Independent RAW and actual formatted source reviews passed; original behavior
+and protected WIP remain preserved. Inventory481/931/2911/2853,0new/unmapped
+does not establish completion. Full host/native/gameplay/persistence/recovery/
+R1-R8/release stay OPEN; targeted compiler proof is recorded above.
+Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
