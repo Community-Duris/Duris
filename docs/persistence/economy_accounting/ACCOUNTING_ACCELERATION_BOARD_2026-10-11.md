@@ -579,6 +579,14 @@ Report `PLAN5_SCHEMA65_DIAG02_NATIVE_QUALIFICATION_2026-10-11.md`
 SHA256bd993e302f91869ff45989a18cc2caa21885bcfb08d13b315509b4ade3848439.
 Import receipt `D:/Dev/Tests/Duris/accounting-accel-integration/ACC-02-ORIGINAL65-DIAG-02-review/import-receipt.json`
 SHA2560f6350141a25ff333e7b5ed4bacd27be50c741b6b9b6c4046127b65f640109c8.
+Producer final `delivery/result.json` SHA25682a6a6fe40cc6d691a30339a151d793d2d480b7695250ef183a1156604b167ec
+binds verified remote/code/source/native/seal/release; post-publication exact-owned
+inventory0/empty and clean Plan5 checkout verified. Resource-free seal-helper
+derivation initially exited1 because its expected-one text-replacement guard
+found two old-job occurrences (OUT/JOB); corrected exact count2 before sealing/
+release. Both helper versions and `delivery/seal-derivation-repair.json` retained
+outside the native seal; executed helper/source/results unchanged. No native
+failure or acceptance predicate relabeled by this bookkeeping repair.
 Exact primary handoff: adopt the reviewed standalone diagnostic source/evidence
 as appropriate, then primary repairs the maintained original65 matrix branch
 using bounded private stderr observation and exact error/history/recovery
