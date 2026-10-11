@@ -1137,3 +1137,342 @@ economic_accounting_error auction_native_command_decode_bounded(const critical_c
 	return economic_accounting_error::capacity;
 }
 #endif
+
+// Fixed lower native context counterpart. Original decoding, digest bytes,
+// version dispatch, structural fences and error identities remain unchanged.
+namespace
+{
+[[maybe_unused]] constexpr size_t auction_native_source_P = sizeof(void *);
+[[maybe_unused]] constexpr size_t auction_native_source_N = sizeof(size_t);
+[[maybe_unused]] constexpr size_t auction_native_source_B = sizeof(bool);
+
+[[maybe_unused]] bool auction_native_fixed_source_policy() noexcept
+{
+#if defined(__linux__) && defined(__x86_64__) && defined(__GLIBCXX__) &&                          \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&      \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                           \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                        \
+	!defined(_GLIBCXX_SANITIZE_VECTOR) && defined(OPENSSL_VERSION_MAJOR) &&                   \
+	OPENSSL_VERSION_MAJOR == 3 && defined(OPENSSL_VERSION_MINOR) &&                           \
+	OPENSSL_VERSION_MINOR == 0 && defined(OPENSSL_VERSION_PATCH) &&                           \
+	OPENSSL_VERSION_PATCH == 13 && !defined(OPENSSL_NO_DEPRECATED_3_0)
+	return sizeof(void *) == 8 && sizeof(size_t) == 8 && sizeof(std::ptrdiff_t) == 8 &&
+	       sizeof(bool) == 1 && sizeof(unsigned int) == 4 && sizeof(unsigned long) == 8 &&
+	       sizeof(SHA_LONG) == 4 && sizeof(std::allocator<uint8_t>) == 1 &&
+	       sizeof(std::span<const uint8_t>) == 2 * sizeof(void *) &&
+	       sizeof(std::vector<uint64_t>::iterator) == sizeof(void *);
+#else
+	return false;
+#endif
+}
+
+#if defined(__linux__) && defined(__x86_64__) && __cplusplus == 202002L &&                        \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&    \
+	!defined(_GLIBCXX_PARALLEL) && !defined(_GLIBCXX_SANITIZE_VECTOR)
+
+constexpr size_t auction_native_original_owned_source =
+	// Exact SOURCE terms of the original public native frames; its context,
+	// command, uid set, vectors and digest array remain INLINE in original peak.
+	3 * sizeof(std::span<const uint8_t>) + 23 * auction_native_source_P +
+	12 * auction_native_source_N + 8 * auction_native_source_B + 4 * sizeof(uint32_t) +
+	3 * sizeof(uint16_t) + sizeof(uint64_t) + auction_codec_vector_frames +
+	auction_codec_move_frames + auction_codec_vector_constructor_frames +
+	// Original query_prepare signature, total, returned accounting error and
+	// eight genuine uid-profile size_t locals, add/callback scopes.
+	8 * auction_native_source_P + 13 * auction_native_source_N +
+	sizeof(economic_accounting_error) + 3 * auction_native_source_B;
+
+constexpr size_t auction_native_budget_uncovered_source =
+	// forward(amount,opaque), b and bool; prefix(this,bytes,extra), heap,
+	// observed and bool; peak(this,extra), bytes and bool; checked add.
+	3 * auction_native_source_P + auction_native_source_N + auction_native_source_B +
+	2 * auction_native_source_P + 2 * auction_native_source_N + 2 * auction_native_source_B +
+	auction_native_source_P + 2 * auction_native_source_N + auction_native_source_B +
+	auction_native_source_P + auction_native_source_N + auction_native_source_B +
+	// Envelope projection helper(command,budget), request/valid and returnedB;
+	// canonical-base helper(command,bytes,payload,budget), request/nested/valid;
+	// empty helper(bytes,budget), frames/nested and returnedB.
+	2 * auction_native_source_P + auction_native_source_N + 2 * auction_native_source_B +
+	3 * auction_native_source_P + sizeof(std::span<const uint8_t>) +
+	2 * auction_native_source_N + 2 * auction_native_source_B + 2 * auction_native_source_P +
+	2 * auction_native_source_N + auction_native_source_B;
+
+// Original read<uint16_t,uint32_t,uint64_t> has a by-value span, offset/value
+// references, result of the exact selected scalar type, i and returned bool.
+// One span is already present in original persistent source; two extra selected
+// instantiations are the remaining source union, never copied encoded storage.
+constexpr size_t auction_native_read_uncovered_source =
+	2 * sizeof(std::span<const uint8_t>) +
+	3 * (2 * auction_native_source_P + auction_native_source_N + auction_native_source_B) +
+	sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint64_t);
+
+constexpr size_t auction_native_span_uncovered_source =
+	// span range ctor(this,range), dynamic extent ctor(this,count);
+	// data(this,result), size(this,result), extent value(this,result);
+	// begin/end(this,result) through data; first(this,count,result span);
+	// subspan(this,offset,count,__count,result span); [](this,index,ref).
+	2 * auction_native_source_P + auction_native_source_P + auction_native_source_N +
+	2 * auction_native_source_P + 2 * (auction_native_source_P + auction_native_source_N) +
+	2 * (2 * auction_native_source_P) + auction_native_source_P + auction_native_source_N +
+	sizeof(std::span<const uint8_t>) + auction_native_source_P + 3 * auction_native_source_N +
+	sizeof(std::span<const uint8_t>) + 2 * auction_native_source_P + auction_native_source_N +
+	// Real vector-range constructor descends through ranges.data/size CPOs
+	// directly into vector.data/size; then pointer/count construction calls
+	// public/internal to_address. Span/extent copy and destruction receivers
+	// and its genuine normal-iterator ctor/dtor complete the view lifetime.
+	5 * auction_native_source_P + 3 * auction_native_source_P + 2 * auction_native_source_N +
+	2 * auction_native_source_P + auction_native_source_N + 4 * auction_native_source_P +
+	4 * auction_native_source_P + 2 * auction_native_source_P + 3 * auction_native_source_P;
+
+// The captured GNU13 span iterator is a normal_iterator, not a raw
+// pointer. Original trailer.begin()+offset and RA copy_n first+count
+// reach the same typed operator+ body sequentially: this, difference
+// argument and returned iterator. Its computed underlying pointer is
+// materialized for ctor(const _Iterator&); that pointer is distinct from
+// the constructor receiver/reference already in span_uncovered_source.
+// Existing iterator lifetime terms own the constructor and destructor;
+// no second constructor or persistent INLINE object allowance is added.
+using auction_native_digest_iterator = std::span<const uint8_t>::iterator;
+constexpr size_t auction_native_digest_iterator_plus_source =
+	sizeof(const auction_native_digest_iterator *) +
+	sizeof(auction_native_digest_iterator::difference_type) +
+	sizeof(auction_native_digest_iterator) + sizeof(const uint8_t *);
+
+constexpr size_t auction_native_digest_loop_source =
+	// Actual initializer-list backing array of three digest pointers, list
+	// object, hidden begin/end iterators and named value pointer.
+	3 * auction_native_source_P + sizeof(std::initializer_list<std::array<uint8_t, 32> *>) +
+	3 * auction_native_source_P +
+	// initializer_list begin/end/size source formals and returned values.
+	2 * (2 * auction_native_source_P) + auction_native_source_P + auction_native_source_N +
+	// copy_n with real size_t count: first,count,result,__n2,return;
+	// size-to-integer and iterator category; __copy_n random-access branch.
+	7 * auction_native_source_P + 5 * auction_native_source_N +
+	2 * sizeof(std::random_access_iterator_tag) +
+	// Native digest array.begin/data/size and actual array equality graph.
+	4 * auction_native_source_P + auction_native_source_P + auction_native_source_N +
+	auction_codec_equal_frames;
+
+constexpr size_t auction_native_generated_lifetime_source =
+	// Native context default constructor and two genuine vector default chains;
+	// payload assignment(this,source,returned ref); context move assignment and
+	// actual std::move argument/result. Both vector move graphs are selected;
+	// original native subtotal contains one; this second typed graph is real.
+	auction_native_source_P + 2 * (6 * auction_native_source_P) + 3 * auction_native_source_P +
+	3 * auction_native_source_P + 2 * auction_native_source_P + auction_codec_move_frames +
+	// Native context destructor and real generated member/base cleanup scopes.
+	auction_native_source_P + 2 * (5 * auction_native_source_P) +
+	// Captured uid-insertion lambda: four reference fields, this, request/return;
+	// lifetime receiver. Stateless item-count predicate retains its actual
+	// empty closure and generated adapter/member lifetime receivers.
+	4 * auction_native_source_P + auction_native_source_P + auction_native_source_N +
+	auction_native_source_B + auction_native_source_P + sizeof(char) +
+	8 * auction_native_source_P +
+	// Trivial normal iterator copy/move/destructor receiver graph.
+	3 * auction_native_source_P;
+
+// Actual default uint64 set chain through the selected GCC13 table, base,
+// policies, EBO hash/equal/allocator wrappers and enable-default constructor.
+// Scalar policy ctor owns its real float argument. Node iterator ctor/base
+// owns this/node twice; actual generated copy/dtor and pair returned by insert
+// have their own receiver/reference scopes. The complete prime-policy body
+// remains with the original authenticated uid-set source provider.
+constexpr size_t auction_native_uid_lifetime_source =
+	// Default receivers: owner/table/base/hash-base/hash-EBO/hash/hash-base;
+	// equal-EBO/equal/binary-function; map/insert/insert-base/rehash/equality;
+	// alloc/alloc-EBO/allocator/new-allocator; enable/default node/prime-policy.
+	22 * auction_native_source_P + sizeof(float) +
+	// Generated corresponding base/member destruction, excluding the actual
+	// table destructor already in original cleanup: twenty-one receivers.
+	21 * auction_native_source_P +
+	// Node iterator ctor+base ctor; generated copy+base copy and both dtors.
+	4 * auction_native_source_P + 4 * auction_native_source_P + 2 * auction_native_source_P +
+	// Real node default/dtor: node, node-base, node-value, node-value-base,
+	// aligned buffer/storage and uncached-hash marker; seven receivers each.
+	2 * (7 * auction_native_source_P) +
+	// Pair<iterator,bool> forwarding constructor, two forwards, iterator move,
+	// boolean argument, then pair+iterator destruction.
+	3 * auction_native_source_P + 4 * auction_native_source_P + 2 * auction_native_source_P +
+	auction_native_source_B + 2 * auction_native_source_P +
+	// Bucket allocator rebound construction/new-allocator conversion and dtors.
+	2 * (2 * auction_native_source_P) + 2 * auction_native_source_P;
+
+constexpr size_t auction_native_uncovered_local_source =
+	auction_native_budget_uncovered_source + auction_native_read_uncovered_source +
+	auction_native_span_uncovered_source + auction_native_digest_iterator_plus_source +
+	auction_native_digest_loop_source + auction_native_generated_lifetime_source +
+	auction_native_uid_lifetime_source;
+
+struct auction_native_fixed_work
+{
+	size_t source = 0, supplement = 0, initial = 0, request = 0;
+};
+constexpr size_t auction_native_fixed_call_source =
+	// command/output/reserve/context, outer and actual fixed-query local;
+	// typed public and original decoder return values.
+	4 * auction_native_source_P + 2 * auction_native_source_N +
+	2 * sizeof(economic_accounting_error);
+
+bool auction_native_original_source_parts(size_t *source, size_t *supplement,
+					  size_t *initial) noexcept
+{
+	if (!source || !supplement || !initial || !auction_native_fixed_source_policy())
+		return false;
+	size_t base = 0, base_extra = 0, base_initial = 0, list = 0, list_initial = 0;
+	if (!auction_command_base_codec_source_parts(&base, &base_extra, &base_initial) ||
+	    !player_item_snapshot_list_encode_source_frame_bytes(&list) ||
+	    !player_item_snapshot_list_encode_initial_inline_bytes(&list_initial) || list_initial)
+		return false;
+	size_t complete = auction_native_original_owned_source;
+	size_t extra = auction_native_uncovered_local_source;
+	// Every nested old lower codec has exactly this missing SOURCE partition;
+	// the original empty list encoder requires its full published supplement.
+	if (!auction_codec_add(extra, base_extra) || !auction_codec_add(extra, list) ||
+	    !auction_codec_add(complete, auction_native_uncovered_local_source) ||
+	    !auction_codec_add(complete, base) || !auction_codec_add(complete, list) ||
+	    !auction_codec_add(complete, auction_native_command_uid_set_source_frame_bytes()) ||
+	    !auction_codec_add(complete, critical_command_copy_frame_bytes()) ||
+	    !auction_codec_add(complete, critical_command_valid_frame_bytes()) ||
+	    !auction_codec_add(complete,
+			       auction_digest_sha_frames + sizeof(std::span<const uint8_t>) +
+				       3 * auction_native_source_P + 4 * auction_native_source_B))
+		return false;
+	*source = complete;
+	*supplement = extra;
+	// Only actual omitted base temporaries are carried into old code. The
+	// original base budget/denial pair included in base_initial is already
+	// owned by its nested prefix and is not retained a second time here.
+	*initial = sizeof(auction_native_decode_budget) + sizeof(auction_command_payload) +
+		   sizeof(critical_command);
+	return true;
+}
+#endif
+}
+
+bool auction_native_command_codec_source_parts(size_t *source, size_t *supplement,
+					       size_t *initial) noexcept
+{
+#if defined(__linux__) && defined(__x86_64__) && __cplusplus == 202002L &&                        \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&    \
+	!defined(_GLIBCXX_PARALLEL) && !defined(_GLIBCXX_SANITIZE_VECTOR)
+	return auction_native_original_source_parts(source, supplement, initial);
+#else
+	(void)source;
+	(void)supplement;
+	(void)initial;
+	return false;
+#endif
+}
+
+namespace
+{
+#if defined(__linux__) && defined(__x86_64__) && __cplusplus == 202002L &&                        \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&    \
+	!defined(_GLIBCXX_PARALLEL) && !defined(_GLIBCXX_SANITIZE_VECTOR)
+bool auction_native_fixed_parts(size_t *source, size_t *supplement, size_t *initial) noexcept
+{
+	if (!source || !supplement || !initial || !auction_native_fixed_source_policy())
+		return false;
+	size_t full = 0, extra = 0, entry = 0;
+	if (!auction_native_command_codec_source_parts(&full, &extra, &entry) ||
+	    !auction_codec_add(full, auction_native_fixed_call_source))
+		return false;
+	*source = full;
+	*supplement = extra;
+	*initial = sizeof(auction_native_fixed_work) + entry;
+	return true;
+}
+#endif
+}
+
+economic_accounting_error auction_native_command_decode_fixed_bounded(
+	const critical_command &command, auction_native_command_context *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept
+{
+#if defined(__linux__) && defined(__x86_64__) && __cplusplus == 202002L &&                        \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&    \
+	!defined(_GLIBCXX_PARALLEL) && !defined(_GLIBCXX_SANITIZE_VECTOR)
+	constexpr size_t query = auction_native_command_decode_source_query_frame_bytes();
+	auction_native_fixed_work work;
+	work.request = outer;
+	if (!reserve ||
+	    !auction_codec_add(work.request,
+			       sizeof(work) + auction_native_fixed_call_source + query) ||
+	    !reserve(work.request, context) ||
+	    !auction_native_fixed_parts(&work.source, &work.supplement, &work.initial))
+		return error::capacity;
+	work.request = outer;
+	if (!auction_codec_add(work.request, work.source) ||
+	    !auction_codec_add(work.request, work.initial) || !reserve(work.request, context))
+		return error::capacity;
+	work.request = outer;
+	if (!auction_codec_add(work.request, sizeof(work) + auction_native_fixed_call_source) ||
+	    !auction_codec_add(work.request, work.supplement) ||
+	    !auction_codec_add(work.request,
+			       sizeof(auction_command_payload) + sizeof(critical_command)))
+		return error::capacity;
+	return auction_native_command_decode_bounded(command, output, reserve, context,
+						     work.request);
+#else
+	(void)command;
+	(void)output;
+	(void)reserve;
+	(void)context;
+	(void)outer;
+	return error::capacity;
+#endif
+}
+
+bool auction_native_command_decode_source_frame_bytes(size_t *output) noexcept
+{
+#if defined(__linux__) && defined(__x86_64__) && __cplusplus == 202002L &&                        \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&    \
+	!defined(_GLIBCXX_PARALLEL) && !defined(_GLIBCXX_SANITIZE_VECTOR)
+	size_t full = 0, extra = 0, entry = 0;
+	if (!output || !auction_native_fixed_parts(&full, &extra, &entry))
+		return false;
+	*output = full;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
+bool auction_native_command_decode_source_supplement_frame_bytes(size_t *output) noexcept
+{
+#if defined(__linux__) && defined(__x86_64__) && __cplusplus == 202002L &&                        \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&    \
+	!defined(_GLIBCXX_PARALLEL) && !defined(_GLIBCXX_SANITIZE_VECTOR)
+	size_t full = 0, extra = 0, entry = 0;
+	if (!output || !auction_native_fixed_parts(&full, &extra, &entry))
+		return false;
+	*output = 0;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
+bool auction_native_command_decode_initial_inline_bytes(size_t *output) noexcept
+{
+#if defined(__linux__) && defined(__x86_64__) && __cplusplus == 202002L &&                        \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&    \
+	!defined(_GLIBCXX_PARALLEL) && !defined(_GLIBCXX_SANITIZE_VECTOR)
+	size_t full = 0, extra = 0, entry = 0;
+	if (!output || !auction_native_fixed_parts(&full, &extra, &entry))
+		return false;
+	*output = entry;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
