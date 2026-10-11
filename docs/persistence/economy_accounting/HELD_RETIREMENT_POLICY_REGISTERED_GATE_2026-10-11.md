@@ -67,11 +67,31 @@ to reproduce this rejection. The checker receipt is
 `completion-review/original-outcome-contract.json`, SHA256
 `bac4d59bb8c7ff09200e41e9617a120f6c5254831bcf333a5f7cb773ad98809b`.
 
-Primary owns the compatible source/registration decision. Preserve actual
-`main` invocation, both required-case obligations, original mode assertions and
-markers. Do not manufacture a passed case from a call alone or delete an
-acceptance requirement. A repaired exact source must satisfy the original entry
-and unchanged acceptance checker before this registered gate can close.
+Primary owns the compatible source/registration decision. Preserve mandatory
+actual `main` invocation, successful script execution, original mode assertions
+and markers. Do not manufacture a passed case from a call alone or remove an
+executable acceptance obligation. A repaired exact source must satisfy the
+original entry and unchanged acceptance checker before this registered gate can
+close.
+
+The [independent Plan5 review](PLAN5_HELD_POLICY_ACCEPTANCE_REVIEW_2026-10-11.md)
+proposes one existing-field compatibility repair: this row's
+`required_cases=["script"]`, retaining `mode=script`, the original adapter's
+mandatory declared-main invocation check, both mode assertions and both markers.
+The coordinator executed the unchanged checker against this proposed row and
+the retained actual native receipt: it accepts. Six separate negative controls
+still reject missing SQL marker, missing flat marker, failed entry, failed script
+case, absent script case and skipped required work. Two actual executions of
+the original adapter on bounded Python fixtures reject a declared-but-uncalled
+main and a called main that raises. These controls compile no C++ and start no
+resources. No native gate was repeated and no registration was edited.
+
+Proposal review:
+`delivery/protocol-proposal-review/proposal-review.json`, SHA256
+`b11ad337ae67b79a857d13280ccc63434a2f6319c4578fd76b85ba5578a5a49e`.
+This qualifies a compatible proposal for primary consideration; the published
+old row remains rejected. Primary adoption and an exact-source registered receipt
+are still required. It is not retroactive acceptance of the historical row.
 
 ## Source review and focused contract check
 
