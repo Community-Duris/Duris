@@ -783,7 +783,8 @@ int main(int argc, char **argv)
 	// Property hooks now also own main-thread item-action cancellation. Bind
 	// before loading them; the event pool is initialized later during world boot.
 	nevent_bind_game_thread();
-	initialize_properties();
+	if (!initialize_properties())
+		fatal_boot_error("comm", "Could not load valid server properties");
 	// Optional configuration is loaded once before gameplay, never during a send.
 	if (const char *profile_path = getenv("DURIS_OUTPUT_PROFILES_FILE");
 	    profile_path && *profile_path)

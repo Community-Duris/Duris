@@ -2963,7 +2963,7 @@ bool checkopen(P_char ch, P_obj obj);
 void trapdamage(P_char ch, P_obj obj);
 
 /* properties.c */
-void initialize_properties();
+bool initialize_properties();
 void do_properties(P_char, char *, int);
 void do_difficulty(P_char, char *, int);
 void do_pulse(P_char, char *, int);

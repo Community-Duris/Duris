@@ -403,6 +403,17 @@ enum class put_phase
 	publication,
 };
 static bool put_with_phase(P_char ch, P_obj object, P_obj container, int showit, put_phase phase);
+
+void persist_changed_container(P_obj container)
+{
+	if (!container)
+		return;
+	if (GET_ITEM_TYPE(container) == ITEM_STORAGE)
+		writeSavedItem(container);
+	else if (GET_ITEM_TYPE(container) == ITEM_CORPSE &&
+		 IS_SET(container->value[CORPSE_FLAGS], PC_CORPSE))
+		writeCorpse(container);
+}
 std::unordered_map<uint32_t, bulk_get_state> bulk_gets;
 std::unordered_map<uint32_t, bulk_drop_state> bulk_drops;
 std::unordered_map<uint32_t, bulk_put_state> bulk_puts;
@@ -864,7 +875,8 @@ void item_put_completion(P_char actor, bool committed, const item_transfer_resul
 	}
 	const bool stored =
 		put_with_phase(actor, object, container, context.showit, put_phase::publication);
-	(void)stored;
+	if (stored)
+		persist_changed_container(container);
 }
 
 /**
@@ -5403,8 +5415,7 @@ void finish_bulk_put(P_char actor, uint32_t actor_pid)
 	mark_player_dirty_components(GET_PID(actor), PLAYER_COMPONENT_STATUS |
 							     PLAYER_COMPONENT_EQUIPMENT |
 							     PLAYER_COMPONENT_INVENTORY);
-	if (GET_ITEM_TYPE(container) == ITEM_STORAGE)
-		writeSavedItem(container);
+	persist_changed_container(container);
 }
 
 bool bulk_put_destination_available(P_char actor, P_obj container)
@@ -5944,8 +5955,7 @@ void do_put(P_char ch, char *argument, int /*cmd*/)
 			mark_player_dirty_components(
 				GET_PID(ch), PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_EQUIPMENT |
 						     PLAYER_COMPONENT_INVENTORY);
-		if (GET_ITEM_TYPE(s_obj) == ITEM_STORAGE)
-			writeSavedItem(s_obj);
+		persist_changed_container(s_obj);
 	}
 }
 
@@ -10496,10 +10506,8 @@ void finish_empty(P_char actor, const empty_state &state)
 	mark_player_dirty_components(GET_PID(actor), PLAYER_COMPONENT_STATUS |
 							     PLAYER_COMPONENT_EQUIPMENT |
 							     PLAYER_COMPONENT_INVENTORY);
-	if (source && GET_ITEM_TYPE(source) == ITEM_STORAGE)
-		writeSavedItem(source);
-	if (target && GET_ITEM_TYPE(target) == ITEM_STORAGE)
-		writeSavedItem(target);
+	persist_changed_container(source);
+	persist_changed_container(target);
 }
 
 bool empty_completion(const critical_operation_id & /*operation_id*/, P_char actor, bool committed,

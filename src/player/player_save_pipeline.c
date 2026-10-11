@@ -4481,7 +4481,8 @@ player_save_pipeline_result player_save_pipeline_request(P_char ch,
 		return player_save_pipeline_result::unavailable;
 	if (ch && player_save_journal_pid_quarantined(GET_PID(ch)))
 		return player_save_pipeline_result::unavailable;
-	if (!ch || IS_NPC(ch) || !player_save_pipeline_mark(GET_PID(ch), components))
+	if (!ch || IS_NPC(ch) || !ch->only.pc ||
+	    !player_save_pipeline_mark(GET_PID(ch), components & ~ch->only.pc->unloaded_components))
 		return player_save_pipeline_result::invalid;
 	return player_save_pipeline_checkpoint_dirty(ch, save_intent, room_vnum);
 }
