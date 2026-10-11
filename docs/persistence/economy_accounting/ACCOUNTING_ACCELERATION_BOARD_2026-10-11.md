@@ -112,7 +112,7 @@ original "do it", superseding "go with the useful parts". Local model GPT-6.1 So
 | --- | --- | --- |
 | Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | Reviewed focused diagnostic PASS/code/report/seal/release; exact diagnostic and recipe handoffs for primary; finite wait, no active resource grant |
 | Remote primary | Non-connected RGitGoin; private session/WIP inaccessible; published `experimental-accounting` | Existing Plans1-4/shared runtime/final integration ownership retained; no delegation ACK required; architecture/toolchain/storage/32MiB proof queue |
-| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Publishedb8505d97b exact tested fixture/report; DIAG-02 focused PASS/sealed/RELEASED; return idle, no further resource grant; restore queue retained |
+| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Publishedb8505d97b exact diagnostic fixture/report; DIAG-02 PASS/sealed/RELEASED; preparing bounded ACC-05 audit-budget cases resource-free on frozen current-primary055, no native grant; restore queue retained |
 | World/quest (parked) | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | IDLE/clean f7228f3fe; original failure and component PASS handoffs preserved; proposed runtime allocation WITHDRAWN, no resources |
 | Shop/backend (parked) | `01a129b4-a553-78e0-85c2-69e34d8e0d59`; `C:/Users/alexa/.codex/worktrees/969b/NewDuris Max`; `codex/accounting-accel-shop` | IDLE/clean6022; parked handoff preserved; ACC-04-TX unstarted possible future ticket only, no grant; allocation WITHDRAWN |
 
@@ -179,6 +179,7 @@ override availability or invent tokens/receipts for accepting tests.
 | ACC-02 | Genuine two-engine schema65 matrix and exact restore/startup histories; independent audit and native room/restore gates | RETRY-03 remains FAILED; DIAG-02 completes focused native diagnostic after owned one-line repair; primary matrix adoption/meaningful-batch qualification pending, no full matrix grant |
 | ACC-03-RC | Existing `test_native_quest_recovery_context.py` actual-provider ASan/UBSan component or exact first failure | Component PASS/sealed/RELEASED; exact three-line recipe/pin handoff remains for primary adoption, WORLD parked |
 | ACC-04-TX | Existing `test_shop_trade_transaction.py` component or exact first failure, then retention/repository gates | Parked unstarted preparation only; no standing dispatch/grant; current private capability aborts remain unqualified |
+| ACC-05-AUDIT-BUDGET-01 | Two existing Linux near-limit price/mapping audit-budget methods, no skips; original limits0/1/100, clean/conflict/corrupt/oversized controls, 30s/256MiB child bounds, input unchanged | Plan5 resource-free preparation on exact current-primary055 two-file input; independent of matrix repair; one proposed QA cohort only, no native grant yet |
 | PRIMARY-01 | Connected save/coordinator/item lifecycle map then verified boundary/caller/admission closure | Existing primary implementation ownership; no withdrawn delegation dependency |
 | PRIMARY-02 | Supported toolchain/runtime/library correspondence, complete storage/frame/transitive proof, aggregate 32MiB accept/refuse | Remains explicit; object compile/source packets do not close it |
 | FINAL | Gameplay/persistence/schema/backup/restore/recovery/fault/load/resource/R1-R8 gates agree on one frozen candidate | Reviewed implementation batches and per-slice architecture evidence |
@@ -598,8 +599,19 @@ source pins are reproduced in the report, not replaced by a source-only check.
 
 Finite next queue: exact diagnostic source handoff and three-provider native
 recipe/pin adoption remain PRIMARY-owned; then a meaningful combined-source
-matrix/restore qualification when its prerequisites are repaired. No independently
-owned next native slice or standing helper dispatch currently granted; wait.
+matrix/restore qualification when its prerequisites are repaired. Independent
+`ACC-05-AUDIT-BUDGET-01` now selected from the existing NOT_RUN queue: Plan5
+prepares exactly `AuditBudgetTests.test_near_limit_price_view_cli_budget_and_limit_invariance`
+and `AuditBudgetTests.test_near_limit_mapping_snapshot_cli_budget_and_limit_invariance`
+on frozen published current-primary0555741d740cf028552fcf63973265bfbcda052c.
+Two-file input is the original reconciler and test module; broader unadopted
+Plan5 operator deltas excluded. Synthetic offline CLI component only; original
+32MiB/100000row/100output, 30s/256MiB child and output-limit invariance controls
+preserved, no SQL/game/whole-host acceptance. Proposed one foreground2GiB/CPU2
+QA/native600s with read-only direct D source and owned D tmp/evidence; no DB,
+build, source edits or full-suite repeat. Preparation/resource guards must be
+reviewed before exclusive grant. No standing WORLD/SHOP dispatch; all four
+passive database volumes and unrelated services remain preserved.
 
 Exact PRIMARY handoff for the native recipe: adopt only the three `SOURCES`
 entries from integration `6bfa0f7ebdd5f2f46841047fdd10522e4d27dfea` in
