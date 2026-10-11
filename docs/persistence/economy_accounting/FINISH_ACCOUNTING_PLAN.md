@@ -1,6 +1,6 @@
 ## Latest Quest Source3 component status — 2026-10-11
 
-Latest human approval authorizes WORLD/SHOP file leases; Root retains unleased Zone/shared contracts. Historical charter text below does not revoke that approval. [QUEST_COST_SOURCE3_COMPONENT_INTEGRATION_2026-10-11](QUEST_COST_SOURCE3_COMPONENT_INTEGRATION_2026-10-11.md) records three genuine final-projector/admission profiles and selectors, six ordinary whole objects and507 Source pins. All931 policies,2911 census occurrences and2853 sites remain intact. Earlier preparation/builder and complete producer, gameplay/SQL/persistence/recovery/host/release gates, Plans1–4 andR1–R8 remain OPEN. Accounting inactive/CLOSED; coverage incomplete; release BLOCKED; goal ACTIVE.
+Latest human approval authorizes WORLD/SHOP file leases; Root retains unleased Zone/shared contracts. Historical charter text below does not revoke that approval. [QUEST_SELECTED_LIST_COMPONENT_INTEGRATION_2026-10-11](QUEST_SELECTED_LIST_COMPONENT_INTEGRATION_2026-10-11.md) records selected-list/cost/selector component qualification in the same permanent entry. 507 Source pins,931 policies,2911 census occurrences and2853 sites remain intact. Earlier preparation/builder, complete producer/gameplay/SQL/persistence/recovery/emitted32MiB/host/release gates, combined Plans2–4 andR1–R8 remain OPEN. Plan1 remains complete within its accepted historical scope. Accounting inactive/CLOSED; coverage incomplete; release BLOCKED; goal ACTIVE.
 
 ## Latest shared ownership and coordinator lender native thread source correction — 2026-10-11
 
