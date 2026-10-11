@@ -372,6 +372,25 @@ struct critical_native_birth_recovery_validators
 	bool (*shared_shop_initial_bounded)(const critical_native_recovery_envelope &,
 					    bool (*)(size_t, void *) noexcept, void *,
 					    size_t) noexcept = nullptr;
+	// Complete historical/ordinary validity counterparts for replay; appended
+	// after old fields to preserve all original aggregate initialization.
+	bool (*valid_bounded)(const critical_native_recovery_envelope &,
+			      bool (*)(size_t, void *) noexcept, void *, size_t) noexcept = nullptr;
+	bool (*cash_role_valid_bounded)(const critical_native_recovery_envelope &,
+					bool (*)(size_t, void *) noexcept, void *,
+					size_t) noexcept = nullptr;
+	// Additional complete initial companions. Original first nine fields,
+	// appended two valid fields, and historical readiness/defaults stay intact.
+	// The new full provider proves exact target identity before fixed profiles.
+	bool (*historical_initial_fixed_bounded)(const critical_native_recovery_envelope &,
+						 bool (*)(size_t, void *) noexcept, void *,
+						 size_t) noexcept = nullptr;
+	bool (*cash_role_initial_fixed_bounded)(const critical_native_recovery_envelope &,
+						bool (*)(size_t, void *) noexcept, void *,
+						size_t) noexcept = nullptr;
+	bool (*shared_shop_initial_fixed_bounded)(const critical_native_recovery_envelope &,
+						  bool (*)(size_t, void *) noexcept, void *,
+						  size_t) noexcept = nullptr;
 };
 
 // Separate type22 checks; missing callbacks refuse admission and replay.
@@ -416,6 +435,9 @@ struct critical_native_auction_recovery_validators
 	bool (*publication)(const critical_native_recovery_envelope &,
 			    const critical_completion &) noexcept = nullptr;
 	bool (*terminal)(const critical_native_recovery_envelope &) noexcept = nullptr;
+	// Full original NAR validity; optional companion, no readiness promotion.
+	bool (*valid_bounded)(const critical_native_recovery_envelope &,
+			      bool (*)(size_t, void *) noexcept, void *, size_t) noexcept = nullptr;
 };
 
 // Optional support for canonical schema-2 commands. The validator must be pure,
@@ -484,6 +506,152 @@ class critical_native_mobile_birth_publication_owner final
 					 critical_native_recovery_envelope *, uint64_t *,
 					 bool (*)(size_t, void *) noexcept, void *,
 					 size_t) noexcept;
+
+	// Exact room_submit_workspace construction and empty unlocked early cleanup.
+	// Caller must transiently preadmit this SOURCE + actual INITIAL before entry;
+	// submit self-retains SOURCE before its first callback. No later populated
+	// cleanup, held-lock body, validator or whole-submit profile is granted.
+	// Both pure outputs are strong on null/unsupported refusal.
+	static bool submit_workspace_entry_source_frames(size_t *) noexcept;
+	static bool submit_workspace_initial_inline_bytes(size_t *) noexcept;
+	static constexpr size_t submit_workspace_entry_source_query_frames() noexcept
+	{
+		// Direct pure output parameter and declared bool return; all predicates
+		// and assignments use actual fixed constants, with no child getter call.
+		// Returned accessor size_t remains a distinct caller carrier.
+		return sizeof(void *) + sizeof(bool);
+	}
+
+	// Exact private room_submit_local_prefix Source, excluding physical heaps,
+	// persistent C and lender/callback descendants. Caller preadmits the pure
+	// query before accessing it; submit retains the named prefix Source in outer
+	// before the first callback and every later recensus. Output is strong.
+	static bool submit_private_current_source_frames(size_t *) noexcept;
+	static constexpr size_t submit_private_current_source_query_frames() noexcept
+	{
+		// Direct output parameter and bool result; no dynamic child query/errno.
+		return sizeof(void *) + sizeof(bool);
+	}
+
+	// Complete OWNED native submit retained Source, actual workspace INITIAL,
+	// and genuinely zero caller-retained OWNED supplement. Strong pure outputs.
+	// Caller preadmits this query, then full owned Source+INITIAL BEFORE entry;
+	// real outer excludes that prospective entry because submit retains its
+	// checked Source/components and actual private workspace internally once.
+	// This does not price external extension/ROOT callbacks or runtime bodies:
+	// their matched complete contracts remain selecting caller dependencies.
+	static bool submit_owned_source_frames(size_t *) noexcept;
+	static bool submit_owned_initial_inline_bytes(size_t *) noexcept;
+	static bool submit_owned_source_supplement_frames(size_t *) noexcept;
+	static constexpr size_t submit_owned_source_query_frames() noexcept
+	{
+		// Source getter: outputP/totalN/partN/resultB plus max(actual child
+		// query17, checked add17) =42. Supplement owns outputP/fullN/resultB
+		// while that getter runs: 17+42=59. INITIAL delegation18 is smaller.
+		// This accessor's returned N is separately selecting-caller-owned.
+		return (sizeof(void *) + sizeof(size_t) + sizeof(bool)) +
+		       (sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool)) +
+		       (sizeof(void *) + sizeof(size_t) + sizeof(bool));
+	}
+
+	// Exact submit lock/unlock gthread headers and pthread declarations only.
+	// Unique/mutex receiver/error/controllers already remain owned separately.
+	// External pthread/system-error implementations are not supplied here.
+	static bool submit_lock_gthread_header_source_frames(size_t *) noexcept;
+	static constexpr size_t submit_lock_gthread_header_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+
+	// Exact lender lock/scalar-loan/thread header Source only. Registered ROOT
+	// reserve callback and external pthread implementation remain caller-owned.
+	// Strong supported output; callback carrier/current heap already owned by
+	// the genuine existing lender and caller. Pure fixed query P+B, no errno.
+	static bool submit_lender_header_source_frames(size_t *) noexcept;
+	static constexpr size_t submit_lender_header_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+
+	// Exact published critical valid/envelope/legacy allocation-free Source,
+	// including the original runtime getter return N once. Strong supported
+	// output; input/current/callback/heap ownership remains the actual caller's.
+	// This getter query owns output P/result B plus runtime child return N;
+	// query preentry is transient, separate from the returned original allowance.
+	static bool submit_command_validation_source_frames(size_t *) noexcept;
+	static constexpr size_t submit_command_validation_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool) + sizeof(size_t);
+	}
+
+	// Exact admitted-command diagnostic header/atomic/gthread Source only.
+	// Original two event objects/lock and retained depth chrono headers own their
+	// physical/source terms once. This is not an all-diagnostics/runtime profile.
+	// Caller preadmits query and Source; submit retains Source before callbacks.
+	static bool submit_admitted_trace_source_frames(size_t *) noexcept;
+	static constexpr size_t submit_admitted_trace_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+
+	// Exact SAME-TU whole pure CURRENT-C census Source/profile, with identical
+	// supported-mode/width/iterator guard and strong output to the mixed owner.
+	// This does not query retained C or establish a loan. Caller preentry query
+	// is transient; submit retains Source before its first same-lock lender scan.
+	// Lender/ROOT/G/J callback Source and native/runtime qualification stay separate.
+	static bool submit_coordinator_current_source_frames(size_t *) noexcept;
+	static constexpr size_t submit_coordinator_current_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+
+	// Exact enclosing admit/relay/return/rollback and completed-cache wrapper
+	// source, plus existing classifier/update-depth and direct lock headers.
+	// This is a retained supplement, not complete lender/validator/diagnostic/
+	// runtime Source. Caller must preadmit before workspace construction; the
+	// submit retains it before the first budget call. Strong pure query9.
+	static bool submit_header_controller_source_frames(size_t *) noexcept;
+	static constexpr size_t submit_header_controller_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+
+	// Actual same-overload table/key/queue/rollback descendant Source. The
+	// clone profile's named shared string/state value lifetime stays retained
+	// once. Caller preentry is transient; submit owns this supplement before
+	// its first callback. Enclosing submit/lock/return/trace/notify, completed
+	// cache wrappers, selected callbacks and external runtime remain separate.
+	static bool submit_mutation_child_source_frames(size_t *) noexcept;
+	static constexpr size_t submit_mutation_child_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+
+	// Exact direct envelope-copy/state/context construction and true moves,
+	// plus the same actual populated cleanup descendants. Caller transiently
+	// preadmits this Source before entry; submit retains its phase maximum in
+	// outer. Existing real private CURRENT/heap requests are not duplicated.
+	// Allocation-runtime/table/queue/trace/callback Source remains separate.
+	static bool submit_clone_state_source_frames(size_t *) noexcept;
+	static constexpr size_t submit_clone_state_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+
+	// Exact full duplicate native-state + two canonical command encodes.
+	// Strong pure query outputs; caller input/C/current and old output stay
+	// external. Full Source+actual two-vector INITIAL preentry is transient;
+	// the genuine helper retains own Source/capacities and each codec's
+	// missing supplement internally. Does not qualify whole submit/host.
+	static bool submit_matches_source_frames(size_t *) noexcept;
+	static bool submit_matches_initial_inline_bytes(size_t *) noexcept;
+	static constexpr size_t submit_matches_source_query_frames() noexcept
+	{
+		// Public wrapper P+B; private output/codec/total/bool P+2N+B;
+		// actual complete codec getter P+B; checked add P+N+B.
+		// Accessor size_t result is a separate caller local/carrier.
+		return 4 * sizeof(void *) + 3 * sizeof(size_t) + 4 * sizeof(bool);
+	}
 
 	// Ordinary birth-only complete post-submit observations. Caller outer owns
 	// genuine retained input, old output, registry/journal and all noncoordinator
@@ -659,6 +827,20 @@ class critical_zone_reset_item_publication_owner final
 	// Snapshot is not a lease and does not cover external worker-local transient
 	// workspaces. Never acquire this mutex from a held coordinator/journal callback.
 	static bool current_storage_bytes(size_t *) noexcept;
+
+	// Exact matching NONborrowed original observer local/header Source only:
+	// reviewed private CURRENT census plus original lock_guard/mutex/gthread
+	// and declared pthread calls. Caller retains full returned local/header
+	// Source; observer admits none. INITIAL is actual local lock_guard only.
+	// Do not call the locking observer under the coordinator loan; borrowed
+	// path retains its parent's same-lock scan Source instead, exactly once.
+	// External pthread/system-error bodies remain caller/Root qualification.
+	static bool current_storage_header_source_frames(size_t *) noexcept;
+	static bool current_storage_initial_inline_bytes(size_t *) noexcept;
+	static constexpr size_t current_storage_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
 	// ROOM-only complete support proof through the bounded callback paired with
 	// the actually selected original admission callback. Pure same-lock proof;
 	// no admission, source, delivery, execution or activation authority.
@@ -850,6 +1032,7 @@ size_t critical_command_coordinator_recovery_copy(critical_recovery_case *cases,
 bool critical_command_coordinator_inject_completion_for_tests(const critical_completion &completion);
 void critical_command_coordinator_reset_for_tests(void);
 
+class player_save_coin_replay_budget_scope_owner;
 class player_save_prepared_startup_lifecycle_owner;
 // Minted only by the real coordinator initializer while its actual unique_lock
 // and earlier-acquired lifecycle owner remain live. Prospective helpers below
@@ -858,6 +1041,7 @@ class player_save_prepared_startup_lifecycle_owner;
 class critical_mixed_startup_replay_owner final
 {
     private:
+	friend class zone_reset_item_owner;
 	friend class critical_gameplay_startup_owner;
 	friend bool critical_command_coordinator_init(
 		const char *journal_directory_path, critical_apply_fn apply, void *context,
@@ -891,6 +1075,269 @@ class critical_mixed_startup_replay_owner final
 	static size_t additional_frame_bytes() noexcept;
 	// Genuine coordinator-only bridge; full pipeline/currency receivers live
 	// in comm.c so minimal original coordinator links gain no new providers.
+	// Concrete lexical host: this actual guard surrounds the entire startup
+	// callback, including every complete C-loan invocation, and dies afterward.
+	static size_t physical_startup_frame_bytes() noexcept;
+	bool run_physical_startup(bool (*)(size_t, void *) noexcept, void *, size_t,
+				  bool (*)(bool (*)(size_t, void *) noexcept, void *, size_t,
+					   void *) noexcept,
+				  void *) const noexcept;
+	// Selecting ROOT preadmits this additional typed closure and the authentic
+	// CURRENT-C profile before the first scan, and retains its actual G guard.
+	static size_t coordinator_operation_frame_bytes() noexcept;
+	bool invoke_coordinator_operation(bool (*)(size_t, void *) noexcept, void *, size_t,
+					  bool (*)(bool (*)(size_t, void *) noexcept, void *,
+						   size_t, void *) noexcept,
+					  void *) const noexcept;
+	// Genuine additional match/forwarding source only; not full enqueue/init
+	// SOURCE. ROOT transiently admits this query, then retains the returned
+	// supplement once through real replay work and observers. Null/unsupported
+	// output is strong; no observation, registration or authority follows.
+	// Full original native-envelope retained-size helper's disjoint source
+	// and actual local encoded-vector INLINE. These pure strong queries do
+	// not scan C/J/G or grant startup/transport/execution authority.
+	// Complete pure same-lock CURRENT-C census SOURCE. ROOT must preadmit
+	// this before every genuine locked observation; actual persistent C bytes,
+	// the lock, ROOT/J and callback/loan source remain separately owned.
+	// No local owning workspace exists: all census scalars/iterators are SOURCE.
+	// Null/unsupported output is strong, no errno, observation or authority.
+	// Complete actual private prefix and fresh native-copy request scans.
+	// Existing workspace/old input/actual heap remain separately owned. These
+	// pure fixed queries grant no admission/lock/observer authority. ROOT
+	// retains the selected source before each real scan; no workspace-size
+	// shortcut supplies constructor/mutation/rollback source.
+	// Actual fresh default state/context make_unique + null-destination transfer.
+	// Object/returned unique INLINE and requested heaps remain original owners;
+	// callee admits these Source windows before the real constructors.
+	// Actual fresh const-copy member assignments and legacy true-allocator move.
+	// Sources are admitted at the original prospective/move cuts internally;
+	// old inputs, requested/capacity heaps and state INLINE remain separate.
+	static bool replay_command_copy_source_frames(size_t *) noexcept;
+	static bool replay_command_move_source_frames(size_t *) noexcept;
+	static bool replay_attachment_copy_source_frames(size_t *) noexcept;
+	static constexpr size_t replay_command_assignment_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+	// Actual default one-node deque construction and its allocation-failure cleanup.
+	// Source augments the original table admission; initial heap request stays separate.
+	static bool replay_fence_queue_construction_source_frames(size_t *) noexcept;
+	static constexpr size_t replay_fence_queue_construction_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+	// Actual untouched native table forecast, conditionally paired with authentic
+	// GNU13.3 release Prime-policy Source; runtime-library binding remains required.
+	// Retained once in private replay outer before the first existing callback.
+	static bool replay_table_forecast_source_frames(size_t *) noexcept;
+	static constexpr size_t replay_table_forecast_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+	// Exact char-allocator value copy/failure and completed destruction window.
+	// Value objects and current/fresh char heaps remain existing container owners.
+	// Populated state/private reset and operation-pair cleanup, with all three
+	// actual transaction implementations. Cleanup members are sequential.
+	static bool replay_operation_state_cleanup_source_frames(size_t *) noexcept;
+	// Internally retained maximum of completed value-copy and rollback cleanup;
+	// do not sum with the overlapping string-value/cleanup family getters.
+	static bool replay_value_lifetime_source_frames(size_t *) noexcept;
+	static constexpr size_t replay_value_lifetime_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+	// Complete original queue peak forecast and const-value push controller.
+	// Excludes the string ctor already in retained value-lifetime window.
+	// Actual key pointer/count construction, generated array return and true
+	// allocator string move; already dominated by retained value-lifetime.
+	static bool replay_key_value_source_frames(size_t *) noexcept;
+	// Populated deque destruction CONTROLLERS, excluding already-retained
+	// string element cleanup Source. Push/controller max is internally held.
+	static bool replay_queue_cleanup_source_frames(size_t *) noexcept;
+	static constexpr size_t replay_key_queue_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+	// Standard string-key find/at and actual two selected hash/comparator lanes.
+	// GCC13.3 external hash source is conditional on ROOT runtime binding.
+	static bool replay_table_key_lookup_source_frames(size_t *) noexcept;
+	static constexpr size_t replay_table_key_lookup_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+	// Actual node/bucket storage primitives, value construction/destruction excluded.
+	// Companion retaining pair/tuple/unique/deque child profiles is still required.
+	static bool replay_table_node_storage_source_frames(size_t *) noexcept;
+	static constexpr size_t replay_table_node_storage_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+	// Actual operation pair / fence piecewise tuple value controllers.
+	// Named member constructors reuse the already-retained value lifetime bound.
+	static bool replay_table_value_construction_source_frames(size_t *) noexcept;
+	static constexpr size_t replay_table_value_construction_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+	// Actual table emplacement/subscript/insertion/rehash own controller source.
+	// Retains the separately named node/value/lookup/Prime children once.
+	static bool replay_table_insert_source_frames(size_t *) noexcept;
+	static constexpr size_t replay_table_insert_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+	// Direct inherited Hashtable iterator-erase overloads and actual unlink controllers.
+	// Node/member teardown remains in separately retained genuine child profiles.
+	static bool replay_table_iterator_erase_source_frames(size_t *) noexcept;
+	static constexpr size_t replay_table_iterator_erase_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+	// Transparent rollback view-key lookup uncovered supplement only.
+	// Original lookup source must remain owned once alongside this supplement.
+	static bool replay_transparent_lookup_source_supplement_frames(size_t *) noexcept;
+	// Full graph query is transient; never retain it on top of original lookup.
+	static bool replay_transparent_lookup_full_source_frames(size_t *) noexcept;
+	static constexpr size_t replay_transparent_lookup_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+	// Original erase(remove(begin,end,id),end) tail-only controllers.
+	// Named queue destruction children remain separately retained once.
+	static bool replay_deque_tail_erase_source_supplement_frames(size_t *) noexcept;
+	// Full tail graph query is transient; retain only its disjoint supplement.
+	static bool replay_deque_tail_erase_full_source_frames(size_t *) noexcept;
+	static constexpr size_t replay_deque_tail_erase_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+	// Original std::remove iterator/predicate/controller supplement only.
+	// Named actual table equality and string move children remain owned once.
+	// Actual remove_fences and legacy/native rollback caller controllers only.
+	// Existing named lookup/value/queue/remove/tail children remain owned once;
+	// update_depth clock/thread Source is a distinct pending child.
+	static bool replay_rollback_controller_source_supplement_frames(size_t *) noexcept;
+	static constexpr size_t replay_rollback_controller_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+	// Actual update_depth table/unique/phase/chrono-header/max/thread source only.
+	// Out-of-line steady_clock::now remains an explicit separate external leaf;
+	// this own-header supplement does not claim a complete clock/host profile.
+	static bool replay_update_depth_header_source_supplement_frames(size_t *) noexcept;
+	static constexpr size_t replay_update_depth_header_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+	// Actual legacy/native workspace default-member construction Source.
+	// Caller preadmits Source+actual initial INLINE before entry; both
+	// entries retain Source once. Published/default behavior is unchanged.
+	static bool replay_workspace_entry_source_frames(size_t *) noexcept;
+	static bool replay_workspace_initial_inline_bytes(size_t *) noexcept;
+	static constexpr size_t replay_workspace_entry_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+	// Complete OWNED legacy/native enqueue graph: enclosing/current/relay,
+	// state/default/copy/move/table/key/queue/populated rollback and header clock.
+	// External callback providers, CURRENT C and steady_clock implementation
+	// are separate actual selecting-owner dependencies, never included by guess.
+	// Caller transiently preadmits owned Source+actual initial INLINE before
+	// entry, then excludes them from outer: each new entry self-retains its
+	// persistent scopes and precise original transient construction requests.
+	// Supplement is the disjoint advance over immutable89a, also internally
+	// retained. It must not be added again by the selecting caller.
+	static bool replay_enqueue_owned_source_frames(size_t *) noexcept;
+	static bool replay_enqueue_owned_source_supplement_frames(size_t *) noexcept;
+	static bool replay_enqueue_initial_inline_bytes(size_t *) noexcept;
+	static constexpr size_t replay_enqueue_owned_source_query_frames() noexcept
+	{
+		// Public output/bool; total local; genuine lower size-return;
+		// checked_add(ref,amount,bool). Initial/retained fixed queries are smaller.
+		// Accessor's own size_t result remains a separate caller carrier.
+		return 2 * sizeof(void *) + 3 * sizeof(size_t) + 2 * sizeof(bool);
+	}
+	static bool replay_std_remove_source_supplement_frames(size_t *) noexcept;
+	// Full graph query is transient; only disjoint own supplement stays retained.
+	static bool replay_std_remove_full_source_frames(size_t *) noexcept;
+	static constexpr size_t replay_std_remove_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+	static bool replay_queue_push_source_frames(size_t *) noexcept;
+	static constexpr size_t replay_queue_push_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+	static bool replay_string_value_source_frames(size_t *) noexcept;
+	static constexpr size_t replay_string_value_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+	static bool replay_state_construction_source_frames(size_t *) noexcept;
+	static bool replay_native_context_construction_source_frames(size_t *) noexcept;
+	static constexpr size_t replay_state_construction_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+	static bool replay_private_current_source_frames(size_t *) noexcept;
+	static bool replay_fresh_copy_request_source_frames(size_t *) noexcept;
+	static constexpr size_t replay_private_current_source_query_frames() noexcept
+	{
+		return sizeof(void *) + sizeof(bool);
+	}
+	static bool coordinator_current_source_frames(size_t *) noexcept;
+	static constexpr size_t coordinator_current_source_query_frames() noexcept
+	{
+		// Direct constant getter output pointer/bool. Accessor return N is
+		// separately owned by the selecting caller. No descendant queries.
+		return sizeof(void *) + sizeof(bool);
+	}
+	static bool native_checkpoint_size_source_frames(size_t *) noexcept;
+	static bool native_checkpoint_size_initial_inline_bytes(size_t *) noexcept;
+	static constexpr size_t native_checkpoint_size_source_query_frames() noexcept
+	{
+		// Larger genuine initial query: export and internal output/bool,
+		// two named size_t locals, lower query, checked-add. Accessor result
+		// size_t remains a separate selecting caller carrier. No errno write.
+		return 2 * (sizeof(void *) + sizeof(bool)) + 2 * sizeof(size_t) +
+		       critical_command_startup_codec_complete_source_query_frame_bytes() +
+		       sizeof(void *) + sizeof(size_t) + sizeof(bool);
+	}
+	static bool replay_forwarding_source_supplement(size_t *) noexcept;
+	static constexpr size_t replay_forwarding_source_query_frames() noexcept
+	{
+		// Query output pointer and bool result, plus the actual returned int *
+		// from __errno_location() on null/unsupported refusal. The constexpr
+		// accessor's size_t result remains separately caller-owned.
+		return 2 * sizeof(void *) + sizeof(bool);
+	}
+	bool coordinator_operation_callback_matches(bool (*)(size_t, void *) noexcept,
+						    void *) const noexcept;
+	// Additional receiver closure; selecting ROOT separately owns the complete
+	// authentic held/thread/pipeline/currency profiles before constructing scope.
+	static size_t borrowed_currency_receiver_frame_bytes() noexcept;
+	bool restore_currency_borrowed(const critical_command &, bool (*)(size_t, void *) noexcept,
+				       void *, size_t) const noexcept;
+	// Actual private SAME-scope receivers for the original mixed dispatcher.
+	// Only named original providers are admitted, under the genuine whole-C
+	// operation callback. Root owns complete preentry/receiver SOURCE before
+	// invoking either; these declarations do not supply a first-call budget.
+	using legacy_pipeline_restore_fn = bool (*)(const critical_command &,
+						    player_save_coin_replay_budget_scope_owner &,
+						    bool (*)(size_t, void *) noexcept, void *,
+						    size_t) noexcept;
+	using native_pipeline_restore_fn = bool (*)(const critical_native_recovery_envelope &,
+						    player_save_coin_replay_budget_scope_owner &,
+						    bool (*)(size_t, void *) noexcept, void *,
+						    size_t) noexcept;
+	bool restore_legacy_pipeline_borrowed(const critical_command &, legacy_pipeline_restore_fn,
+					      bool (*)(size_t, void *) noexcept, void *,
+					      size_t) const noexcept;
+	bool restore_native_pipeline_borrowed(const critical_native_recovery_envelope &,
+					      native_pipeline_restore_fn,
+					      bool (*)(size_t, void *) noexcept, void *,
+					      size_t) const noexcept;
 	bool reserve_coordinator_cut(bool (*)(size_t, void *) noexcept, void *,
 				     size_t) const noexcept;
 	bool reserve_current_cut(bool (*)(size_t, void *) noexcept, void *, size_t) const noexcept;
