@@ -3470,3 +3470,36 @@ Doutputs, exactownedgracefulcleanup/seal/inventories/globalrelease controls same
 No automaticfullmatrix/Cpp/qualifiedfield adoption/olddata reuse. Full65/restore/
 authority/retention/erasure/recovery/load/release OPEN; inactive/CLOSED/fullgoal
 ACTIVE; additivecuratorinput/no notebookimport/combinedqualification.
+
+## 2026-10-11 — DIAG-02 complete native diagnostic; exact fixture published
+
+[DIAG-02 native qualification](PLAN5_SCHEMA65_DIAG02_NATIVE_QUALIFICATION_2026-10-11.md)
+records actualnative/hostsession81589exit0,112.987206s, Maria10.11.19 on frozen6bfa
+source+executeda00761125cdf1ab09622d9b6467505c8a84d6d2a6d5316f2a3961b88bf43a5fa
+fixture. Exact1644/45000 terminalschema signal151bytes87a1b0...; three real2013/
+1146/unrelated45000 negativesclosed/no-reconnect/preserved64/no65; original
+refusal preserves64/state/protectedrows/no65. Realnullable recovery, pinned65
+history/state, rerun and wrongselector preservation ALLPASS. One-call schema65
+view repair nativelyverified; no fullmatrix/65startup/build/restore/releasepass.
+
+Afterseal/globalrelease, confirmedindependent filelease publishes byte-exact
+executedfixture at tests/async/test_schema65_original_refusal_diagnostic.py,
+Gitblob7fdb6f4a9d5678ed99022552b975c50def597aa8. Onlythatnewfile+terminalreport+
+additivefollowup maintained; no refactor/sharedmatrix/runner/schema/contracts/
+registry edits orregistrationclaim. Base99a2d74c5af9c5a9e71202ca83aba35e3f8cc689,
+producer/result/remote/fileblob/SHA bound in owned delivery/result.json.
+Evidence D:/Dev/Tests/Duris/accounting-plan5/ACC-02-ORIGINAL65-DIAG-02,
+seal4074e842239e7521637450078a9fc32fd90964268f62e0f549087980345be611,
+6957members/549577845bytes. DBstop0/daemon0/OOMfalse/ownedremoval; owner/joband
+newpassivevolumeconsumers0empty;7unrelatedIDs running; matchinggloballease
+releasedafterseal/reverification. Allsource6906/privatecontracts unchanged,
+oldfailures/volumes/rawdata retained. Independentcoordinatorreview7d2f4c70fcd3b217c18299dd66943b2658fe58f5b8b62773a8992f092acf5517
+verifiedallmembers/nativecontrols/4passivevolumes/7serviceIDs/releaseabsence.
+
+Primary mayadopt exactownedfixture/evidence; anysharedmatrixadoption remains
+primaryowned. GenericEOF cannotproveschema cause; requireexactraw1644/45000/
+immutablemessage plus64/state/no65/preservation/recovery/rerun/wrongselector
+controls. No mutationAPI/schema request. Fulltwo-engine65 histories/finalboot/
+tamper, currentrestore/backup/retention/erasure, wallet/roomauthority, recovery/
+load/R1-R8release OPEN; inactive/CLOSED/fullgoalACTIVE. No furthercohort started.
+Additivecuratorinput/no notebookimport/sharedcontract/combinedqualificationclaim.
