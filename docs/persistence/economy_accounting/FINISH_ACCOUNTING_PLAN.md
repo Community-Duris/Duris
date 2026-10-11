@@ -18730,3 +18730,8 @@ and protected WIP remain preserved. Inventory478/931/2911/2853,0new/unmapped
 does not establish completion. Full host/native/gameplay/persistence/recovery/
 R1-R8/release stay OPEN; targeted compiler proof is recorded above.
 Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Central Plan5 test registration fixed - 2026-10-10
+
+[Registration evidence](PLAN5_CENTRAL_TEST_REGISTRATION_2026-10-10.md): the native captured binding case is mandatory by name; dedicated captured-item and Linux budget suites are registered. Independent exact-delta review and existing runner --list validation passed (114 rows). Actual fixture execution is pending for the major qualification batch; no full-plan completion is claimed. Inactive/CLOSED, release BLOCKED, goal ACTIVE.

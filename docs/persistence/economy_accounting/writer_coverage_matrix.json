@@ -616,7 +616,7 @@
       "tests/async/test_player_save_journal.py": "52cfe3a4c6ac0998d7546b55d362817fa3309f4818e7478775d749bef26325d5",
       "tests/async/test_reconcile_economy_accounting.py": "7c430d5650ce51a47e1cc2487663ce52c1644df3612e4378ebde7802253096cc",
       "tests/async/test_staging_migration_fork_mysql.py": "908ab9a227cf732b86bd3503aa0d3ccec07e0d2f35998568ea41d56543ba723d",
-      "tests/integration_manifest.json": "78b7fc1fc4342d7708e3e87bc944588ca0c40677c9e8efc08043df67103aeb27"
+      "tests/integration_manifest.json": "5fe32bcf2c9195ffe3085cd33bee91569c53e5a6d29dbffb5473acdf8c6a002c"
     },
     "status": "source_integrated_unqualified"
   },
