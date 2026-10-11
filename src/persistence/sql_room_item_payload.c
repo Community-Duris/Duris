@@ -3389,7 +3389,7 @@ struct sql_drop_capture_budget
 										     refusal_frames;
 		// The three named constexpr size_t profile locals also own real source
 		// carriers during prefix; no emitted optimization erasure is assumed.
-		constexpr size_t frames =
+		const size_t frames =
 			forwarding_frames + 3 * sizeof(size_t) + 14 * sizeof(void *) +
 			12 * sizeof(size_t) + 7 * sizeof(bool) + 4 * sizeof(std::vector<uint8_t>) +
 			sizeof(sql_room_item_payload_batch) + sizeof(sql_drop_entry_table) +
@@ -3523,21 +3523,19 @@ try
 		return refuse(ENOBUFS);
 	sql_room_item_payload_batch candidate;
 	budget.candidate = &candidate;
-	if ((!budget.prefix(budget.nested) ?
-		     player_snapshot_codec_result::overflow :
-		     player_item_snapshot_list_decode_bounded(
-			     payload.item_blob.data(), payload.item_blob_size, &candidate.items,
-			     sql_drop_capture_budget::forward, &budget, budget.nested)) !=
-		    player_snapshot_codec_result::ok ||
+	if (!budget.prefix(budget.nested) ||
+	    player_item_snapshot_list_decode_bounded(
+		    payload.item_blob.data(), payload.item_blob_size, &candidate.items,
+		    sql_drop_capture_budget::forward, &budget,
+		    budget.nested) != player_snapshot_codec_result::ok ||
 	    candidate.items.size() != payload.item_count)
 		return budget.refuse_after(EBADMSG);
 	std::vector<uint8_t> canonical;
 	budget.canonical = &canonical;
-	if ((!budget.prefix(budget.nested) ?
-		     player_snapshot_codec_result::overflow :
-		     player_item_snapshot_list_encode_bounded(
-			     candidate.items, &canonical, sql_drop_capture_budget::forward, &budget,
-			     budget.nested)) != player_snapshot_codec_result::ok ||
+	if (!budget.prefix(budget.nested) ||
+	    player_item_snapshot_list_encode_bounded(
+		    candidate.items, &canonical, sql_drop_capture_budget::forward, &budget,
+		    budget.nested) != player_snapshot_codec_result::ok ||
 	    canonical.size() != payload.item_blob_size ||
 	    !std::equal(canonical.begin(), canonical.end(), payload.item_blob.begin()))
 		return budget.refuse_after(EBADMSG);
