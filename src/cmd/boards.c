@@ -249,9 +249,6 @@ void Board_write_message(int board_type, struct char_data *ch, char *arg)
 	/* skip blanks */
 	arg = skip_spaces(arg);
 
-	/* JE 27 Oct 95 - Truncate headline at 70 chars if it's longer than that */
-	arg[71] = '\0';
-
 	if (!*arg)
 	{
 		send_to_char("We must have a headline!\r\n", ch);
@@ -262,7 +259,8 @@ void Board_write_message(int board_type, struct char_data *ch, char *arg)
 	tmstr = (char *)asctime(localtime(&ct));
 	*(tmstr + strlen(tmstr) - 9) = '\0'; /* kill seconds and year */
 
-	snprintf(buf, MAX_INPUT_LENGTH, "[%s (%s)] %s", tmstr, GET_NAME(ch), arg);
+	/* JE 27 Oct 95 - Truncate headline at 70 chars if it's longer than that */
+	snprintf(buf, MAX_INPUT_LENGTH, "[%s (%s)] %.70s", tmstr, GET_NAME(ch), arg);
 	len = strlen(buf) + 1;
 
 	CREATE(NEW_MSG_INDEX(board_type).heading, char, len, MEM_TAG_STRING);

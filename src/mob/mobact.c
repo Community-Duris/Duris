@@ -7424,10 +7424,11 @@ void event_mob_mundane(P_char ch, P_char /*victim*/, P_obj /*object*/, void * /*
 
 	if (!ch->only.npc)
 	{
-		wizlog(IMMORTAL, "PANIC! NewMobAct called with an invalid npc! #%d",
-		       mob_index[GET_RNUM(ch)].virtual_number);
-		logit(LOG_DEBUG, "NewMobAct called with an invalid npc! #%d",
-		      mob_index[GET_RNUM(ch)].virtual_number);
+		// There is no npc data to take a vnum from.
+		wizlog(IMMORTAL, "PANIC! NewMobAct called with an invalid npc! %s",
+		       GET_NAME(ch) ? GET_NAME(ch) : "(unnamed)");
+		logit(LOG_DEBUG, "NewMobAct called with an invalid npc! %s",
+		      GET_NAME(ch) ? GET_NAME(ch) : "(unnamed)");
 		return;
 	}
 	//  if(get_linked_char(ch, LNK_RIDING))

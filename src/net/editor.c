@@ -21,13 +21,13 @@ static void edit_list_data(struct edit_data *data);
 
 void edit_free(struct edit_data *data)
 {
-	int i = 0;
-
 	if (!data)
 		return;
 
-	while (data->lines[i])
-		FREE(data->lines[i++]);
+	// FREE() names its argument twice, so it takes no `lines[i++]`.
+	for (int i = 0; data->lines[i]; i++)
+		FREE(data->lines[i]);
+	FREE(data->lines);
 
 	data->desc->editor = NULL;
 	FREE(data);
@@ -277,9 +277,8 @@ static int edit_insert_data(struct edit_data *data, char **lines)
 
 	if ((i + j) > data->max_lines)
 	{
-		i = 0;
-		while (lines[i])
-			FREE(lines[i++]);
+		for (i = 0; lines[i]; i++)
+			FREE(lines[i]);
 		return -1;
 	}
 	/* stick 'em in.  First thing to do is move j lines from the cur_line

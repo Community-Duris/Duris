@@ -55,6 +55,7 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <pthread.h>
+#include <dirent.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -2457,6 +2458,7 @@ static void run_recurring_persistence_phase(game_loop_pulse_context &ctx)
 		gmcp_flush_dirty_ship_contacts();
 		gmcp_flush_dirty_ship_info();
 		flush_pending_ship_saves();
+		retry_unplaced_ships();
 		locker_async_pulse();
 		corpse_lifecycle_transaction_pulse();
 		shop_trade_preparation_owner::pulse();
@@ -3850,6 +3852,8 @@ void close_sockets(int s)
 	close(s);
 }
 
+static void forget_hostname(int descriptor);
+
 void close_socket(struct descriptor_data *d)
 {
 	struct descriptor_data *tmp;
@@ -3874,6 +3878,8 @@ void close_socket(struct descriptor_data *d)
 
 	if (d->sslses)
 		ssl_close(d->sslses);
+	if (d->descriptor)
+		forget_hostname(d->descriptor);
 	if (d->descriptor && !(d->transport_session && transport_world_active()))
 		close(d->descriptor);
 	flush_queues(d);
@@ -4109,22 +4115,68 @@ void nonblock(int s)
         * old/new socket code. 9/18/95  JAB                                                                                                                                                            \
         */
 
+static void remove_hostname_files(const char *prefix)
+{
+	DIR *directory = opendir("lib/etc/hosts");
+	if (!directory)
+		return;
+	const size_t length = strlen(prefix);
+	while (const struct dirent *entry = readdir(directory))
+		if (!strncmp(entry->d_name, prefix, length) && strcmp(entry->d_name, ".") &&
+		    strcmp(entry->d_name, "..") && strcmp(entry->d_name, ".gitignore"))
+			unlinkat(dirfd(directory), entry->d_name, 0);
+	closedir(directory);
+}
+
 struct hostname_lookup_request
 {
 	char address[INET6_ADDRSTRLEN];
 	int descriptor;
+	bool cancelled; // its descriptor closed during the lookup
+	struct hostname_lookup_request *next;
 };
 
 #define MAX_HOSTNAME_LOOKUP_WORKERS 8
+// The mutex guards running lookups, their count, and published hostname files.
+// A lookup publishes before its descriptor closes or not at all.
 static pthread_mutex_t hostname_lookup_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int hostname_lookup_workers = 0;
+static struct hostname_lookup_request *hostname_lookups = NULL;
+
+// With hostname_lookup_mutex held.
+static void hostname_lookup_done(struct hostname_lookup_request *request)
+{
+	struct hostname_lookup_request **link = &hostname_lookups;
+	while (*link != request)
+		link = &(*link)->next;
+	*link = request->next;
+	hostname_lookup_workers--;
+}
+
+// Cancel running lookups before removing a closed descriptor's hostname files.
+static void forget_hostname(int descriptor)
+{
+	char prefix[16];
+
+	pthread_mutex_lock(&hostname_lookup_mutex);
+	for (struct hostname_lookup_request *request = hostname_lookups; request;
+	     request = request->next)
+		if (request->descriptor == descriptor)
+			request->cancelled = true;
+	snprintf(prefix, sizeof(prefix), "%d.", descriptor);
+	remove_hostname_files(prefix);
+	snprintf(prefix, sizeof(prefix), ".%d.", descriptor);
+	remove_hostname_files(prefix);
+	pthread_mutex_unlock(&hostname_lookup_mutex);
+}
 
 static void *hostname_lookup_worker(void *arg)
 {
 	struct hostname_lookup_request *request = (struct hostname_lookup_request *)arg;
 	struct addrinfo hints, *result = NULL;
 	char hostname[NI_MAXHOST];
-	char temp_path[128], final_path[128];
+	char temp_path[128] = "", final_path[128];
+	bool written = false;
 	FILE *f;
 
 	bzero(&hints, sizeof(hints));
@@ -4147,15 +4199,23 @@ static void *hostname_lookup_worker(void *arg)
 			{
 				int write_ok = fprintf(f, "%s\n", hostname) >= 0;
 				int close_ok = fclose(f) == 0;
-				if (write_ok && close_ok && rename(temp_path, final_path) == 0)
-					network_wakeup_notify();
+				written = write_ok && close_ok;
 			}
 		}
 		freeaddrinfo(result);
 	}
 
 	pthread_mutex_lock(&hostname_lookup_mutex);
-	hostname_lookup_workers--;
+	if (written && !request->cancelled)
+	{
+		if (rename(temp_path, final_path) == 0)
+			network_wakeup_notify();
+		else
+			unlink(temp_path);
+	}
+	else if (*temp_path)
+		unlink(temp_path);
+	hostname_lookup_done(request);
 	pthread_mutex_unlock(&hostname_lookup_mutex);
 	free(request);
 	return NULL;
@@ -4171,37 +4231,36 @@ void resolve_descriptor_hostname_async(const char *address, int descriptor)
 	if (request == NULL)
 		return;
 
-	pthread_mutex_lock(&hostname_lookup_mutex);
-	if (hostname_lookup_workers >= MAX_HOSTNAME_LOOKUP_WORKERS)
-	{
-		pthread_mutex_unlock(&hostname_lookup_mutex);
-		free(request);
-		return;
-	}
-	hostname_lookup_workers++;
-	pthread_mutex_unlock(&hostname_lookup_mutex);
-
 	strncpy(request->address, address, sizeof(request->address) - 1);
 	request->descriptor = descriptor;
-	{
-		char stale_path[128];
-		snprintf(stale_path, sizeof(stale_path), "lib/etc/hosts/%d.%s", descriptor,
-			 request->address);
-		unlink(stale_path);
-	}
 	if (pthread_attr_init(&attr) != 0)
 	{
-		pthread_mutex_lock(&hostname_lookup_mutex);
-		hostname_lookup_workers--;
-		pthread_mutex_unlock(&hostname_lookup_mutex);
 		free(request);
 		return;
 	}
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+	pthread_mutex_lock(&hostname_lookup_mutex);
+	if (hostname_lookup_workers >= MAX_HOSTNAME_LOOKUP_WORKERS)
+	{
+		pthread_mutex_unlock(&hostname_lookup_mutex);
+		pthread_attr_destroy(&attr);
+		free(request);
+		return;
+	}
+	char stale_path[128];
+	snprintf(stale_path, sizeof(stale_path), "lib/etc/hosts/%d.%s", descriptor,
+		 request->address);
+	unlink(stale_path);
+	hostname_lookup_workers++;
+	request->next = hostname_lookups;
+	hostname_lookups = request;
+	pthread_mutex_unlock(&hostname_lookup_mutex);
+
 	if (pthread_create(&thread, &attr, hostname_lookup_worker, request) != 0)
 	{
 		pthread_mutex_lock(&hostname_lookup_mutex);
-		hostname_lookup_workers--;
+		hostname_lookup_done(request);
 		pthread_mutex_unlock(&hostname_lookup_mutex);
 		free(request);
 	}
@@ -4352,6 +4411,8 @@ int new_descriptor(int s, int conn_type)
 		setsockopt(desc, IPPROTO_TCP, TCP_NODELAY, &ws_opt, sizeof(ws_opt));
 	}
 
+	// List walkers require a playing descriptor to have a character.
+	STATE(newd) = conn_type == 1 ? CON_SSLNEGO : CON_GET_TERM;
 	descriptor_list = newd;
 	transport_frontend_accepted(newd);
 
@@ -4397,8 +4458,7 @@ static void greet(P_desc newd)
 			"feel this is in error, please e-mail multiplay@durismud.com\r\n");
 		banlog(56, "Reject Connect from %s, banned site.", newd->host);
 		logit(LOG_STATUS, "Rejected Connect from %s, banned site.", newd->host);
-		STATE(newd) = CON_EXIT;
-		// flush_queues(newd);
+		STATE(newd) = CON_FLUSH; // close after the rejection message is sent
 		return;
 	}
 
@@ -6434,17 +6494,16 @@ void delete_doubledollar(char *string)
 	}
 }
 
-// Puts a Cyan % in front of each line.
+// Puts a Cyan % in front of each line. to_string holds MAX_STRING_LENGTH bytes; each
+// prefix adds six bytes a line, so a long block of short lines is cut where it fills.
 void format_to_snoopers(char *from_string, char *to_string)
 {
-	char *index, *index2;
+	char *index = from_string;
+	size_t used = 7;
 
 	//  debug( "From: '%s'.", from_string );
-	index2 = to_string;
-	snprintf(index2, MAX_STRING_LENGTH, "&+C%%&N ");
-	index2 += 7;
-	index = from_string;
-	while (*index != '\0')
+	snprintf(to_string, MAX_STRING_LENGTH, "&+C%%&N ");
+	while (*index != '\0' && used < MAX_STRING_LENGTH - 9) // a prefix is 8 bytes, then the null
 	{
 		if (*index == '\r')
 		{
@@ -6453,16 +6512,16 @@ void format_to_snoopers(char *from_string, char *to_string)
 		}
 		if (index[0] == '\n' && index[1] != '\0')
 		{
-			snprintf(index2, MAX_STRING_LENGTH, "\n&+C%%&N ");
-			index2 += 8;
+			snprintf(to_string + used, MAX_STRING_LENGTH - used, "\n&+C%%&N ");
+			used += 8;
 			index++;
 		}
 		else
 		{
-			*(index2++) = *(index++);
+			to_string[used++] = *(index++);
 		}
 	}
-	*index2 = '\0';
+	to_string[used] = '\0';
 }
 
 namespace

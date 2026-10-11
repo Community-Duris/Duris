@@ -480,6 +480,17 @@ int main()
 			snooped_plain += *p;
 	}
 	assert(snooped_plain == expected_snoop);
+	// Six bytes a line more than the block: a full block of short lines is cut at the
+	// snoop buffer's end instead of running past it.
+	std::string short_lines;
+	while (short_lines.size() + 2 < MAX_STRING_LENGTH)
+		short_lines += "x\n";
+	static char guarded[MAX_STRING_LENGTH + 64];
+	memset(guarded, '#', sizeof(guarded));
+	format_to_snoopers(short_lines.data(), guarded);
+	assert(strlen(guarded) < MAX_STRING_LENGTH);
+	for (size_t i = MAX_STRING_LENGTH; i < sizeof(guarded); ++i)
+		assert(guarded[i] == '#');
 
 	// Pager replay/refresh is frozen even after the dictionary changes, and does
 	// not log decorated text or change the original LOG_NONE/LOG_PRIVATE choice.

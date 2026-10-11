@@ -129,12 +129,14 @@ int number(int from, int to)
 	// Biased in theory, but we won't hit a single biased roll during
 	// the game's lifetime, thus no need to bother with rejection
 	// sampling.
+	// The span is counted in 64 bits: number(0, INT_MAX) holds one more value than an
+	// int does.
 	if (from < to)
-		return from + rnd64() % (to - from + 1);
+		return (int)(from + (int64_t)(rnd64() % (uint64_t)((int64_t)to - from + 1)));
 	if (from == to)
 		return from;
 	else
-		return from - rnd64() % (from - to + 1);
+		return (int)(from - (int64_t)(rnd64() % (uint64_t)((int64_t)from - to + 1)));
 }
 
 bool native_mobile_birth_random_owner::capture(bool (*construct)(void *), void *context,

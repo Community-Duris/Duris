@@ -1537,6 +1537,8 @@ P_ship load_npc_ship(int level, NPC_AI_Type type, int min_speed, int m_class, in
 	{
 		if (ch)
 			send_to_char("Couldnt load npc ship!\r\n", ch);
+		shipObjHash.erase(ship);
+		delete_ship(ship, true);
 		return NULL;
 	}
 
@@ -1949,7 +1951,12 @@ bool load_cyrics_revenge()
 
 	name_ship(CYRICS_REVENGE_NAME, cyrics_revenge);
 	if (!load_ship(cyrics_revenge, room))
+	{
+		/* delete_ship() also clears cyrics_revenge. */
+		shipObjHash.erase(cyrics_revenge);
+		delete_ship(cyrics_revenge, true);
 		return false;
+	}
 
 	setup->setup(cyrics_revenge);
 	cyrics_revenge->npc_ai->type = NPC_AI_HUNTER;
