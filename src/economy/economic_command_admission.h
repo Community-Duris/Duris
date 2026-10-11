@@ -34,4 +34,42 @@ bool economic_ordinary_native_command_admission_supported_bounded(
 	const critical_command &, bool (*reserve)(size_t, void *) noexcept, void *context,
 	size_t outer_live) noexcept;
 
+#include "economy/economic_currency_adapter.h"
+
+// Complete additive projection of the original immutable account-bank branch.
+// SQL and flat preserve their original allowlists and all intent byte checks.
+// This never selects today's projection, grants a source, submits a command,
+// changes activation, or retags retained evidence. Originals remain unchanged.
+// Caller retains the authentic complete command/capacities and enclosing owners
+// in outer_live. Reserve synchronously admits the full absolute peak under that
+// owner's existing limit; it must not mutate inputs or reenter this provider.
+// Every refusal preserves command; reserve keeps its owner bookkeeping. Unsupported selected
+// library profiles fail closed. Native/library implementation qualification is
+// separate from these prospective declaration/storage contracts.
+bool economic_bank_command_admission_supported_bounded(const critical_command &,
+						       bool (*)(size_t, void *) noexcept, void *,
+						       size_t) noexcept;
+bool economic_flatfile_bank_command_admission_supported_bounded(const critical_command &,
+								bool (*)(size_t, void *) noexcept,
+								void *, size_t) noexcept;
+
+// Pure strong-output profiles: query first, then Source+INITIAL transiently
+// before genuine entry. The provider self-admits its own Source and retains its
+// unchanged children's real uncovered supplements; its supplement is zero.
+bool economic_bank_command_admission_source_frame_bytes(size_t *) noexcept;
+bool economic_bank_command_admission_source_supplement_frame_bytes(size_t *) noexcept;
+bool economic_bank_command_admission_initial_inline_bytes(size_t *) noexcept;
+
+constexpr size_t economic_bank_command_admission_source_query_frame_bytes() noexcept
+{
+	// Real full getter output/result, five named size_t locals, the selected
+	// checked-add declaration (P+N+B), and four genuine dependency queries.
+	// INITIAL/supp queries are smaller P+B; this accessor is constant evaluation.
+	return economic_intent_decode_source_query_frame_bytes() +
+	       currency_command_decode_payload_source_query_frame_bytes() +
+	       currency_command_build_source_query_frame_bytes() +
+	       economic_currency_intent_source_query_frame_bytes() + 2 * sizeof(void *) +
+	       6 * sizeof(size_t) + 2 * sizeof(bool);
+}
+
 #endif
