@@ -1425,4 +1425,221 @@ inline bool quest_fee_reward_continuation_decode_bounded(const uint8_t *data, si
 #endif
 }
 
+// Additive profiles for the exact existing bounded decoder targets below.
+// Input/output (including prior output string heaps) remain caller-owned.
+// The old parsers self-retain their old frames, real candidate/budget objects,
+// growing string requests and current capacities. Only the disjoint positive
+// supplement is retained by their caller; full Source/INITIAL are transient
+// preentry requirements. No encoder or trigger-binding predicate is selected.
+namespace duris_quest_continuation_source_detail
+{
+using namespace duris_quest_continuation_bounded_detail;
+constexpr size_t P = sizeof(void *), N = sizeof(size_t), B = sizeof(bool);
+#if defined(__linux__) && defined(__GNUC__) && __GNUC__ == 13 && defined(__cplusplus) &&         \
+	__cplusplus == 202002L && defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 &&         \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                          \
+	!defined(_GLIBCXX_PROFILE) && defined(__cpp_sized_deallocation) &&                       \
+	__cpp_sized_deallocation >= 201309L
+constexpr bool supported =
+	P == 8 && N == 8 && sizeof(std::ptrdiff_t) == 8 && sizeof(bool) == 1 &&
+	sizeof(std::allocator<char>) == 1 && sizeof(char) == 1 && sizeof(std::string) == 32 &&
+	sizeof(reserve_fn) == P && sizeof(std::span<const uint8_t>) == 2 * N &&
+	sizeof(std::span<const uint8_t>::iterator) == P && sizeof(std::string::iterator) == P &&
+	sizeof(std::random_access_iterator_tag) == 1;
+#else
+constexpr bool supported = false;
+#endif
+
+// Default string: basic_string receiver; hider(this,pointer,allocator-ref);
+// allocator/new_allocator defaults and const copies; std::move(ref/result),
+// allocator-temp destructor; mutable local_data/pointer_to/addressof/
+// __addressof; init-local receiver/public constant-evaluation result;
+// set_length/length/data/traits::assign and its internal evaluation result.
+// Runtime init-local has NO constexpr-only loop index or zero-char object.
+// The exact old default subrow already owns six receiver/reference carriers,
+// one length word, the NUL char and actual temporary allocator object. The
+// deficit is confined to that same constructor subtree: no move/assign slack.
+constexpr size_t string_default_complete =
+	28 * P + 2 * N + sizeof(char) + 2 * B + sizeof(std::allocator<char>);
+constexpr size_t string_default_credit = 6 * P + N + sizeof(char) + sizeof(std::allocator<char>);
+constexpr size_t string_default_missing = string_default_complete - string_default_credit;
+
+// Actual move allocator lane: two policy-result bools, alloc_on_move refs,
+// std::move refs/result, explicitly declared/defaulted allocator and base
+// assignments, and BOTH actual mutable allocator getters. The old six-P
+// allocator lane credits refs/move/one getter; the second getter and declared
+// assignments are the remaining eight P. Old allocator objects are preserved
+// conservative fields and cannot be substituted for these declared scopes.
+constexpr size_t string_move_allocator_missing = 8 * P;
+// Const local_data has this/result plus pointer_to/addressof/__addressof.
+// The old direct local-data query owns its this/result, leaving six P.
+// Its _M_is_local/data/size/length/clear callers remain old matching queries.
+constexpr size_t string_const_local_data_missing = 6 * P;
+constexpr size_t string_self_address_missing = 2 * P;
+// Actual hider and allocator destruction, at each of the two completed
+// string lifetimes. No C++20 new_allocator destructor is selected.
+constexpr size_t string_hider_cleanup_missing = 2 * (2 * P);
+// Continuation move assignment is nontrivial (two strings): this/source/ref
+// result. Its direct std::move has ref/result; final nontrivial destructor
+// has this. Arrays and scalar aggregates introduce no invented callees.
+constexpr size_t continuation_lifetime_missing = 3 * P + 2 * P + P;
+
+// Exact find(char,pos) own row is 3P+5N+char, versus the old 3P+4N+char.
+// Actual size and _M_data descendants are P+N and 2P. Traits::find has
+// s/reference-a/result3P plus n and its internal evaluation bool; the old
+// two-P traits row leaves P+B. Old builtin memchr fields are not new credit.
+constexpr size_t string_find_missing = N + (P + N) + 2 * P + P + B;
+// Four actual array member types: uint64 roots, goal rewards, uint32 credited,
+// award XP. Old direct subscript rows leave their returned-reference P.
+// Selected array::operator[] directly indexes _M_elems: no _S_ref call.
+constexpr size_t array_access_missing = 4 * P;
+// Definition's mutable string begin/end return the actual loop iterators.
+// Their two explicit normal-iterator constructors, end's pointer arithmetic
+// temporary, rewritten != selecting C++20 operator==/two base calls, ++
+// and * are genuine declared scopes.
+// _M_data and size are the identical sequential leaves named by find above.
+// No implicit trivial iterator copy/dtor or builtin comparison body is priced.
+// Old parser_frames first5P owns data/decoded/reserve/context4P and one
+// phase-exclusive P: hidden range-for __range reference while parsing,
+// or bad_alloc catch reference after that range has unwound. max(P,P)=P.
+constexpr size_t definition_iteration_missing = 4 * P + P + (2 * P + B) + 4 * P + 2 * P + 2 * P;
+
+// Old _M_replace owns five size words; actual old_size,new_size,pos,len1,
+// len2,how_much are six. Ordinary new/delete declared interfaces are separate
+// from allocator wrappers: count/result, then sized-delete pointer/count.
+// Their out-of-line bodies and exception implementation remain external.
+constexpr size_t string_assignment_missing = N + 2 * (P + N);
+// Real automatic constexpr fields are Source objects, not cached estimates:
+// parser frames N, parser returned bool B; assign's own N; observation's
+// otherwise missing capacity-return N; initial's add extra/result N+B.
+constexpr size_t controller_missing = (N + B) + N + N + (N + B);
+
+constexpr size_t common_missing = 2 * string_default_missing + 2 * string_move_allocator_missing +
+				  string_const_local_data_missing + string_self_address_missing +
+				  string_hider_cleanup_missing + continuation_lifetime_missing +
+				  string_find_missing + array_access_missing +
+				  definition_iteration_missing + string_assignment_missing +
+				  controller_missing;
+
+// Fee-only residuals. Reader take/integer/block/id and source-event-valid
+// own refs/scalars already have the dedicated old eight-P/six-N/two-u64/B
+// credit, and the named reader/event/id/span objects are owned by the actual
+// economic_source_event_decode_object_bytes provider. Its runtime returned
+// size N and the source decoder's returned error enum are separate Source.
+constexpr size_t source_event_scalar_missing = N + sizeof(economic_accounting_error);
+// typed48/legacy40 result reader has no heap or array-library subtree: old
+// fee scalar credit owns its params, true aggregate temporary, get_u64
+// input/value/loop/result and get_u16 input/result. Its bool return is extra.
+constexpr size_t result_decode_missing = B;
+// Span pointer/count constructor: old direct/to_address credit leaves real
+// extent receiver P plus raw __to_address(input,result)2P. Default failure
+// span invokes declared default span/extent receivers2P; reader copies its
+// named input span via declared default-copy(this,source)2P. operator[] is
+// this/index/returned-ref2P+N. begin/end producers add receiver+pointer ctor
+// (3P/4P respectively, end includes its pointer prvalue). Returned iterator
+// values are the old copy parameters, not second object copies. Normal
+// __niter_base's base() receiver/ref2P is missing from the old raw-pointer row.
+constexpr size_t source_span_missing = 3 * P + 2 * P + 2 * P + (2 * P + N) + 3 * P + 4 * P + 2 * P;
+// Selected byte-array data() directly casts _M_elems: no _S_ptr call.
+// Its actual receiver/returned-pointer2P for extents16/48 is the same
+// sequential family already retained by old fixed_equal_frames data rows;
+// each typed body has no local/child/extent branch. Physical arrays remain
+// distinct old candidate members. No new data-helper charge is required.
+// copy_n's real __n2 and __size_to_integer argument/result plus the
+// iterator_category reference leave3N+P beyond old pointer-copy fields.
+// Existing tag objects stay old owned; no undeclared tag special members.
+constexpr size_t fixed_array_copy_missing = 3 * N + P;
+// Actual equal_aux1 __simple bool is additional to its declared bool return.
+// Public constant-evaluation result is already the exact sequential default
+// init-local lane above; internal predicate is the traits::assign/find lane.
+constexpr size_t fixed_equal_missing = B;
+constexpr size_t fee_missing = common_missing + source_event_scalar_missing +
+			       result_decode_missing + source_span_missing +
+			       fixed_array_copy_missing + fixed_equal_missing;
+// Generic dispatch's live automatic constexpr dispatch N is additional to
+// nested,size,outer. The original dispatch5P+3N+B remains child outer-owned.
+constexpr size_t dispatch_missing = N;
+constexpr size_t generic_missing = fee_missing + dispatch_missing;
+
+// Full preentry Source includes the EXACT unchanged original Source fields
+// and the largest genuine initial/assignment/observation request. Original
+// conservative builtin/tag fields are preserved, not treated as newly reached
+// source or padding available to any different subtree. Candidate/budget
+// physical storage is INITIAL below, and every char heap stays old owned.
+constexpr size_t assign_own = 3 * P + 4 * N + B;
+constexpr size_t observe_own = 9 * P + 5 * N + 4 * B;
+constexpr size_t parser_source = parser_frames + query_frames + string_lifetime_frames +
+				 string_assign_frames + assign_own + observe_own;
+constexpr size_t fee_source_without_objects = parser_source + fee_scalar_frames + fee_missing;
+constexpr size_t generic_source_without_objects =
+	5 * P + 3 * N + B + dispatch_missing + fee_source_without_objects;
+constexpr size_t initial_objects = sizeof(quest_reward_continuation) + sizeof(budget);
+} // namespace duris_quest_continuation_source_detail
+
+inline bool quest_fee_reward_continuation_decode_source_frame_bytes(size_t *bytes) noexcept
+{
+	using namespace duris_quest_continuation_source_detail;
+	if (!bytes || !supported)
+		return false;
+	size_t result = fee_source_without_objects;
+	const size_t objects = economic_source_event_decode_object_bytes();
+	if (!add(result, objects))
+		return false;
+	*bytes = result;
+	return true;
+}
+inline bool quest_reward_continuation_decode_source_frame_bytes(size_t *bytes) noexcept
+{
+	using namespace duris_quest_continuation_source_detail;
+	if (!bytes || !supported)
+		return false;
+	size_t result = generic_source_without_objects;
+	const size_t objects = economic_source_event_decode_object_bytes();
+	if (!add(result, objects))
+		return false;
+	*bytes = result;
+	return true;
+}
+inline bool
+quest_fee_reward_continuation_decode_source_supplement_frame_bytes(size_t *bytes) noexcept
+{
+	if (!bytes || !duris_quest_continuation_source_detail::supported)
+		return false;
+	*bytes = duris_quest_continuation_source_detail::fee_missing;
+	return true;
+}
+inline bool quest_reward_continuation_decode_source_supplement_frame_bytes(size_t *bytes) noexcept
+{
+	if (!bytes || !duris_quest_continuation_source_detail::supported)
+		return false;
+	*bytes = duris_quest_continuation_source_detail::generic_missing;
+	return true;
+}
+inline bool quest_fee_reward_continuation_decode_initial_inline_bytes(size_t *bytes) noexcept
+{
+	if (!bytes || !duris_quest_continuation_source_detail::supported)
+		return false;
+	*bytes = duris_quest_continuation_source_detail::initial_objects;
+	return true;
+}
+inline bool quest_reward_continuation_decode_initial_inline_bytes(size_t *bytes) noexcept
+{
+	if (!bytes || !duris_quest_continuation_source_detail::supported)
+		return false;
+	*bytes = duris_quest_continuation_source_detail::initial_objects;
+	return true;
+}
+constexpr size_t quest_fee_reward_continuation_decode_source_query_frame_bytes() noexcept
+{
+	// Largest of the three actual pure getters: output P, result/objects2N,
+	// bool return B; object-provider scalar return N; add(P,N,B). Result-size
+	// objects retained by the selecting caller are separately caller-owned.
+	return 2 * sizeof(void *) + 4 * sizeof(size_t) + 2 * sizeof(bool);
+}
+constexpr size_t quest_reward_continuation_decode_source_query_frame_bytes() noexcept
+{
+	return 2 * sizeof(void *) + 4 * sizeof(size_t) + 2 * sizeof(bool);
+}
+
 #endif
