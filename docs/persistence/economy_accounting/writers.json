@@ -66925,7 +66925,8 @@
       "tests/async/test_item_movement_prompt_runtime.py": "4bb624536db82fe3594b379c822a8979a8be42362a890a0c0c5bd0b5179a8800",
       "tests/async/test_publication_ack_checkpoint.py": "c9d34251986e5e4cbe72bf9396e882b7451a85acfe4bb5b6dd622b17f322d0ef",
       "tests/async/item_transfer_complete_bounded_test.cpp": "176c8644449f19c450799b0bc4c7a3df9a4d145e2234c949a1dd60f13b1b24b2",
-      "tests/async/test_item_transfer_complete_bounded.py": "f5f7c546ee566265e4a842be2cd264285a4d73c146365ee44483027c06f5c367"
+      "tests/async/test_item_transfer_complete_bounded.py": "f5f7c546ee566265e4a842be2cd264285a4d73c146365ee44483027c06f5c367",
+      "tests/async/run_plan5_retention_journeys.py": "3dc38861cdb14f6aae61f586a0943c38962fa9a17c93b40615480b106a042878"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {

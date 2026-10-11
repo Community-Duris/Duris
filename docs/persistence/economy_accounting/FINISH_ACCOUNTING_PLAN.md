@@ -19187,3 +19187,8 @@ Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
 ## NPC common-submit preentry Source join - 2026-10-11
 
 [Issue report](NPC_COMMON_SUBMIT_SOURCE_INTEGRATION_2026-10-11.md) records actual combined Source9 SQL/flat full-build PASS, focused/profile outcomes, separate standalone v3 both15/2653 PASS, and restored metadata. Source4; current496 pins,492 preserved; callbacks/locks/passive authority intact. Root owns current registration/metadata/staging; separate local commits publish only qualified combined final Source. HRT was already adopted at97ded; full protocol remains open. Full protocol and R1-R8, architecture, gameplay, actual database durability,32MiB whole-host peak,cold restore/shutdown and release remain open. Accounting remains inactive/CLOSED; the declined spell path is preserved; coverage is incomplete and release BLOCKED.
+
+
+## Retention native fixture dependency repair - 2026-10-11
+
+[Issue report](RETENTION_NATIVE_FIXTURE_DEPENDENCY_REPAIR_2026-10-11.md) records the original ASan/UBSan SQL-header and flat native fixture PASS against published7f1 source, two original1040-byte streams agreeing, and unchanged1424 production inputs/protected3. Add only three real linked providers to the existing compile list; add its genuine source pin (497 total, all496 existing preserved) and preserve all931 policies/2911 census/2853 sites. Full retention journeys/schema61/database/gameplay/recovery/architecture/R1-R8/release remain open. Inactive/CLOSED, incomplete coverage, BLOCKED release; goal ACTIVE.
