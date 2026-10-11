@@ -136,4 +136,35 @@ constexpr size_t shop_trade_recovery_manifest_source_query_frame_bytes() noexcep
 	// Output argument/result and actual source-policy helper's bool result.
 	return sizeof(size_t *) + 2 * sizeof(bool);
 }
+
+// Exact preserved standalone Forest3 targets. Full SOURCE is transient before
+// entry; retain only genuine supplement through the unchanged old child.
+// INITIAL=0: candidates/fixed workspaces are constructed after their original
+// own admissions, remain child-owned once, and are not manifest controllers.
+// Inputs/prior output heaps and reserve-callback descendants remain outer-owned.
+// Pure queries preserve output on null/unsupported; no observation/activation.
+bool shop_trade_recovery_forest_shape_valid_bounded_source_frame_bytes(size_t *) noexcept;
+bool shop_trade_recovery_forest_shape_valid_bounded_source_supplement_frame_bytes(size_t *) noexcept;
+bool shop_trade_recovery_forest_shape_valid_bounded_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t shop_trade_recovery_forest_shape_valid_bounded_source_query_frame_bytes() noexcept
+{
+	// Output/result and actual support helper returned bool.
+	return sizeof(size_t *) + 2 * sizeof(bool);
+}
+bool shop_trade_recovery_forest_encode_bounded_source_frame_bytes(size_t *) noexcept;
+bool shop_trade_recovery_forest_encode_bounded_source_supplement_frame_bytes(size_t *) noexcept;
+bool shop_trade_recovery_forest_encode_bounded_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t shop_trade_recovery_forest_encode_bounded_source_query_frame_bytes() noexcept
+{
+	// Output/result and actual support helper returned bool.
+	return sizeof(size_t *) + 2 * sizeof(bool);
+}
+bool shop_trade_recovery_forest_decode_bounded_source_frame_bytes(size_t *) noexcept;
+bool shop_trade_recovery_forest_decode_bounded_source_supplement_frame_bytes(size_t *) noexcept;
+bool shop_trade_recovery_forest_decode_bounded_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t shop_trade_recovery_forest_decode_bounded_source_query_frame_bytes() noexcept
+{
+	// Output/result and actual support helper returned bool.
+	return sizeof(size_t *) + 2 * sizeof(bool);
+}
 #endif
