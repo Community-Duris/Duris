@@ -1,0 +1,12 @@
+# Registered main outcome repair - 2026-10-11
+
+The entry adapter observed a script's actual main call but emitted invocation cases only for test_* functions. A passing registered native Item run therefore failed the unchanged required cases script/main. Include the declared entry in that existing set, intersected with actually observed calls. Preserve existing script success and unresolved-on-failure semantics; uncalled main remains absent/refused. No required cases, checker, markers, production code or native deadlines change.
+
+The focused regression fails against the original adapter and passes eight methods/thirteen isolated fixture processes after the one-line fix. It covers successful/failed/uncalled main, failure after main, SystemExit values, original function cases and unittest identity. Root also runs the installed regression through the actual entry observer (eight passed cases), inventory validation, original coverage generator/nonrelease validator/check, and every current source pin. Add actual pins for adapter/test/regression manifest while preserving all497 previous pins and every writer policy/census/site.
+
+The real registered Item gate runs both genuine SQL-header and flat native builds using the original runner and original matrix outcome_contract. Root's authenticated terminal receipt is in tmp/registered-item-main-outcome-native-root-20261011/ROOT-VERIFIED.json; its observed script and main cases pass, original required markers are present, and the original outcome contract returns no failures. The fixture's64MiB stack remains fixture evidence only, with no database/game services or32MiB host qualification.
+
+This solves reporting and verifies that registered component gate. Full producer, native/gameplay, persistence/recovery, R1-R8 and release qualification remain open. Accounting stays inactive/CLOSED; coverage incomplete; release BLOCKED. Protected unrelated work is preserved.
+
+
+Actual native receipt anchors: source parent `c812928d26ff5bcfe99a3d7d365778616f1123e9`, real registered entry elapsed 108.00891074600804 seconds; each SQL-header/flat backend reports15 successful cases,2653 refusal points and2653 reservations. Parent PASS SHA-256 `72632a9bb0ae6a345f70af18566c2834797f6146f120b2030a1829f88f1c8f0b`; actual case JSON `0ee3b19b36388afd89bd7f730c2fe9ccd7bd94b81f0b40adb1d2c2ac354fc6b3`; Root verified receipt `1bd25698b4e34857aa0101151877ad5e80f86d4c9e4f8fa260bcd2eeea25f4bc`. These local execution hashes are provenance anchors; full runtime/release qualification is separate.
