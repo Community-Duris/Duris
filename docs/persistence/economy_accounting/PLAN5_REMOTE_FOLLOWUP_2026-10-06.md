@@ -3260,3 +3260,17 @@ exit0/empty verified; matching heavy lock released only after sealing; no owned
 containers or leases, unrelated services preserved. Shared constants unchanged;
 schema65/native restore/retention/authority/recovery/load/release gates OPEN.
 Goal ACTIVE, inactive/CLOSED; additive curator evidence only.
+
+
+## 2026-10-11 — Foreground startup error captured
+
+[MySQL commissioning diagnosis](PLAN5_MYSQL_COMMISSIONING_ERROR_2026-10-11.md)
+records original image startup failing time-zone import with binlog IOCACHE resize
+ERROR14/OSerrno2. Source association `a60f5dcce0c6496e687a0806ee7d0c559579e4fb`, no source/schema change;
+session22689 terminalexit1,31.609s, no TCP ready or schema acceptance. Causal
+filesystem remains unproven pending fresh one-variable comparison: remove only
+added Windows/tmp bind, keep default Linux/tmp/directD data/image/caps/options.
+Native evidence seal `3f5da42d3f9297ac13fc455f9acf2e69ded3cc45db3899c23d2d14cfb979e643`; independent inventoryexit0/empty, exact matching
+lock released afterseal, no owned resources, allsevenother services preserved.
+Shared contracts unchanged; full goalACTIVE/inactiveCLOSED and release gatesOPEN.
+Additive curator evidence only.
