@@ -40,10 +40,16 @@ orchestrator creation at 00:43 MDT) met; SQL qualification remains pending.
 WORLD ACC-03-RC FAILED at final link on frozen6022; six distinct unresolved
 symbols have three real definition providers omitted from its source list.
 Runtime/sanitizers NOT_RUN, source unchanged, sealed/RELEASED02:25 MDT. Reviewed
-three-line recipe repair integrated as a candidate; native rerun pending.
-Current sole heavy job: Plan5 FS-01 original MariaDB staging/storage comparison,
-RUNNING following02:29 MDT grant; serial fresh Windows-data/native-Linux-data
-arms, unchanged source/predicates/defaults/caps. Diagnostic only, no65 acceptance.
+three-line recipe repair integrated and verified by native RETRY-02 on
+frozen6bfa0f7eb: compile79.410s/runtime0.418s exit0 under ASan/UBSan, original
+assertions/flags/20s deadline, component-only PASS. Sealed/RELEASED02:50:35 MDT.
+Plan5 FS-01 terminal paired result: Windows-data control reproduced0060 rename
+failure; fresh native Linux volume passed unchanged original staging65 checks.
+Storage profile verified for that slice, mechanism not independently isolated;
+fullmatrix/native65 startup unqualified. Sealed/released; passive data retained.
+Full RETRY-03 has the sole heavy GRANT after the verified release boundary;
+actual matrix result pending. Both accepting profiles and native component
+recipe repair are established; this is not full two-engine qualification.
 
 Accounting inactive; admission CLOSED; final release BLOCKED. This board records
 execution, not inventory-based completion. Original Plans 1-5 and R1-R8 evidence
@@ -56,10 +62,10 @@ five-session plan followed by "do it". Local model is GPT-6.1 Sol / xhigh.
 
 | Lane | Chat / worktree / branch | Current ticket |
 | --- | --- | --- |
-| Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | Reviewed RETRY-02/WORLD failures and recipe candidate; FS-01 execution; queue native recipe rerun after release |
+| Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | Reviewed/integrated recipe PASS and FS-01 profile; review/grant full matrix RETRY-03 |
 | Remote primary | Non-connected RGitGoin; private session/WIP inaccessible; published `experimental-accounting` | Shared lifecycle map and implementation; acknowledgment and toolchain/storage/32MiB proof queue |
-| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Clean d7571a7e1; RETRY-02 FAILED/sealed/RELEASED; FS-01 RUNNING sole heavy grant; established audit/restore queue retained |
-| World/quest | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | Clean 6d9c57e84; ACC-03-RC FAILED/sealed/RELEASED; reviewed three-provider recipe candidate awaits native rerun; runtime lease inactive |
+| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | FS-01 profile verified/sealed/RELEASED; full RETRY-03 frozen6bfa sole heavy GRANT; preparation published on own branch, restore queue retained |
+| World/quest | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | Clean f7228f3fe; ACC-03-RC original link failure preserved; RETRY-02 PASS_COMPONENT_ONLY/sealed/RELEASED frozen6bfa; runtime lease inactive |
 | Shop/backend | `01a129b4-a553-78e0-85c2-69e34d8e0d59`; `C:/Users/alexa/.codex/worktrees/969b/NewDuris Max`; `codex/accounting-accel-shop` | ACC-04-TX queued, no heavy grant; proposed runtime lease inactive |
 
 - Native source: `83e2e4392064667fc4f64780183d17b5acc431ef`.
@@ -74,7 +80,7 @@ five-session plan followed by "do it". Local model is GPT-6.1 Sol / xhigh.
 
 ## Exclusive file leases
 
-PRIMARY_ACK PENDING at published `2206f446c`; charter unchanged from
+PRIMARY_ACK PENDING at published `9d288f175`; charter unchanged from
 `9d88a4668`, protected WIP/exclusions undisclosed.
 No elapsed-time or local observation substitutes for primary-authored published acknowledgment.
 The primary's `757c3f6fe` explicitly retains proposed leases pending direct
@@ -125,8 +131,8 @@ override availability or invent tokens/receipts for accepting tests.
 | Ticket | Accepting result | Dependencies / next step |
 | --- | --- | --- |
 | ACC-01 | Both fresh production binaries and inactive flat preflight PASS; runtime source contracts 10/10 PASS | Terminal frozen6022 proof; mutable SQL startup assigned ACC-02/Plan5; newer native delta needs follow-up |
-| ACC-02 | Genuine two-engine schema65 matrix and exact restore/startup histories; independent audit and native room/restore gates | Attempt1 MySQL readiness FAILED; paired commissioning verified temporary-filesystem repair; RETRY-02 FAILED at MariaDB staging0060, MySQL measurement unqualified; paired staging/storage reproduction preparation only |
-| ACC-03-RC | Existing `test_native_quest_recovery_context.py` actual-provider ASan/UBSan component or exact first failure | FAILED final link/sealed/RELEASED; three real provider entries added as reviewed candidate; native rerun after FS-01 release; runtime acknowledgment still required |
+| ACC-02 | Genuine two-engine schema65 matrix and exact restore/startup histories; independent audit and native room/restore gates | Both commissioning repairs verified, failures preserved/raw MySQL FP unqualified; unchanged full RETRY-03 sole heavy GRANT on frozen6bfa |
+| ACC-03-RC | Existing `test_native_quest_recovery_context.py` actual-provider ASan/UBSan component or exact first failure | Original link failure retained; three-provider recipe repair verified by18-TU ASan/UBSan component PASS/sealed/RELEASED; runtime acknowledgment still required |
 | ACC-04-TX | Existing `test_shop_trade_transaction.py` component or exact first failure, then retention/repository gates | Queued after schema65 job; private publish/admission capabilities abort in retention harness and are unqualified |
 | PRIMARY-01 | Connected save/coordinator/item lifecycle map then verified boundary/caller/admission closure | ACC-01 evidence; no collision with acknowledged leases |
 | PRIMARY-02 | Supported toolchain/runtime/library correspondence, complete storage/frame/transitive proof, aggregate 32MiB accept/refuse | Remains explicit; object compile/source packets do not close it |
@@ -296,7 +302,8 @@ on Docker's registered D: disk; Windows data-bind interaction is a hypothesis
 until executable comparison. Preserve immutable0060, original histories/checks,
 resource caps, SQL defaults and failed data. Do not restart the failed database.
 
-Plan5 comparison `ACC-02-MARIADB-FS-01` GRANTED/RUNNING. Exact fresha60/
+Plan5 comparison `ACC-02-MARIADB-FS-01` terminal CONTROL_FAIL/LINUX_PASS,
+sealed/RELEASED. Exact fresha60/
 6901files; helper SHA256
 `aa427c4bdfa2b5f9bb690de0bb88b00e759f7f435dd2a3d4713c1858563a1e24`,
 preparation SHA256
@@ -320,6 +327,25 @@ actual control CID
 `e9a160c88cdfcca0b0b5f97e226d0efc861b4d37e8ce5b0f17a74a12429f1f33`.
 Review SHA256 `f540ca5567fc126580f4f585866c9f8776704c414a78059ec614b6d7839acc30`.
 Evidence `D:/Dev/Tests/Duris/accounting-plan5/ACC-02-MARIADB-FS-01`.
+Both actual10.11.19 with identical SQLmode/check enforcement/entrypoint/options;
+controlv9fs/automaticcase2 vs Linuxext2/ext3/automaticcase0. Native Linux arm
+passed original staging prefix/selector refusal/append/rerun/protected history/
+data/count and registered state `9e81f924...534f97`. Terminalexit1 retains the
+failed control; no cleanup/source failure. Both graceful shutdowns/daemon exits0,
+owned inventoryexit0/empty; no active volume consumers. Comparison qualifies only
+the storage profile for this exact slice, not the case/kernel mechanism or65
+fullmatrix/boot/restore. No immutableSQL/default/check/predicate/cap change.
+Seal SHA256 `0dc00da9c1240b365ff62ec8e4594b2da3511ac2380c321cf0e2f203fb198961`;
+orchestrator verified all6946members/550808899bytes, released lease and fresh
+owner/volume-consumer empty inventory/globalabsence; terminal review SHA256
+`3e48965ec432218e10f0484a46184886e95ae6c7417b80cc79beea4b3a9ce550`.
+Import only125-line report from clean published Plan5
+`1e26f584314e74963a617381e209673891509625`:
+`PLAN5_MARIADB_DATA_STORAGE_REPAIR_2026-10-11.md`.
+Passive labeled local volume `plan5-acc02-maria-fs01-linux-data` and private
+stopped-data copy retained as diagnostic scratch, not qualified backup/restore.
+Full unchanged RETRY-03 follows below; only the Maria added Windows data bind is
+replaced by fresh Linux volume, with guarded graceful evidence capture/retention.
 
 WORLD `ACC-03-RC-6022c0ad7` terminal FAILED/RELEASED02:25:25 MDT. Receipt
 `D:/Dev/Temp/accounting-acceleration-bootstrap-20261011/ACC-03-RC-resource-grant.json`
@@ -359,9 +385,67 @@ independently matched. Patched runner SHA256
 `f719c84ce0a450eb565f6d6bf861f836e3e96fbb4cc11049cf6dfa70c53f9e0c`;
 18translation units, removing only those lines recreates original15-unit bytes.
 Original assertions/flags/link/sanitizers/20s deadline unchanged; Python syntax
-and diff checks PASS. Native rerun NOT_RUN, further link/runtime closure unproved.
-Candidate recipe is integrated for a fresh separate ticket after FS-01 release;
-no additional heavy grant, runtime/authority fix or component pass claimed.
+and diff checks PASS. Actual native retry result below verifies component closure.
+Candidate recipe integrated at `6bfa0f7ebdd5f2f46841047fdd10522e4d27dfea`;
+no runtime/authority fix or component pass claimed before actual retry result.
+
+WORLD `ACC-03-RC-RETRY-02` PASS_COMPONENT_ONLY/sealed/RELEASED02:50:35 MDT,
+started02:48:58 MDT as sole heavy grant after FS-01
+seal/release. Same1422-source export graph, frozen6bfa/patched f719 runner;
+source/helper identity-only diff independently verified. Prepared SHA256
+`ec6d35338cafb24f28dd2e0ef9f588fba303e19ad3226d5ad5b8f89c9ede80d5`;
+grant SHA256 `b0b589cf55b32fccb5a8e4dd6e843546ef1212e459c2f5af4614ae23c79fd75d`,
+freeWindows6.96GiB, exact slots absent and seven other services preserved.
+Owner token `a9c13fd02db1418695435e1aa3b3aa1f`; actual duris-build-a CID
+`4f46030568426543c33217e8d4dbe0bea12f875fc600e7690c486e6e16ea847a`.
+Same image74b699/oneCPU1536MiB/noswap/networknone/900s outer/original20s runtime,
+directD source/bin/evidence/cache and private Linux scratch. Exact retained
+flags/sanitizers/assertions; foreground--rm, guarded finally seals and checks
+owned empty inventory before matching release. No SQL or other heavy grant.
+Evidence `D:/Dev/Tests/Duris/accounting-accel-world/ACC-03-RC-RETRY-02/attempt-01`;
+review SHA256 `f8fbf4286e9a5bcfcf8357977deb7b17e8090a5b397a55a1bd2848f4606b086c`.
+Actual18-TU compileexit0/79.410s, one native runtimeexit0/0.418s, outerexit0/
+96.080s; no sanitizer diagnostic. All1422source files unchanged, no predicate,
+flag or deadline change. Terminal seal SHA256
+`d7fa9fadb6c18e1c7e96db493e6c7aa6d3b624a513f7ad4342ac9b53f1b2e198`.
+Orchestrator independently verified all15members/35054108bytes, released lease,
+fresh exact-owned empty inventory/globalabsence; terminal review SHA256
+`0de384548c83d6eda690a750a42c30c35efe6ace61dfe35c97fedef42d28e990`.
+Import only100-line report from clean published WORLD
+`f7228f3fe733863784d8f9526efd2de4596d3000`: `ACC-03_RC_RETRY_02_2026-10-11.md`.
+Inputs remain synthetic pure values using real providers; no live coordinator,
+native lifetime/source authentication, SQL/gameplay/publication/ACK/crash-recovery
+journey or32MiB whole-host/ABI/release qualification. All748 preexisting container
+IDs/seven live services preserved; initial postcheck total-vs-running count error
+and correction logs retained separately, original failed seal unchanged.
+
+Full `ACC-02-schema65-RETRY-03` sole heavy GRANT, source
+`6bfa0f7ebdd5f2f46841047fdd10522e4d27dfea`, fresh6906 files/archive SHA256
+`e035e193b73bd993d03b412b90c5673993fd216265874d7bc9fb728dd8699a85`.
+Orchestrator independently ran `--check-preparation`: PASS6906/zero resources;
+critical8 matrix/schema/runner/compiled input pins match frozena60, src/migrations
+trees unchanged. Preparation SHA256
+`bbd5db88d02cc546117ae5caa3a397d3a2af7d023c19eb78c0305cc729780839`;
+helper SHA256 `70c849d19c443d6b0a11d9e3920a8e0bae458552effb6604677f0cfcfc2f9c7c`;
+reviewed exactdiff SHA256
+`d9e63c6896434c90a58390f90fb571ffff57db7fae30c78b1afd6907781e601e`.
+Grant SHA256 `7329c409cbb438525cda8a4cc1db8233e48c5b1609f2b835bc8c29e397cccad3`;
+review SHA256 `ab158fad0ef66965ee61dabe0fee3c528d1ad04df99b3d890af65fd66a407712`.
+FreeWindows6.27GiB/freeD1527.59GiB, exact buildslots/global lease absent before
+grant, seven live services preserved. One cohort, at most two512MiB/CPU1 DBs and
+one serial2GiB/CPU2 QA, same pinned images. MySQL tested directD data, original
+Linux/tmp on both, fresh labeled native Linux Maria volume never reuses FS-01.
+Full original matrix/predicates/flags/defaults/migrations unchanged: both engines,
+all original/canonical/staging/master histories/selector/refusal/rerun/protected
+data/metadata parity/session-fault/accepting65 shell+compiled boot/tamper/finalreport.
+Only actual measurements may write the two private manifest/header files; no
+qualified public adoption from partial/failed results. Guard CID/image/owner/job/
+source before graceful stop/log/state/private snapshot; retain passive volumes,
+data and failures. Source/result evidence sealed plus successful empty owned and
+volume-consumer inventories precede matching lock release; failure keeps recovery
+container/lease for investigation. No WORLD/SHOP heavy grant or runtime lease.
+Evidence/source `D:/Dev/Tests/Duris/accounting-plan5/ACC-02-6bfa0f7e-retry03`;
+bin `D:/Dev/Builds/Duris/accounting-plan5/ACC-02-6bfa0f7e-retry03/bin`.
 
 Later restore source precheck (not an executed failure): retained
 `tests/async/run_restore_accounting_evidence_mysql.py:596` requires0062 although
@@ -454,7 +538,11 @@ combined build/boot is queued on the newer candidate after the schema boundary.
 Published primary `5418d88ca` adds native mobile validation providers in
 `src/item/item_transfer_command.c/.h` and docs/pins. Newest `2206f446c` adds native
 recovery encoding/decoding/validation Source providers to those same two files
-and docs/pins. Charter has no new acknowledgment. Those additional native deltas
+and docs/pins. Primary `9d288f175fbedaec7f439805a17e32a2fe8ddbd7` additionally
+adopts the origin exporter's final byte/newline bound, expands existing two-exporter
+controls and refreshes pins. That origin handoff is resolved in primary; minimal reader and
+new native-context recipe registration remain queued. Charter has no new
+acknowledgment. Those additional native deltas
 remain unreviewed/unqualified here; maintained migrations and matrix are
 unchanged from frozen a60. The primary's published object-compile reports do not
 qualify whole Item/ROOT selection, runtime/ABI, architecture or release.
