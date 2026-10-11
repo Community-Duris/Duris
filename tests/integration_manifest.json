@@ -2941,6 +2941,32 @@
         "item-transfer complete bounded sql ordinary: PASS",
         "item-transfer complete bounded flat ordinary: PASS"
       ]
+    },
+    {
+      "id": "quest_cost_admission",
+      "path": "tests/async/test_quest_cost_admission.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script",
+        "main"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 5400,
+      "covers": [
+        "quest_cost_admission_cases.cpp.in"
+      ],
+      "required_markers": [
+        "QUEST_COST_ADMISSION",
+        "Quest admission mariadb: PASS",
+        "Quest admission flatfile: PASS",
+        "Quest admission mariadb-assertions: PASS",
+        "Quest admission current native selectors: PASS"
+      ]
     }
   ]
 }
