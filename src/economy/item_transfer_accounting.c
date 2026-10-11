@@ -1091,12 +1091,11 @@ bool craft_outputs_bounded(const item_transfer_payload &payload, uint32_t actor_
 	}
 	outputs->clear();
 	if (payload.item_blob_size &&
-	    ((!budget.prefix(nested) ?
-		      player_snapshot_codec_result::overflow :
-		      player_item_snapshot_list_decode_bounded(
-			      payload.item_blob.data(), payload.item_blob_size, outputs,
-			      item_replay_accounting_budget::forward, &budget, nested)) !=
-		     player_snapshot_codec_result::ok ||
+	    (!budget.prefix(nested) ||
+	     player_item_snapshot_list_decode_bounded(
+		     payload.item_blob.data(), payload.item_blob_size, outputs,
+		     item_replay_accounting_budget::forward, &budget,
+		     nested) != player_snapshot_codec_result::ok ||
 	     outputs->empty()))
 		return false;
 	if (outputs->size() > ECONOMIC_ACCOUNTING_MAX_ITEM_EVENTS - payload.item_count)
