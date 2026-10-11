@@ -3274,3 +3274,17 @@ Native evidence seal `3f5da42d3f9297ac13fc455f9acf2e69ded3cc45db3899c23d2d14cfb9
 lock released afterseal, no owned resources, allsevenother services preserved.
 Shared contracts unchanged; full goalACTIVE/inactiveCLOSED and release gatesOPEN.
 Additive curator evidence only.
+
+
+## 2026-10-11 — MySQL startup transport repair qualified
+
+[Paired commissioning repair](PLAN5_MYSQL_TEMPORARY_FILESYSTEM_REPAIR_2026-10-11.md)
+proves removal of only added Windows/tmp bind restores exactMySQL8.0.46 startup
+under sameimage512MiBCPU1/defaultoptions/directDdata/originalTCPready. Session82480
+terminalexit0, version8.0.46,31attempts42.515s, safeownedstop/inventoryexit0empty.
+Paired failed01/positive02 command normalization exact; no schemas/migrations.
+Evidence seal `38d3c6092f1d8c3a07ad141f1155f23f12c2b7a04d294117bff8259986209203`, distinctfailed/successfulscratch preserved. Matching02
+lockreleased afterseal; noownedresources, unrelatedservicespreserved. Freshfull
+two-engine matrix+originalpredicates remains next acceptinggate underseparategrant;
+do not promote commissioning to schema65/restore/retention/release completion.
+No sharedfields changed; additivecurator evidence, fullgoalACTIVE/inactiveCLOSED.
