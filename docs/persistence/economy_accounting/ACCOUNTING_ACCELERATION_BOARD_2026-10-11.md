@@ -47,8 +47,9 @@ Plan5 FS-01 terminal paired result: Windows-data control reproduced0060 rename
 failure; fresh native Linux volume passed unchanged original staging65 checks.
 Storage profile verified for that slice, mechanism not independently isolated;
 fullmatrix/native65 startup unqualified. Sealed/released; passive data retained.
-Full RETRY-03 has the sole heavy GRANT after the verified release boundary;
-actual matrix result pending. Both accepting profiles and native component
+Full RETRY-03 RUNNING since03:10:55 MDT under the sole heavy lease;
+MySQL canonical/history checks progressing; MariaDB/final accepting65 gates pending.
+Both accepting profiles and native component
 recipe repair are established; this is not full two-engine qualification.
 
 Accounting inactive; admission CLOSED; final release BLOCKED. This board records
@@ -62,9 +63,9 @@ five-session plan followed by "do it". Local model is GPT-6.1 Sol / xhigh.
 
 | Lane | Chat / worktree / branch | Current ticket |
 | --- | --- | --- |
-| Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | Reviewed/integrated recipe PASS and FS-01 profile; review/grant full matrix RETRY-03 |
+| Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | Reviewed/integrated recipe PASS and FS-01 profile; full matrix RETRY-03 live under verified lease |
 | Remote primary | Non-connected RGitGoin; private session/WIP inaccessible; published `experimental-accounting` | Shared lifecycle map and implementation; acknowledgment and toolchain/storage/32MiB proof queue |
-| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | FS-01 profile verified/sealed/RELEASED; full RETRY-03 frozen6bfa sole heavy GRANT; preparation published on own branch, restore queue retained |
+| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Clean dc1cc3ddf; full RETRY-03 frozen6bfa RUNNING sole heavy lease; FS-01 sealed/RELEASED, restore queue retained |
 | World/quest | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | Clean f7228f3fe; ACC-03-RC original link failure preserved; RETRY-02 PASS_COMPONENT_ONLY/sealed/RELEASED frozen6bfa; runtime lease inactive |
 | Shop/backend | `01a129b4-a553-78e0-85c2-69e34d8e0d59`; `C:/Users/alexa/.codex/worktrees/969b/NewDuris Max`; `codex/accounting-accel-shop` | ACC-04-TX queued, no heavy grant; proposed runtime lease inactive |
 
@@ -80,7 +81,7 @@ five-session plan followed by "do it". Local model is GPT-6.1 Sol / xhigh.
 
 ## Exclusive file leases
 
-PRIMARY_ACK PENDING at published `9d288f175`; charter unchanged from
+PRIMARY_ACK PENDING at published `54fef6421`; charter unchanged from
 `9d88a4668`, protected WIP/exclusions undisclosed.
 No elapsed-time or local observation substitutes for primary-authored published acknowledgment.
 The primary's `757c3f6fe` explicitly retains proposed leases pending direct
@@ -131,7 +132,7 @@ override availability or invent tokens/receipts for accepting tests.
 | Ticket | Accepting result | Dependencies / next step |
 | --- | --- | --- |
 | ACC-01 | Both fresh production binaries and inactive flat preflight PASS; runtime source contracts 10/10 PASS | Terminal frozen6022 proof; mutable SQL startup assigned ACC-02/Plan5; newer native delta needs follow-up |
-| ACC-02 | Genuine two-engine schema65 matrix and exact restore/startup histories; independent audit and native room/restore gates | Both commissioning repairs verified, failures preserved/raw MySQL FP unqualified; unchanged full RETRY-03 sole heavy GRANT on frozen6bfa |
+| ACC-02 | Genuine two-engine schema65 matrix and exact restore/startup histories; independent audit and native room/restore gates | Both commissioning repairs verified, failures preserved/raw MySQL FP unqualified; unchanged full RETRY-03 RUNNING on frozen6bfa |
 | ACC-03-RC | Existing `test_native_quest_recovery_context.py` actual-provider ASan/UBSan component or exact first failure | Original link failure retained; three-provider recipe repair verified by18-TU ASan/UBSan component PASS/sealed/RELEASED; runtime acknowledgment still required |
 | ACC-04-TX | Existing `test_shop_trade_transaction.py` component or exact first failure, then retention/repository gates | Queued after schema65 job; private publish/admission capabilities abort in retention harness and are unqualified |
 | PRIMARY-01 | Connected save/coordinator/item lifecycle map then verified boundary/caller/admission closure | ACC-01 evidence; no collision with acknowledged leases |
@@ -419,7 +420,7 @@ journey or32MiB whole-host/ABI/release qualification. All748 preexisting contain
 IDs/seven live services preserved; initial postcheck total-vs-running count error
 and correction logs retained separately, original failed seal unchanged.
 
-Full `ACC-02-schema65-RETRY-03` sole heavy GRANT, source
+Full `ACC-02-schema65-RETRY-03` sole heavy lease RUNNING, source
 `6bfa0f7ebdd5f2f46841047fdd10522e4d27dfea`, fresh6906 files/archive SHA256
 `e035e193b73bd993d03b412b90c5673993fd216265874d7bc9fb728dd8699a85`.
 Orchestrator independently ran `--check-preparation`: PASS6906/zero resources;
@@ -446,6 +447,29 @@ volume-consumer inventories precede matching lock release; failure keeps recover
 container/lease for investigation. No WORLD/SHOP heavy grant or runtime lease.
 Evidence/source `D:/Dev/Tests/Duris/accounting-plan5/ACC-02-6bfa0f7e-retry03`;
 bin `D:/Dev/Builds/Duris/accounting-plan5/ACC-02-6bfa0f7e-retry03/bin`.
+Launch03:10:55 MDT; Plan5 clean preparation publication
+`dc1cc3ddf14dc022757a3aa291a59213608fbeb1`. Exact running lease entry SHA256
+`a71204607dec8f500a7e53df2c437cce18c17f043bc0462cbcc3541d901d54bc`
+retained as `initial-running-lock.json`. Live MySQL CID
+`064e0e888f2ece37f884337d039f549cd83c4f595f0a8e1a96d5e7ad89552232`
+independently inspected: exact owner/job/source/image,512MiB/CPU1/restartno,
+fresh directDdata mount. Serial QA receipts progressing; actual native exec
+handle requested from Plan5. Historical refusal QA nonzero exits are maintained
+controls, not terminal matrix failure. MySQL first-engine history checks live;
+MariaDB/full accepting65 boot/tamper/result remains pending. No partial promotion.
+
+Exact PRIMARY handoff for the native recipe: adopt only the three `SOURCES`
+entries from integration `6bfa0f7ebdd5f2f46841047fdd10522e4d27dfea` in
+`tests/async/test_native_quest_recovery_context.py`: `src/economy/native_quest_cost.c`,
+`src/economy/native_quest_coin_give.c`, `src/item/lockpick_retirement_continuation.c`.
+Resulting file SHA256
+`f719c84ce0a450eb565f6d6bf861f836e3e96fbb4cc11049cf6dfa70c53f9e0c`;
+refresh only applicable existing registry/matrix source pins, preserving existing
+case/argument controls, original fixture/flags/20s deadline and component proof
+limits. Reviewed terminal report `ACC-03_RC_RETRY_02_2026-10-11.md`, worker
+`f7228f3fe733863784d8f9526efd2de4596d3000`, independent seal review
+`0de384548c83d6eda690a750a42c30c35efe6ace61dfe35c97fedef42d28e990`.
+This request grants no runtime domain paths; primary remains sole writer there.
 
 Later restore source precheck (not an executed failure): retained
 `tests/async/run_restore_accounting_evidence_mysql.py:596` requires0062 although
@@ -510,6 +534,11 @@ PRIMARY registration request: append
 `ReconciliationTests.test_cli_rejects_duplicate_snapshot_fields_before_any_view`,
 `ReconciliationTests.test_cli_refuses_excessive_json_nesting_before_any_view`
 to applicable offline audit row without changing its existing controls/pins.
+Resolved by primary `54fef64218e049ae7583d918676d23857f361e8b`: same production
+reader bytes, all four methods registered, test-only nested fixture strengthened
+to16384 depth plus explicit actual parser RecursionError assertion. Published
+Linux153-method150PASS/3optional and Windows149PASS/4skips remain primary-reported;
+its private execution packet is not independently requalified here.
 
 ## Newer published primary delta: bounded observation
 
@@ -540,8 +569,11 @@ Published primary `5418d88ca` adds native mobile validation providers in
 recovery encoding/decoding/validation Source providers to those same two files
 and docs/pins. Primary `9d288f175fbedaec7f439805a17e32a2fe8ddbd7` additionally
 adopts the origin exporter's final byte/newline bound, expands existing two-exporter
-controls and refreshes pins. That origin handoff is resolved in primary; minimal reader and
-new native-context recipe registration remain queued. Charter has no new
+controls and refreshes pins. Newest primary
+`54fef64218e049ae7583d918676d23857f361e8b` adopts the minimal reader and four
+registered refusal cases; production reader byte-identical to our reviewed repair.
+Origin/reader handoffs resolved; new native-context recipe source-pin refresh
+remains queued. Charter has no new
 acknowledgment. Those additional native deltas
 remain unreviewed/unqualified here; maintained migrations and matrix are
 unchanged from frozen a60. The primary's published object-compile reports do not
