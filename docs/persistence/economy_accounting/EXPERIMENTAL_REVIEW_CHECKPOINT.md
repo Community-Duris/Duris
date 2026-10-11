@@ -4247,3 +4247,13 @@ and protected WIP remain preserved. Inventory478/931/2911/2853,0new/unmapped
 does not establish completion. Full host/native/gameplay/persistence/recovery/
 R1-R8/release stay OPEN; checks remain batched at major-plan readiness.
 Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Complete bounded legacy-only physical journal replay implemented - 2026-10-10
+
+[Source checkpoint](COMPLETE_LEGACY_PHYSICAL_JOURNAL_REPLAY_2026-10-10.md) Complete legacy-only physical journal replay companion implemented and reviewed; selecting startup and native qualification remain open.
+Independent RAW and actual formatted source reviews passed; original behavior
+and protected WIP remain preserved. Inventory478/931/2911/2853,0new/unmapped
+does not establish completion. Full host/native/gameplay/persistence/recovery/
+R1-R8/release stay OPEN; checks remain batched at major-plan readiness.
+Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.

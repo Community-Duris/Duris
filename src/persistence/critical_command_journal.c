@@ -3455,3 +3455,137 @@ critical_command_journal_result critical_command_journal_replay_with_native_phys
 	}
 #endif
 }
+
+namespace
+{
+// The additional original legacy preflight has no native callback and no
+// allocating iterator/DTO substitute. Its actual index owns N, vector::size
+// owns this/result(P+N), and operator[] owns this/index/returned-reference(2P+N).
+// Genuine GNU13 nonasserted vector members directly read their stored pointers.
+constexpr size_t journal_legacy_physical_preflight_source_frames =
+	3 * sizeof(void *) + 3 * sizeof(size_t);
+}
+
+bool critical_command_journal_legacy_replay_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output)
+		return false;
+	size_t source = 0;
+	// The existing complete physical startup family owns the identical scan,
+	// locks, metadata, workspace, frame census, move and callback cleanup graph.
+	// Only the complete pre-callback legacy native-presence loop is additional.
+	if (!critical_command_journal_startup_source_frame_bytes(&source) ||
+	    !journal_admit_add(source, journal_legacy_physical_preflight_source_frames))
+		return false;
+	*output = source;
+	return true;
+}
+
+critical_command_journal_result critical_command_journal_replay_physical_bounded(
+	critical_command_replay_bounded_fn replay, void *original_context,
+	bool (*reserve)(size_t, void *) noexcept, void *budget_context, size_t outer_live,
+	size_t *current_journal_metadata_bytes) noexcept
+{
+	if (!replay || !reserve)
+		return critical_command_journal_result::invalid;
+#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
+	!_GLIBCXX_USE_CXX11_ABI
+	return critical_command_journal_result::quota_exceeded;
+#else
+	journal_physical_startup_budget physical{ reserve, budget_context };
+	// Retain the genuinely additional preflight SOURCE through the same exact
+	// physical entry and identity relay. First admission precedes workspace,
+	// mutex acquisition and every scan/native-presence observation.
+	if (!journal_admit_add(outer_live, journal_legacy_physical_preflight_source_frames) ||
+	    !journal_physical_entry_prepare(physical, outer_live))
+		return critical_command_journal_result::quota_exceeded;
+	try
+	{
+		journal_startup_replay_workspace work{
+			{ journal_physical_startup_budget::relay, &physical }, {}
+		};
+		{
+			std::lock_guard<std::mutex> lock(journal_mutex);
+			journal_startup_metadata_snapshot snapshot{ current_journal_metadata_bytes };
+			if (!health.initialized)
+				return critical_command_journal_result::not_initialized;
+			work.base = outer_live;
+			if (!journal_admit_add(work.base, sizeof(work)) ||
+			    !physical.observe_metadata(work.base))
+			{
+				record_result(critical_command_journal_result::quota_exceeded);
+				return critical_command_journal_result::quota_exceeded;
+			}
+			work.live = work.base;
+			if (!journal_admit_add(work.live, sizeof(lock)) ||
+			    !journal_admit_add(work.live, sizeof(snapshot)) ||
+			    !work.budget.admit(work.live, &work.budget))
+			{
+				record_result(critical_command_journal_result::quota_exceeded);
+				return critical_command_journal_result::quota_exceeded;
+			}
+			const auto result =
+				journal_scan_admitted(&work.frames, work.budget, work.live);
+			if (result != critical_command_journal_result::ok)
+			{
+				record_result(result);
+				return result;
+			}
+			// Original legacy error priority: completed scan before this sole
+			// uncertainty refusal. Do not add the mixed path's append-health gate.
+			if (native_rewrite_uncertain.active)
+				return critical_command_journal_result::append_uncertain;
+			// Inspect the ENTIRE retained journal under its actual lock before
+			// any legacy callback or replay-counter update. A late native frame
+			// blocks the whole operation; no attachment is dropped or fabricated.
+			for (size_t index = 0; index < work.frames.size(); ++index)
+				if (work.frames[index].native)
+					return critical_command_journal_result::replay_blocked;
+			++health.replays;
+		}
+		// Exact original release boundary: callback runs without journal_mutex,
+		// while its actual coordinator owner remains with the startup caller.
+		for (auto &frame : work.frames)
+		{
+			work.live = work.base;
+			if (!journal_admit_add(work.live, sizeof(critical_command)) ||
+			    !journal_startup_frames(work.frames, work.live) ||
+			    !work.budget.admit(work.live, &work.budget))
+			{
+				std::lock_guard<std::mutex> lock(journal_mutex);
+				journal_startup_metadata_snapshot snapshot{
+					current_journal_metadata_bytes
+				};
+				health.last_result =
+					critical_command_journal_result::quota_exceeded;
+				return critical_command_journal_result::quota_exceeded;
+			}
+			// Real by-value command parameter steals only this frame's heap.
+			// Parameter inline and every genuine frame capacity are owned once.
+			work.accepted = replay(std::move(frame.command), original_context,
+					       journal_physical_startup_budget::relay, &physical,
+					       work.live);
+			if (!work.accepted)
+			{
+				std::lock_guard<std::mutex> lock(journal_mutex);
+				journal_startup_metadata_snapshot snapshot{
+					current_journal_metadata_bytes
+				};
+				health.last_result =
+					critical_command_journal_result::replay_blocked;
+				return critical_command_journal_result::replay_blocked;
+			}
+		}
+		std::lock_guard<std::mutex> lock(journal_mutex);
+		journal_startup_metadata_snapshot snapshot{ current_journal_metadata_bytes };
+		health.last_result = critical_command_journal_result::ok;
+		return critical_command_journal_result::ok;
+	}
+	catch (...)
+	{
+		// Preserve real lock/construction failure containment. No noexcept
+		// callback throws through this interface; no unlocked health mutation.
+		return critical_command_journal_result::quota_exceeded;
+	}
+#endif
+}

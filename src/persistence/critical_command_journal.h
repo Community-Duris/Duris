@@ -247,4 +247,27 @@ critical_command_journal_result critical_command_journal_replay_with_native_phys
 	void *original_context, bool (*reserve)(size_t, void *) noexcept, void *budget_context,
 	size_t outer_live, size_t *current_journal_metadata_bytes = nullptr) noexcept;
 
+// Complete original legacy-only physical replay: full native-presence preflight
+// under journal ownership precedes every callback. No startup path is selected.
+// Same exact synchronous metadata identity and callback retained-prefix law as
+// mixed physical replay. Fresh metadata snapshots remain genuine even on failure.
+critical_command_journal_result critical_command_journal_replay_physical_bounded(
+	critical_command_replay_bounded_fn, void *original_context,
+	bool (*reserve)(size_t, void *) noexcept, void *budget_context, size_t outer_live,
+	size_t *current_journal_metadata_bytes = nullptr) noexcept;
+// Full physical startup family SOURCE plus the genuinely additional entire
+// legacy native-presence preflight. Parent preentry is transient: companion owns
+// its complete source and workspace once across the actual callbacks. Existing
+// critical_command_journal_startup_initial_inline_bytes supplies the same genuine
+// workspace/lock/snapshot peak; null/unsupported/overflow outputs remain strong.
+bool critical_command_journal_legacy_replay_source_frame_bytes(size_t *) noexcept;
+constexpr size_t critical_command_journal_legacy_replay_source_query_frame_bytes() noexcept
+{
+	// New getter output/local/result plus checked-add reference/amount/result;
+	// the complete existing query source is reached by its genuine child getter.
+	// Caller additionally owns this constexpr accessor's returned size_t.
+	return critical_command_journal_startup_source_query_frame_bytes() + 2 * sizeof(void *) +
+	       2 * sizeof(size_t) + 2 * sizeof(bool);
+}
+
 #endif
