@@ -37,6 +37,12 @@ No full matrix or schema65 acceptance claimed. This follows the exclusive
 No WORLD/SHOP heavy grants. First checkpoint target (within 12 hours of
 orchestrator creation at 00:43 MDT) met; SQL qualification remains pending.
 
+Current sole heavy job: WORLD ACC-03-RC on frozen6022 started02:23:52 MDT,
+unchanged actual-provider pure-context regression with ASan/UBSan. OneCPU/
+1536MiB/no swap/no network/900s bound, no SQL resource. Component-only result
+pending. Plan5 FS-01 paired original MariaDB staging/storage slice is prepared
+and reviewed, not granted; next allocation requires WORLD sealed/released boundary.
+
 Accounting inactive; admission CLOSED; final release BLOCKED. This board records
 execution, not inventory-based completion. Original Plans 1-5 and R1-R8 evidence
 keeps its exact historical scope. Architecture work follows the first checkpoint.
@@ -48,10 +54,10 @@ five-session plan followed by "do it". Local model is GPT-6.1 Sol / xhigh.
 
 | Lane | Chat / worktree / branch | Current ticket |
 | --- | --- | --- |
-| Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | ACC-01 terminal checkpoint; review newer published primary delta |
+| Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | Reviewed RETRY-02 integration; ACC-03-RC execution receipt; paired FS-01 queued next grant |
 | Remote primary | Non-connected RGitGoin; private session/WIP inaccessible; published `experimental-accounting` | Shared lifecycle map and implementation; acknowledgment and toolchain/storage/32MiB proof queue |
-| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Clean d7571a7e1; ACC-02 RETRY-02 FAILED/sealed/RELEASED; prepare paired MariaDB staging comparison without resources; established audit/restore queue retained |
-| World/quest | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | Clean 2f33f32c2; exact ACC-03-RC launcher preparation, no heavy grant; proposed runtime lease inactive |
+| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Clean d7571a7e1; ACC-02 RETRY-02 FAILED/sealed/RELEASED; FS-01 prepared/reviewed, no grant; established audit/restore queue retained |
+| World/quest | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | Clean 2f33f32c2; ACC-03-RC RUNNING on frozen6022 sole heavy grant; proposed runtime lease inactive |
 | Shop/backend | `01a129b4-a553-78e0-85c2-69e34d8e0d59`; `C:/Users/alexa/.codex/worktrees/969b/NewDuris Max`; `codex/accounting-accel-shop` | ACC-04-TX queued, no heavy grant; proposed runtime lease inactive |
 
 - Native source: `83e2e4392064667fc4f64780183d17b5acc431ef`.
@@ -118,7 +124,7 @@ override availability or invent tokens/receipts for accepting tests.
 | --- | --- | --- |
 | ACC-01 | Both fresh production binaries and inactive flat preflight PASS; runtime source contracts 10/10 PASS | Terminal frozen6022 proof; mutable SQL startup assigned ACC-02/Plan5; newer native delta needs follow-up |
 | ACC-02 | Genuine two-engine schema65 matrix and exact restore/startup histories; independent audit and native room/restore gates | Attempt1 MySQL readiness FAILED; paired commissioning verified temporary-filesystem repair; RETRY-02 FAILED at MariaDB staging0060, MySQL measurement unqualified; paired staging/storage reproduction preparation only |
-| ACC-03-RC | Existing `test_native_quest_recovery_context.py` actual-provider ASan/UBSan component or exact first failure | Queued after schema65 job; component scope only; exact WORLD acknowledgment before runtime edits |
+| ACC-03-RC | Existing `test_native_quest_recovery_context.py` actual-provider ASan/UBSan component or exact first failure | RUNNING frozen6022 after RETRY-02 release; component scope only; exact WORLD acknowledgment before runtime edits |
 | ACC-04-TX | Existing `test_shop_trade_transaction.py` component or exact first failure, then retention/repository gates | Queued after schema65 job; private publish/admission capabilities abort in retention harness and are unqualified |
 | PRIMARY-01 | Connected save/coordinator/item lifecycle map then verified boundary/caller/admission closure | ACC-01 evidence; no collision with acknowledged leases |
 | PRIMARY-02 | Supported toolchain/runtime/library correspondence, complete storage/frame/transitive proof, aggregate 32MiB accept/refuse | Remains explicit; object compile/source packets do not close it |
@@ -282,11 +288,58 @@ SHA256 `5e8d7a7b75f89e52984a8f0459b616af7e7fccd25b9169dd862bba88ea8d992b`.
 Import only the reviewed124-line failure report from clean published Plan5
 `d7571a7e11459695f0e5e68cdef0bbc3388e2c35`; additive curator follow-up remains
 on Plan5 branch. ACC-01, both commissioning and RETRY-02 allocations are released.
-No new job granted. Prepare the smallest
+Next independent WORLD allocation is recorded below. Prepare the smallest
 paired original MariaDB staging upgrade with fresh isolated Linux data storage
 on Docker's registered D: disk; Windows data-bind interaction is a hypothesis
 until executable comparison. Preserve immutable0060, original histories/checks,
 resource caps, SQL defaults and failed data. Do not restart the failed database.
+
+Plan5 comparison `ACC-02-MARIADB-FS-01` PREPARED, NOT_GRANTED. Exact fresha60/
+6901files; helper SHA256
+`aa427c4bdfa2b5f9bb690de0bb88b00e759f7f435dd2a3d4713c1858563a1e24`,
+preparation SHA256
+`e815dd82bcd0e2a2f39d75a849f395a66e404ff4195e5a79a5bba26ae1e77c3a`.
+Orchestrator independently ran `--check-preparation`: PASS, zero resources.
+Exact maintained staging block lines454-480 and history/state predicates; two
+serial arms, fresh directD data and fresh labeled Linux Docker volume on its
+registered D: disk. At most one512MiB/CPU1 DB and one serial2GiB/CPU2 QA;
+unchanged images/defaults/checks, no contract writes or full65 boot/qualification.
+Control must reproduce a comparable failure before any causal claim. Verify
+exact ownership, capture logs/state, graceful stop, retain private data/passive
+volume, remove only owned containers, require successful empty inventory and
+sealed evidence before matching lease release. No container/volume created yet.
+
+WORLD `ACC-03-RC-6022c0ad7` sole heavy GRANT, RUNNING02:23:52 MDT. Receipt
+`D:/Dev/Temp/accounting-acceleration-bootstrap-20261011/ACC-03-RC-resource-grant.json`
+SHA256 `e87ecac7a1830fe272a70b19bac7d1d29df923975ec12a33e84c6becea36014e`.
+Prepared receipt SHA256
+`b1566034b74da232003499a97fc456efa4b2e3151377954fc1c561436064ca92`;
+review SHA256 `c620283b1b5b808341565b2196358e95f2d0a602161a5cb3eb247973def4b094`.
+Independently verified1422 frozen source/fixture files, original Git runner/test,
+archive/helpers; source readonly, directD bin/evidence/cache, private Linux128MiB
+tmpfs. Runner has no BIN_ROOT override; original ROOT/bin/tests layout retained.
+Actual GCC13.3.0/sanitizer library pins and cgroup limits checked before invocation.
+Exact owned `duris-build-a` CID
+`dbc76721b8b99ad2f7ee2f9fb6dc635897bb77cb9d7bb4d894970ea5e9bafa49`,
+image74b699, token `fd09940a975647deb6948ef68279ae8c`. Foreground--rm/restart:no;
+oneCPU/1536MiB/no swap/networknone,900s outer bound and original20s native runtime.
+FreeWindows9.32GiB and only seven unrelated services before grant; no compatible
+build slot existed. Helpers preserve existing flags/sanitizers/predicates, guard
+cleanup by CID/image/owner/job/token and retain terminal evidence. Successful
+empty owned inventory/sealing precedes matching lock release. No Plan5/SHOP
+heavy grant or maintained runtime edits. Evidence:
+`D:/Dev/Tests/Duris/accounting-accel-world/ACC-03-RC/attempt-01`.
+
+Later restore source precheck (not an executed failure): retained
+`tests/async/run_restore_accounting_evidence_mysql.py:596` requires0062 although
+the current parser returns65/defaulthead `0065_zone_reset_item_birth_origin` or
+the three nullable heads `0065_zone_reset_item_birth_origin_nullable_default`.
+Do not schedule unchanged0062 fixture as65 qualification. Future owned fixture
+ticket must select exact registered route/checksums/history, preserve native
+oracle/freshnamespace/socket/read-only guards and qualify actual both-engine
+controls. Any shared qualifier/profile interface changes remain PRIMARY-owned.
+Private precheck retained at Plan5 FS-01/restore-head-precheck.json; no edits/gate
+closure from this observation.
 
 ## Preserved retirement and handoffs
 
