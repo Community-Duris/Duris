@@ -10,12 +10,16 @@ absent, receipt RELEASED and original heavy lock removed. Detailed evidence:
 `ACC-01_COMBINED_BUILD_2026-10-11.md`. SQL mutable startup remains assigned to
 Plan 5; this checkpoint does not qualify that gate.
 
-ACC-02 GRANTED at 2026-10-11 01:22 MDT: Plan 5 owns the next exclusive heavy
-cohort, the maintained two-engine schema65 matrix on private frozen integration
-candidate `a60f5dcce0c6496e687a0806ee7d0c559579e4fb`. Native/migrations trees
-match ACC-01. At most two 512MiB databases and one serial 2GiB QA worker;
-no WORLD/SHOP heavy grants. First checkpoint target (within 12 hours of
-orchestrator creation at 00:43 MDT) met; SQL matrix result remains pending.
+ACC-02 attempt 1 FAILED before migrations at 2026-10-11 01:25 MDT. The
+maintained readiness loop exhausted after MySQL exited with code 1; no successful
+version query, schema history, measurement, MariaDB or QA execution. Private
+frozen candidate `a60f5dcce0c6496e687a0806ee7d0c559579e4fb` remained unchanged;
+owned inventory succeeded and was empty. Plan 5 is sealing the failure and
+preparing one bounded foreground commissioning diagnostic to capture the actual
+startup error; no retry or cause assertion yet. This follows the exclusive
+01:22 MDT grant of at most two 512MiB databases and one serial 2GiB QA worker.
+No WORLD/SHOP heavy grants. First checkpoint target (within 12 hours of
+orchestrator creation at 00:43 MDT) met; SQL qualification remains pending.
 
 Accounting inactive; admission CLOSED; final release BLOCKED. This board records
 execution, not inventory-based completion. Original Plans 1-5 and R1-R8 evidence
@@ -30,7 +34,7 @@ five-session plan followed by "do it". Local model is GPT-6.1 Sol / xhigh.
 | --- | --- | --- |
 | Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | ACC-01 terminal checkpoint; review newer published primary delta |
 | Remote primary | Non-connected RGitGoin; private session/WIP inaccessible; published `experimental-accounting` | Shared lifecycle map and implementation; acknowledgment and toolchain/storage/32MiB proof queue |
-| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | ACC-02 schema65 GRANTED on frozen a60f5dcc; established audit/restore queue retained |
+| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | ACC-02 readiness failure sealed; commissioning diagnostic preparation, established audit/restore queue retained |
 | World/quest | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | ACC-03-RC queued, no heavy grant; proposed runtime lease inactive |
 | Shop/backend | `01a129b4-a553-78e0-85c2-69e34d8e0d59`; `C:/Users/alexa/.codex/worktrees/969b/NewDuris Max`; `codex/accounting-accel-shop` | ACC-04-TX queued, no heavy grant; proposed runtime lease inactive |
 
@@ -38,7 +42,7 @@ five-session plan followed by "do it". Local model is GPT-6.1 Sol / xhigh.
 - Launch source: `6022c0ad7feab34c13e27738d4295b65b8d010ac`; only charter and plan pointer added.
 - Fresh published observation after ACC-01 terminal: primary runtime delta
   `757c3f6fe` plus launch-readiness identity clarification
-  `9d88a46684dfa40538a14a589b35e6a5b79c7abf`; review pending.
+  `9d88a46684dfa40538a14a589b35e6a5b79c7abf`; bounded source review below.
   These newer bytes are outside frozen ACC-01 and ACC-02 evidence.
 - Previous combined executable checkpoint: `3049fb7712de7ccd957c61d5d345d2c8a4cf838d`;
   cannot qualify current source.
@@ -96,7 +100,7 @@ override availability or invent tokens/receipts for accepting tests.
 | Ticket | Accepting result | Dependencies / next step |
 | --- | --- | --- |
 | ACC-01 | Both fresh production binaries and inactive flat preflight PASS; runtime source contracts 10/10 PASS | Terminal frozen6022 proof; mutable SQL startup assigned ACC-02/Plan5; newer native delta needs follow-up |
-| ACC-02 | Genuine two-engine schema65 matrix and exact restore/startup histories; independent audit and native room/restore gates | GRANTED private a60f5dcc matrix first; isolated databases; measured pins go to primary, no pass yet |
+| ACC-02 | Genuine two-engine schema65 matrix and exact restore/startup histories; independent audit and native room/restore gates | Attempt1 MySQL readiness FAILED before migrations; commissioning logs next, no measurements or pass |
 | ACC-03-RC | Existing `test_native_quest_recovery_context.py` actual-provider ASan/UBSan component or exact first failure | Queued after schema65 job; component scope only; exact WORLD acknowledgment before runtime edits |
 | ACC-04-TX | Existing `test_shop_trade_transaction.py` component or exact first failure, then retention/repository gates | Queued after schema65 job; private publish/admission capabilities abort in retention harness and are unqualified |
 | PRIMARY-01 | Connected save/coordinator/item lifecycle map then verified boundary/caller/admission closure | ACC-01 evidence; no collision with acknowledged leases |
@@ -169,7 +173,11 @@ Matrix evidence `D:/Dev/Tests/Duris/accounting-plan5/ACC-02-a60f5dcc`; direct
 D build `D:/Dev/Builds/Duris/accounting-plan5/ACC-02-a60f5dcc/bin`, backend
 data/tmp and host scratch isolated under evidence. Release requires terminal
 sealed evidence and successful empty exact-owned container inventory; failed
-inventory keeps lease unresolved. WORLD/SHOP remain queued.
+inventory keeps lease unresolved. WORLD/SHOP remain queued. Attempt1's detached
+DB auto-removal erased its server log before maintained finally; Docker die/
+destroy events survive but do not attribute the cause. Preserve the failed
+private datadir/source/transport logs; diagnostic must capture foreground server
+output before an evidence-driven retry. No runner predicate is weakened.
 
 ## Preserved retirement and handoffs
 
@@ -223,6 +231,32 @@ PRIMARY registration request: append
 `ReconciliationTests.test_cli_rejects_duplicate_snapshot_fields_before_any_view`,
 `ReconciliationTests.test_cli_refuses_excessive_json_nesting_before_any_view`
 to applicable offline audit row without changing its existing controls/pins.
+
+## Newer published primary delta: bounded observation
+
+`b192710248aa5887080d22303e9d7c083be482cb` adopts the snapshot exporter's
+two-line final byte/newline bound and registers its existing regression case.
+Its published evidence explicitly scopes real CLI/file execution with mocked
+SQL capture/client; it reports Windows/Linux component passes, not SQL authority.
+Our integration additionally covers origins output and the minimal reader
+refusal regressions. Those remaining narrow deliveries/registration refreshes
+stay queued for PRIMARY; its test/pin bytes differ from our two-exporter module.
+
+`757c3f6fe3c1e7b69d38ae3831fff9acb148c1a9` changes exactly two native files,
+`shop_trade_recovery_manifest.c/.h`: standalone forest shape/encode/decode
+Source/supplement/INITIAL/query providers. Exact Git bytes preserve the entire
+original C prefix and header prefix/closing guard. New Source-provider symbols
+occur only at their definitions/declarations; selecting caller integration is
+still absent. Source hashes agree with that commit's published registry. These
+observations do not authenticate the primary's private native/ABI/frame packet
+or qualify its calculations, whole-host storage, actual 32MiB accept/refuse,
+linked crypto/libc correspondence or gameplay/recovery. Published primary docs
+report two affected objects compiled in both backends and retain those limits.
+Observation JSON: `D:/Dev/Tests/Duris/accounting-accel-integration/primary-observation-757c3f6fe`,
+SHA256 `c65cffc27c796c475c4bf180def1f6df2619841e4095d79a1131b88a3e3c5152`.
+No native source was imported or relabeled into frozen ACC-01/ACC-02. Follow-up
+combined build/boot is queued on the newer candidate after the schema boundary.
+
 No primary acknowledgment accepted. No runtime worker implementation active.
 Forecast remains 3-6 more days with low confidence; 25-40% reduction is a planning
 estimate, not measured. Re-estimate after current accepting SQL/startup evidence.
