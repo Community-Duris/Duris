@@ -53,6 +53,11 @@ for required in (
 ):
     assert required in start_empty
 assert "empty_publication_allowed" in completion
+assert completion.index("if (!committed)") < completion.index("finish_empty")
+assert "persist_changed_container(source)" in function_body("void finish_empty(")
+assert "persist_changed_container(target)" in function_body("void finish_empty(")
+assert "if (stored)" in function_body("void item_put_completion(")
+assert "persist_changed_container(container)" in function_body("void item_put_completion(")
 assert "Nothing was emptied; the batch ownership move did not commit." in completion
 assert "moved.rbegin()" in publish
 assert "space = GET_OBJ_SPACE(target);" in start_empty
@@ -75,6 +80,8 @@ PRELUDE = r'''
 #define ITEM_QUIVER 2
 #define ITEM_STORAGE 3
 #define ITEM_CORPSE 4
+#define CORPSE_FLAGS 0
+#define PC_CORPSE 1
 #define ITEM_MISSILE 5
 #define ITEM_NODROP (1 << 0)
 #define CONT_CLOSED (1 << 0)
@@ -259,6 +266,14 @@ static void reset_graph(P_obj source, P_obj target, P_obj first, P_obj second)
 
 int main()
 {
+    obj_data saved, corpse, ordinary;
+    saved.type = ITEM_STORAGE; corpse.type = ITEM_CORPSE;
+    persist_changed_container(nullptr); persist_changed_container(&ordinary);
+    persist_changed_container(&corpse);
+    assert(saved_items == 0 && saved_corpses == 0);
+    corpse.value[CORPSE_FLAGS] = PC_CORPSE;
+    persist_changed_container(&saved); persist_changed_container(&corpse);
+    assert(saved_items == 1 && saved_corpses == 1);
     char_data actor;
     obj_data source;
     obj_data target;
@@ -393,6 +408,8 @@ int main()
 HARNESS = "\n".join(
     [
         PRELUDE,
+        "static int saved_items, saved_corpses; void writeSavedItem(P_obj) { ++saved_items; } void writeCorpse(P_obj) { ++saved_corpses; }",
+        function_body("void persist_changed_container("),
         function_body("bool empty_item_restrictions_allow("),
         function_body("bool empty_target_accepts("),
         function_body("bool empty_tree_contains("),

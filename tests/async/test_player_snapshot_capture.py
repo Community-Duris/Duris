@@ -282,6 +282,13 @@ int main()
         assert(item_ownership_runtime_lookup(3, &row));
         assert(row.item_revision == 1 && row.owner.id == 42);
     };
+    // A partial load cannot replace components it never read.
+    pc.unloaded_components = PLAYER_COMPONENT_INVENTORY | PLAYER_COMPONENT_PETS;
+    player_snapshot partial; partial.pid = 987;
+    assert(player_snapshot_capture(&ch, 10, PLAYER_COMPONENT_INVENTORY, RENT_CRASH, 22800, &partial) == player_snapshot_capture_result::invalid_identity);
+    assert(player_snapshot_capture(&ch, 10, PLAYER_COMPONENT_PETS, RENT_CRASH, 22800, &partial) == player_snapshot_capture_result::invalid_identity);
+    assert(partial.pid == 987);
+    pc.unloaded_components = 0;
     assert(capture() == player_snapshot_capture_result::ok);
     live_intact();
     assert(output.items.empty() && output.death->corpse.size() == 4);

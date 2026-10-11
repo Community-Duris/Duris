@@ -1,6 +1,7 @@
 #include "player/player_snapshot_codec.h"
 
 #include <cstdlib>
+#include <algorithm>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -130,6 +131,57 @@ int main()
 	require(player_item_snapshot_list_encode(too_deep, &encoded) ==
 			player_snapshot_codec_result::invalid_value,
 		"over-depth item tree was encoded");
+	// Authored extra descriptions exceed the old 4 KiB field limit.
+	auto long_description = original;
+	long_description[0].description.assign(8193, 'd');
+	long_description[0].extra_descriptions[0].description.assign(16384, 'e');
+	require(player_item_snapshot_list_encode(long_description, &encoded) ==
+				player_snapshot_codec_result::ok &&
+			player_item_snapshot_list_decode(encoded.data(), encoded.size(),
+							 &decoded) ==
+				player_snapshot_codec_result::ok &&
+			decoded[0].description == long_description[0].description &&
+			decoded[0].extra_descriptions[0].description ==
+				long_description[0].extra_descriptions[0].description,
+		"long authored descriptions did not round trip");
+	// A larger field limit must retain the total encoded payload bound.
+	std::vector<player_item_snapshot> over_budget(300, long_description[0]);
+	for (auto &item : over_budget)
+		item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	encoded = { 42 };
+	require(player_item_snapshot_list_encode(over_budget, &encoded) ==
+				player_snapshot_codec_result::limit_exceeded &&
+			encoded == std::vector<uint8_t>{ 42 },
+		"oversized payload changed the strong output");
+	player_snapshot snapshot{};
+	snapshot.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
+	snapshot.pid = 42;
+	snapshot.revision = 1;
+	snapshot.components = PLAYER_COMPONENT_STATUS;
+	snapshot.encoded_size_bound = 1024;
+	snapshot.status_strings.push_back({ player_status_string_field::name, "CodecQa" });
+	require(player_snapshot_encode(snapshot, &encoded) == player_snapshot_codec_result::ok,
+		"valid snapshot refused");
+	for (size_t cut = 1; cut < encoded.size(); ++cut)
+	{
+		player_snapshot unchanged{};
+		unchanged.pid = 987;
+		require(player_snapshot_decode(encoded.data(), cut, &unchanged) !=
+					player_snapshot_codec_result::ok &&
+				unchanged.pid == 987,
+			"truncated snapshot reported success or changed output");
+	}
+	auto malformed = encoded;
+	const std::string marker = "CodecQa";
+	const auto name = std::search(encoded.begin(), encoded.end(), marker.begin(), marker.end());
+	require(name != encoded.end() && name - encoded.begin() >= 5, "fixture field not found");
+	malformed[static_cast<size_t>(name - encoded.begin()) - 5] = 255;
+	player_snapshot unchanged{};
+	unchanged.pid = 987;
+	require(player_snapshot_decode(malformed.data(), malformed.size(), &unchanged) ==
+				player_snapshot_codec_result::invalid_value &&
+			unchanged.pid == 987,
+		"invalid field reported success or changed output");
 	auto oversized = original;
 	oversized[0].name.assign(PLAYER_SNAPSHOT_MAX_STRING_BYTES + 1, 'x');
 	require(player_item_snapshot_list_encode(oversized, &encoded) ==
