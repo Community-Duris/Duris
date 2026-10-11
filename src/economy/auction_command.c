@@ -1415,3 +1415,405 @@ bool auction_command_encode_result_bounded(const auction_command_result &,
 }
 
 #endif
+
+// Complete lower auction codec ownership. These additive companions retain the
+// uncovered SOURCE of the unchanged original graph, not a second full baseline.
+#include <openssl/sha.h>
+
+namespace
+{
+[[maybe_unused]] constexpr size_t auction_lower_P = sizeof(void *);
+[[maybe_unused]] constexpr size_t auction_lower_N = sizeof(size_t);
+[[maybe_unused]] constexpr size_t auction_lower_B = sizeof(bool);
+[[maybe_unused]] constexpr size_t auction_lower_D = sizeof(std::ptrdiff_t);
+
+[[maybe_unused]] bool auction_lower_source_policy() noexcept
+{
+#if defined(__linux__) && defined(__x86_64__) && defined(__GLIBCXX__) &&                          \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&      \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                           \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                        \
+	!defined(_GLIBCXX_SANITIZE_VECTOR) && defined(OPENSSL_VERSION_MAJOR) &&                   \
+	OPENSSL_VERSION_MAJOR == 3 && defined(OPENSSL_VERSION_MINOR) &&                           \
+	OPENSSL_VERSION_MINOR == 0 && defined(OPENSSL_VERSION_PATCH) &&                           \
+	OPENSSL_VERSION_PATCH == 13 && !defined(OPENSSL_NO_DEPRECATED_3_0)
+	return sizeof(void *) == 8 && sizeof(size_t) == 8 && sizeof(std::ptrdiff_t) == 8 &&
+	       sizeof(bool) == 1 && sizeof(unsigned long) == 8 && sizeof(SHA_LONG) == 4 &&
+	       sizeof(std::allocator<uint8_t>) == 1 &&
+	       sizeof(std::vector<critical_entity_key>::iterator) == sizeof(void *) &&
+	       sizeof(std::vector<critical_expected_revision>::iterator) == sizeof(void *);
+#else
+	return false;
+#endif
+}
+
+#if defined(__linux__) && defined(__x86_64__) && __cplusplus == 202002L &&                        \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&    \
+	!defined(_GLIBCXX_PARALLEL) && !defined(_GLIBCXX_SANITIZE_VECTOR)
+
+// These are exactly the original persistent SOURCE terms. The command,
+// payload, two local vectors, budget and denial relay are INLINE; each remains
+// owned by the original actual prefix, apart from the omitted temporary below.
+constexpr size_t auction_lower_encode_owned_source =
+	16 * auction_lower_P + 12 * auction_lower_N + 8 * auction_lower_B + 4 * sizeof(uint64_t) +
+	auction_lower_P + auction_codec_vector_frames + auction_codec_move_frames;
+// The original builder's 3*sizeof(uint64_t) is the existing INLINE credit
+// for one critical_expected_revision{key,revision} bound to push(const T&).
+// Those three argument temporaries are sequential full expressions; each
+// survives its growth/callback/push, with no second retained allowance.
+static_assert(sizeof(critical_expected_revision) == 3 * sizeof(uint64_t),
+	      "Pinned LP64 original revision temporary credit");
+constexpr size_t auction_lower_build_owned_source =
+	sizeof(critical_operation_id) + 3 * sizeof(critical_entity_key) + 16 * auction_lower_P +
+	11 * auction_lower_N + 8 * auction_lower_B + auction_codec_vector_frames +
+	auction_codec_move_frames;
+constexpr size_t auction_lower_v1_owned_source =
+	16 * auction_lower_P + 8 * auction_lower_N + 8 * auction_lower_B + 4 * sizeof(uint64_t) +
+	4 * sizeof(uint32_t) + 3 * sizeof(uint16_t) + auction_codec_vector_constructor_frames +
+	auction_codec_move_frames;
+constexpr size_t auction_lower_base_owned_source =
+	14 * auction_lower_P + 8 * auction_lower_N + 6 * auction_lower_B +
+	sizeof(std::span<const uint8_t>) + auction_codec_vector_frames + auction_codec_move_frames;
+
+// Actual budget::forward(amount,opaque), b reference and bool result;
+// prefix(this,bytes,extra), heap, bool; peak(this,extra), bytes, bool;
+// checked add(total,value), bool; growth(this,v,count), request/growth/capacity;
+// push(this,v,value); append(this,v,first,last), difference count;
+// denial-latch destructor(this). No callback implementation is inventoried.
+constexpr size_t auction_lower_budget_source =
+	3 * auction_lower_P + auction_lower_N + auction_lower_B + 2 * auction_lower_P +
+	2 * auction_lower_N + auction_lower_B + auction_lower_P + 2 * auction_lower_N +
+	auction_lower_B + auction_lower_P + auction_lower_N + auction_lower_B +
+	2 * auction_lower_P + 4 * auction_lower_N + 3 * auction_lower_P + 4 * auction_lower_P +
+	auction_lower_D + auction_lower_P;
+
+// Original read_le<T> and append_le_bounded<T> select six genuine scalar
+// instantiations (u8/u16/u32/u64/i32/i64). Scalar widths are not DTO baselines.
+constexpr size_t auction_lower_scalar_widths = sizeof(uint8_t) + sizeof(uint16_t) +
+					       sizeof(uint32_t) + sizeof(uint64_t) +
+					       sizeof(int32_t) + sizeof(int64_t);
+constexpr size_t auction_lower_number_source =
+	6 * (3 * auction_lower_P + auction_lower_N + auction_lower_B) +
+	auction_lower_scalar_widths +
+	6 * (2 * auction_lower_P + auction_lower_N + sizeof(uint8_t)) +
+	2 * auction_lower_scalar_widths;
+
+// Five real read_string/append_string instantiations. The byte fill closure is
+// array.fill -> fill_n -> __fill_n_a(RA) -> __fill_a -> byte __fill_a1.
+// Its genuine zero/value temporary, count/tag, constant-evaluation result and
+// returned pointer are distinct from the original numeric scalar ledger.
+constexpr size_t auction_lower_string_source =
+	5 * (3 * auction_lower_P + sizeof(uint16_t) + auction_lower_B + 3 * auction_lower_P +
+	     auction_lower_N + auction_lower_B) +
+	2 * auction_lower_P + sizeof(char) + 2 * (3 * auction_lower_P + auction_lower_N) +
+	sizeof(std::random_access_iterator_tag) + 2 * auction_lower_N + 2 * (3 * auction_lower_P) +
+	sizeof(char) + auction_lower_N + 2 * auction_lower_B + auction_lower_P +
+	sizeof(std::random_access_iterator_tag);
+
+// Genuine fixed-array access and declarations of libc calls reached here.
+// Runtime libc implementation remains a separate native qualification gate.
+constexpr size_t auction_lower_array_source =
+	2 * auction_lower_P + // data(this,result)
+	2 * (4 * auction_lower_P) + // begin/end through data
+	auction_lower_P + auction_lower_N + // size(this,result)
+	2 * auction_lower_P + auction_lower_N + // [](this,n,returned-reference)
+	2 * auction_lower_P + auction_lower_N + // strnlen(input,n,return)
+	3 * auction_lower_P + auction_lower_N; // memcpy(dst,src,n,return)
+
+// GNU13 ordinary vector descendants absent from the original primitive ledger:
+// allocator access/copy/destruction; C++20 alloc_on_move, allocator assignments;
+// data default/destructor and third copy; move constructors/reset; const-
+// allocator temporary construction; base/impl/data/allocator destructor chain;
+// actual constant-evaluation result; clear's erase_at_end(this,pos,n).
+constexpr size_t auction_lower_vector_missing_source =
+	3 * (2 * auction_lower_P) + 2 * auction_lower_P + 2 * auction_lower_P +
+	2 * (3 * auction_lower_P) + 2 * (2 * auction_lower_P) + 2 * auction_lower_P +
+	2 * auction_lower_P + 16 * auction_lower_P + sizeof(uint8_t *) + 11 * auction_lower_P +
+	auction_lower_P + 4 * auction_lower_P + 2 * auction_lower_P + auction_lower_B +
+	2 * auction_lower_P + auction_lower_N + 2 * auction_lower_P +
+	auction_lower_N; // actual vector [](this,n,ref)
+
+// Actual payload/member aggregate assignment and default vector construction.
+// The auction payload contains seven fixed arrays, including item entries.
+// Key/revision comparator values have genuine move/assignment/dtor receivers.
+constexpr size_t auction_lower_generated_source =
+	3 * auction_lower_P + 7 * (3 * auction_lower_P) + 3 * auction_lower_P + auction_lower_P +
+	6 * (6 * auction_lower_P) +
+	2 * (2 * auction_lower_P + 3 * auction_lower_P + auction_lower_P);
+
+// matching_native_item_fences uses three genuine captured-key predicates.
+// Each selected find/count graph carries the reference capture through the
+// public parameter, __pred_iter, _Iter_pred, RA helper and operator(). Include
+// generated predicate and iterator member lifetime scopes as actual carriers.
+constexpr size_t auction_lower_captured_predicate_source =
+	3 * (8 * auction_lower_P + auction_lower_P + 3 * (2 * auction_lower_P) +
+	     2 * auction_lower_P + 2 * auction_lower_P + 2 * auction_lower_P +
+	     2 * (2 * auction_lower_P) + 2 * (2 * auction_lower_P)) +
+	2 * auction_lower_P + auction_lower_P;
+
+// claim_money's genuine expected-command lambda captures command/parsed/budget/
+// nested/budget_denied by reference; its receiver and returned command move
+// coexist. listing_key owns operation reference, key/index and returned key.
+constexpr size_t auction_lower_lambda_source = 5 * auction_lower_P + auction_lower_P +
+					       2 * auction_lower_P + auction_lower_P +
+					       2 * sizeof(uint64_t) + auction_lower_N;
+
+constexpr size_t auction_lower_uncovered_source =
+	auction_lower_budget_source + auction_lower_number_source + auction_lower_string_source +
+	auction_lower_array_source + auction_lower_vector_missing_source +
+	auction_lower_generated_source + auction_lower_captured_predicate_source +
+	auction_lower_lambda_source;
+
+struct auction_lower_fixed_work
+{
+	size_t source = 0, supplement = 0, initial = 0, request = 0;
+};
+constexpr size_t auction_lower_fixed_call_source =
+	// Fixed public formals: command,payload,reserve,context,denial; outer;
+	// returned bool, actual query local and original call returned bool.
+	5 * auction_lower_P + 2 * auction_lower_N + 2 * auction_lower_B;
+// These original automatic temporaries are genuinely omitted by the old
+// prefix: v1 payload assignment's complete {} value, and claim_money's second
+// expected command inside the canonical lambda. Keep them INLINE, never SOURCE.
+constexpr size_t auction_lower_missing_inline =
+	sizeof(auction_command_payload) + sizeof(critical_command);
+
+template <class T, class Compare>
+constexpr size_t auction_lower_fixed_sort_source(size_t count) noexcept
+{
+	using iterator = typename std::vector<T>::iterator;
+	using difference = typename std::vector<T>::difference_type;
+	using compare = __gnu_cxx::__ops::_Iter_comp_iter<Compare>;
+	using value_compare = __gnu_cxx::__ops::_Val_comp_iter<Compare>;
+	using iter_value_compare = __gnu_cxx::__ops::_Iter_comp_val<Compare>;
+	constexpr size_t setup = 4 * sizeof(iterator) + 2 * sizeof(compare) + 2 * sizeof(void *) +
+				 3 * sizeof(difference) + sizeof(int) +
+				 8 * (sizeof(void *) + sizeof(iterator)) + 4 * sizeof(bool);
+	constexpr size_t recursive = 3 * sizeof(iterator) + sizeof(difference) + sizeof(compare);
+	constexpr size_t partition = 12 * sizeof(iterator) + 3 * sizeof(compare) +
+				     2 * sizeof(bool) + 7 * sizeof(void *) + sizeof(T);
+	constexpr size_t insertion = 10 * sizeof(iterator) + 2 * sizeof(compare) +
+				     2 * sizeof(value_compare) + sizeof(iter_value_compare) +
+				     3 * sizeof(T) + 2 * sizeof(difference) + 12 * sizeof(void *) +
+				     3 * sizeof(bool);
+	constexpr size_t heap = 12 * sizeof(iterator) + 14 * sizeof(difference) +
+				5 * sizeof(compare) + 2 * sizeof(value_compare) +
+				2 * sizeof(iter_value_compare) + 4 * sizeof(T) +
+				18 * sizeof(void *) + 3 * sizeof(bool);
+	constexpr size_t comparator = 2 * sizeof(iterator) + 3 * sizeof(void *) + 3 * sizeof(bool);
+	size_t logarithm = 0;
+	for (size_t n = count; n > 1; n >>= 1)
+		++logarithm;
+	const size_t depth = count <= 16 ? 1 : std::min(logarithm * 2 + 1, count - 16 + 1);
+	return setup + depth * recursive + std::max({ partition, insertion, heap }) + comparator;
+}
+constexpr size_t auction_lower_key_sort_source =
+	auction_lower_fixed_sort_source<critical_entity_key, decltype(&critical_entity_key_less)>(
+		AUCTION_COMMAND_MAX_ITEMS + 3);
+constexpr size_t auction_lower_revision_sort_source = auction_lower_fixed_sort_source<
+	critical_expected_revision,
+	decltype([](const critical_expected_revision &left, const critical_expected_revision &right)
+		 { return critical_entity_key_less(left.key, right.key); })>(
+	AUCTION_COMMAND_MAX_ITEMS + 2);
+
+bool auction_lower_base_parts(size_t *source, size_t *supplement, size_t *initial) noexcept
+{
+	if (!source || !supplement || !initial || !auction_lower_source_policy())
+		return false;
+	size_t account = 0, account_extra = 0, observation = 0;
+	if (!currency_account_key_source_frame_bytes(&account) ||
+	    !currency_account_key_source_supplement_frame_bytes(&account_extra) ||
+	    !critical_command_current_heap_observer_frame_bytes(&observation))
+		return false;
+	size_t complete = auction_lower_encode_owned_source + auction_lower_build_owned_source +
+			  auction_lower_v1_owned_source + auction_lower_base_owned_source;
+	size_t extra = auction_lower_uncovered_source;
+	// Both canonical sorts have genuine finite typed source bounds: valid
+	// payload permits at most nine items plus player/account/auction keys.
+	// Original matching-fences getter's pure complete typed body is selected
+	// without fabricated command storage: its parameter is unused. The same
+	// scalar/control subtotal is reproduced from the authenticated definition.
+	using K = std::vector<critical_entity_key>::const_iterator;
+	using R = std::vector<critical_expected_revision>::const_iterator;
+	constexpr size_t matching =
+		18 * auction_lower_P + 9 * auction_lower_N + 8 * auction_lower_B + 4 * sizeof(K) +
+		4 * sizeof(R) + 12 * sizeof(K) +
+		4 * sizeof(__gnu_cxx::__ops::_Iter_comp_iter<decltype(&critical_entity_key_less)>) +
+		4 * sizeof(__gnu_cxx::__ops::_Iter_comp_iter<decltype(&critical_entity_key_equal)>) +
+		12 * auction_lower_P + 6 * auction_lower_B + 12 * sizeof(K) + 5 * auction_lower_D +
+		4 * sizeof(__gnu_cxx::__ops::_Iter_comp_val<decltype(&critical_entity_key_less)>) +
+		15 * auction_lower_P + 8 * auction_lower_B +
+		2 * sizeof(std::random_access_iterator_tag) + 14 * sizeof(R) + 8 * auction_lower_P +
+		5 * auction_lower_D + 14 * auction_lower_P + 8 * auction_lower_B +
+		auction_codec_vector_frames;
+	if (!auction_codec_add(extra, account_extra) || !auction_codec_add(extra, observation) ||
+	    !auction_codec_add(complete, auction_lower_uncovered_source) ||
+	    !auction_codec_add(complete, account) || !auction_codec_add(complete, observation) ||
+	    !auction_codec_add(complete, critical_command_copy_frame_bytes()) ||
+	    !auction_codec_add(complete, auction_lower_key_sort_source) ||
+	    !auction_codec_add(complete, auction_lower_revision_sort_source) ||
+	    !auction_codec_add(complete, matching))
+		return false;
+	*source = complete;
+	*supplement = extra;
+	*initial =
+		sizeof(auction_command_budget) + 2 * auction_lower_P + auction_lower_missing_inline;
+	return true;
+}
+#endif
+}
+
+bool auction_command_base_codec_source_parts(size_t *source, size_t *supplement,
+					     size_t *initial) noexcept
+{
+#if defined(__linux__) && defined(__x86_64__) && __cplusplus == 202002L &&                        \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&    \
+	!defined(_GLIBCXX_PARALLEL) && !defined(_GLIBCXX_SANITIZE_VECTOR)
+	return auction_lower_base_parts(source, supplement, initial);
+#else
+	(void)source;
+	(void)supplement;
+	(void)initial;
+	return false;
+#endif
+}
+
+namespace
+{
+#if defined(__linux__) && defined(__x86_64__) && __cplusplus == 202002L &&                        \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&    \
+	!defined(_GLIBCXX_PARALLEL) && !defined(_GLIBCXX_SANITIZE_VECTOR)
+bool auction_lower_fixed_parts(size_t *source, size_t *supplement, size_t *initial) noexcept
+{
+	if (!source || !supplement || !initial || !auction_lower_source_policy())
+		return false;
+	size_t full = 0, extra = 0, entry = 0;
+	// The native graph includes the complete v1/base/encoder graph. Its pure
+	// parts accessor has no dependency on the public payload dispatcher, so
+	// the full v1/v2 source union has no recursive profile call.
+	if (!auction_native_command_codec_source_parts(&full, &extra, &entry) ||
+	    !auction_codec_add(full, auction_lower_fixed_call_source) ||
+	    !auction_codec_add(full,
+			       10 * auction_lower_P + 3 * auction_lower_N + 3 * auction_lower_B))
+		return false;
+	*source = full;
+	*supplement = extra;
+	*initial = sizeof(auction_lower_fixed_work) + sizeof(auction_command_budget) +
+		   2 * auction_lower_P + auction_lower_missing_inline;
+	return true;
+}
+#endif
+}
+
+bool auction_command_decode_payload_fixed_bounded(const critical_command &command,
+						  auction_command_payload *payload,
+						  bool (*reserve)(size_t, void *) noexcept,
+						  void *context, size_t outer,
+						  bool *budget_denied) noexcept
+{
+	if (budget_denied)
+		*budget_denied = false;
+#if defined(__linux__) && defined(__x86_64__) && __cplusplus == 202002L &&                        \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&    \
+	!defined(_GLIBCXX_PARALLEL) && !defined(_GLIBCXX_SANITIZE_VECTOR)
+	constexpr size_t query = auction_command_decode_payload_source_query_frame_bytes();
+	auction_lower_fixed_work work;
+	work.request = outer;
+	// Admit real profile-query carriers before entering any getter; then the
+	// complete original SOURCE and initial automatic storage before old entry.
+	if (!reserve ||
+	    !auction_codec_add(work.request,
+			       sizeof(work) + auction_lower_fixed_call_source + query) ||
+	    !reserve(work.request, context) ||
+	    !auction_lower_fixed_parts(&work.source, &work.supplement, &work.initial))
+	{
+		if (budget_denied)
+			*budget_denied = true;
+		return false;
+	}
+	work.request = outer;
+	if (!auction_codec_add(work.request, work.source) ||
+	    !auction_codec_add(work.request, work.initial) || !reserve(work.request, context))
+	{
+		if (budget_denied)
+			*budget_denied = true;
+		return false;
+	}
+	work.request = outer;
+	if (!auction_codec_add(work.request, sizeof(work) + auction_lower_fixed_call_source) ||
+	    !auction_codec_add(work.request, work.supplement) ||
+	    !auction_codec_add(work.request, auction_lower_missing_inline))
+	{
+		if (budget_denied)
+			*budget_denied = true;
+		return false;
+	}
+	// Unchanged original dispatcher remains authoritative for both versions,
+	// including v1 partial output and native v2 strong output/error behavior.
+	return auction_command_decode_payload_bounded(command, payload, reserve, context,
+						      work.request, budget_denied);
+#else
+	(void)command;
+	(void)payload;
+	(void)reserve;
+	(void)context;
+	(void)outer;
+	if (budget_denied)
+		*budget_denied = true;
+	return false;
+#endif
+}
+
+bool auction_command_decode_payload_source_frame_bytes(size_t *output) noexcept
+{
+#if defined(__linux__) && defined(__x86_64__) && __cplusplus == 202002L &&                        \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&    \
+	!defined(_GLIBCXX_PARALLEL) && !defined(_GLIBCXX_SANITIZE_VECTOR)
+	size_t full = 0, extra = 0, entry = 0;
+	if (!output || !auction_lower_fixed_parts(&full, &extra, &entry))
+		return false;
+	*output = full;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
+bool auction_command_decode_payload_source_supplement_frame_bytes(size_t *output) noexcept
+{
+#if defined(__linux__) && defined(__x86_64__) && __cplusplus == 202002L &&                        \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&    \
+	!defined(_GLIBCXX_PARALLEL) && !defined(_GLIBCXX_SANITIZE_VECTOR)
+	size_t full = 0, extra = 0, entry = 0;
+	if (!output || !auction_lower_fixed_parts(&full, &extra, &entry))
+		return false;
+	*output = 0; // Fixed companion owns its genuine uncovered Source internally.
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
+bool auction_command_decode_payload_initial_inline_bytes(size_t *output) noexcept
+{
+#if defined(__linux__) && defined(__x86_64__) && __cplusplus == 202002L &&                        \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&    \
+	!defined(_GLIBCXX_PARALLEL) && !defined(_GLIBCXX_SANITIZE_VECTOR)
+	size_t full = 0, extra = 0, entry = 0;
+	if (!output || !auction_lower_fixed_parts(&full, &extra, &entry))
+		return false;
+	*output = entry;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
