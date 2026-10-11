@@ -113,4 +113,35 @@ bool auction_native_publication_restore_replayed_command_bounded(
 	const critical_command &, player_save_coin_replay_budget_scope_owner &,
 	bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
 
+// Additive complete original five-arm fixed validator and genuine profiles.
+// The original/default APIs and the real SQL/flat caller guards are untouched.
+#include "economy/auction_accounting.h"
+#include "economy/auction_settlement_accounting.h"
+#include "economy/auction_listing_accounting.h"
+#include "economy/auction_item_claim_accounting.h"
+#include "economy/auction_money_claim_accounting.h"
+bool auction_repository_frozen_accounting_valid_fixed_bounded(const critical_command &,
+							      bool (*)(size_t, void *) noexcept,
+							      void *, size_t) noexcept;
+bool auction_repository_frozen_accounting_valid_own_source_frame_bytes(size_t *) noexcept;
+bool auction_repository_frozen_accounting_valid_source_frame_bytes(size_t *) noexcept;
+bool auction_repository_frozen_accounting_valid_initial_inline_bytes(size_t *) noexcept;
+bool auction_repository_frozen_accounting_valid_source_supplement_frame_bytes(size_t *) noexcept;
+constexpr size_t auction_repository_frozen_accounting_valid_own_source_query_frame_bytes() noexcept
+{
+	return sizeof(void *) + 2 * sizeof(bool);
+}
+constexpr size_t auction_repository_frozen_accounting_valid_source_query_frame_bytes() noexcept
+{
+	return auction_repository_frozen_accounting_valid_own_source_query_frame_bytes() +
+	       auction_bid_accounting_decode_source_query_frame_bytes() +
+	       auction_settlement_accounting_decode_source_query_frame_bytes() +
+	       auction_listing_accounting_decode_source_query_frame_bytes() +
+	       auction_item_claim_accounting_decode_source_query_frame_bytes() +
+	       auction_money_claim_accounting_decode_source_query_frame_bytes() +
+	       // Actual full getter output/result, seven locals, each child bool
+	       // and checked-add reference/value/result. Accessor return is caller-owned.
+	       2 * sizeof(void *) + 8 * sizeof(size_t) + 8 * sizeof(bool);
+}
+
 #endif
