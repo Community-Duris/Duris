@@ -18,7 +18,33 @@ ACTIVE on this chat/current Sol6.1/xhigh. No per-commit full-build/matrix repeat
 
 ## Current qualification gate
 
-Latest primary371c5e414 / tree4d64994486: Quest nonempty final cost projection
+Latest qualified primary4e69d4425 / tree4248219857: meaningful combined Quest
+selected-list encoding and preserved final-cost/temporary Item admission batch.
+ACC-13 original registered entry0/335.401178s, actual script/main passed, all six
+markers, zero skips; original outcome_contract failures[]. Three profiles:
+54 objects compile (six ordinary whole Quest/Item,45 providers,three fixture
+objects), and three component fixtures execute. SQL cost8refusals/eight
+registered states; selected2wire/4invalid, genuine parent cap/capacity/strong-output
+and separately labeled2child callback refusals; flat/assertions unsupported/no
+writes. Four current constructed selectors pass; no QP02 acceptance journey.
+Default contracts0/13.460406s. Native seal
+adce30cc8109100cbb83bbe2e5151752719101007298c1b5534cfe1ece02e629;
+reviewf45b26953d562c54d60173f55b18617e8992e91e08782a72321d13143a233c58.
+All4006 Git inputs, including exact Quest data, verified/unchanged; sole CPU1/2GiB QA
+removed/lease RELEASED, seven foreign services/four passive volumes preserved,
+heavy lock ABSENT. Existing cost bodies/Item/codec/Make/adapter/checker/selectors
+unchanged from371. All931 policies/2911 census/2853sites and coordinates equal;
+five refreshed pins, other502 preserved, coverage false. Raw pins506/507 retain
+adapter CRLF alias; current4e69 two-field patch97aadd7a gives507/507, other506
+values unchanged, apply/reverse0, adoption unconfirmed. Exact source hunk mapping
+finds no stale Quest anchors. See QUEST_SELECTED_LIST_COMPONENT_QUALIFICATION_2026-10-11.md.
+Component only: whole preparation/caller/custody/SQL/ACK/reward/game/restore/
+ABI/aggregate32MiB/host/fullmatrix/release remain OPEN. Private source packets
+report-only. Local pregrant/review-helper failures preserved/corrected; one native
+cohort, no repeat. Earlier371 failure and source-only retry remain unchanged;
+retry02 is superseded by this combined batch, not relabeled as371 native PASS.
+
+Earlier primary371c5e414 / tree4d64994486: Quest nonempty final cost projection
 and private temporary Item admission,14 changed paths. ACC-12 original registered
 entry FAILED1/109.834092s: coordinator4001-input freeze omitted
 areas/qst/tikitt.qst and the other three required Quest data files. Actual script
@@ -33,8 +59,8 @@ Owned CPU1/2GiB QA removed/lease RELEASED; seven foreign services/four passive
 volumes preserved, heavy lock ABSENT,4001 source inputs unchanged. Separately
 sealed corrected retry02 adds four exact Git Quest records,4005 inputs, original
 selector source generation passes for QP01/02/05/06 (1/4/2/1 blocks). Retry
-NOT_RUN/no grant; next heartbeat may own one unchanged registered cohort after
-fresh resource checks. No second heavy cohort this heartbeat or product-defect
+NOT_RUN/no grant, subsequently superseded by meaningful ACC13/4e69 combined
+batch. No second heavy cohort in that heartbeat or product-defect
 claim. See QUEST_COST_ADMISSION_QUALIFICATION_2026-10-11.md.
 
 All931 writer policies/2911 census values preserved except coordinate anchors:
@@ -305,7 +331,7 @@ original "do it", superseding "go with the useful parts". Local model GPT-6.1 So
 
 | Lane | Chat / worktree / branch | Current ticket |
 | --- | --- | --- |
-| Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | ACC-12 original Quest gate FAILED from omitted data in owned freeze; sealed/released; corrected4005-input retry prepared/source-only, no grant; narrow current371 pin repair qualified; historical native proofs preserved |
+| Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | ACC-13 original combined Quest selected/cost component PASS on4e69;4006 inputs/sealed/released; current4e69 pin patch qualified; prior371 failure and source-only retry preserved; finite wait/no grant |
 | Remote primary | Non-connected RGitGoin; private session/WIP inaccessible; published `experimental-accounting` | Existing Plans1-4/shared runtime/final integration ownership retained; no delegation ACK required; architecture/toolchain/storage/32MiB proof queue |
 | Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Publishedeaa43822 corrected independent ACC-07 review; e922 restore-coin source-only report/patch; full goal BLOCKED by owner with scope preserved; finite wait, no native grant |
 | World/quest (parked) | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | IDLE/clean5e679b5fe after exact resource-free ACC-08 review; olderf722 failure/component handoffs preserved; runtime allocation WITHDRAWN, no standing task or resources |
@@ -381,11 +407,12 @@ override availability or invent tokens/receipts for accepting tests.
 | ACC-08-ITEM-BOUNDED-01 | Original registered bounded Item entry on frozen7f1d766c0, unchanged original outcome checker and default contracts | Entry0/both modes15 groups/2653 refusal points each; missing required main case remains; contracts0, sole QA removed/RELEASED; no full build/matrix or broader qualification |
 | ITEM-MANIFEST-PIN | Exact two-field portable hash refresh on7f1d766c0, unchanged cases/policies/source; apply/reverse check and candidate validator | Qualified source-pin accuracy repair only; original/candidate default validator both0; primaryc812928d2 adoption verified against all497 exact Git hashes, other496 pins preserved; registered main refusal unchanged |
 | ACC-09-REGISTERED-MAIN-01 | Exact published one-line adapter repair, actual eight-case regression plus original held-policy/Item entries and unchanged real TestResult/outcome checker | Parent control1 expected; repaired regression0/eight passed; held0/15.406566s, Item0/124.373742s; actual script/main both passed, original markers/zero skips/checker failures[]; sole1GiB QA removed/sealed/RELEASED; earlier97/7f refusals preserved |
-| ADAPTER-SOURCE-PIN | Exact published LF adapter versus declared CRLF encoding alias; current371 two-field patch69d1febc, earlier c72/221f/7ad/604 patches preserved | Current raw hashes506/507; candidate507/507, other506 values/policies/source unchanged, apply/reverse0; primary adoption pending; metadata accuracy independent of failed native gate |
+| ADAPTER-SOURCE-PIN | Exact published LF adapter versus declared CRLF encoding alias; current4e69 two-field patch97aadd7a, earlier c72/221f/7ad/604/371 patches preserved | Current raw hashes506/507; candidate507/507, other506 values/policies/source unchanged, apply/reverse0; primary adoption pending; metadata accuracy is separately qualified |
 | ACC-10-ORIGINAL-LOGIT-01 | Exact permanent passive Utility regression through original registered run_test: six whole production objects, four genuine supported/assertions getter runs and default source contracts | Entry0/53.833357s, actual script/main passed, zero skips; contracts0/11.492060s; all3994 inputs unchanged, sole2GiB QA removed/sealed/RELEASED; component-only, no full server link/logit invocation/declaration completeness/ABI/host/release proof |
 | ACC-11-ZONE-NATIVE-PROFILE-01 | Exact new registered native-birth/Zone regression through original run_test: four whole Coordinator objects compile only, four whole Zone supported/assertions getter runs, default contracts | Entry0/176.534540s, actual script/main passed, zero skips; contracts0/19.770979s; all3997 inputs unchanged, sole2GiB QA removed/sealed/RELEASED; no Coordinator runtime/original observers/caller/declaration completeness/ABI/host/full accounting proof |
 | ACC-12-QUEST-COST-ADMISSION-01 | Exact original registered Quest entry on371, original script/main/markers/deadlines and default contracts | FAILED1/109.834092s, source freeze omitted Quest data; script failed/main unresolved, SQL ordinary2/providers15 compiled, selector0/flat/assertions not reached; immutable4039-member seal verified, original4001 inputs unchanged, owned QA removed/RELEASED |
-| ACC-12-QUEST-COST-ADMISSION-02 | Same original371 entry after exact four-data-file freeze repair, fresh exclusive cohort receipt, terminal evidence/cleanup | Prepared4005 inputs; real source parsing/default selector program generation passes4cases/8blocks; receipt896684a1/seal39425bd8; native NOT_RUN/no grant, finite next heartbeat queue; no helper/runtime edits or acceptance changes |
+| ACC-12-QUEST-COST-ADMISSION-02 | Same original371 entry after exact four-data-file freeze repair | Preserved source-only4005-input preparation/4cases8blocks; receipt896684a1/seal39425bd8; native NOT_RUN/no grant, superseded in executable queue by meaningful combined ACC13/4e69; no retroactive371 native pass |
+| ACC-13-QUEST-SELECTED-LIST-01 | Exact original current4e69 registered cost/selected-list entry with complete frozen Quest data, all original controls/checker and default contracts | Entry0/335.401178s, actual script/main/all6markers/0skips/checker[]; three profiles54objects/four current selectors; cost8refusal points and selected2child refusals/parent cap/capacity/strong output; contracts0/13.460406s;4059-member seal verified/4006 inputs unchanged/owned QA removed/RELEASED; component limits preserved |
 | PRIMARY-01 | Connected save/coordinator/item lifecycle map then verified boundary/caller/admission closure | Existing primary implementation ownership; no withdrawn delegation dependency |
 | PRIMARY-02 | Supported toolchain/runtime/library correspondence, complete storage/frame/transitive proof, aggregate 32MiB accept/refuse | Remains explicit; object compile/source packets do not close it |
 | FINAL | Gameplay/persistence/schema/backup/restore/recovery/fault/load/resource/R1-R8 gates agree on one frozen candidate | Reviewed implementation batches and per-slice architecture evidence |
@@ -909,9 +936,10 @@ Do not repeat this source/release audit on unchanged9c or open standing helper
 research; wait for meaningful source/evidence or an exact independently owned
 executable slice. Full Work1-5/R6-R8 acceptance remains open.
 
-Finite queue after ACC-12 failure: retry the unchanged original371 Quest gate
-using separately sealed4005-input freeze after fresh exclusive resource checks.
-No second heavy cohort this heartbeat. Primary adoption of exact current371
+Finite queue after ACC-13 component PASS: the failed371 run and corrected371
+source-only snapshot remain preserved; no stale standalone371 retry is queued.
+One meaningful combined4e69 registered cohort qualified the current component
+with exact Quest data and all original controls. Primary adoption of current4e69
 two-field raw-Git adapter-pin normalization remains pending; actual same-root
 writer evidence and coherent0062/default65 restore route, with the existing
 source-only restore-coin three-provider packet; caller integration and native
