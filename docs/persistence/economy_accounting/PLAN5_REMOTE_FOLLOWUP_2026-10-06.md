@@ -3551,3 +3551,29 @@ result/remote in delivery/preparation-publication.v2.json. New correction report
 additive followup only; no shared interface/schema request. Full Plan5/current65/
 restore/retention/erasure/authority/host/recovery/load/R1–R8/release remain OPEN,
 inactive/CLOSED/fullgoalACTIVE. Additive curator input/no notebook import claim.
+
+## 2026-10-11 — ACC-05 original Linux audit-budget component passed and released
+
+[Terminal qualification](PLAN5_AUDIT_BUDGET_NATIVE_QUALIFICATION_2026-10-11.md)
+records actual native session57445/foreground/outer0, two original Linux methods
+2/0failures/errors/skips,17.318s; all12 original records and both oversized
+assertions complete. Frozen primary0555741d740cf028552fcf63973265bfbcda052c
+four-file reader/test/decoder/registry composition, no source/assertion/measurement/
+argv changes. Price100000roots/33552384bytes and mapping9948roots/33551795bytes,
+clean/damaged*limits0/1/100 invariant/unchanged; oversized33554433bytes0/100refuses2.
+Max measured CLI1.262167412s/151457792bytes below30s/256MiB. Synthetic offline
+component only/release_host_qualifiedfalse; not fullcheckout/SQL/nativeauthority.
+
+Evidence D:/Dev/Tests/Duris/accounting-plan5/ACC-05-AUDIT-BUDGET-01; seal
+c2f946d03dde30c0158ef7f86d9891f28939d2b4b9dd6b623d4f84efea6cd245,
+76members/2668643bytes, result64deeebe8bc7ae13a64f4ffa928bc5ce0593eca2918cd126592f3a0203068722.
+Reviewed distinct grantc73937...; exact QA6019e35.../image74b699.../2GiB/CPU2/
+networknone/read-onlyroot/directD mounts, --rm/restartno. Container gone; transport+
+independent successful owner/jobempty, four passive volumeconsumers0/unchanged,
+seven live fullIDs preserved, source4/helpersunchanged. Matching global RELEASED
+after seal, lockabsent; no ownedlivejob. All earlierfailedprep/helpers preserved.
+Producer base24ae553d9cb732182993baba18b36c3e1fc63d5f; report+additivefollowup
+only, result/remote in delivery/result.json. No shared interface/schema request,
+DB/build/server/fullsuite/retry/nextcohort/contractfields. Current65/restore/
+retention/erasure/nativeauthority/host/gameplay/fault/load/recovery/R1–R8/fullrelease
+OPEN; inactive/CLOSED/fullgoalACTIVE. Additive curator input/no notebook import.
