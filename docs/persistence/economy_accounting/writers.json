@@ -66910,7 +66910,7 @@
       "src/economy/economic_currency_adapter.h": "09071b1c1d7fc99d5bca587aabc55981981ec2e60b0478202a9d16648208613c",
       "tests/async/test_data_lifecycle_manifest.py": "3ec3020da2b1c102e10329d6e77de307dd2d89e82c0f6e1ee756c35d82e70d05",
       "scripts/qualify_database_restore.py": "61eee5a95b79bb6302c77b18400aa8873e4c0248c1bcf4088182ba53142aab3a",
-      "tests/async/test_immutable_migration_runner.py": "909d9403ad652ae099df42483b1e831501df9286ca8cc75299c4065692d7efcb"
+      "tests/async/test_immutable_migration_runner.py": "b8fe07002ef91a27c1ca379a816008ae09482c6980e78a7afee3f68fbdc8f220"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {

@@ -609,7 +609,7 @@
       "tests/async/test_economic_sql_uid_scope.py": "2febe4f3f3e78c0a89d332a9b38988975156da8bdc84f3dc152628b77e17832b",
       "tests/async/test_economy_writer_coverage_contract.py": "089f47d41bf9c0883c1fd3b99ecc150037a0796c81c28f82b32524195c42279c",
       "tests/async/test_flatfile_collector_repository.py": "0a38db332267215177db3a38c9b594657b6f3c5d3c90a3ca3abb86b81f88cbfe",
-      "tests/async/test_immutable_migration_runner.py": "909d9403ad652ae099df42483b1e831501df9286ca8cc75299c4065692d7efcb",
+      "tests/async/test_immutable_migration_runner.py": "b8fe07002ef91a27c1ca379a816008ae09482c6980e78a7afee3f68fbdc8f220",
       "tests/async/test_inert_money_literal.py": "92ad092458d7ad5ef4ca15200a53e8532f69d36f3f0831fc723fca82eda0da70",
       "tests/async/test_item_equipment_reconciliation.py": "22fa4d61539c18fa7f8c5518d494d8d9c4bd2ee890a58c352a61f64781f1efa8",
       "tests/async/test_item_ownership_runtime.py": "98d7fde83b4cf1357e53b1f9712af05b408b2c013fa1de476945938c9a1c5c02",

@@ -18765,3 +18765,8 @@ Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
 ## Frozen backup archive coherence integrated - 2026-10-10
 
 [Source integration](PLAN5_ARCHIVE_COHERENCE_PRIMARY_INTEGRATION_2026-10-10.md): backup refuses staged schema/migration drift before publication and restore verifies exact six-selector migration archive contents. Schema64 legacy fallback and unmeasured65 refusal remain. Independent162-member and installed Source reviews pass; three tests are integrated with execution deferred to the major-plan batch. Native/recovery/release gates remain open. Inactive/CLOSED, release BLOCKED, goal ACTIVE.
+
+
+## Current schema65 fixture expectations integrated - 2026-10-10
+
+[Source integration](PLAN5_CURRENT_SCHEMA65_FIXTURE_PRIMARY_INTEGRATION_2026-10-10.md): five stale immutable-runner assertions now match actual completed65/native0065 history. Historical31/45,baseline170, receipts,locks,refusals and valid64 cases remain exact. Independent packet and installed Source reviews plus pin refresh pass. Tests remain deferred to the major-plan batch; no runtime or release qualification is claimed. Inactive/CLOSED, release BLOCKED, goal ACTIVE.
