@@ -2718,7 +2718,11 @@
         "ReconciliationTests.test_unreferenced_money_effect_requires_revision_advance",
         "ReconciliationTests.test_zero_net_money_effect_precedes_revision_advance",
         "ReconciliationTests.test_zero_net_money_effects_preserve_revision",
-        "ReconciliationTests.test_zero_net_money_invalid_history_still_refuses"
+        "ReconciliationTests.test_zero_net_money_invalid_history_still_refuses",
+        "ReconciliationTests.test_cli_refuses_nonregular_snapshot_without_waiting",
+        "ReconciliationTests.test_snapshot_growth_after_size_check_cannot_bypass_byte_limit",
+        "ReconciliationTests.test_cli_rejects_duplicate_snapshot_fields_before_any_view",
+        "ReconciliationTests.test_cli_refuses_excessive_json_nesting_before_any_view"
       ],
       "arguments": [
         "ItemOwnerHistoryTests.test_creation_sentinel_and_missing_historical_owner_are_explicit",
@@ -2736,6 +2740,10 @@
         "ReconciliationTests.test_zero_net_money_effect_precedes_revision_advance",
         "ReconciliationTests.test_zero_net_money_effects_preserve_revision",
         "ReconciliationTests.test_zero_net_money_invalid_history_still_refuses",
+        "ReconciliationTests.test_cli_refuses_nonregular_snapshot_without_waiting",
+        "ReconciliationTests.test_snapshot_growth_after_size_check_cannot_bypass_byte_limit",
+        "ReconciliationTests.test_cli_rejects_duplicate_snapshot_fields_before_any_view",
+        "ReconciliationTests.test_cli_refuses_excessive_json_nesting_before_any_view",
         "-v"
       ],
       "environment": {},

@@ -15,6 +15,8 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import os
+import stat
 import sys
 
 MAX_INPUT_BYTES = 32 * 1024 * 1024
@@ -2791,9 +2793,31 @@ def main() -> int:
     parser.add_argument("--limit", type=int, default=50)
     args = parser.parse_args()
     try:
-        if not 0 <= args.limit <= MAX_OUTPUT_ROWS or args.snapshot.stat().st_size > MAX_INPUT_BYTES:
+        if not 0 <= args.limit <= MAX_OUTPUT_ROWS:
             raise SnapshotError("snapshot or output limit exceeded")
-        snapshot = json.loads(args.snapshot.read_text(encoding="utf-8"))
+        fd = os.open(args.snapshot, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0))
+        try:
+            info = os.fstat(fd)
+            if not stat.S_ISREG(info.st_mode):
+                raise SnapshotError("snapshot requires a regular file")
+            if info.st_size > MAX_INPUT_BYTES:
+                raise SnapshotError("snapshot or output limit exceeded")
+            with os.fdopen(fd, "rb", closefd=False) as stream:
+                data = stream.read(MAX_INPUT_BYTES + 1)
+        finally:
+            os.close(fd)
+        if len(data) > MAX_INPUT_BYTES:
+            raise SnapshotError("snapshot or output limit exceeded")
+        data = data.decode("utf-8")
+        def unique_fields(pairs):
+            if len({key for key, _ in pairs}) != len(pairs):
+                raise SnapshotError("duplicate snapshot field")
+            return dict(pairs)
+        try:
+            snapshot = json.loads(data, object_pairs_hook=unique_fields)
+        except RecursionError as error:
+            raise SnapshotError("snapshot JSON nesting exceeds parser limit") from error
+        del data
         report = Reconciler(args.limit).audit(snapshot)
         result = view(snapshot, report, args.view, args.limit, args.uid,
                       operation_id=args.operation_id, holding_key=args.account_key)
