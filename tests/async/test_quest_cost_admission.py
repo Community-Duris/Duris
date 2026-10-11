@@ -2,11 +2,12 @@
 """Run the real final Quest cost projection and temporary Item admission slice.
 
 Preserves the reviewed admission template, ordinary whole Quest/Item builds,
-15 real provider objects, SQL success, flat/assertions refusal and current
+19 real provider objects, SQL success, flat/assertions refusal and current
 selector regression. Extracted Quest declarations/bodies come from source;
 the fixture includes the whole Item implementation. Requires Linux GNU13.3/
 libstdc++13 production flags. No SQL/Redis service, game or recovery run.
-Earlier preparation, builder and full producer integration remain separate.
+Actual original late builder selection and its complete value companion are checked.
+Earlier preparation and full producer integration remain separate.
 """
 import argparse
 import hashlib
@@ -15,11 +16,12 @@ import os
 from pathlib import Path
 import shutil
 import signal
+import subprocess
 import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
-ORDINARY = ("world/quest", "item/item_movement_transaction")
+ORDINARY = ("world/quest", "item/item_movement_transaction", "item/item_transfer_command")
 PROVIDERS = (
     "economy/native_quest_cost", "persistence/critical_command",
     "persistence/critical_command_journal", "persistence/persistence_mode",
@@ -28,6 +30,8 @@ PROVIDERS = (
     "world/quest_mobile_native_binding", "world/native_quest_recovery_context",
     "world/quest_mobile_native", "item/item_transfer_command",
     "item/lockpick_retirement_continuation", "economy/native_quest_coin_give",
+    "economy/economic_source_event", "economy/shop_trade_recovery_manifest",
+    "item/craft_pouch_mutation", "combat/chaos_pouch_ledger",
 )
 
 
@@ -55,6 +59,13 @@ def generate(source, work, template):
     positions = [index(preparation, check) for check in checks]
     assert positions == sorted(positions)
     assert contains(preparation, "encode_selected_items(&selected_bytes, quest_selected_encode_live{")
+    assert count(preparation, "build_original_command(") == 1, "actual original late builder selection missing"
+    assert not contains(preparation, "item_transfer_command_build_native_mobile(")
+    assert contains(preparation, "build_original_command(&original, operation, quest_cost_prepare_live{")
+    assert contains(preparation, "0, native_items, attempted_costs, ordered_roots, consumed, selected,")
+    assert contains(preparation, "indexes, roots, selected_bytes, payload}, fee_terms)")
+    assert index(preparation, "encode_selected_items(") < index(preparation, "build_original_command(")
+    assert contains(preparation, "original_child ? critical_operation_id_is_zero(operation) :")
     current = body("bool quest_cost_prepare_current(")
     current_start = text.index(current)
     guard_start = code_text(text).rfind("#if", 0, current_start)
@@ -66,7 +77,7 @@ def generate(source, work, template):
                       "!defined(__NO_MYSQL__)", "__cplusplus == 202002L"):
         assert contains(guard, condition), condition
     helpers = "\n".join(body(signature) for signature in (
-        "bool nq_world_add(", "bool nq_world_rows(",
+        "bool nq_world_add(", "bool nq_world_rows(", "bool nq_world_text(", "bool nq_world_command(",
         "template <class Table> bool nq_world_table("))
     project = body("[[maybe_unused]] native_quest_cost_projection_result quest_cost_prepare_project(")
     adapter = "namespace {\n" + guard + current + "\n#endif\n" + project + "\n}\n"
@@ -75,6 +86,7 @@ def generate(source, work, template):
         "native_quest_cost_projection_result quest_native_completion_owner::project_cost_projection("))
     substitutions = {
         "@QUEST_DESCRIPTOR@": descriptor,
+        "@QUEST_BUILDER_METHOD@": body("bool quest_native_completion_owner::build_original_command("),
         "@QUEST_CENSUS_HELPERS@": guard + helpers + "\n#endif\n",
         "@QUEST_ADAPTER@": adapter,
         "@QUEST_COMPLETION_METHODS@": completion,
@@ -90,6 +102,22 @@ def generate(source, work, template):
     output.write_text(fixture, encoding="utf-8", newline="\n")
     print("Quest admission extracted fixture: " + hashlib.sha256(output.read_bytes()).hexdigest())
     return output
+
+
+def check_item_command_macros(text, lane):
+    # This whole TU does not include core/config.h; MEMCHK is a config-header
+    # definition, not a production Make flag. Check its actual family unchanged.
+    lines = text.splitlines()
+    for definition in ("#define __GNUC__ 13", "#define __GNUC_MINOR__ 3",
+                       "#define _GLIBCXX_RELEASE 13", "#define __USE_FORTIFY_LEVEL 3"):
+        assert definition in lines, definition
+    assert not any(line == "#define MEMCHK" or line.startswith("#define MEMCHK ")
+                   for line in lines), "Item command TU must retain its actual config-free profile"
+    assert not any(line == "#define NDEBUG" or line.startswith("#define NDEBUG ")
+                   for line in lines), "Fixture assertions must be enabled"
+    for macro in ("_GLIBCXX_ASSERTIONS", "_GLIBCXX_CONCEPT_CHECKS", "__SANITIZE_ADDRESS__"):
+        selected = macro == "_GLIBCXX_ASSERTIONS" and lane == "assertions"
+        assert ("#define " + macro + " " in text) == selected, (lane, macro)
 
 
 def main():
@@ -170,13 +198,18 @@ def main():
                 macros = execute([args.compiler, *ordinary_flags, "-dM", "-E", "-x", "c++",
                                   str(source / "src" / (provider + ".c"))],
                                  cwd=source / "src", timeout=probe_timeout, env=env, capture_output=True)
-                check_macros(macros, "assertions" if assertions else "supported")
+                lane = "assertions" if assertions else "supported"
+                if provider == "item/item_transfer_command":
+                    check_item_command_macros(macros, lane)
+                else:
+                    check_macros(macros, lane)
                 if provider == "item/item_movement_transaction":
                     assert "#define _GLIBCXX_NATIVE_THREAD_ID pthread_self()" in macros.splitlines()
             execute(make_command(ordinary, profile_extra, [ordinary / (name + ".o") for name in ORDINARY]),
                     cwd=source, timeout=args.compile_timeout, env=env)
             assert all((ordinary / (name + ".o")).is_file() for name in ORDINARY)
             print(f"Quest admission {label}: PASS (2 ordinary whole objects)")
+            print(f"Quest native builder {label}: PASS (ordinary whole Item command object)")
             sectioned_extra = [*profile_extra, "-ffunction-sections", "-fdata-sections"]
             targets = [objects / (name + ".o") for name in PROVIDERS]
             execute(make_command(objects, sectioned_extra, targets), cwd=source,
@@ -193,8 +226,14 @@ def main():
             execute([args.compiler, "-no-pie", str(compiled), *map(str, targets), "-Wl,--gc-sections",
                      "-pthread", *linker_flags, "-lcrypto", "-lz", "-l:libpcre2-8.so.0", "-lmariadb", "-o", str(binary)],
                     cwd=source, timeout=fixture_compile_timeout, env=env)
-            output = execute([str(binary)], cwd=source, timeout=args.run_timeout, env=env,
-                             preexec_fn=fixture_stack, capture_output=True)
+            try:
+                output = execute([str(binary)], cwd=source, timeout=args.run_timeout, env=env,
+                                 preexec_fn=fixture_stack, capture_output=True)
+            except subprocess.CalledProcessError as error:
+                if error.output:
+                    sys.stderr.write(error.output)
+                    sys.stderr.flush()
+                raise
             reports = [json.loads(line.split(" ", 1)[1]) for line in output.splitlines()
                        if line.startswith("QUEST_COST_ADMISSION ")]
             assert len(reports) == 1, reports
@@ -203,6 +242,22 @@ def main():
                                 if line.startswith("QUEST_SELECTED_LIST ")]
             assert len(selected_reports) == 1, selected_reports
             selected_report = selected_reports[0]
+            builder_reports = [json.loads(line.split(" ", 1)[1]) for line in output.splitlines()
+                               if line.startswith("QUEST_NATIVE_BUILDER ")]
+            assert len(builder_reports) == 1, builder_reports
+            builder_report = builder_reports[0]
+            if assertions:
+                assert builder_report == {"unsupported_no_writes": True}, builder_report
+            elif backend == "flatfile":
+                assert builder_report == {"parent_unsupported_no_writes": True,
+                    "child_admission_refused": True, "initial_nonzero": True,
+                    "supplement_zero": True, "strong_output": True}, builder_report
+            else:
+                assert builder_report["wire_cases"] == 4 and builder_report["child_refusal_points"] > 0
+                assert builder_report["strong_output"] and builder_report["outer_once"]
+                assert builder_report["initial_nonzero"] and builder_report["supplement_zero"]
+                assert builder_report["parent_cap_boundaries"] and builder_report["capacity_inputs"]
+                assert builder_report["registered_states"] == 8 and builder_report["retained_once"]
             if backend == "mariadb" and not assertions:
                 assert report["success"] and report["refusal_points"] > 0 and report["no_retained_writes"], report
                 assert report["cap_boundary"] and report["registered_states"] == 8, report

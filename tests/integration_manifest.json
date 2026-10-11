@@ -2966,7 +2966,8 @@
         "Quest admission flatfile: PASS",
         "Quest admission mariadb-assertions: PASS",
         "Quest admission current native selectors: PASS",
-        "QUEST_SELECTED_LIST"
+        "QUEST_SELECTED_LIST",
+        "QUEST_NATIVE_BUILDER"
       ]
     }
   ]
