@@ -2919,7 +2919,7 @@ bool journal_physical_crc32_source_frame_bytes(size_t *output) noexcept
 // Genuine lower source dependencies, deliberately named instead of assigning
 // an unrelated copy/SSO/hash allowance. Definitions/source controls must join
 // before this prospective journal lane can be selected.
-bool critical_command_startup_codec_source_frame_bytes(size_t *) noexcept;
+bool critical_command_startup_codec_complete_source_frame_bytes(size_t *) noexcept;
 bool journal_physical_crc32_source_frame_bytes(size_t *) noexcept;
 
 namespace
@@ -3088,7 +3088,7 @@ bool critical_command_journal_startup_source_frame_bytes(size_t *output) noexcep
 	size_t codec = 0, crc = 0;
 	// Required complete original codec and CRC source closures are strong
 	// query outputs; no runtime/installed-library qualification is inferred.
-	if (!critical_command_startup_codec_source_frame_bytes(&codec) ||
+	if (!critical_command_startup_codec_complete_source_frame_bytes(&codec) ||
 	    !journal_physical_crc32_source_frame_bytes(&crc) || !journal_admit_add(bytes, codec) ||
 	    !journal_admit_add(bytes, crc))
 		return false;
