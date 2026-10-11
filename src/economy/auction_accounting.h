@@ -90,4 +90,55 @@ economic_accounting_error auction_bid_accounting_decode_bounded(
 	auction_bid_accounting_accounts *accounts, bool (*reserve)(size_t, void *) noexcept,
 	void *context, size_t outer_live) noexcept;
 
+// Additive original algorithm/fixed-proof counterparts.
+economic_accounting_error auction_bid_accounting_intent_fixed_bounded(
+	const critical_command &command, const critical_operation_id &epoch,
+	const auction_bid_accounting_listing &listing,
+	const auction_bid_accounting_accounts &accounts, std::vector<uint8_t> *encoded,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept;
+economic_accounting_error auction_bid_accounting_decode_fixed_bounded(
+	const critical_command &command, economic_frozen_intent *intent,
+	auction_command_payload *payload, auction_bid_accounting_listing *listing,
+	auction_bid_accounting_accounts *accounts, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept;
+
+// Exact fixed-companion own entry profiles; full lower join remains pending review.
+bool auction_bid_accounting_intent_own_source_frame_bytes(size_t *) noexcept;
+bool auction_bid_accounting_intent_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t auction_bid_accounting_intent_own_source_query_frame_bytes() noexcept
+{
+	// own output/result/policy; initial getter has the same sequential graph.
+	return sizeof(size_t *) + 2 * sizeof(bool);
+}
+bool auction_bid_accounting_decode_own_source_frame_bytes(size_t *) noexcept;
+bool auction_bid_accounting_decode_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t auction_bid_accounting_decode_own_source_query_frame_bytes() noexcept
+{
+	// Source getter(output,bool), observed/total locals, policy bool,
+	// actual current observer getter(output,bool), copy/valid returnN,
+	// checked_add(ref,value,bool). Initial query same simpler graph.
+	return 3 * sizeof(void *) + 7 * sizeof(size_t) + 4 * sizeof(bool);
+}
+
+bool auction_bid_accounting_intent_source_frame_bytes(size_t *) noexcept;
+bool auction_bid_accounting_intent_source_supplement_frame_bytes(size_t *) noexcept;
+constexpr size_t auction_bid_accounting_intent_source_query_frame_bytes() noexcept
+{
+	return auction_bid_accounting_intent_own_source_query_frame_bytes() +
+	       auction_command_decode_payload_source_query_frame_bytes() +
+	       economic_intent_freeze_fixed_source_query_frame_bytes() + 2 * sizeof(void *) +
+	       5 * sizeof(size_t) + 4 * sizeof(bool);
+}
+bool auction_bid_accounting_decode_source_frame_bytes(size_t *) noexcept;
+bool auction_bid_accounting_decode_source_supplement_frame_bytes(size_t *) noexcept;
+constexpr size_t auction_bid_accounting_decode_source_query_frame_bytes() noexcept
+{
+	return auction_bid_accounting_decode_own_source_query_frame_bytes() +
+	       auction_command_decode_payload_source_query_frame_bytes() +
+	       economic_intent_decode_source_query_frame_bytes() +
+	       economic_intent_verify_binding_fixed_source_query_frame_bytes() +
+	       auction_bid_accounting_intent_source_query_frame_bytes() + 2 * sizeof(void *) +
+	       7 * sizeof(size_t) + 6 * sizeof(bool);
+}
+
 #endif
