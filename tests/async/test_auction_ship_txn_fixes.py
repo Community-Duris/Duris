@@ -17,8 +17,10 @@ assert contains(cargo, "logit(LOG_DEBUG, \"write_cargo(): commit failed\");\n\t\
 
 # 3. Ship db_id must be reset to -1 on post-INSERT failure paths
 sql_player = (SRC / "sql_player.c").read_text()
-# At least 4 reset points: query failure, no row, armor/crew/slot failure, batch failure
-assert sql_player.count("ship->db_id = -1;") >= 4
+# Existing rows retain their ids; ambiguous inserts are confirmed on retry.
+assert contains(sql_player, "if (inserted) ship->db_id = -1;")
+assert contains(sql_player, "if (inserted) ship->db_id_unconfirmed = true;")
+assert "sql_ship_row_exists(ship->db_id)" in sql_player
 
 # 4. Ship UPDATE must include owner_name so rename_ship_owner persists
 assert contains(sql_player, "update ships set owner_name='%s', ship_name='%s'", literal=True)

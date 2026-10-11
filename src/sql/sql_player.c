@@ -13024,9 +13024,10 @@ P_ship sql_place_ship(const char *owner_name, bool *unplaced)
 	{
 		/* An unplaced ship must not stay registered; the row is kept. */
 		logit(LOG_FILE, "sql_load_all_ships: component=ship outcome=failure");
+		const bool no_room = shiperror == 4;
 		shipObjHash.erase(ship);
 		delete_ship(ship, true);
-		*unplaced = true;
+		*unplaced = no_room;
 		return NULL;
 	}
 

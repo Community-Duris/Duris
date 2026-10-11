@@ -476,6 +476,7 @@ static bool flat_ship_record_is_loadable(const flatfile_ship_record &record, std
  */
 static bool flat_ship_materialize(const flatfile_ship_record &record, std::string *error)
 {
+	shiperror = 0; // distinguish this failure from an earlier full room pool
 	P_ship ship = new_ship(record.ship_class);
 	if (!ship)
 	{
