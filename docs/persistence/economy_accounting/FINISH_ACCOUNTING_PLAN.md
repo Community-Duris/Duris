@@ -19172,3 +19172,8 @@ Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
 ## Held retirement publication policy responsibility - 2026-10-11
 
 [Extraction candidate and evidence](HELD_RETIREMENT_POLICY_EXTRACTION_2026-10-11.md) records five production/build paths and seven fixtures/runners with original stages, tokens, locks and algorithms preserved. Adoption requires genuine registered-policy execution bound to the final 20-file freeze and received format/metadata reviews. The historical nine-case index is separate from the current Item snapshot; two combined raw production links and four profile objects are separate build evidence. Preserve the published Cost/native6 milestone, all 931 policies, 481 unowned pins and census 2,911. Architecture, whole-host/runtime/SQL durability/cold restoration/shutdown/release qualification remains open; accounting inactive/CLOSED, coverage incomplete, release BLOCKED.
+
+
+## Lockpick retirement wire correctness - 2026-10-11
+
+[Issue report](LOCKPICK_RETIREMENT_WIRE_CORRECTNESS_2026-10-11.md) records actual combined Source9 SQL/flat full-build PASS, focused/profile outcomes, separate standalone v3 both15/2653 PASS, and restored metadata. Existing zero-root encoder fix;1 existing pin and exact2736 to2739 coordinates. Root owns current registration/metadata/staging; separate local commits publish only qualified combined final Source. HRT was already adopted at97ded; full protocol remains open. Full protocol and R1-R8, architecture, gameplay, actual database durability,32MiB whole-host peak,cold restore/shutdown and release remain open. Accounting remains inactive/CLOSED; the declined spell path is preserved; coverage is incomplete and release BLOCKED.

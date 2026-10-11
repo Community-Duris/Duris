@@ -1598,8 +1598,11 @@ bool encode_payload(const item_transfer_payload &payload, uint16_t version,
 			(payload.selected_item_uid ? payload.selected_item_uid :
 						     payload.items[0].root_item_uid);
 	put_u64(encoded->data() + SELECTED_ITEM_OFFSET, selected);
+	// Lockpick retirement has no destination tree; keep its validated zero root.
 	put_u64(encoded->data() + TARGET_ROOT_OFFSET,
-		payload.multi_root ?
+		(payload.multi_root ||
+		 payload.continuation.kind ==
+			 item_transfer_continuation_kind::lockpick_retirement) ?
 			payload.target_root_item_uid :
 			(payload.target_root_item_uid ? payload.target_root_item_uid : selected));
 	put_u64(encoded->data() + TARGET_PARENT_OFFSET, payload.target_parent_item_uid);
@@ -5941,8 +5944,11 @@ bool item_generic_wire_encode_owned(const item_transfer_payload &payload, uint16
 			(payload.selected_item_uid ? payload.selected_item_uid :
 						     payload.items[0].root_item_uid);
 	put_u64(encoded->data() + SELECTED_ITEM_OFFSET, selected);
+	// Lockpick retirement has no destination tree; keep its validated zero root.
 	put_u64(encoded->data() + TARGET_ROOT_OFFSET,
-		payload.multi_root ?
+		(payload.multi_root ||
+		 payload.continuation.kind ==
+			 item_transfer_continuation_kind::lockpick_retirement) ?
 			payload.target_root_item_uid :
 			(payload.target_root_item_uid ? payload.target_root_item_uid : selected));
 	put_u64(encoded->data() + TARGET_PARENT_OFFSET, payload.target_parent_item_uid);
