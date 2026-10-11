@@ -1,6 +1,6 @@
-## Latest Quest Source3 component status — 2026-10-11
+## Latest currency bounded builder prerequisite status — 2026-10-11
 
-Latest human approval authorizes WORLD/SHOP file leases; Root retains unleased Zone/shared contracts. Historical charter text below does not revoke that approval. [QUEST_SELECTED_LIST_COMPONENT_INTEGRATION_2026-10-11](QUEST_SELECTED_LIST_COMPONENT_INTEGRATION_2026-10-11.md) records selected-list/cost/selector component qualification in the same permanent entry. 507 Source pins,931 policies,2911 census occurrences and2853 sites remain intact. Earlier preparation/builder, complete producer/gameplay/SQL/persistence/recovery/emitted32MiB/host/release gates, combined Plans2–4 andR1–R8 remain OPEN. Plan1 remains complete within its accepted historical scope. Accounting inactive/CLOSED; coverage incomplete; release BLOCKED; goal ACTIVE.
+Latest human approval authorizes WORLD/SHOP leases; Root retains unleased Zone/shared contracts. [CURRENCY_BOUNDED_BUILDER_COMPONENT_INTEGRATION_2026-10-11](CURRENCY_BOUNDED_BUILDER_COMPONENT_INTEGRATION_2026-10-11.md) records10 whole objects/four genuine component runs and strong-output136-byte equivalence. 509 Source pins preserve all931 policies/2911 census/2853 sites. Original ATM/fresh authority and full producer, gameplay/persistence/recovery/emitted32MiB/release gates remain OPEN. Plan1 retains its accepted historical completion. Accounting inactive/CLOSED; coverage incomplete; release BLOCKED; goal ACTIVE.
 
 ## Latest shared ownership and coordinator lender native thread source correction — 2026-10-11
 
