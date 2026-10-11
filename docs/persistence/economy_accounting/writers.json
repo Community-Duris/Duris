@@ -66564,7 +66564,7 @@
       "src/world/native_mobile_birth_reset_tail.c": "19cf9a57222920abe9eff5a4052d5b90b9f1957c5fd2371ca9b22a3d3d6bc939",
       "src/world/native_mobile_birth_reset_tail.h": "520e934beec4a71cd1328d41a53e92bca31d19281f28edfa1a90e1df20470eb3",
       "src/world/native_quest_frozen_continuation.h": "70d9427e8e0af7012e6041d68656087302094c18fc5798b209155c61c2107341",
-      "src/world/native_quest_recovery_context.c": "d787256574ba674421817e76e8e44e2d9e5efa91f726050d6586c3f8ec7b9c7c",
+      "src/world/native_quest_recovery_context.c": "ac3653ea6c27c27919283370a0a46c95178e99cebbcedd2b7057135701595363",
       "src/world/native_quest_recovery_context.h": "420dfd3de61d7e0d4962fb66520e33a63685522b1d409ab51c6d3d43c767542f",
       "src/world/object_template.h": "3863925ecf5f309271c7934d107af4f0129cb1814f9de547a7406806bcdce929",
       "src/world/quest_mobile_native.c": "0335382dea0cda046239d8cf080bddf30ae4f36e2086febf8007040d307323fd",
