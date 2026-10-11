@@ -88,4 +88,56 @@ economic_accounting_error auction_item_claim_accounting_decode_bounded(
 	economic_account_key *wallet, economic_account_key *bank,
 	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept;
 
+#include "economy/auction_native_command_context.h"
+
+// Additive original algorithm/fixed-proof counterparts.
+economic_accounting_error auction_item_claim_accounting_intent_fixed_bounded(
+	const critical_command &command, const critical_operation_id &epoch,
+	const economic_account_key &wallet, const economic_account_key &bank,
+	const auction_item_claim_state &claim, std::vector<uint8_t> *encoded,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept;
+economic_accounting_error auction_item_claim_accounting_decode_fixed_bounded(
+	const critical_command &command, economic_frozen_intent *intent,
+	auction_command_payload *payload, auction_item_claim_state *claim,
+	economic_account_key *wallet, economic_account_key *bank,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept;
+
+// Own Source and actual prospective INLINE for the paired fixed intent.
+bool auction_item_claim_accounting_intent_own_source_frame_bytes(size_t *) noexcept;
+bool auction_item_claim_accounting_intent_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t auction_item_claim_accounting_intent_own_source_query_frame_bytes() noexcept
+{
+	return sizeof(void *) + 2 * sizeof(bool);
+}
+bool auction_item_claim_accounting_intent_source_frame_bytes(size_t *) noexcept;
+bool auction_item_claim_accounting_intent_source_supplement_frame_bytes(size_t *) noexcept;
+constexpr size_t auction_item_claim_accounting_intent_source_query_frame_bytes() noexcept
+{
+	return auction_item_claim_accounting_intent_own_source_query_frame_bytes() +
+	       auction_command_decode_payload_source_query_frame_bytes() +
+	       auction_native_command_decode_source_query_frame_bytes() +
+	       economic_intent_freeze_fixed_source_query_frame_bytes() + 2 * sizeof(void *) +
+	       6 * sizeof(size_t) + 5 * sizeof(bool);
+}
+
+// Own Source and actual prospective INLINE for the paired fixed decode.
+bool auction_item_claim_accounting_decode_own_source_frame_bytes(size_t *) noexcept;
+bool auction_item_claim_accounting_decode_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t auction_item_claim_accounting_decode_own_source_query_frame_bytes() noexcept
+{
+	return 3 * sizeof(void *) + 7 * sizeof(size_t) + 4 * sizeof(bool);
+}
+bool auction_item_claim_accounting_decode_source_frame_bytes(size_t *) noexcept;
+bool auction_item_claim_accounting_decode_source_supplement_frame_bytes(size_t *) noexcept;
+constexpr size_t auction_item_claim_accounting_decode_source_query_frame_bytes() noexcept
+{
+	return auction_item_claim_accounting_decode_own_source_query_frame_bytes() +
+	       auction_command_decode_payload_source_query_frame_bytes() +
+	       auction_native_command_decode_source_query_frame_bytes() +
+	       economic_intent_decode_source_query_frame_bytes() +
+	       economic_intent_verify_binding_fixed_source_query_frame_bytes() +
+	       auction_item_claim_accounting_intent_source_query_frame_bytes() +
+	       2 * sizeof(void *) + 8 * sizeof(size_t) + 7 * sizeof(bool);
+}
+
 #endif

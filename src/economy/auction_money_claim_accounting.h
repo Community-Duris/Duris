@@ -64,4 +64,32 @@ economic_accounting_error auction_money_claim_accounting_decode_bounded(
 	economic_account_key *claim_account, bool (*reserve)(size_t, void *) noexcept,
 	void *context, size_t outer_live) noexcept;
 
+// Additive full original money-claim algorithm with fixed binding proof.
+// Own SOURCE candidate; full command/native dependency qualification remains open.
+bool auction_money_claim_accounting_decode_own_source_frame_bytes(size_t *) noexcept;
+bool auction_money_claim_accounting_decode_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t auction_money_claim_accounting_decode_own_source_query_frame_bytes() noexcept
+{
+	// Actual output/result and policy bool, critical valid getter returned N.
+	return sizeof(size_t *) + sizeof(size_t) + 2 * sizeof(bool);
+}
+economic_accounting_error auction_money_claim_accounting_decode_fixed_bounded(
+	const critical_command &command, economic_frozen_intent *intent,
+	auction_command_payload *payload, economic_account_key *wallet, economic_account_key *bank,
+	economic_account_key *claim_account, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept;
+bool auction_money_claim_accounting_decode_source_frame_bytes(size_t *) noexcept;
+bool auction_money_claim_accounting_decode_source_supplement_frame_bytes(size_t *) noexcept;
+constexpr size_t auction_money_claim_accounting_decode_source_query_frame_bytes() noexcept
+{
+	// Complete real pure getter graph: own and three authentic child getters,
+	// output/result, five scalar locals, two actual max comparisons,
+	// and one genuine checked addition.
+	return auction_money_claim_accounting_decode_own_source_query_frame_bytes() +
+	       auction_command_decode_payload_source_query_frame_bytes() +
+	       economic_intent_decode_source_query_frame_bytes() +
+	       economic_intent_verify_binding_fixed_source_query_frame_bytes() +
+	       2 * sizeof(void *) + 6 * sizeof(size_t) + 4 * sizeof(bool);
+}
+
 #endif

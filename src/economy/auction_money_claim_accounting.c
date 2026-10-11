@@ -753,3 +753,382 @@ economic_accounting_error auction_money_claim_accounting_decode_bounded(
 		return error::capacity;
 	}
 }
+
+// PRIVATE UNSEALED own-source draft. Only actual money-claim decoder scopes.
+// Genuine vector lifecycle controls reused byte-for-byte (names only) from
+// independent reviewed SHOP identity27; no SHOP algorithm/authorization imported.
+// Lower command full preentry/source ownership seam remains OPEN.
+namespace
+{
+template <class T> constexpr size_t auction_money_fixed_vector_default = 6 * sizeof(void *);
+// Vector destructor -> _Destroy trivial dispatch -> base destructor,
+// _M_deallocate -> traits/allocator/new_allocator -> sized delete, followed
+// by actual allocator and new_allocator base cleanup. No nontrivial T here.
+template <class T> constexpr size_t auction_money_fixed_vector_cleanup =
+	sizeof(std::vector<T> *) + 2 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(void *) +
+	2 * sizeof(void *) + sizeof(void *) + 4 * (2 * sizeof(void *) + sizeof(size_t)) +
+	// Sized delete plus real _Vector_impl, allocator, new_allocator and
+	// _Vector_impl_data cleanup receivers (base destructor above owns P).
+	sizeof(void *) + sizeof(size_t) + 4 * sizeof(void *) +
+	// Genuine C++20 _Destroy and allocator::deallocate runtime false
+	// constant-evaluation result carriers; both selected calls still occur.
+	2 * sizeof(bool);
+// Move assignment operator=(this,source), true_type -> _M_move_assign:
+// real tmp(get_allocator()), allocator temporary, two _M_swap_data calls
+// with actual _Vector_impl_data temporary, copy_data receivers, std::move,
+// allocator_on_move and the tmp/allocator cleanup. std::allocator propagates.
+template <class T> constexpr size_t auction_money_fixed_vector_move =
+	// Public operator= receivers/result and its actual constexpr policy bool;
+	// _M_move_assign(this,source,true_type) formals.
+	3 * sizeof(void *) + sizeof(bool) +
+	// Public std::move(__x) argument/reference result before _M_move_assign.
+	2 * sizeof(void *) + 2 * sizeof(void *) + sizeof(std::true_type) + sizeof(std::vector<T>) +
+	sizeof(std::allocator<T>) +
+	// get_allocator + const _M_get_Tp_allocator, allocator/new_allocator copy;
+	// vector(allocator) -> base -> impl -> allocator/base copy -> data default.
+	sizeof(void *) + sizeof(std::allocator<T>) + 2 * sizeof(void *) + 4 * sizeof(void *) +
+	5 * 2 * sizeof(void *) + sizeof(void *) +
+	2 * (2 * sizeof(void *) + sizeof(typename std::vector<T>::pointer) * 3 + sizeof(void *) +
+	     3 * 2 * sizeof(void *) +
+	     // Each actual swap temporary's trivial _Vector_impl_data cleanup.
+	     sizeof(void *)) +
+	// Two _M_get_Tp_allocator scopes; __alloc_on_move -> std::move and
+	// genuine defaulted allocator/new_allocator copy-assignment results.
+	4 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) + 2 * 3 * sizeof(void *) +
+	auction_money_fixed_vector_cleanup<T> + 2 * sizeof(void *);
+
+// Source scopes of the actual locally owned frozen DTO: containing frozen,
+// admission and metadata default/cleanup receivers; four critical ID wrappers
+// with member arrays; two direct digest arrays; the real trivial-source optional
+// seven-class default/cleanup chain. The stored source-event is trivial: its
+// optional storage cleanup does not invoke a reset/destroy dispatch.
+constexpr size_t auction_money_fixed_frozen_lifetime_source =
+	3 * (2 * sizeof(void *)) + 4 * (4 * sizeof(void *)) + 2 * (2 * sizeof(void *)) +
+	7 * (2 * sizeof(void *)) + auction_money_fixed_vector_default<uint8_t> +
+	auction_money_fixed_vector_cleanup<uint8_t>;
+// Final strong frozen output: containing generated assignments, actual
+// metadata ID-wrapper/member-array assignments, direct digest arrays, real
+// optional's seven selected defaulted assignment scopes and actual vector move.
+// std::move(parsed_intent) owns its separate input/reference result pair.
+constexpr size_t auction_money_fixed_frozen_output_source =
+	3 * (3 * sizeof(void *)) + 4 * (2 * 3 * sizeof(void *)) + 2 * (3 * sizeof(void *)) +
+	7 * (3 * sizeof(void *)) + 2 * sizeof(void *) + auction_money_fixed_vector_move<uint8_t>;
+// Each of three genuine returned account aggregates copies its lineage through
+// critical ID-wrapper+member-array scopes; final account copy assignments own
+// this/source/reference-result in account, ID wrapper and its array. Actual
+// three key cleanups visit key+ID+array receivers, no vector/string heap.
+constexpr size_t auction_money_fixed_account_lifetime_output_source =
+	3 * (2 * 2 * sizeof(void *) + 3 * 3 * sizeof(void *) + 3 * sizeof(void *));
+} // namespace
+
+namespace
+{
+constexpr size_t auction_money_fixed_array_equal =
+	// array<byte,16> operator==(two refs,bool), size(), begin/data/_S_ptr
+	// for the two first iterators, and end's data+size. This is the actual
+	// lineage comparison, distinct from vector<byte> equality below.
+	2 * sizeof(void *) + sizeof(bool) + sizeof(void *) + sizeof(size_t) +
+	2 * 4 * sizeof(void *) + 6 * sizeof(void *) + sizeof(size_t) +
+	// std::equal -> equal_aux -> equal_aux1 -> equal<true>::equal; genuine
+	// pointer niter bases, constexpr simple/integer bools, len, memcmp leaf.
+	4 * (3 * sizeof(void *) + sizeof(bool)) + 3 * 2 * sizeof(void *) + 2 * sizeof(bool) +
+	sizeof(std::ptrdiff_t) + 2 * sizeof(void *) + sizeof(size_t) + sizeof(int);
+constexpr size_t auction_money_fixed_span_source =
+	// span(vector&): this/range -> ranges::_Data(this,range)->vector.data
+	// -> _M_data_ptr(this,pointer); ranges::_Size(this,range)->vector.size.
+	// Actual ranges noexcept expressions are required constant expressions.
+	2 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(void *) + 3 * sizeof(void *) +
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(void *) + sizeof(size_t) +
+	// Delegating span(pointer,count) -> std::to_address(pointer) and actual
+	// dynamic __extent_storage(this,count), not a static extent surrogate.
+	2 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(void *) + sizeof(void *) + sizeof(size_t) +
+	// span.size -> extent::_M_extent and operator[] receiver/index/reference.
+	2 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(void *) + sizeof(size_t);
+}
+
+// PRIVATE candidate: complete money-decoder OWN SOURCE only. The full called
+// command/native-source dependency remains an explicit separate join.
+namespace
+{
+constexpr size_t auction_money_fixed_P = sizeof(void *), auction_money_fixed_N = sizeof(size_t),
+		 auction_money_fixed_B = sizeof(bool);
+// Actual economic_account_key_valid -> ID zero range -> std::array
+// begin/end/data/_S_ptr and size, then kind_valid. No stored DTO copy.
+constexpr size_t auction_money_fixed_key_valid_source =
+	(sizeof(void *) + sizeof(bool)) +
+	(sizeof(void *) + 2 * sizeof(const uint8_t *) + sizeof(uint8_t) + sizeof(bool)) +
+	2 * 2 * sizeof(void *) + 2 * 2 * sizeof(void *) + 2 * 2 * sizeof(void *) + sizeof(void *) +
+	sizeof(size_t) + sizeof(economic_account_kind) + sizeof(bool);
+// Trivial optional has seven actual defaulted wrapper/base/payload classes.
+// operator bool -> _M_is_engaged owns two receiver/result pairs; operator->
+// -> base_impl::_M_get -> payload::_M_get -> __addressof owns
+// four real receiver/argument/result pairs. std::addressof is not called. No assert path under this policy.
+constexpr size_t auction_money_fixed_optional_access_source =
+	2 * (sizeof(void *) + sizeof(bool)) + 4 * 2 * sizeof(void *);
+// Strong payload output: actual containing assignment, seven array member
+// assignments, and the nine selected generated auction_item_entry assignments.
+// Its local aggregate's trivial cleanup has containing/array/item receivers.
+constexpr size_t auction_money_fixed_payload_output_lifetime_source =
+	(1 + 7 + AUCTION_COMMAND_MAX_ITEMS) * 3 * sizeof(void *) +
+	(1 + 7 + AUCTION_COMMAND_MAX_ITEMS) * sizeof(void *);
+// Full exact own scalar union. Complete child SOURCE is not aliased here;
+// the actual child-owned workspaces and heap remain in child admissions.
+constexpr size_t auction_money_fixed_scalar_source =
+	// Eight public pointer/reference formals and the outer argument; local
+	// own-source/entry/query/nested and two statuses plus catch/result.
+	8 * sizeof(void *) + 8 * sizeof(size_t) + 3 * sizeof(error) + sizeof(void *) +
+	// Three intent entry/source/supplement locals, their constexpr query;
+	// two proof source/initial locals and its constexpr query.
+	11 * sizeof(size_t) +
+	// Original vector-to-span intent argument is temporary; facts is the
+	// later real span. Their sequential scopes are explicitly inventoried.
+	2 * sizeof(std::span<const uint8_t>) + auction_money_fixed_span_source +
+	// number lambda: reference capture/this, offset/width/byte, value/result.
+	2 * sizeof(void *) + 3 * sizeof(size_t) + 2 * sizeof(uint64_t) +
+	// Actual metadata reference and converted uint8_t value. The actual
+	// span indexing graph is already in span_source, not duplicated here.
+	sizeof(void *) + sizeof(uint8_t) + auction_money_fixed_optional_access_source +
+	auction_money_fixed_array_equal + auction_money_fixed_key_valid_source +
+	auction_money_fixed_payload_output_lifetime_source +
+	auction_money_fixed_frozen_lifetime_source + auction_money_fixed_frozen_output_source +
+	auction_money_fixed_account_lifetime_output_source;
+struct auction_money_fixed_budget;
+constexpr size_t auction_money_fixed_observer_source =
+	// checked-add(ref,value,result), prefix(this,out,extra,value,result),
+	// peak(this,extra,value,result), forward(amount,opaque,ref,result).
+	(sizeof(void *) + sizeof(size_t) + sizeof(bool)) +
+	(2 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool)) +
+	(sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool)) +
+	(2 * sizeof(void *) + sizeof(size_t) + sizeof(bool)) +
+	// Actual sole retained heap: facts vector capacity receiver/size result.
+	sizeof(void *) + sizeof(size_t) +
+	// Brace aggregate initialization has no constructor call. Actual
+	// generated trivial budget cleanup owns its receiver separately.
+	sizeof(void *) +
+	// Policy bool and source getter's output/result/critical getter N.
+	2 * sizeof(bool) + sizeof(void *) + sizeof(size_t);
+constexpr size_t auction_money_fixed_workspace_inline = sizeof(auction_command_payload) +
+							sizeof(economic_frozen_intent) +
+							3 * sizeof(economic_account_key);
+struct auction_money_fixed_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, source;
+	const economic_frozen_intent *intent = nullptr;
+	bool denied = false;
+	static bool forward(size_t amount, void *opaque) noexcept
+	{
+		auto &b = *static_cast<auction_money_fixed_budget *>(opaque);
+		if (b.denied || !b.reserve || !b.reserve(amount, b.context))
+		{
+			b.denied = true;
+			return false;
+		}
+		return true;
+	}
+	bool prefix(size_t &value, size_t extra = 0) noexcept
+	{
+		value = outer;
+		if (denied || !auction_codec_add(value, source) ||
+		    !auction_codec_add(value, sizeof(*this)) ||
+		    !auction_codec_add(value, auction_money_fixed_workspace_inline) ||
+		    (intent && !auction_codec_add(value, intent->admission.facts.capacity())) ||
+		    !auction_codec_add(value, extra))
+		{
+			denied = true;
+			return false;
+		}
+		return true;
+	}
+	bool peak(size_t extra = 0) noexcept
+	{
+		size_t value = 0;
+		return prefix(value, extra) && forward(value, this);
+	}
+};
+}
+bool auction_money_claim_accounting_decode_own_source_frame_bytes(size_t *out) noexcept
+{
+	if (!out || !auction_codec_policy())
+		return false;
+	*out = auction_money_fixed_scalar_source + auction_money_fixed_observer_source +
+	       critical_command_valid_frame_bytes();
+	return true;
+}
+bool auction_money_claim_accounting_decode_initial_inline_bytes(size_t *out) noexcept
+{
+	if (!out || !auction_codec_policy())
+		return false;
+	*out = sizeof(auction_money_fixed_budget) + auction_money_fixed_workspace_inline;
+	return true;
+}
+
+// PRIVATE UNSEALED: algorithm/source joins in progress, not selected or qualified.
+economic_accounting_error auction_money_claim_accounting_decode_fixed_bounded(
+	const critical_command &command, economic_frozen_intent *intent,
+	auction_command_payload *payload, economic_account_key *wallet, economic_account_key *bank,
+	economic_account_key *claim_account, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	// First query admission owns the real public entry/query scalar scopes.
+	size_t own_source = 0, entry_inline = 0, nested = 0, query_peak = outer_live;
+	constexpr size_t query_frames =
+		auction_money_claim_accounting_decode_own_source_query_frame_bytes();
+	constexpr size_t entry_query_source =
+		8 * sizeof(void *) + 7 * sizeof(size_t) + sizeof(bool) + sizeof(error);
+	if (!reserve || !auction_codec_add(query_peak, entry_query_source) ||
+	    !auction_codec_add(query_peak, query_frames) || !reserve(query_peak, context) ||
+	    !auction_money_claim_accounting_decode_own_source_frame_bytes(&own_source) ||
+	    !auction_money_claim_accounting_decode_initial_inline_bytes(&entry_inline))
+		return error::capacity;
+	size_t entry_peak = outer_live;
+	if (!auction_codec_add(entry_peak, own_source) ||
+	    !auction_codec_add(entry_peak, entry_inline) || !reserve(entry_peak, context))
+		return error::capacity;
+	auction_money_fixed_budget budget{ reserve, context, outer_live, own_source };
+	if (!intent || !payload || !wallet || !bank || !claim_account ||
+	    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+	    !critical_command_envelope_valid(command))
+		return error::invalid_version;
+	try
+	{
+		auction_command_payload parsed_payload = {};
+		// Full original v1/v2 lower dispatcher; complete SOURCE/initial
+		// is transient. Its fixed companion owns the returned closure once.
+		size_t payload_source = 0, payload_initial = 0, payload_supplement = 0;
+		constexpr size_t payload_query =
+			auction_command_decode_payload_source_query_frame_bytes();
+		if (!budget.peak(payload_query) ||
+		    !auction_command_decode_payload_source_frame_bytes(&payload_source) ||
+		    !auction_command_decode_payload_initial_inline_bytes(&payload_initial) ||
+		    !auction_command_decode_payload_source_supplement_frame_bytes(
+			    &payload_supplement) ||
+		    !auction_codec_add(payload_source, payload_initial) ||
+		    !budget.peak(payload_source) || !budget.prefix(nested) ||
+		    !auction_codec_add(nested, payload_supplement))
+			return error::capacity;
+		if (!auction_command_decode_payload_fixed_bounded(
+			    command, &parsed_payload, auction_money_fixed_budget::forward, &budget,
+			    nested, &budget.denied) ||
+		    parsed_payload.action != auction_action::claim_money ||
+		    !parsed_payload.actor_pid)
+			return budget.denied ? error::capacity : error::invalid_identity;
+		economic_frozen_intent parsed_intent;
+		budget.intent = &parsed_intent;
+		// Complete published intent-decode SOURCE is transient at entry;
+		// only its genuine uncovered supplement remains in the child's outer.
+		size_t decode_source = 0, decode_initial = 0, decode_supplement = 0;
+		constexpr size_t decode_query = economic_intent_decode_source_query_frame_bytes();
+		if (!budget.peak(decode_query) ||
+		    !economic_intent_decode_source_frame_bytes(&decode_source) ||
+		    !economic_intent_decode_initial_inline_bytes(&decode_initial) ||
+		    !economic_intent_decode_source_supplement_frame_bytes(&decode_supplement) ||
+		    !auction_codec_add(decode_source, decode_initial) ||
+		    !budget.peak(decode_source) || !budget.prefix(nested) ||
+		    !auction_codec_add(nested, decode_supplement))
+			return error::capacity;
+		const auto decoded = economic_intent_decode_bounded(
+			command.accounting_intent, &parsed_intent,
+			auction_money_fixed_budget::forward, &budget, nested);
+		if (decoded != error::ok)
+			return budget.denied ? error::capacity : error::corrupt_evidence;
+		// Fixed proof preserves original canonical binding bytes and completed
+		// error mapping; the fixed callee self-retains its own SOURCE once.
+		size_t proof_source = 0, proof_initial = 0;
+		constexpr size_t proof_query =
+			economic_intent_verify_binding_fixed_source_query_frame_bytes();
+		if (!budget.peak(proof_query) ||
+		    !economic_intent_verify_binding_fixed_source_frame_bytes(&proof_source) ||
+		    !economic_intent_verify_binding_fixed_initial_inline_bytes(&proof_initial) ||
+		    !auction_codec_add(proof_source, proof_initial) || !budget.peak(proof_source) ||
+		    !budget.prefix(nested))
+			return error::capacity;
+		const auto binding = economic_intent_verify_binding_fixed_bounded(
+			command, parsed_intent, auction_money_fixed_budget::forward, &budget,
+			nested);
+		if (binding != error::ok)
+			return budget.denied ? error::capacity : error::corrupt_evidence;
+		const auto facts = std::span<const uint8_t>(parsed_intent.admission.facts);
+		if (facts.size() != 80)
+			return budget.denied ? error::capacity : error::invalid_identity;
+		const auto number = [&](size_t offset, size_t width)
+		{
+			uint64_t value = 0;
+			for (size_t byte = 0; byte < width; ++byte)
+				value |= static_cast<uint64_t>(facts[offset + byte]) << (byte * 8);
+			return value;
+		};
+		const auto &meta = parsed_intent.admission.metadata;
+		if (meta.writer_id != ECONOMIC_WRITER_AUCTION_MONEY_CLAIM ||
+		    meta.reason != economic_reason::auction_claim ||
+		    meta.actor_kind != economic_actor_kind::domain ||
+		    meta.actor_id != parsed_payload.actor_pid ||
+		    number(24, 4) != parsed_payload.actor_pid || !number(28, 8) ||
+		    number(28, 8) > INT_MAX || !number(44, 4) ||
+		    number(44, 4) > ECONOMIC_AUCTION_CLAIM_MAX_SOURCES || !meta.source_event ||
+		    meta.source_event->kind != economic_source_kind::service ||
+		    meta.source_event->source.bytes != meta.original_operation_id.bytes ||
+		    meta.source_event->generation.bytes != meta.original_operation_id.bytes ||
+		    meta.source_event->sequence != number(36, 8) || !meta.source_event->slot)
+			return budget.denied ? error::capacity : error::invalid_identity;
+		const economic_account_key parsed_wallet = { meta.lineage,
+							     economic_account_kind::wallet,
+							     number(0, 8), 0 };
+		const economic_account_key parsed_bank = { meta.lineage,
+							   economic_account_kind::bank,
+							   number(8, 8), parsed_payload.racewar };
+		const economic_account_key parsed_claim = { meta.lineage,
+							    economic_account_kind::pending_claim,
+							    number(16, 8), 0 };
+		if (!economic_account_key_valid(parsed_wallet) ||
+		    !economic_account_key_valid(parsed_bank) ||
+		    !economic_account_key_valid(parsed_claim) ||
+		    parsed_wallet.authority_id == parsed_bank.authority_id ||
+		    parsed_wallet.authority_id == parsed_claim.authority_id ||
+		    parsed_bank.authority_id == parsed_claim.authority_id)
+			return budget.denied ? error::capacity : error::invalid_identity;
+		*intent = std::move(parsed_intent);
+		*payload = parsed_payload;
+		*wallet = parsed_wallet;
+		*bank = parsed_bank;
+		*claim_account = parsed_claim;
+		return error::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+}
+
+// Complete SOURCE getter for the exact fixed money decoder. Lower command
+// definitions are prospective until the separate exclusive owner's immutable
+// handoff is authenticated. Never qualify the original old bounded proof.
+bool auction_money_claim_accounting_decode_source_frame_bytes(size_t *output) noexcept
+{
+	size_t own = 0, payload = 0, intent = 0, proof = 0, total = 0;
+	if (!output || !auction_money_claim_accounting_decode_own_source_frame_bytes(&own) ||
+	    !auction_command_decode_payload_source_frame_bytes(&payload) ||
+	    !economic_intent_decode_source_frame_bytes(&intent) ||
+	    !economic_intent_verify_binding_fixed_source_frame_bytes(&proof))
+		return false;
+	// Actual child phases are sequential: payload, original intent decode,
+	// fixed proof. Parent own SOURCE persists throughout each child.
+	total = payload;
+	if (intent > total)
+		total = intent;
+	if (proof > total)
+		total = proof;
+	if (!auction_codec_add(total, own))
+		return false;
+	*output = total;
+	return true;
+}
+bool auction_money_claim_accounting_decode_source_supplement_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !auction_codec_policy())
+		return false;
+	// Exact fixed callee self-retains all own SOURCE and actual child joins.
+	*output = 0;
+	return true;
+}

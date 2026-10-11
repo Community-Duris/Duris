@@ -4409,3 +4409,344 @@ bool auction_native_publication_restore_replayed_command_bounded(
 }
 
 #endif
+
+// Additive complete original five-arm fixed validator/Source candidate.
+namespace
+{
+enum class auction_frozen_fixed_child : uint8_t;
+}
+
+// PRIVATE owned validator Source draft. Original value-init expressions are kept;
+// containing implicit constructors are distinct from brace-initialized ID/array
+// members, whose initialization is aggregate initialization rather than a call.
+namespace
+{
+template <class T> constexpr size_t auction_frozen_fixed_vector_default = 6 * sizeof(void *);
+// Vector destructor -> _Destroy trivial dispatch -> base destructor,
+// _M_deallocate -> traits/allocator/new_allocator -> sized delete, followed
+// by actual allocator and new_allocator base cleanup. No nontrivial T here.
+template <class T> constexpr size_t auction_frozen_fixed_vector_cleanup =
+	sizeof(std::vector<T> *) + 2 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(void *) +
+	2 * sizeof(void *) + sizeof(void *) + 4 * (2 * sizeof(void *) + sizeof(size_t)) +
+	// Sized delete plus real _Vector_impl, allocator, new_allocator and
+	// _Vector_impl_data cleanup receivers (base destructor above owns P).
+	sizeof(void *) + sizeof(size_t) + 4 * sizeof(void *) +
+	// Genuine C++20 _Destroy and allocator::deallocate runtime false
+	// constant-evaluation result carriers; both selected calls still occur.
+	2 * sizeof(bool);
+
+constexpr size_t auction_frozen_fixed_outputs_inline =
+	sizeof(economic_frozen_intent) + sizeof(auction_command_payload) +
+	sizeof(auction_bid_accounting_listing) + sizeof(auction_bid_accounting_accounts) +
+	sizeof(auction_settlement_listing) + sizeof(auction_settlement_accounts) +
+	sizeof(auction_item_claim_state) + 3 * sizeof(economic_account_key);
+constexpr size_t auction_frozen_fixed_frozen_lifetime_source =
+	// Actual intent -> admission -> metadata implicit default calls. ID and
+	// digest members use their existing brace-valued DMIs, so no extra ID/
+	// array constructor invocation is invented. Destruction traverses the
+	// genuine frozen/admission/metadata and ID-wrapper/member-array descendants.
+	3 * sizeof(void *) + 3 * sizeof(void *) + 4 * 2 * sizeof(void *) + 2 * sizeof(void *) +
+	// Actual _Storage() default-initializes _Empty_byte: eight default
+	// receivers; seven trivial cleanup receivers, no union member traversal.
+	(8 + 7) * sizeof(void *) + auction_frozen_fixed_vector_default<uint8_t> +
+	auction_frozen_fixed_vector_cleanup<uint8_t>;
+constexpr size_t auction_frozen_fixed_dto_lifetime_source =
+	// payload{} is genuine aggregate initialization, with its original seven
+	// array members/nine item values; cleanup receivers are separate scopes.
+	(1 + 7 + AUCTION_COMMAND_MAX_ITEMS) * sizeof(void *) +
+	// bid default containing receiver; two original ID-wrapper/array cleanups.
+	sizeof(void *) + (1 + 2 * 2) * sizeof(void *) +
+	// bid_accounts default containing receiver; six key/ID/array cleanups.
+	sizeof(void *) + (1 + 6 * 3) * sizeof(void *) +
+	// settlement default containing receiver; two ID-wrapper/arrays plus
+	// actual items array and nine trivial settlement-row cleanup receivers.
+	sizeof(void *) + (1 + 2 * 2 + 1 + AUCTION_COMMAND_MAX_ITEMS) * sizeof(void *) +
+	// settlement_accounts default receiver, four key/ID/array cleanups.
+	sizeof(void *) + (1 + 4 * 3) * sizeof(void *) +
+	// claim default receiver, its two IDs and array/nine row cleanup scopes.
+	sizeof(void *) + (1 + 2 * 2 + 1 + AUCTION_COMMAND_MAX_ITEMS) * sizeof(void *) +
+	// Three directly default-initialized keys: each containing default receiver
+	// and distinct key/ID-wrapper/array cleanup receivers. Their lineage DMI
+	// remains aggregate initialization, rather than a default constructor call.
+	3 * (sizeof(void *) + 3 * sizeof(void *));
+constexpr size_t auction_frozen_fixed_observer_source =
+	// prefix(this,total-ref,extra;bool), peak(this,extra,total;bool),
+	// forward(amount,opaque,b-ref;bool), checked-add(total-ref,value;bool).
+	(2 * sizeof(void *) + sizeof(size_t) + sizeof(bool)) +
+	(sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool)) +
+	(2 * sizeof(void *) + sizeof(size_t) + sizeof(bool)) +
+	(sizeof(void *) + sizeof(size_t) + sizeof(bool)) +
+	// Reused output facts vector's fresh physical capacity observation.
+	sizeof(void *) + sizeof(size_t) +
+	// Actual aggregate budget cleanup, no called constructor for brace-init.
+	sizeof(void *);
+constexpr size_t auction_frozen_fixed_caller_source =
+	// Public command/callback/context; outer/source/initial/query_peak/
+	// entry_peak/nested and two required constexpr size_t locals, bool result.
+	3 * sizeof(void *) + 8 * sizeof(size_t) + sizeof(bool) +
+	// child_entry: budget/out refs, actual enum argument, source/initial/
+	// supplement and one selected constexpr query, admitted/result bools.
+	2 * sizeof(void *) + sizeof(auction_frozen_fixed_child) + 4 * sizeof(size_t) +
+	2 * sizeof(bool) +
+	// Pure own/initial getter output/result and selected policy result.
+	sizeof(void *) + 2 * sizeof(bool);
+}
+
+// PRIVATE candidate: no complete profile selection before actual five decoder joins.
+namespace
+{
+enum class auction_frozen_fixed_child : uint8_t
+{
+	bid,
+	settlement,
+	listing,
+	item_claim,
+	money_claim
+};
+struct auction_frozen_fixed_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, source;
+	const economic_frozen_intent *intent = nullptr;
+	bool denied = false;
+	static bool forward(size_t amount, void *opaque) noexcept
+	{
+		auto &b = *static_cast<auction_frozen_fixed_budget *>(opaque);
+		if (b.denied || !b.reserve || !b.reserve(amount, b.context))
+		{
+			b.denied = true;
+			return false;
+		}
+		return true;
+	}
+	bool prefix(size_t &total, size_t extra = 0) noexcept
+	{
+		total = outer;
+		if (denied || !auction_current_add(total, source) ||
+		    !auction_current_add(total, sizeof(*this)) ||
+		    !auction_current_add(total, auction_frozen_fixed_outputs_inline) ||
+		    (intent && !auction_current_add(total, intent->admission.facts.capacity())) ||
+		    !auction_current_add(total, extra))
+		{
+			denied = true;
+			return false;
+		}
+		return true;
+	}
+	bool peak(size_t extra = 0) noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && forward(total, this);
+	}
+};
+bool auction_frozen_fixed_child_entry(auction_frozen_fixed_budget &budget,
+				      auction_frozen_fixed_child kind, size_t &nested) noexcept
+{
+	size_t source = 0, initial = 0, supplement = 0;
+	bool admitted = false;
+	if (budget.denied)
+		return false;
+	switch (kind)
+	{
+	case auction_frozen_fixed_child::bid:
+	{
+		constexpr size_t query = auction_bid_accounting_decode_source_query_frame_bytes();
+		admitted = budget.peak(query) &&
+			   auction_bid_accounting_decode_source_frame_bytes(&source) &&
+			   auction_bid_accounting_decode_initial_inline_bytes(&initial) &&
+			   auction_bid_accounting_decode_source_supplement_frame_bytes(&supplement);
+		break;
+	}
+	case auction_frozen_fixed_child::settlement:
+	{
+		constexpr size_t query =
+			auction_settlement_accounting_decode_source_query_frame_bytes();
+		admitted = budget.peak(query) &&
+			   auction_settlement_accounting_decode_source_frame_bytes(&source) &&
+			   auction_settlement_accounting_decode_initial_inline_bytes(&initial) &&
+			   auction_settlement_accounting_decode_source_supplement_frame_bytes(
+				   &supplement);
+		break;
+	}
+	case auction_frozen_fixed_child::listing:
+	{
+		constexpr size_t query =
+			auction_listing_accounting_decode_source_query_frame_bytes();
+		admitted = budget.peak(query) &&
+			   auction_listing_accounting_decode_source_frame_bytes(&source) &&
+			   auction_listing_accounting_decode_initial_inline_bytes(&initial) &&
+			   auction_listing_accounting_decode_source_supplement_frame_bytes(
+				   &supplement);
+		break;
+	}
+	case auction_frozen_fixed_child::item_claim:
+	{
+		constexpr size_t query =
+			auction_item_claim_accounting_decode_source_query_frame_bytes();
+		admitted = budget.peak(query) &&
+			   auction_item_claim_accounting_decode_source_frame_bytes(&source) &&
+			   auction_item_claim_accounting_decode_initial_inline_bytes(&initial) &&
+			   auction_item_claim_accounting_decode_source_supplement_frame_bytes(
+				   &supplement);
+		break;
+	}
+	case auction_frozen_fixed_child::money_claim:
+	{
+		constexpr size_t query =
+			auction_money_claim_accounting_decode_source_query_frame_bytes();
+		admitted = budget.peak(query) &&
+			   auction_money_claim_accounting_decode_source_frame_bytes(&source) &&
+			   auction_money_claim_accounting_decode_initial_inline_bytes(&initial) &&
+			   auction_money_claim_accounting_decode_source_supplement_frame_bytes(
+				   &supplement);
+		break;
+	}
+	}
+	if (!admitted || !auction_current_add(source, initial) || !budget.peak(source) ||
+	    !budget.prefix(nested) || !auction_current_add(nested, supplement))
+	{
+		budget.denied = true;
+		return false;
+	}
+	return true;
+}
+}
+
+namespace
+{
+// Same genuine finite byte-vector/source policy as all five original bounded
+// accounting codecs. It grants no writer, admission, or activation authority.
+bool auction_frozen_fixed_source_policy() noexcept
+{
+#if defined(__linux__) && defined(__x86_64__) && __cplusplus == 202002L &&                        \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) &&    \
+	!defined(_GLIBCXX_PARALLEL) && !defined(_GLIBCXX_SANITIZE_VECTOR)
+	return sizeof(void *) == 8 && sizeof(size_t) == 8;
+#else
+	return false;
+#endif
+}
+}
+bool auction_repository_frozen_accounting_valid_own_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !auction_frozen_fixed_source_policy())
+		return false;
+	*output = auction_frozen_fixed_frozen_lifetime_source +
+		  auction_frozen_fixed_dto_lifetime_source + auction_frozen_fixed_observer_source +
+		  auction_frozen_fixed_caller_source;
+	return true;
+}
+bool auction_repository_frozen_accounting_valid_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !auction_frozen_fixed_source_policy())
+		return false;
+	*output = sizeof(auction_frozen_fixed_budget) + auction_frozen_fixed_outputs_inline;
+	return true;
+}
+bool auction_repository_frozen_accounting_valid_source_supplement_frame_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !auction_frozen_fixed_source_policy())
+		return false;
+	*output = 0;
+	return true;
+}
+bool auction_repository_frozen_accounting_valid_source_frame_bytes(size_t *output) noexcept
+{
+	size_t own = 0, bid = 0, settlement = 0, listing = 0, item = 0, money = 0, total = 0;
+	if (!output || !auction_repository_frozen_accounting_valid_own_source_frame_bytes(&own) ||
+	    !auction_bid_accounting_decode_source_frame_bytes(&bid) ||
+	    !auction_settlement_accounting_decode_source_frame_bytes(&settlement) ||
+	    !auction_listing_accounting_decode_source_frame_bytes(&listing) ||
+	    !auction_item_claim_accounting_decode_source_frame_bytes(&item) ||
+	    !auction_money_claim_accounting_decode_source_frame_bytes(&money))
+		return false;
+	// Genuine five original short-circuit child phases are sequential. Every
+	// actual reusable parent DTO/Source remains owned throughout each child.
+	total = bid;
+	if (settlement > total)
+		total = settlement;
+	if (listing > total)
+		total = listing;
+	if (item > total)
+		total = item;
+	if (money > total)
+		total = money;
+	if (!auction_current_add(total, own))
+		return false;
+	*output = total;
+	return true;
+}
+
+// PRIVATE candidate; genuine complete own/lower Source definitions remain unselected until sealed.
+bool auction_repository_frozen_accounting_valid_fixed_bounded(const critical_command &command,
+							      bool (*reserve)(size_t,
+									      void *) noexcept,
+							      void *context, size_t outer) noexcept
+{
+	size_t source = 0, initial = 0, query_peak = outer, entry_peak = outer, nested = 0;
+	constexpr size_t query =
+		auction_repository_frozen_accounting_valid_own_source_query_frame_bytes();
+	constexpr size_t entry_source =
+		3 * sizeof(void *) + 8 * sizeof(size_t) + sizeof(bool) +
+		// Genuine checked-add(ref,value,result) before first callback.
+		sizeof(void *) + sizeof(size_t) + sizeof(bool);
+	if (!reserve || !auction_current_add(query_peak, entry_source) ||
+	    !auction_current_add(query_peak, query) || !reserve(query_peak, context) ||
+	    !auction_repository_frozen_accounting_valid_own_source_frame_bytes(&source) ||
+	    !auction_repository_frozen_accounting_valid_initial_inline_bytes(&initial) ||
+	    !auction_current_add(entry_peak, source) || !auction_current_add(entry_peak, initial) ||
+	    !reserve(entry_peak, context))
+		return false;
+	auction_frozen_fixed_budget budget{ reserve, context, outer, source };
+	try
+	{
+		economic_frozen_intent intent;
+		auction_command_payload payload{};
+		auction_bid_accounting_listing bid;
+		auction_bid_accounting_accounts bid_accounts;
+		auction_settlement_listing settlement;
+		auction_settlement_accounts settlement_accounts;
+		auction_item_claim_state claim;
+		economic_account_key wallet, bank, claim_account;
+		budget.intent = &intent;
+		// Complete original five-decoder short circuit and returned semantic
+		// failures survive. Real refusal remains sticky through later OR arms.
+		return (auction_frozen_fixed_child_entry(budget, auction_frozen_fixed_child::bid,
+							 nested) &&
+			auction_bid_accounting_decode_fixed_bounded(
+				command, &intent, &payload, &bid, &bid_accounts,
+				auction_frozen_fixed_budget::forward, &budget,
+				nested) == economic_accounting_error::ok) ||
+		       (auction_frozen_fixed_child_entry(
+				budget, auction_frozen_fixed_child::settlement, nested) &&
+			auction_settlement_accounting_decode_fixed_bounded(
+				command, &intent, &payload, &settlement, &settlement_accounts,
+				auction_frozen_fixed_budget::forward, &budget,
+				nested) == economic_accounting_error::ok) ||
+		       (auction_frozen_fixed_child_entry(
+				budget, auction_frozen_fixed_child::listing, nested) &&
+			auction_listing_accounting_decode_fixed_bounded(
+				command, &intent, &payload, &wallet, &bank,
+				auction_frozen_fixed_budget::forward, &budget,
+				nested) == economic_accounting_error::ok) ||
+		       (auction_frozen_fixed_child_entry(
+				budget, auction_frozen_fixed_child::item_claim, nested) &&
+			auction_item_claim_accounting_decode_fixed_bounded(
+				command, &intent, &payload, &claim, &wallet, &bank,
+				auction_frozen_fixed_budget::forward, &budget,
+				nested) == economic_accounting_error::ok) ||
+		       (auction_frozen_fixed_child_entry(
+				budget, auction_frozen_fixed_child::money_claim, nested) &&
+			auction_money_claim_accounting_decode_fixed_bounded(
+				command, &intent, &payload, &wallet, &bank, &claim_account,
+				auction_frozen_fixed_budget::forward, &budget,
+				nested) == economic_accounting_error::ok);
+	}
+	catch (...)
+	{
+		return false;
+	}
+}

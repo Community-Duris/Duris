@@ -1057,3 +1057,1122 @@ economic_accounting_error auction_bid_accounting_decode_bounded(
 		return error::capacity;
 	}
 }
+
+// Additive complete original bid fixed-proof/Source candidate.
+// Pure profiles qualify only the paired fixed companions.
+namespace
+{
+enum class auction_fixed_child : uint8_t;
+}
+
+// PRIVATE genuine named primitive/lifecycle Source fragments. Complete family totals remain OPEN.
+namespace
+{
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_byte_reserve =
+	// vector.reserve(this,n), old_size, tmp; size/capacity and max_size.
+	sizeof(void *) + 3 * sizeof(size_t) + sizeof(uint8_t *) +
+	4 * (sizeof(void *) + sizeof(size_t)) + 2 * sizeof(size_t) + 3 * sizeof(void *) +
+	// _M_allocate -> traits::allocate -> allocator -> new_allocator,
+	// actual result/constant-evaluation bool/operator new argument/result.
+	3 * (2 * sizeof(void *) + sizeof(size_t)) + 3 * sizeof(void *) + 2 * sizeof(size_t) +
+	sizeof(void *) + sizeof(bool) +
+	// _S_relocate -> __relocate_a -> __relocate_a_1 trivial byte memmove.
+	3 * (4 * sizeof(void *) + sizeof(void *)) + 3 * (sizeof(void *) + sizeof(void *)) +
+	sizeof(std::ptrdiff_t) + 3 * sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+	// original old buffer deallocation, including the zero-pointer branch.
+	3 * (2 * sizeof(void *) + sizeof(size_t)) + sizeof(void *) + sizeof(size_t);
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_byte_append =
+	// append_u64(vector*,value) byte index and cast byte temporary; rvalue
+	// push_back -> emplace_back, forward -> construct -> construct_at and
+	// placement-new result. The freshly empty facts vector was reserve'd
+	// to its exact 16/24-byte length before these original two/three loops;
+	// genuine cap>=length proof excludes the reallocation branch here.
+	sizeof(void *) + sizeof(uint64_t) + sizeof(size_t) + sizeof(uint8_t) + 2 * sizeof(void *) +
+	2 * sizeof(void *) + sizeof(void *) + 2 * sizeof(void *) + 3 * sizeof(void *) +
+	3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) +
+	// actual emplace return back/end iterator and dereference/base scopes.
+	7 * sizeof(void *) + sizeof(std::ptrdiff_t);
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_equal =
+	// vector<byte> == size/begin/end -> equal -> equal_aux/aux1/true::equal,
+	// real iterator/base/pointer wrappers, len and final memcmp boundary.
+	2 * sizeof(void *) + sizeof(bool) + 2 * (sizeof(void *) + sizeof(size_t)) +
+	3 * 2 * sizeof(void *) + 6 * 2 * sizeof(void *) + 4 * (3 * sizeof(void *) + sizeof(bool)) +
+	2 * sizeof(bool) + 3 * 2 * sizeof(void *) + sizeof(std::ptrdiff_t) + 2 * sizeof(void *) +
+	sizeof(size_t) + sizeof(int);
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_array_equal =
+	// Actual selected installed array5904: operator==(two refs;bool),
+	// begin/end/begin each(this;pointer) and their three direct data calls.
+	// No _S_ptr/_S_ref or size() descendant exists in this selected path.
+	2 * sizeof(void *) + sizeof(bool) + 6 * (2 * sizeof(void *)) +
+	// std::equal -> equal_aux -> equal_aux1 -> equal<true>::equal;
+	// pointer niter bases, simple/integer bools, len and memcmp leaf.
+	4 * (3 * sizeof(void *) + sizeof(bool)) + 3 * 2 * sizeof(void *) + 2 * sizeof(bool) +
+	sizeof(std::ptrdiff_t) + 2 * sizeof(void *) + sizeof(size_t) + sizeof(int);
+// Exact fitting byte push descendant excludes the original append_u64
+// caller, which each actual family prices explicitly with its true types.
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_byte_fitting_push =
+	auction_reconstruction_fixed_byte_append -
+	(sizeof(void *) + sizeof(uint64_t) + sizeof(size_t) + sizeof(uint8_t));
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_array_index_source =
+	// Actual const/mutable array::operator[](this,index;reference), direct
+	// _M_elems[index]. Source policy excludes assertion/debug calls.
+	2 * sizeof(void *) + sizeof(size_t);
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_array_id_range_source =
+	// Actual ID input begin/end and their two direct data calls.
+	4 * (2 * sizeof(void *));
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_span_source =
+	// span(vector&): this/range -> ranges::_Data(this,range)->vector.data
+	// -> _M_data_ptr(this,pointer); ranges::_Size(this,range)->vector.size.
+	// Actual ranges noexcept expressions are required constant expressions.
+	2 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(void *) + 3 * sizeof(void *) +
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(void *) + sizeof(size_t) +
+	// Delegating span(pointer,count) -> std::to_address(pointer) and actual
+	// dynamic __extent_storage(this,count), not a static extent surrogate.
+	2 * sizeof(void *) + sizeof(size_t) + 4 * sizeof(void *) + sizeof(void *) + sizeof(size_t) +
+	// span.size -> extent::_M_extent and operator[] receiver/index/reference.
+	2 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(void *) + sizeof(size_t);
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_optional_source =
+	// One actual fresh admission metadata optional, selecting eight default receivers:
+	// optional/_Enable_copy_move/_Optional_base/_Optional_base_impl/
+	// _Optional_payload/_Optional_payload_base/_Storage. The selected
+	// source_event is trivial, so their seven defaulted cleanup receivers
+	// have no reset/destroy call or contained-value destructor dispatch.
+	// _Storage() value-initializes its actual _Empty_byte member.
+	(8 * sizeof(void *) + 7 * sizeof(void *)) +
+	// operator=(source_event&&): this/source/reference result and
+	// _M_is_engaged(this,bool). Fresh admission.source_event is disengaged;
+	// only the actual construction branch is reached, not _M_get/assignment.
+	3 * sizeof(void *) + sizeof(void *) + sizeof(bool) +
+	// base_impl::_M_construct -> payload_base::_M_construct; three forward
+	// scopes, addressof, _Construct, construct_at and placement-new.
+	4 * sizeof(void *) + 3 * 2 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(bool) + 2 * sizeof(void *) + sizeof(void *) + sizeof(size_t) +
+	// Generated source_event move(this,source), each ID wrapper and its
+	// array member move pair; returned source_for aggregate copies
+	// its two actual command IDs in the separate source_assignment graph.
+	// Temporary cleanup visits source_event and both wrapper/array pairs.
+	// No optional stored destructor dispatch in this trivial specialization.
+	2 * sizeof(void *) + 2 * (2 * sizeof(void *) + 2 * sizeof(void *)) +
+	// source_for returned ID copies are owned separately exactly once.
+	5 * sizeof(void *);
+}
+
+// PRIVATE named genuine lifecycle subgraphs, no whole family alias.
+namespace
+{
+template <class T> constexpr size_t auction_reconstruction_fixed_vector_default =
+	6 * sizeof(void *);
+// Vector destructor -> _Destroy trivial dispatch -> base destructor,
+// _M_deallocate -> traits/allocator/new_allocator -> sized delete, followed
+// by actual allocator and new_allocator base cleanup. No nontrivial T here.
+template <class T> constexpr size_t auction_reconstruction_fixed_vector_cleanup =
+	sizeof(std::vector<T> *) + 2 * sizeof(void *) + 3 * sizeof(void *) + 2 * sizeof(void *) +
+	2 * sizeof(void *) + sizeof(void *) + 4 * (2 * sizeof(void *) + sizeof(size_t)) +
+	// Sized delete plus real _Vector_impl, allocator, new_allocator and
+	// _Vector_impl_data cleanup receivers (base destructor above owns P).
+	sizeof(void *) + sizeof(size_t) + 4 * sizeof(void *) +
+	// Genuine C++20 _Destroy and allocator::deallocate runtime false
+	// constant-evaluation result carriers; both selected calls still occur.
+	2 * sizeof(bool);
+// Move assignment operator=(this,source), true_type -> _M_move_assign:
+// real tmp(get_allocator()), allocator temporary, two _M_swap_data calls
+// with actual _Vector_impl_data temporary, copy_data receivers, std::move,
+// allocator_on_move and the tmp/allocator cleanup. std::allocator propagates.
+template <class T> constexpr size_t auction_reconstruction_fixed_vector_move =
+	// Public operator= receivers/result and its actual constexpr policy bool;
+	// _M_move_assign(this,source,true_type) formals.
+	3 * sizeof(void *) + sizeof(bool) +
+	// Public std::move(__x) argument/reference result before _M_move_assign.
+	2 * sizeof(void *) + 2 * sizeof(void *) + sizeof(std::true_type) + sizeof(std::vector<T>) +
+	sizeof(std::allocator<T>) +
+	// get_allocator + const _M_get_Tp_allocator, allocator/new_allocator copy;
+	// vector(allocator) -> base -> impl -> allocator/base copy -> data default.
+	sizeof(void *) + sizeof(std::allocator<T>) + 2 * sizeof(void *) + 4 * sizeof(void *) +
+	5 * 2 * sizeof(void *) + sizeof(void *) +
+	2 * (2 * sizeof(void *) + sizeof(typename std::vector<T>::pointer) * 3 + sizeof(void *) +
+	     3 * 2 * sizeof(void *) +
+	     // Each actual swap temporary's trivial _Vector_impl_data cleanup.
+	     sizeof(void *)) +
+	// Two _M_get_Tp_allocator scopes; __alloc_on_move -> std::move and
+	// genuine defaulted allocator/new_allocator copy-assignment results.
+	4 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) + 2 * 3 * sizeof(void *) +
+	auction_reconstruction_fixed_vector_cleanup<T> + 2 * sizeof(void *);
+
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_admission_lifetime_source =
+	// Genuine admission and metadata default constructor receivers;
+	// cleanup admission,metadata,four ID wrappers+arrays. Metadata has no digest member.
+	2 * sizeof(void *) + (2 + 4 * 2) * sizeof(void *) +
+	auction_reconstruction_fixed_vector_default<uint8_t> +
+	auction_reconstruction_fixed_vector_cleanup<uint8_t>;
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_frozen_lifetime_source =
+	// Genuine frozenâ†’admissionâ†’metadata default constructor receivers.
+	// Cleanup same containing graph, four IDs+arrays and two digest arrays.
+	3 * sizeof(void *) + (3 + 4 * 2 + 2) * sizeof(void *) +
+	auction_reconstruction_fixed_vector_default<uint8_t> +
+	auction_reconstruction_fixed_vector_cleanup<uint8_t> +
+	// Optional actual eight default receivers include _Empty_byte();
+	// seven cleanup receivers: trivial union has no active-member traversal.
+	(8 + 7) * sizeof(void *);
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_frozen_output_source =
+	// Full strong generated frozenâ†’admissionâ†’metadata assignments, four
+	// ID wrappers+array assignments, two direct digest array assignments,
+	// seven optional selected assignment receivers. Source argument passed
+	// by actual std::move has argument/ref-result, vector move graph once.
+	3 * (3 * sizeof(void *)) + 4 * (2 * 3 * sizeof(void *)) + 2 * (3 * sizeof(void *)) +
+	7 * (3 * sizeof(void *)) + 2 * sizeof(void *) +
+	auction_reconstruction_fixed_vector_move<uint8_t>;
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_native_lifetime_source =
+	// Containing native default+cleanup, two byte/u64 vectors genuine
+	// lifecycle graphs, payload seven-arrays/nine-items cleanup and three
+	// native digest-array cleanup. {} digest/payload members have aggregate
+	// initialization, not an invented called default constructor.
+	2 * sizeof(void *) + auction_reconstruction_fixed_vector_default<uint8_t> +
+	auction_reconstruction_fixed_vector_cleanup<uint8_t> +
+	auction_reconstruction_fixed_vector_default<uint64_t> +
+	auction_reconstruction_fixed_vector_cleanup<uint64_t> +
+	(1 + 7 + AUCTION_COMMAND_MAX_ITEMS + 3) * sizeof(void *) +
+	// Real native-helper *payload=native.payload generated assignment.
+	(1 + 7 + AUCTION_COMMAND_MAX_ITEMS) * 3 * sizeof(void *);
+
+}
+
+// PRIVATE typed subgraphs for original accounting copy_n(...,int{16},...)
+// and returned byte-vector move construction. No runtime algorithm change.
+namespace
+{
+using auction_fact_iterator = std::span<const uint8_t>::iterator;
+[[maybe_unused]] constexpr size_t auction_fact_P = sizeof(void *), auction_fact_N = sizeof(size_t),
+				  auction_fact_D = sizeof(std::ptrdiff_t),
+				  auction_fact_B = sizeof(bool);
+// Actual GCC13 span.iterator is a normal iterator, never a pointer surrogate.
+static_assert(
+	std::is_same_v<auction_fact_iterator,
+		       __gnu_cxx::__normal_iterator<const uint8_t *, std::span<const uint8_t>>>);
+[[maybe_unused]] constexpr size_t auction_fact_iterator_plus_source =
+	// Normal iterator +(this,difference;iterator result), real temporary
+	// pointer passed to its pointer-reference constructor(this,arg).
+	sizeof(auction_fact_iterator *) + auction_fact_D + sizeof(auction_fact_iterator) +
+	sizeof(const uint8_t *) + 2 * auction_fact_P;
+[[maybe_unused]] constexpr size_t auction_fact_copy_n_int_source =
+	// copy_n(normal-first,int-count,pointer-result; __n2 int, pointer return).
+	sizeof(auction_fact_iterator) + 2 * sizeof(int) + 2 * auction_fact_P +
+	// __size_to_integer(int argument/result); iterator_category(first-ref,
+	// actual RA tag result); __copy_n(normal-first,int,pointer,RA tag;ptr).
+	2 * sizeof(int) + auction_fact_P + sizeof(std::random_access_iterator_tag) +
+	sizeof(auction_fact_iterator) + sizeof(int) + 2 * auction_fact_P +
+	sizeof(std::random_access_iterator_tag) +
+	// Genuine lvalue first copy into __copy_n and into std::copy, their
+	// normal-iterator ctor/cleanup scopes, plus copy_n's first cleanup.
+	2 * (2 * auction_fact_P + auction_fact_P) + auction_fact_P +
+	auction_fact_iterator_plus_source +
+	// std::copy and __copy_move_a(normal-first/last,ptr-result;ptr return).
+	2 * (2 * sizeof(auction_fact_iterator) + 2 * auction_fact_P) +
+	// Two selected generic __miter_base(normal-by-value;normal return),
+	// actual argument copy/returned move constructors and their cleanups.
+	2 * (2 * sizeof(auction_fact_iterator) + 2 * auction_fact_P + 2 * auction_fact_P +
+	     auction_fact_P) +
+	// Both std::copy input normal iterators and copy_move_a inputs clean up.
+	4 * auction_fact_P +
+	// Two normal __niter_base(by-value;ptr return), each calls base(this,
+	// const pointer-reference result), real argument copy and cleanup.
+	2 * (sizeof(auction_fact_iterator) + auction_fact_P + 2 * auction_fact_P +
+	     2 * auction_fact_P + auction_fact_P) +
+	// Pointer output niter_base; pointer niter_wrap(ref,ptr;ptr return).
+	2 * auction_fact_P + 3 * auction_fact_P +
+	// Exact raw-pointer a1/a2/simple-copy_m: three pointers+return each.
+	// a2's actual false is_constant_evaluated return; copy_m's _Num.
+	3 * (4 * auction_fact_P) + auction_fact_B + auction_fact_D +
+	// Original copy has literal16 elements: _Num>1 always, so only bulk
+	// memmove declaration is selected; no fabricated one-element assignment.
+	3 * auction_fact_P + auction_fact_N;
+[[maybe_unused]] constexpr size_t auction_fact_copy_n_caller_source =
+	// Original span.begin(this,normal result)+pointer-ref iterator ctor,
+	// caller +(offset) selected above, temporary begin iterator cleanup.
+	auction_fact_P + sizeof(auction_fact_iterator) + 2 * auction_fact_P +
+	// The shared typed operator+ union is retained once by copy_n_int_source.
+	// This original caller still owns its distinct begin iterator cleanup.
+	auction_fact_P +
+	// Selected target array.begin -> direct data; no array_traits helper.
+	2 * (2 * auction_fact_P);
+[[maybe_unused]] constexpr size_t auction_fact_returned_vector_move_source =
+	// Optional NRVO path's actual vector, base, impl move constructor pairs.
+	3 * 2 * auction_fact_P +
+	// _Vector_impl performs two actual std::move(this allocator/data), each
+	// argument/reference result; std::allocator's move resolves its const-copy
+	// constructor and real new_allocator base default constructor receiver.
+	2 * 2 * auction_fact_P + 2 * auction_fact_P + auction_fact_P +
+	// Actual _Vector_impl_data move(this,source) and pointer() reset value.
+	2 * auction_fact_P + sizeof(uint8_t *);
+}
+
+// PRIVATE actual vector<byte>.insert(end(),const-byte-first,last) source graph.
+// Original bid ID/AEC1 inserts have reserve(140), so only fitting end is selected.
+// Native ANF2 digest insertion can select fitting OR reallocation; both are here.
+// Every real call uses end(): elems_after=0 excludes move_backward and the
+// __elems_after>__n arm. No arbitrary whole-codec/vector allowance is imported.
+namespace
+{
+[[maybe_unused]] constexpr size_t auction_insert_P = sizeof(void *),
+				  auction_insert_N = sizeof(size_t),
+				  auction_insert_D = sizeof(std::ptrdiff_t),
+				  auction_insert_B = sizeof(bool);
+using auction_insert_iterator = std::vector<uint8_t>::iterator;
+using auction_insert_const_iterator = std::vector<uint8_t>::const_iterator;
+using auction_insert_move_iterator = std::move_iterator<uint8_t *>;
+[[maybe_unused]] constexpr size_t auction_insert_pointer_copy_source =
+	// copy(first,last,result;return), two pointer miter_base(arg,result),
+	// copy_move_a/a1/a2/copy_m: actual 3 pointer inputs+pointer result each.
+	5 * (4 * auction_insert_P) + 2 * (2 * auction_insert_P) +
+	// Three genuine pointer niter_base(arg,result), niter_wrap(ref,ptr;ptr),
+	// a2's constant-evaluation bool and simple copy_m's signed count.
+	3 * (2 * auction_insert_P) + 3 * auction_insert_P + auction_insert_B + auction_insert_D +
+	// copy_m true bulk declaration; original ranges are 0,4,16,32 bytes,
+	// never1, so assign_one is not selected. __builtin_expect declaration
+	// has actual long expression/expected/result (not a function baseline).
+	3 * sizeof(long) + 3 * auction_insert_P + auction_insert_N;
+[[maybe_unused]] constexpr size_t auction_insert_uninitialized_pointer_source =
+	// allocator<byte> specialized uninitialized_copy_a(first,last,result,
+	// allocator-ref;return) with false constant-evaluation bool.
+	5 * auction_insert_P + auction_insert_B +
+	// uninitialized_copy(first,last,result;return), its can_memmove and
+	// assignable bools; true uninit_copy(first,last,result;return).
+	2 * (4 * auction_insert_P) + 2 * auction_insert_B + auction_insert_pointer_copy_source;
+[[maybe_unused]] constexpr size_t auction_insert_move_iterator_source =
+	// make_move_iterator(pointer;move-iterator-result) and pointer-specific
+	// make_move_if_noexcept_iterator(pointer;move-iterator-result).
+	2 * (auction_insert_P + sizeof(auction_insert_move_iterator)) +
+	// Actual move_iterator(pointer) ctor this/pointer + std::move(arg/ref).
+	2 * auction_insert_P + 2 * auction_insert_P +
+	// Move-iterator parameters in allocator uninitialized_copy_a,
+	// uninitialized_copy and true uninit_copy have copy constructors and
+	// cleanup receiver scopes, independently of their actual value carriers.
+	3 * 2 * (2 * auction_insert_P + auction_insert_P) +
+	// std::copy takes two move iterators by value, constructs its two
+	// __miter_base parameters, and cleans its own parameter values.
+	2 * (2 * auction_insert_P + auction_insert_P) +
+	2 * (2 * auction_insert_P + auction_insert_P) +
+	// move_iterator miter_base(arg by value;ptr return) -> base() const&
+	// (this/ref result), then actual pointer miter_base(arg/result).
+	2 * (sizeof(auction_insert_move_iterator) + auction_insert_P + 2 * auction_insert_P +
+	     2 * auction_insert_P) +
+	// Genuine implicit move_iterator cleanup for both miter parameters.
+	2 * auction_insert_P;
+[[maybe_unused]] constexpr size_t auction_insert_uninitialized_move_source =
+	// move_a and move_if_noexcept_a inputs(first,last,result,alloc;return).
+	// Their two explicit move-iterator temporaries survive child call and
+	// each has a real trivial cleanup receiver. Runtime byte move is noexcept.
+	2 * (5 * auction_insert_P) + 2 * auction_insert_P + auction_insert_move_iterator_source +
+	auction_insert_uninitialized_pointer_source;
+[[maybe_unused]] constexpr size_t auction_insert_normal_output_source =
+	// Fitting branch copy(first,mid,normal-position) returns normal iterator,
+	// through copy_move_a. Pointer-sized value carriers already in pointer
+	// copy source; these genuine constructors/cleanups are additional.
+	2 * (2 * auction_insert_P + auction_insert_P) +
+	// Output niter_base(normal-by-value;ptr) -> base(this,const-ref),
+	// including actual parameter copy/cleanup.
+	2 * auction_insert_P + 2 * auction_insert_P + 2 * auction_insert_P + auction_insert_P +
+	// niter_wrap(original-ref,raw-result;normal-result) performs
+	// original + (result-niter_base(original)); exact plus(this,difference,
+	// normal-result), pointer temporary and ctor(this,pointer-ref).
+	auction_insert_P + auction_insert_P + sizeof(auction_insert_iterator) +
+	2 * auction_insert_P + 2 * auction_insert_P + auction_insert_P + auction_insert_P +
+	auction_insert_D + sizeof(auction_insert_iterator) + auction_insert_P +
+	2 * auction_insert_P +
+	// Returned output normal iterator cleanup in original discarded copy.
+	auction_insert_P;
+[[maybe_unused]] constexpr size_t auction_insert_end_public_source =
+	// insert(this,const-position,first,last;iterator-result), offset local.
+	3 * auction_insert_P + sizeof(auction_insert_const_iterator) +
+	sizeof(auction_insert_iterator) + auction_insert_D +
+	// Caller end()→normal pointer-ref ctor and mutable→const converting
+	// ctor, followed by actual end temporary/position argument cleanup.
+	auction_insert_P + sizeof(auction_insert_iterator) + 2 * auction_insert_P +
+	2 * auction_insert_P + 2 * auction_insert_P + auction_insert_P +
+	// cbegin/begin/end each this/normal result and pointer-ref ctor.
+	3 * (auction_insert_P + sizeof(auction_insert_iterator) + 2 * auction_insert_P) +
+	// const normal subtraction two refs/difference, two base const-ref pairs.
+	2 * auction_insert_P + auction_insert_D + 2 * (2 * auction_insert_P) +
+	// begin()+offset this/difference/result; actual pointer temporary +ctor.
+	auction_insert_P + auction_insert_D + sizeof(auction_insert_iterator) + auction_insert_P +
+	2 * auction_insert_P +
+	// Pointer iterator_category(ref,RA result); forward tag conversion,
+	// range_insert(this,normal-position,first,last,forward-tag); bool guard.
+	auction_insert_P + sizeof(std::random_access_iterator_tag) +
+	sizeof(std::forward_iterator_tag) + 3 * auction_insert_P + sizeof(auction_insert_iterator) +
+	sizeof(std::forward_iterator_tag) + auction_insert_B +
+	// Real by-value normal range-position copy+cleanup, generated cleanup
+	// of begin/cbegin/end/plus return temporaries used by public insert.
+	2 * auction_insert_P + auction_insert_P + 4 * auction_insert_P +
+	// range_insert n; distance(pointer,pointer;difference) then
+	// __distance(pointer,pointer,RA-tag;difference), category(ref,RA result).
+	auction_insert_N + 2 * (2 * auction_insert_P + auction_insert_D) +
+	sizeof(std::random_access_iterator_tag) + auction_insert_P +
+	sizeof(std::random_access_iterator_tag);
+[[maybe_unused]] constexpr size_t auction_insert_end_fitting_source =
+	// elems_after size_t, old_finish pointer, mid input pointer. end()-pos
+	// two normal refs/difference + two actual base receiver/reference pairs.
+	auction_insert_N + 2 * auction_insert_P + 2 * auction_insert_P + auction_insert_D +
+	2 * (2 * auction_insert_P) +
+	// advance(mid-ref,size_t count): local difference; category(ref,RA),
+	// __advance(pointer-ref,difference,RA-tag). mid advances by literal0
+	// end-position distance; ++/-- alternatives are never selected.
+	auction_insert_P + auction_insert_N + auction_insert_D + auction_insert_P +
+	sizeof(std::random_access_iterator_tag) + auction_insert_P + auction_insert_D +
+	sizeof(std::random_access_iterator_tag) +
+	// Current allocator reference getter, position.base() and normal output
+	// by-value copy into the empty tail-copy call.
+	2 * auction_insert_P + 2 * auction_insert_P + auction_insert_uninitialized_pointer_source +
+	auction_insert_uninitialized_move_source + auction_insert_normal_output_source;
+[[maybe_unused]] constexpr size_t auction_insert_end_growth_source =
+	// Exact old_start/old_finish/new_start/new_finish pointers and len.
+	4 * auction_insert_P + auction_insert_N +
+	// _M_check_len(this,n,diagnostic;size-result), local len,
+	// max_size(this,result)→_S_max_size(alloc-ref,result), diffmax/allocmax;
+	// traits max_size(alloc-ref,result)→new_allocator _M_max_size(this,result).
+	2 * auction_insert_P + 3 * auction_insert_N + 4 * (auction_insert_P + auction_insert_N) +
+	2 * auction_insert_N +
+	// size(this,result), min/max two refs+returned ref; diagnostic throw
+	// length_error message pointer is admitted even on growth-policy refusal.
+	auction_insert_P + auction_insert_N + 2 * (3 * auction_insert_P) + auction_insert_P +
+	// allocator reference getter; allocate→traits→allocator→new_allocator,
+	// actual hint/default argument, operator-new n/returned-pointer and
+	// false constant-evaluation result in allocator::allocate.
+	2 * auction_insert_P + 3 * (2 * auction_insert_P + auction_insert_N) +
+	3 * auction_insert_P + auction_insert_N + auction_insert_P + auction_insert_N +
+	auction_insert_B +
+	// Both move-if-noexcept prefix/tail and actual copy middle use the same
+	// selected named source functions sequentially; union contains each once.
+	auction_insert_uninitialized_move_source + auction_insert_uninitialized_pointer_source +
+	// _Destroy(first,last,alloc), _Destroy(first,last), destroy_aux<true>,
+	// false constant-evaluation bool; bytes have no per-element destructor.
+	3 * auction_insert_P + 2 * auction_insert_P + 2 * auction_insert_P + auction_insert_B +
+	// Actual deallocation four scopes and sized-delete pointer/count.
+	4 * (2 * auction_insert_P + auction_insert_N) + auction_insert_P + auction_insert_N;
+[[maybe_unused]] constexpr size_t auction_insert_end_fitting_complete_source =
+	auction_insert_end_public_source + auction_insert_end_fitting_source;
+[[maybe_unused]] constexpr size_t auction_insert_end_any_complete_source =
+	auction_insert_end_public_source + auction_insert_end_fitting_source +
+	auction_insert_end_growth_source;
+}
+
+// PRIVATE genuine family generated assignment/cleanup inventories.
+// Brace-valued aggregate DMIs do not call ID/array default constructors.
+namespace
+{
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_bid_listing_source =
+	// Local parsed_listing implicit default receiver, containing and two ID/
+	// array cleanup chains; strong final listing copy traverses same five scopes.
+	sizeof(void *) + (1 + 2 * 2) * sizeof(void *) + (1 + 2 * 2) * 3 * sizeof(void *);
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_bid_accounts_source =
+	// parsed_accounts default receiver; six key/ID/array cleanup chains.
+	sizeof(void *) + (1 + 6 * 3) * sizeof(void *) +
+	// Six original returned key aggregates copy lineage through wrapper+array,
+	// then assign account/ID/array and clean temporary account/ID/array.
+	6 * (2 * 2 * sizeof(void *) + 3 * 3 * sizeof(void *) + 3 * sizeof(void *)) +
+	// Final strong accounts assignment traverses containing and six keys.
+	(1 + 6 * 3) * 3 * sizeof(void *);
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_settlement_listing_source =
+	// Default containing receiver; cleanup visits two IDs/arrays, original
+	// items array and all nine trivial row members. Strong output same graph.
+	sizeof(void *) + (1 + 2 * 2 + 1 + AUCTION_COMMAND_MAX_ITEMS) * sizeof(void *) +
+	(1 + 2 * 2 + 1 + AUCTION_COMMAND_MAX_ITEMS) * 3 * sizeof(void *);
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_settlement_accounts_source =
+	sizeof(void *) + (1 + 4 * 3) * sizeof(void *) +
+	// Four authentic aggregate account temporaries and final strong assignment.
+	4 * (2 * 2 * sizeof(void *) + 3 * 3 * sizeof(void *) + 3 * sizeof(void *)) +
+	(1 + 4 * 3) * 3 * sizeof(void *);
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_claim_state_source =
+	sizeof(void *) + (1 + 2 * 2 + 1 + AUCTION_COMMAND_MAX_ITEMS) * sizeof(void *) +
+	(1 + 2 * 2 + 1 + AUCTION_COMMAND_MAX_ITEMS) * 3 * sizeof(void *);
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_two_returned_accounts_source =
+	// Original two parsed wallet/bank aggregates return-copy their lineage;
+	// they have no separate called default ctor due aggregate initialization.
+	2 * (2 * 2 * sizeof(void *) + 3 * sizeof(void *) + 3 * 3 * sizeof(void *));
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_payload_output_cleanup_source =
+	// Exact payload seven-array/nine-item strong final assignment and local
+	// aggregate cleanup. Initialization remains the original payload{}.
+	(1 + 7 + AUCTION_COMMAND_MAX_ITEMS) * (3 * sizeof(void *) + sizeof(void *));
+}
+
+// PRIVATE exact common callback/helper/current/scalar Source inventories.
+namespace
+{
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_zero_source =
+	// ID ref/bool, actual array range ref/begin/end/current byte;
+	// selected installed array begin/end each call direct data, no size().
+	sizeof(void *) + sizeof(bool) + 3 * sizeof(void *) + sizeof(uint8_t) +
+	4 * (2 * sizeof(void *));
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_key_valid_source =
+	// economic_account_key_valid(key-ref;bool)â†’zero and kind_valid(kind,bool).
+	sizeof(void *) + sizeof(bool) + auction_reconstruction_fixed_zero_source +
+	sizeof(economic_account_kind) + sizeof(bool);
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_id_equal_source =
+	// critical_operation_id_equal(left-ref,right-ref;bool)â†’actual array16==.
+	2 * sizeof(void *) + sizeof(bool) + auction_reconstruction_fixed_array_equal;
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_budget_source =
+	// Exact checked_add(ref,value;bool), forward(amount,opaque;budget-ref,bool).
+	sizeof(void *) + sizeof(size_t) + sizeof(bool) + 2 * sizeof(void *) + sizeof(size_t) +
+	sizeof(bool) +
+	// prefix(this,total-ref,extra;heap,bool), peak(this,extra;total,bool).
+	2 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(bool) + sizeof(void *) +
+	2 * sizeof(size_t) + sizeof(bool) +
+	// The actual admission/intent/expected facts byte capacity invocations,
+	// native base/u64 capacity are separate call sites in the retained census.
+	5 * (sizeof(void *) + sizeof(size_t)) +
+	// Genuine trivial budget cleanup receiver, no called aggregate constructor.
+	sizeof(void *);
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_child_entry_source =
+	// budget-ref,kind,nested-ref;source/initial/supplement and selected
+	// required constexpr query local; admitted/result bools.
+	2 * sizeof(void *) + sizeof(auction_fixed_child) + 4 * sizeof(size_t) + 2 * sizeof(bool);
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_payload_helper_source =
+	// command/out/budget formals,native_allowed; nested,status,returned bool,
+	// completed generic payload result bool. Context is actual INLINE below.
+	3 * sizeof(void *) + sizeof(size_t) + sizeof(error) + 3 * sizeof(bool);
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_native_helper_source =
+	// append command/facts/budget refs, nested,decoded/result errors.
+	3 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(error) +
+	// Original hash range's actual initializer-list object/backing3-pointer
+	// array,range ref,begin/end,current hash pointer and real begin/end/size
+	// accessor declaration carriers. Not an entire native payload allowance.
+	sizeof(std::initializer_list<const economic_digest *>) + 3 * sizeof(void *) +
+	4 * sizeof(void *) +
+	// Real initializer_list ctor(this,array,len), begin/end(this,result),
+	// size(this,result) and generated trivial cleanup receiver.
+	2 * sizeof(void *) + sizeof(size_t) + 2 * (2 * sizeof(void *)) + sizeof(void *) +
+	sizeof(size_t) + sizeof(void *) +
+	// Selected array begin/end each calls direct data; no _S_ptr/size().
+	4 * (2 * sizeof(void *));
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_native_forecast_source =
+	// Original exact forecast params, size/capacity/largest/request,run,
+	// count/iterations/i/simultaneous/extra; runs11 array,block and result.
+	2 * sizeof(void *) + 10 * sizeof(size_t) + 11 * sizeof(size_t) + 2 * sizeof(bool) +
+	// std::size(array-ref;N), two facts.capacity and facts.size calls.
+	sizeof(void *) + sizeof(size_t) + 3 * (sizeof(void *) + sizeof(size_t)) +
+	// Original growth_peak(size,capacity,count,request-ref;bool): exact
+	// required and added locals. It uses a plain conditional expression,
+	// no std::max/allocator query. checked_add is in budget Source once.
+	sizeof(void *) + 5 * sizeof(size_t) + sizeof(bool);
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_source_assignment_source =
+	// Authentic source_for returned event contains two ID copy wrapper+array
+	// constructor pairs. Caller fresh optional construction is independently
+	// mapped in fixed_optional_source, including returned event cleanup.
+	sizeof(void *) + 2 * (2 * 2 * sizeof(void *));
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_metadata_assignment_source =
+	// Three actual explicit metadata lineage/epoch/original ID copy-assign
+	// scopes; each distinguishes ID wrapper and its std::array member.
+	3 * (2 * 3 * sizeof(void *));
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_decode_scalar_source =
+	// Seven public refs/pointers; outer and seven exact locals (including
+	// later entry_peak), decoded/binding/reconstructed/returned error,
+	// original bad_alloc catch ref and copy_request.
+	7 * sizeof(void *) + 9 * sizeof(size_t) + 4 * sizeof(error) + sizeof(void *) +
+	// Original vectorâ†’span conversion temporary and later named facts span
+	// are sequential but genuinely distinct source sites. Full exact span
+	// constructor/data/index/size Source is named separately.
+	2 * sizeof(std::span<const uint8_t>) + auction_reconstruction_fixed_span_source +
+	// Temporary conversion and named facts each clean span + dynamic
+	// extent_storage; const-ref decoder child owns neither caller object.
+	2 * (2 * sizeof(void *)) +
+	// Actual lineage const reference; expected byte-vector own lifecycle,
+	// projected accounting vector.clear(this)â†’erase_at_end(this,pos;n)
+	// â†’_Destroy(first,last,alloc)â†’trivial destructors dispatch.
+	sizeof(void *) + auction_reconstruction_fixed_vector_default<uint8_t> +
+	auction_reconstruction_fixed_vector_cleanup<uint8_t> + sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(size_t) + 3 * sizeof(void *) + 2 * sizeof(void *) + 2 * sizeof(void *) +
+	sizeof(bool) + auction_reconstruction_fixed_payload_output_cleanup_source +
+	auction_reconstruction_fixed_frozen_lifetime_source +
+	auction_reconstruction_fixed_frozen_output_source + auction_reconstruction_fixed_equal;
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_number_lambda_source =
+	// facts-ref capture object and operator() this; offset,width,byte,
+	// value and returned uint64. Actual implicit closure cleanup receiver.
+	2 * sizeof(void *) + 3 * sizeof(size_t) + 2 * sizeof(uint64_t) + sizeof(void *);
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_listing_number_lambda_source =
+	// Listing's original lambda has only offset and byte, no width argument.
+	2 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(uint64_t) + sizeof(void *);
+[[maybe_unused]] constexpr size_t auction_reconstruction_fixed_item_read_number_source =
+	// Three genuine read_number<T>(span value,offset) instantiations:
+	// u16/u32/u64; local index,value and actual T result. Default span copy
+	// and extent-storage copy/cleanup are explicit source scopes.
+	3 * (sizeof(std::span<const uint8_t>) + 2 * sizeof(size_t) + 6 * sizeof(void *)) +
+	2 * (sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint64_t));
+}
+
+// PRIVATE complete reconstruction budget ownership body; pure Source maps
+// remain draft until exact selected primitive/family joins are reviewed.
+namespace
+{
+struct auction_reconstruction_fixed_budget
+{
+	bool (*reserve)(size_t, void *) noexcept;
+	void *context;
+	size_t outer, source, entry_inline;
+	size_t native_inline = 0;
+	const economic_frozen_intent *intent = nullptr;
+	const economic_admission_facts *admission = nullptr;
+	const critical_command *projection = nullptr;
+	const std::vector<uint8_t> *expected = nullptr;
+	const auction_native_command_context *native = nullptr;
+	bool denied = false;
+	static bool forward(size_t amount, void *opaque) noexcept
+	{
+		auto &b = *static_cast<auction_reconstruction_fixed_budget *>(opaque);
+		if (b.denied || !b.reserve || !b.reserve(amount, b.context))
+		{
+			b.denied = true;
+			return false;
+		}
+		return true;
+	}
+	bool prefix(size_t &total, size_t extra = 0) noexcept
+	{
+		total = outer;
+		size_t heap = 0;
+		if (denied || !auction_codec_add(total, source) ||
+		    !auction_codec_add(total, entry_inline) ||
+		    !auction_codec_add(total, sizeof(*this)) ||
+		    !auction_codec_add(total, native_inline) ||
+		    (intent && !auction_codec_add(total, intent->admission.facts.capacity())) ||
+		    (admission && !auction_codec_add(total, admission->facts.capacity())) ||
+		    (expected && !auction_codec_add(total, expected->capacity())) ||
+		    (projection && (!critical_command_current_heap_bytes(*projection, &heap) ||
+				    !auction_codec_add(total, heap))) ||
+		    (native && (native->before_item_uids.capacity() > SIZE_MAX / sizeof(uint64_t) ||
+				!auction_codec_add(total, native->base_v1_payload.capacity()) ||
+				!auction_codec_add(total, native->before_item_uids.capacity() *
+								  sizeof(uint64_t)))) ||
+		    !auction_codec_add(total, extra))
+		{
+			denied = true;
+			return false;
+		}
+		return true;
+	}
+	bool peak(size_t extra = 0) noexcept
+	{
+		size_t total = 0;
+		return prefix(total, extra) && forward(total, this);
+	}
+};
+}
+
+// PRIVATE original bid-family predicates/facts and complete own entry DTOs.
+namespace
+{
+[[maybe_unused]] constexpr size_t auction_bid_fixed_predicate_source =
+	// valid_listing(listing,payload;bool), bid_value(payload,listing,bid,sold;bool).
+	2 * sizeof(void *) + sizeof(bool) + 4 * sizeof(void *) + sizeof(bool) +
+	// account(key,kind,lineage;bool), empty_account(key;bool), key/zero/equal
+	// descendants each retained once as named actual selected subgraphs.
+	2 * sizeof(void *) + sizeof(economic_account_kind) + sizeof(bool) + sizeof(void *) +
+	sizeof(bool) + auction_reconstruction_fixed_key_valid_source +
+	auction_reconstruction_fixed_id_equal_source +
+	// valid_accounts(accounts,listing,payload,sold,resolved;bool): lineage ref,
+	// outbid; ids6 and two actual loop indexes. Endpoint captures lineage ref
+	// with real closure cleanup, operator() this/key/absent/pid/required/unused.
+	3 * sizeof(void *) + 3 * sizeof(bool) + sizeof(void *) + sizeof(bool) +
+	6 * sizeof(uint64_t) + 2 * sizeof(size_t) + sizeof(void *) + sizeof(void *) +
+	2 * sizeof(void *) + 2 * sizeof(uint32_t) + 3 * sizeof(bool);
+[[maybe_unused]] constexpr size_t auction_bid_fixed_facts_source =
+	// frozen_facts(listing,accounts) has actual helper-local facts vector
+	// INLINE below. Original mapping range backing6, initializer object,
+	// range ref,begin/end,mapping; original private list ctor+methods+cleanup.
+	2 * sizeof(void *) + 6 * sizeof(uint64_t) + sizeof(std::initializer_list<uint64_t>) +
+	3 * sizeof(void *) + sizeof(uint64_t) + 2 * sizeof(void *) + sizeof(size_t) +
+	2 * 2 * sizeof(void *) + sizeof(void *) + sizeof(size_t) + sizeof(void *) +
+	// Exact append_u64/u32 pointer/value/index/byte scopes, shared fitting
+	// push graph; reserve140 and two original ID forward end inserts.
+	2 * (sizeof(void *) + sizeof(size_t) + sizeof(uint8_t)) + sizeof(uint64_t) +
+	sizeof(uint32_t) + auction_reconstruction_fixed_byte_reserve +
+	auction_reconstruction_fixed_byte_fitting_push +
+	auction_insert_end_fitting_complete_source +
+	// Two actual original ID input ranges each own begin/end/direct data.
+	2 * auction_reconstruction_fixed_array_id_range_source +
+	// Original AEC1 initializer-list insert root: actual position/return and
+	// list-value carriers, offset local; this root calls range_insert directly
+	// (not generic insert). Generic/public body subgraphs above remain once.
+	sizeof(void *) + sizeof(std::vector<uint8_t>::const_iterator) +
+	sizeof(std::initializer_list<uint8_t>) + sizeof(std::vector<uint8_t>::iterator) +
+	sizeof(std::ptrdiff_t) + 4 * sizeof(uint8_t) +
+	// Private initializer_list(ptr,n) ctor, selected begin/end/size and
+	// actual initializer-list cleanup receiver. No invented new buffer.
+	2 * sizeof(void *) + sizeof(size_t) + 2 * 2 * sizeof(void *) + sizeof(void *) +
+	sizeof(size_t) + sizeof(void *) +
+	// Optional NRVO vector return move constructor, original final facts
+	// move-assignment and helper-local vector default/cleanup.
+	auction_fact_returned_vector_move_source +
+	auction_reconstruction_fixed_vector_default<uint8_t> +
+	auction_reconstruction_fixed_vector_cleanup<uint8_t> +
+	auction_reconstruction_fixed_vector_move<uint8_t>;
+[[maybe_unused]] constexpr size_t auction_bid_fixed_intent_scalar_source =
+	// Public7refs/pointers, outer+7 actual locals; bid/sold and error result,
+	// bad_alloc catch ref. Original source_for(listing) formal plus returned
+	// two-ID event copies/cleanup are separately named with fresh optional.
+	7 * sizeof(void *) + 8 * sizeof(size_t) + sizeof(int64_t) + sizeof(bool) + sizeof(error) +
+	sizeof(void *) + auction_reconstruction_fixed_source_assignment_source +
+	auction_reconstruction_fixed_metadata_assignment_source +
+	auction_reconstruction_fixed_optional_source +
+	auction_reconstruction_fixed_admission_lifetime_source +
+	// Actual payload{} local cleanup only; no copy output from intent.
+	(1 + 7 + AUCTION_COMMAND_MAX_ITEMS) * sizeof(void *) + auction_bid_fixed_predicate_source +
+	auction_bid_fixed_facts_source;
+[[maybe_unused]] constexpr size_t auction_bid_fixed_decode_family_source =
+	auction_reconstruction_fixed_decode_scalar_source +
+	auction_reconstruction_fixed_number_lambda_source +
+	auction_reconstruction_fixed_bid_listing_source +
+	auction_reconstruction_fixed_bid_accounts_source + auction_fact_copy_n_caller_source +
+	auction_fact_copy_n_int_source +
+	// Original two if-init account ID locals are genuinely distinct sites.
+	2 * sizeof(uint64_t) +
+	// Exact AEC1 temporary array4 cleanup and begin/direct-data methods.
+	4 * sizeof(uint8_t) + sizeof(void *) + 2 * (2 * sizeof(void *)) +
+	// std::equal(normal-first,normal-last,raw-byte-target): actual equal /
+	// equal_aux / equal_aux1 / equal<true> each3ptrs+bool, two simple bools,
+	// length, memcmp and two normal niter_base+base constructor/cleanup.
+	4 * (3 * sizeof(void *) + sizeof(bool)) + 2 * sizeof(bool) + sizeof(std::ptrdiff_t) +
+	2 * sizeof(void *) + sizeof(size_t) + sizeof(int) +
+	2 * (sizeof(auction_fact_iterator) + sizeof(void *) + 2 * sizeof(void *) +
+	     2 * sizeof(void *) + sizeof(void *)) +
+	2 * sizeof(void *);
+[[maybe_unused]] constexpr size_t auction_bid_fixed_intent_inline =
+	sizeof(auction_command_payload) + sizeof(economic_admission_facts) +
+	sizeof(economic_source_event) + sizeof(std::vector<uint8_t>);
+[[maybe_unused]] constexpr size_t auction_bid_fixed_decode_inline =
+	sizeof(auction_command_payload) + sizeof(economic_frozen_intent) +
+	sizeof(auction_bid_accounting_listing) + sizeof(auction_bid_accounting_accounts) +
+	sizeof(critical_command) + sizeof(std::vector<uint8_t>);
+}
+// These own APIs qualify only the additive fixed companion. Complete lower
+// Source composition follows the actual frozen lower handoff, never old EVP.
+bool auction_bid_accounting_intent_own_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !auction_codec_policy())
+		return false;
+	*output = auction_bid_fixed_intent_scalar_source +
+		  auction_reconstruction_fixed_budget_source +
+		  auction_reconstruction_fixed_child_entry_source +
+		  auction_reconstruction_fixed_payload_helper_source;
+	return true;
+}
+bool auction_bid_accounting_intent_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !auction_codec_policy())
+		return false;
+	*output = sizeof(auction_reconstruction_fixed_budget) + auction_bid_fixed_intent_inline;
+	return true;
+}
+bool auction_bid_accounting_decode_own_source_frame_bytes(size_t *output) noexcept
+{
+	size_t observed = 0, total = 0, critical_source = 0, valid_source = 0;
+	if (!output || !auction_codec_policy() ||
+	    !critical_command_current_heap_observer_frame_bytes(&observed))
+		return false;
+	// The actual envelope-valid, fresh-copy/construction and later physical
+	// CURRENT scans are sequential. Their genuine named Source profiles
+	// overlap observation descendants; select the exact largest returned
+	// phase instead of adding the same observer subtree twice.
+	critical_source = critical_command_copy_frame_bytes();
+	valid_source = critical_command_valid_frame_bytes();
+	if (valid_source > critical_source)
+		critical_source = valid_source;
+	if (observed > critical_source)
+		critical_source = observed;
+	total = auction_bid_fixed_decode_family_source +
+		auction_reconstruction_fixed_budget_source +
+		auction_reconstruction_fixed_child_entry_source +
+		auction_reconstruction_fixed_payload_helper_source;
+	if (!auction_codec_add(total, critical_source))
+		return false;
+	*output = total;
+	return true;
+}
+bool auction_bid_accounting_decode_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !auction_codec_policy())
+		return false;
+	*output = sizeof(auction_reconstruction_fixed_budget) + auction_bid_fixed_decode_inline;
+	return true;
+}
+
+namespace
+{
+enum class auction_fixed_child : uint8_t
+{
+	payload,
+	native,
+	intent_decode,
+	intent_proof,
+	intent_freeze
+};
+bool auction_fixed_child_entry(auction_reconstruction_fixed_budget &budget,
+			       auction_fixed_child kind, size_t &nested) noexcept
+{
+	size_t source = 0, initial = 0, supplement = 0;
+	bool admitted = false;
+	if (budget.denied)
+		return false;
+	switch (kind)
+	{
+	case auction_fixed_child::payload:
+	{
+		constexpr size_t query = auction_command_decode_payload_source_query_frame_bytes();
+		admitted =
+			budget.peak(query) &&
+			auction_command_decode_payload_source_frame_bytes(&source) &&
+			auction_command_decode_payload_initial_inline_bytes(&initial) &&
+			auction_command_decode_payload_source_supplement_frame_bytes(&supplement);
+		break;
+	}
+	case auction_fixed_child::native:
+	{
+		constexpr size_t query = auction_native_command_decode_source_query_frame_bytes();
+		admitted = budget.peak(query) &&
+			   auction_native_command_decode_source_frame_bytes(&source) &&
+			   auction_native_command_decode_initial_inline_bytes(&initial) &&
+			   auction_native_command_decode_source_supplement_frame_bytes(&supplement);
+		break;
+	}
+	case auction_fixed_child::intent_decode:
+	{
+		constexpr size_t query = economic_intent_decode_source_query_frame_bytes();
+		admitted = budget.peak(query) &&
+			   economic_intent_decode_source_frame_bytes(&source) &&
+			   economic_intent_decode_initial_inline_bytes(&initial) &&
+			   economic_intent_decode_source_supplement_frame_bytes(&supplement);
+		break;
+	}
+	case auction_fixed_child::intent_proof:
+	{
+		constexpr size_t query =
+			economic_intent_verify_binding_fixed_source_query_frame_bytes();
+		admitted = budget.peak(query) &&
+			   economic_intent_verify_binding_fixed_source_frame_bytes(&source) &&
+			   economic_intent_verify_binding_fixed_initial_inline_bytes(&initial);
+		break;
+	}
+	case auction_fixed_child::intent_freeze:
+	{
+		constexpr size_t query = economic_intent_freeze_fixed_source_query_frame_bytes();
+		admitted = budget.peak(query) &&
+			   economic_intent_freeze_fixed_source_frame_bytes(&source) &&
+			   economic_intent_freeze_fixed_initial_inline_bytes(&initial) &&
+			   economic_intent_freeze_fixed_source_supplement_frame_bytes(&supplement);
+		break;
+	}
+	}
+	if (!admitted || !auction_codec_add(source, initial) || !budget.peak(source) ||
+	    !budget.prefix(nested) || !auction_codec_add(nested, supplement))
+	{
+		// Only actual query/policy/arithmetic/admission refusal is sticky.
+		// A completed child error (including caught allocation capacity)
+		// does not set this marker and keeps original semantic mapping.
+		budget.denied = true;
+		return false;
+	}
+	return true;
+}
+}
+
+namespace
+{
+bool auction_codec_payload_fixed(const critical_command &command, auction_command_payload *out,
+				 auction_reconstruction_fixed_budget &budget,
+				 bool native_allowed) noexcept
+{
+	size_t nested = 0;
+	// Keep this genuine helper's params/locals/result carriers live across
+	// every nested absolute callback, including the original nonnative path.
+	if (!budget.peak())
+		return false;
+	if (!budget.prefix(nested))
+		return false;
+	if (native_allowed && command.payload_version == AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION)
+	{
+		// Original decode_payload constructs its separate native context.
+		budget.native_inline = sizeof(auction_native_command_context);
+		if (!budget.peak())
+			return false;
+		auction_native_command_context native;
+		budget.native = &native;
+		if (!auction_fixed_child_entry(budget, auction_fixed_child::native, nested))
+			return false;
+		const auto status = auction_native_command_decode_fixed_bounded(
+			command, &native, auction_reconstruction_fixed_budget::forward, &budget,
+			nested);
+		if (status != error::ok)
+			return false;
+		*out = native.payload;
+		budget.native = nullptr;
+		budget.native_inline = 0;
+		return true;
+	}
+	if (!auction_fixed_child_entry(budget, auction_fixed_child::payload, nested))
+		return false;
+	const bool result = auction_command_decode_payload_fixed_bounded(
+		command, out, auction_reconstruction_fixed_budget::forward, &budget, nested,
+		&budget.denied);
+	return result;
+}
+}
+
+// PRIVATE algorithm candidate. Complete own/lower SOURCE profiles remain OPEN.
+
+// PRIVATE owned Source/inline entry body. Complete Source maps remain unselected.
+economic_accounting_error auction_bid_accounting_intent_fixed_bounded(
+	const critical_command &command, const critical_operation_id &epoch,
+	const auction_bid_accounting_listing &listing,
+	const auction_bid_accounting_accounts &accounts, std::vector<uint8_t> *encoded,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer_live) noexcept
+{
+	size_t own_source = 0, entry_inline = 0, nested = 0, query_peak = outer_live;
+	constexpr size_t query = auction_bid_accounting_intent_own_source_query_frame_bytes();
+	constexpr size_t entry_source =
+		7 * sizeof(void *) + 7 * sizeof(size_t) + sizeof(bool) + sizeof(error) +
+		// Actual checked-add query construction before first reserve.
+		sizeof(void *) + sizeof(size_t) + sizeof(bool);
+	if (!reserve || !auction_codec_add(query_peak, entry_source) ||
+	    !auction_codec_add(query_peak, query) || !reserve(query_peak, context) ||
+	    !auction_bid_accounting_intent_own_source_frame_bytes(&own_source) ||
+	    !auction_bid_accounting_intent_initial_inline_bytes(&entry_inline))
+		return error::capacity;
+	size_t entry_peak = outer_live;
+	if (!auction_codec_add(entry_peak, own_source) ||
+	    !auction_codec_add(entry_peak, entry_inline) || !reserve(entry_peak, context))
+		return error::capacity;
+	auction_reconstruction_fixed_budget budget{
+		reserve, context, outer_live, own_source,
+		entry_inline - sizeof(auction_reconstruction_fixed_budget)
+	};
+
+	if (!encoded || command.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION ||
+	    critical_operation_id_is_zero(epoch))
+		return error::invalid_version;
+	auction_command_payload payload = {};
+	if (!auction_codec_payload_fixed(command, &payload, budget, false))
+		return budget.denied ? error::capacity : error::corrupt_evidence;
+	int64_t bid = 0;
+	bool sold = false;
+	if (!valid_listing(listing, payload) || !bid_value(payload, listing, &bid, &sold) ||
+	    !valid_accounts(accounts, listing, payload, sold) ||
+	    critical_operation_id_equal(command.operation_id, listing.listing_operation) ||
+	    critical_operation_id_equal(command.operation_id, listing.previous_bid_operation))
+		return budget.denied ? error::capacity : error::invalid_identity;
+	try
+	{
+		economic_admission_facts facts;
+		budget.admission = &facts;
+		facts.metadata.lineage = accounts.wallet.lineage;
+		facts.metadata.epoch = epoch;
+		facts.metadata.original_operation_id = listing.listing_operation;
+		facts.metadata.actor_kind = economic_actor_kind::domain;
+		facts.metadata.actor_id = payload.actor_pid;
+		facts.metadata.writer_id = ECONOMIC_WRITER_AUCTION_BID;
+		facts.metadata.reason = economic_reason::auction_bid;
+		facts.metadata.source_event = source_for(listing);
+		if (!budget.peak(140))
+			return error::capacity;
+		facts.facts = frozen_facts(listing, accounts);
+		if (!auction_fixed_child_entry(budget, auction_fixed_child::intent_freeze, nested))
+			return error::capacity;
+		return economic_intent_freeze_fixed_bounded(
+			command, facts, encoded, auction_reconstruction_fixed_budget::forward,
+			&budget, nested);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+}
+
+economic_accounting_error auction_bid_accounting_decode_fixed_bounded(
+	const critical_command &command, economic_frozen_intent *intent,
+	auction_command_payload *payload, auction_bid_accounting_listing *listing,
+	auction_bid_accounting_accounts *accounts, bool (*reserve)(size_t, void *) noexcept,
+	void *context, size_t outer_live) noexcept
+{
+	size_t own_source = 0, entry_inline = 0, nested = 0, query_peak = outer_live;
+	constexpr size_t query = auction_bid_accounting_decode_own_source_query_frame_bytes();
+	constexpr size_t entry_source =
+		7 * sizeof(void *) + 7 * sizeof(size_t) + sizeof(bool) + sizeof(error) +
+		// Actual checked-add query construction before first reserve.
+		sizeof(void *) + sizeof(size_t) + sizeof(bool);
+	if (!reserve || !auction_codec_add(query_peak, entry_source) ||
+	    !auction_codec_add(query_peak, query) || !reserve(query_peak, context) ||
+	    !auction_bid_accounting_decode_own_source_frame_bytes(&own_source) ||
+	    !auction_bid_accounting_decode_initial_inline_bytes(&entry_inline))
+		return error::capacity;
+	size_t entry_peak = outer_live;
+	if (!auction_codec_add(entry_peak, own_source) ||
+	    !auction_codec_add(entry_peak, entry_inline) || !reserve(entry_peak, context))
+		return error::capacity;
+	auction_reconstruction_fixed_budget budget{
+		reserve, context, outer_live, own_source,
+		entry_inline - sizeof(auction_reconstruction_fixed_budget)
+	};
+
+	if (!intent || !payload || !listing || !accounts ||
+	    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+	    !critical_command_envelope_valid(command))
+		return error::invalid_version;
+	try
+	{
+		auction_command_payload parsed_payload = {};
+		if (!auction_codec_payload_fixed(command, &parsed_payload, budget, false) ||
+		    parsed_payload.action != auction_action::bid)
+			return budget.denied ? error::capacity : error::invalid_identity;
+		economic_frozen_intent parsed_intent;
+		budget.intent = &parsed_intent;
+		if (!auction_fixed_child_entry(budget, auction_fixed_child::intent_decode, nested))
+			return error::capacity;
+		const auto decoded = economic_intent_decode_bounded(
+			command.accounting_intent, &parsed_intent,
+			auction_reconstruction_fixed_budget::forward, &budget, nested);
+		if (decoded != error::ok)
+			return budget.denied ? error::capacity : error::corrupt_evidence;
+		if (!auction_fixed_child_entry(budget, auction_fixed_child::intent_proof, nested))
+			return error::capacity;
+		const auto binding = economic_intent_verify_binding_fixed_bounded(
+			command, parsed_intent, auction_reconstruction_fixed_budget::forward,
+			&budget, nested);
+		if (binding != error::ok)
+			return budget.denied ? error::capacity : error::corrupt_evidence;
+		const auto facts = std::span<const uint8_t>(parsed_intent.admission.facts);
+		if (facts.size() != 124 && facts.size() != 140)
+			return budget.denied ? error::capacity : error::invalid_identity;
+		const auto number = [&](size_t offset, size_t width)
+		{
+			uint64_t value = 0;
+			for (size_t byte = 0; byte < width; ++byte)
+				value |= static_cast<uint64_t>(facts[offset + byte]) << (byte * 8);
+			return value;
+		};
+		const auto &lineage = parsed_intent.admission.metadata.lineage;
+		auction_bid_accounting_accounts parsed_accounts;
+		if (facts.size() == 140)
+		{
+			if (!std::equal(facts.begin() + 124, facts.begin() + 128,
+					std::array<uint8_t, 4>{ 'A', 'E', 'C', '1' }.begin()))
+				return error::invalid_version;
+			parsed_accounts.absent_bidder_pid = static_cast<uint32_t>(number(128, 4));
+			parsed_accounts.absent_previous_pid = static_cast<uint32_t>(number(132, 4));
+			parsed_accounts.absent_seller_pid = static_cast<uint32_t>(number(136, 4));
+			if (!parsed_accounts.absent_bidder_pid &&
+			    !parsed_accounts.absent_previous_pid &&
+			    !parsed_accounts.absent_seller_pid)
+				return budget.denied ? error::capacity : error::invalid_identity;
+		}
+		parsed_accounts.wallet = { lineage, economic_account_kind::wallet, number(0, 8),
+					   0 };
+		parsed_accounts.bank = { lineage, economic_account_kind::bank, number(8, 8),
+					 parsed_payload.racewar };
+		parsed_accounts.escrow = { lineage, economic_account_kind::auction_escrow,
+					   number(16, 8), 0 };
+		if (number(24, 8) || !parsed_accounts.absent_bidder_pid)
+			parsed_accounts.bidder_claim = { lineage,
+							 economic_account_kind::pending_claim,
+							 number(24, 8), 0 };
+		if (const auto id = number(32, 8))
+			parsed_accounts.previous_claim = { lineage,
+							   economic_account_kind::pending_claim, id,
+							   0 };
+		if (const auto id = number(40, 8))
+			parsed_accounts.seller_claim = { lineage,
+							 economic_account_kind::pending_claim, id,
+							 0 };
+		auction_bid_accounting_listing parsed_listing;
+		parsed_listing.auction_id = static_cast<uint32_t>(number(48, 4));
+		parsed_listing.seller_pid = static_cast<uint32_t>(number(52, 4));
+		parsed_listing.winning_bidder_pid = static_cast<uint32_t>(number(56, 4));
+		parsed_listing.status = static_cast<uint32_t>(number(60, 4));
+		parsed_listing.custody_state = static_cast<uint32_t>(number(64, 4));
+		parsed_listing.current_price = static_cast<int64_t>(number(68, 8));
+		parsed_listing.buy_price = static_cast<int64_t>(number(76, 8));
+		parsed_listing.revision = number(84, 8);
+		std::copy_n(facts.begin() + 92, 16, parsed_listing.listing_operation.bytes.begin());
+		std::copy_n(facts.begin() + 108, 16,
+			    parsed_listing.previous_bid_operation.bytes.begin());
+		size_t copy_request = 0;
+		if (!critical_command_fresh_copy_request_bytes(command, &copy_request) ||
+		    !auction_codec_add(copy_request, critical_command_copy_frame_bytes()) ||
+		    !budget.peak(copy_request))
+			return error::capacity;
+		critical_command projected = command;
+		budget.projection = &projected;
+		projected.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
+		projected.accounting_intent.clear();
+		projected.publication_required = false;
+		std::vector<uint8_t> expected;
+		budget.expected = &expected;
+		if (!budget.prefix(nested))
+			return error::capacity;
+		const auto frozen = auction_bid_accounting_intent_fixed_bounded(
+			projected, parsed_intent.admission.metadata.epoch, parsed_listing,
+			parsed_accounts, &expected, auction_reconstruction_fixed_budget::forward,
+			&budget, nested);
+		if (frozen != error::ok || expected != command.accounting_intent)
+			return budget.denied ? error::capacity : error::unauthorized;
+		*intent = std::move(parsed_intent);
+		*payload = parsed_payload;
+		*listing = parsed_listing;
+		*accounts = parsed_accounts;
+		return error::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+}
+
+// PRIVATE exact full source composition for the original bid intent/decoder.
+bool auction_bid_accounting_intent_source_frame_bytes(size_t *output) noexcept
+{
+	size_t own = 0, payload = 0, freeze = 0, total = 0;
+	if (!output || !auction_bid_accounting_intent_own_source_frame_bytes(&own) ||
+	    !auction_command_decode_payload_source_frame_bytes(&payload) ||
+	    !economic_intent_freeze_fixed_source_frame_bytes(&freeze))
+		return false;
+	total = payload;
+	if (freeze > total)
+		total = freeze;
+	if (!auction_codec_add(total, own))
+		return false;
+	*output = total;
+	return true;
+}
+bool auction_bid_accounting_intent_source_supplement_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !auction_codec_policy())
+		return false;
+	*output = 0;
+	return true;
+}
+bool auction_bid_accounting_decode_source_frame_bytes(size_t *output) noexcept
+{
+	size_t own = 0, payload = 0, intent = 0, proof = 0, reconstructed = 0, total = 0;
+	if (!output || !auction_bid_accounting_decode_own_source_frame_bytes(&own) ||
+	    !auction_command_decode_payload_source_frame_bytes(&payload) ||
+	    !economic_intent_decode_source_frame_bytes(&intent) ||
+	    !economic_intent_verify_binding_fixed_source_frame_bytes(&proof) ||
+	    !auction_bid_accounting_intent_source_frame_bytes(&reconstructed))
+		return false;
+	// All original payload/decode/binding/reconstruction phases are sequential;
+	// actual parent own Source and retained output capacities survive each.
+	total = payload;
+	if (intent > total)
+		total = intent;
+	if (proof > total)
+		total = proof;
+	if (reconstructed > total)
+		total = reconstructed;
+	if (!auction_codec_add(total, own))
+		return false;
+	*output = total;
+	return true;
+}
+bool auction_bid_accounting_decode_source_supplement_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !auction_codec_policy())
+		return false;
+	*output = 0;
+	return true;
+}
