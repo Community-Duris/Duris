@@ -2317,12 +2317,10 @@ error birth_recipe_payload_encode_fixed_bounded(
 	}
 }
 
-error birth_v1_command_build_bounded(const economic_operation_metadata &metadata,
-				     const quest_mobile_native_image &image,
-				     critical_source_site site, uint64_t accepted_at_usec,
-				     critical_command *output,
-				     bool (*reserve)(size_t, void *) noexcept, void *context,
-				     size_t outer) noexcept
+[[maybe_unused]] error birth_v1_command_build_bounded(
+	const economic_operation_metadata &metadata, const quest_mobile_native_image &image,
+	critical_source_site site, uint64_t accepted_at_usec, critical_command *output,
+	bool (*reserve)(size_t, void *) noexcept, void *context, size_t outer) noexcept
 {
 	const auto own_source_status =
 		birth_source_admit_owned(birth_source_v1_build_owned, reserve, context, outer);

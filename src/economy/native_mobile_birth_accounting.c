@@ -710,6 +710,7 @@ economic_accounting_error native_mobile_birth_accounting_compile_bounded(
 	defined(_GLIBCXX_DEBUG) || defined(_GLIBCXX_ASSERTIONS) || defined(_GLIBCXX_PARALLEL) || \
 	defined(__SANITIZE_ADDRESS__) || defined(__SANITIZE_THREAD__) ||                         \
 	(defined(_GLIBCXX_SANITIZE_VECTOR) && _GLIBCXX_SANITIZE_VECTOR != 0)
+	(void)command;
 	(void)original_native_wallet;
 	(void)reserve;
 	(void)context;
