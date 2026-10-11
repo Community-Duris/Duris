@@ -453,8 +453,10 @@ Launch03:10:55 MDT; Plan5 clean preparation publication
 retained as `initial-running-lock.json`. Live MySQL CID
 `064e0e888f2ece37f884337d039f549cd83c4f595f0a8e1a96d5e7ad89552232`
 independently inspected: exact owner/job/source/image,512MiB/CPU1/restartno,
-fresh directDdata mount. Serial QA receipts progressing; actual native exec
-handle requested from Plan5. Historical refusal QA nonzero exits are maintained
+fresh directDdata mount. Authoritative native exec session `36854` remains live;
+Plan5 reports canonical/staging/master transitions and reruns passed, expected
+wrong-selector refusals passed, authentic original65 routes progressing.
+Historical refusal QA nonzero exits are maintained
 controls, not terminal matrix failure. MySQL first-engine history checks live;
 MariaDB/full accepting65 boot/tamper/result remains pending. No partial promotion.
 
