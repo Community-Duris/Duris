@@ -504,4 +504,22 @@ constexpr size_t item_native_quest_birth_retained_budget_source_profile_query_fr
 	return sizeof(void *) + 5 * sizeof(size_t) + sizeof(bool);
 }
 
+// Both SQL and flat original retained_budget LOCAL call Source. Actual outside
+// flat-global/coordinator observers remain selecting ROOT caller-owned, with
+// exact target/scope/lender identity and their full Source separately retained.
+// No original algorithm or observer registration changes. No owned candidate
+// is constructed. The old keeper self-admits no Source, so supplement is full
+// LOCAL Source. Strong unsupported output refusal; no readiness grant.
+bool item_native_quest_birth_retained_budget_local_source_frame_bytes(size_t *) noexcept;
+bool item_native_quest_birth_retained_budget_local_source_supplement_frame_bytes(size_t *) noexcept;
+bool item_native_quest_birth_retained_budget_local_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t item_native_quest_birth_retained_budget_local_source_query_frame_bytes() noexcept
+{
+	// output, bool result, declared errno accessor result on refusal.
+	return 2 * sizeof(void *) + sizeof(bool);
+}
+constexpr size_t item_native_quest_birth_retained_budget_local_initial_query_frame_bytes() noexcept
+{
+	return 2 * sizeof(void *) + sizeof(bool);
+}
 #endif

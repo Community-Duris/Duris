@@ -11271,3 +11271,103 @@ bool item_native_quest_birth_retained_budget_source_frames(size_t *output) noexc
 	return false;
 #endif
 }
+
+namespace
+{
+// Genuine both-engine LOCAL Source of retained_budget -> capacity. The two
+// configured outside callbacks are separate caller-owned child contracts.
+// This does not observe a registry, lend a scope, or charge physical storage.
+constexpr size_t birth_keeper_local_thread_source =
+	// nevent bool, comparator two by-value IDs/bool; get_id returns directly
+	// into that argument. Declared ID(handle) receiver/handle, gthread_self
+	// handle and declared pthread_self handle. No implicit trivial calls.
+	sizeof(void *) + 2 * sizeof(std::thread::id) + 3 * sizeof(std::thread::native_handle_type) +
+	2 * sizeof(bool);
+constexpr size_t birth_keeper_local_journal_source =
+	// Either original size_t journal wrapper; atomic_base::load receiver,
+	// order formal/masked local/returned size_t; declared enum operator&
+	// order/modifier formals and order result. Bare atomic builtin adds none.
+	sizeof(void *) + 2 * sizeof(size_t) + 4 * sizeof(std::memory_order) +
+	sizeof(std::__memory_order_modifier);
+constexpr size_t birth_keeper_local_acceptance_range_source =
+	// Actual range + structured pair/key/entry aliases; two hidden iterators.
+	4 * sizeof(void *) + 2 * sizeof(decltype(native_quest_acceptances)::iterator) +
+	// unordered and hashtable begin/end receivers, _M_begin pointer result,
+	// declared node iterator/base pointer constructors. Class return values
+	// occupy the two hidden iterator objects above (no duplicated results).
+	10 * sizeof(void *) +
+	// C++20 equality, ++, _M_incr, _M_next; dereference/_M_v/_M_valptr/
+	// aligned_buffer::_M_ptr/_M_addr. No implicit trivial iterator lifecycle.
+	17 * sizeof(void *) + sizeof(bool);
+constexpr size_t birth_keeper_local_source =
+	// Keeper incoming/result; capacity incoming/two bools/result and actual
+	// journal/globals/coordinator/constexpr slots four size_t declarations.
+	6 * sizeof(size_t) + 4 * sizeof(bool) + birth_keeper_local_thread_source +
+	birth_keeper_local_journal_source + birth_keeper_local_acceptance_range_source +
+	// native_before.size() actual vector<byte> receiver/scalar result.
+	sizeof(void *) + sizeof(size_t);
+}
+
+bool item_native_quest_birth_retained_budget_local_source_frame_bytes(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && defined(_GLIBCXX_HAS_GTHREADS) &&                           \
+	!defined(_GLIBCXX_NATIVE_THREAD_ID) && !defined(_GLIBCXX_DEBUG) &&                    \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 ||
+	    __gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	*output = birth_keeper_local_source;
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
+
+bool item_native_quest_birth_retained_budget_local_source_supplement_frame_bytes(
+	size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && defined(_GLIBCXX_HAS_GTHREADS) &&                           \
+	!defined(_GLIBCXX_NATIVE_THREAD_ID) && !defined(_GLIBCXX_DEBUG) &&                    \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 ||
+	    __gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	*output = birth_keeper_local_source;
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
+
+bool item_native_quest_birth_retained_budget_local_initial_inline_bytes(size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && defined(_GLIBCXX_HAS_GTHREADS) &&                           \
+	!defined(_GLIBCXX_NATIVE_THREAD_ID) && !defined(_GLIBCXX_DEBUG) &&                    \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && __cplusplus == 202002L
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8 ||
+	    __gnu_cxx::__default_lock_policy != __gnu_cxx::_S_atomic)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	*output = 0;
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}

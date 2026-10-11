@@ -467,4 +467,24 @@ constexpr size_t quest_mobile_native_birth_historical_restore_initial_query_fram
 {
 	return sizeof(size_t *) + sizeof(bool) + sizeof(bool);
 }
+
+// Exact original charge()/charge(scratch) census plus keeper LOCAL Source in
+// both engines. Caller separately retains configured outside global/coordinator
+// child Source only on the actual outside-scope/nonlender dispatch branch.
+// No arbitrary callback is priced by this LOCAL contract. Existing budget,
+// loans and all default/inactive paths remain unchanged. INITIAL is zero;
+// original charge self-admits no Source, so LOCAL supplement equals full.
+bool quest_mobile_native_birth_charge_local_source_frame_bytes(size_t *) noexcept;
+bool quest_mobile_native_birth_charge_local_source_supplement_frame_bytes(size_t *) noexcept;
+bool quest_mobile_native_birth_charge_local_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t quest_mobile_native_birth_charge_local_source_query_frame_bytes() noexcept
+{
+	// Own/lower output formals, shared errno result; own keeper/total locals;
+	// two bool results. Accessor size_t result belongs to selecting caller.
+	return 3 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(bool);
+}
+constexpr size_t quest_mobile_native_birth_charge_local_initial_query_frame_bytes() noexcept
+{
+	return 2 * sizeof(void *) + sizeof(bool);
+}
 #endif
