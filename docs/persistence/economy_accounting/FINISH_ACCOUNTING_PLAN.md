@@ -18825,3 +18825,13 @@ and protected WIP remain preserved. Inventory481/931/2911/2853,0new/unmapped
 does not establish completion. Full host/native/gameplay/persistence/recovery/
 R1-R8/release stay OPEN; targeted compiler proof is recorded above.
 Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Integrate original SQL context boot and world callers implemented - 2026-10-10
+
+[Source checkpoint](ORIGINAL_CONTEXT_BOOT_WORLD_CALLER_INTEGRATION_2026-10-10.md) Original-context SQL boot/world overloads integrated; both production modes compile the two affected objects. Game-loop consumer, independent verifier and runtime/recovery qualification remain open.
+Independent RAW and actual formatted source reviews passed; original behavior
+and protected WIP remain preserved. Inventory481/931/2911/2853,0new/unmapped
+does not establish completion. Full host/native/gameplay/persistence/recovery/
+R1-R8/release stay OPEN; targeted compiler proof is recorded above.
+Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.

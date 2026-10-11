@@ -555,6 +555,19 @@ class sql_economic_runtime_boot_owner final
 		       economic_gameplay_authority::active_regular_sql() && actual.is_valid();
 	}
 	unsigned int verify_initialized_cutover_sources(
+		economic_sql_initialized_activation_verifier verify) noexcept
+	{
+		if (!cutover_owner_ || !initialized_cutover_valid(*cutover_owner_))
+			return EPERM;
+		const auto result = economic_sql_accounting_lifecycle_transaction::
+			verify_initialized_runtime_sources(owner().connection.get(),
+							   *cutover_owner_, selection_, verify);
+		// Preserve the same abort-required latch for every failed context/proof.
+		if (result)
+			cutover_verification_abort_required_ = true;
+		return result;
+	}
+	unsigned int verify_initialized_cutover_sources(
 		const economic_sql_lifecycle_request &request,
 		const economic_sql_activation_evidence &evidence,
 		economic_sql_initialized_activation_verifier verify) noexcept
@@ -749,6 +762,19 @@ bool economic_initialized_world_owner::sql_cutover_valid(
 	}
 }
 unsigned int economic_initialized_world_owner::sql_verify_cutover_sources(
+	economic_sql_initialized_activation_verifier verify) noexcept
+{
+	try
+	{
+		return sql_economic_runtime_boot_owner::instance()
+			.verify_initialized_cutover_sources(verify);
+	}
+	catch (...)
+	{
+		return EIO;
+	}
+}
+unsigned int economic_initialized_world_owner::sql_verify_cutover_sources(
 	const economic_sql_lifecycle_request &request,
 	const economic_sql_activation_evidence &evidence,
 	economic_sql_initialized_activation_verifier verify) noexcept
@@ -888,6 +914,11 @@ bool economic_initialized_world_owner::sql_cutover_valid(
 	economic_sql_cutover_transaction_owner &) noexcept
 {
 	return false;
+}
+unsigned int economic_initialized_world_owner::sql_verify_cutover_sources(
+	economic_sql_initialized_activation_verifier) noexcept
+{
+	return ENOTSUP;
 }
 unsigned int economic_initialized_world_owner::sql_verify_cutover_sources(
 	const economic_sql_lifecycle_request &, const economic_sql_activation_evidence &,
