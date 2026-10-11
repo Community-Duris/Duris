@@ -25,6 +25,21 @@ This charter does not claim access to the primary's private work or control
 of its session. Initial observed primary source:
 `83e2e4392064667fc4f64780183d17b5acc431ef`.
 
+## Explicit addressee and approval handoff
+
+PRIMARY and remote primary mean RGitGoin, the existing remote agent implementing
+Plans 1-4 on experimental-accounting. They do not identify the new local
+orchestrator or the independent Plan 5 owner. The human approval recorded above
+covers this proposed workload allocation; the required primary acknowledgment
+records source ownership and prevents overlapping edits of unseen remote WIP.
+
+RGitGoin should publish the accepted exact paths/source and protected WIP in the
+acknowledgment section below, or a narrower useful lease. Include the world
+worker's additional request for src/world/quest.c when deciding its lease. If the
+remote session requires an instruction directly from the human in its private
+chat, publish that specific requirement so the human can provide it. This
+clarification grants neither an active lease nor control of the remote session.
+
 ## Team and branches
 
 | Owner | Assignment | Branch |

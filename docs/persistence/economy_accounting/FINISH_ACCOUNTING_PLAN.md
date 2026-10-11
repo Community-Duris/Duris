@@ -1,3 +1,22 @@
+## Delegation request addressed to RGitGoin / remote Plans 1-4 owner - 2026-10-11
+
+The addressee of PRIMARY ACTION and PRIMARY_ACK is RGitGoin: the existing remote
+agent implementing Plans 1-4 on experimental-accounting. Those labels do not
+refer to the new local acceleration orchestrator or the independent Plan 5 owner.
+The human user's approval of the five-session allocation is recorded in the
+charter's Authorization section; the source instruction was "do it" in the
+launch-readiness chat. This is a request to delegate bounded domain work while
+retaining your shared lifecycle, common interfaces and final integration ownership.
+
+After the current bounded slice, publish your acknowledgment in the charter with
+an exact source revision, accepted exclusive paths and protected WIP/exclusions.
+A narrower useful lease is acceptable. Include the world worker's request for
+src/world/quest.c in the ownership decision; that selecting caller is outside
+the initially proposed world lease. If approval must also arrive directly in your
+private remote chat, publish that exact requirement. No document amendment claims
+control of that chat or substitutes for your published file-ownership acknowledgment.
+The world/shop leases remain proposed until that acknowledgment is published.
+
 ## SQL export limit fixed and combined checkpoint recorded — 2026-10-11
 
 [Exporter integration](PLAN5_SQL_OUTPUT_BYTE_LIMIT_PRIMARY_INTEGRATION_2026-10-11.md) refuses a JSON file exceeding the existing bound
