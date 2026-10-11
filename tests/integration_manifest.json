@@ -2917,6 +2917,30 @@
         "held-retirement publication policy sql: PASS",
         "held-retirement publication policy flat: PASS"
       ]
+    },
+    {
+      "id": "item_transfer_complete_bounded",
+      "path": "tests/async/test_item_transfer_complete_bounded.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script",
+        "main"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 5400,
+      "covers": [
+        "item_transfer_complete_bounded_test.cpp"
+      ],
+      "required_markers": [
+        "ITEM_TRANSFER_COMPLETE_CASES",
+        "item-transfer complete bounded sql ordinary: PASS",
+        "item-transfer complete bounded flat ordinary: PASS"
+      ]
     }
   ]
 }

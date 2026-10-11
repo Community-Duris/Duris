@@ -66515,8 +66515,8 @@
       "src/item/item_movement_transaction.h": "7bc490625f82791421be800b326ffd4c7240ecc2171d6d7de2664194d667ccca",
       "src/item/item_ownership_runtime.c": "425338b74818c740fa4ff177b238199843f670f2fe65ca57a2f501d8d107eff9",
       "src/item/item_ownership_runtime.h": "166de0a1b87e026e7e925f6312187bd128ceef3e2e77e7a1e636b3cefeb62423",
-      "src/item/item_transfer_command.c": "c15587e4f60d05567941dbfd762fcf00b4f47f9cd4f6b983e410245e16f24236",
-      "src/item/item_transfer_command.h": "324222ed375e0537002c870aad8e972121af3c4ef09c6d3394874330b5812cde",
+      "src/item/item_transfer_command.c": "44680bcc866da68bab361c40fdb25b6cd32335f5f3690547fbc365e7de615b2f",
+      "src/item/item_transfer_command.h": "696348501010aa8a03df0e96375383c855a18df2e2c066f09b28567fe91b1bc2",
       "src/item/item_transfer_repository.c": "e005e1a2b5460f01939026072f4c226b770841c1a03382bc59bea62ff99cd6ff",
       "src/item/item_transfer_repository.h": "922e2141dedc3621c1a55986846b40016ee72fb11cb6c445ea0a19f7f0e182d7",
       "src/mob/mobconv.c": "b79cc8825a40b6c6924c835181ab9bfb1ec96ce051da30ffd9f4922878e3312a",
@@ -66622,8 +66622,8 @@
       "src/item/held_retirement_recovery.c": "b7a461c95179077ec9e4a5ba404cd7929fc033376ad6e9bfb722a8b12324f9c3",
       "src/item/held_retirement_recovery.h": "d3b94fb478ae8e402e8808ea022ada04d0e5c3aee1e4ade8904c316325928e1d",
       "src/item/held_retirement_transport.h": "2913004e568257a2ea95a43d824363038b10ecb7d6c1795ff0ea2801afc991c0",
-      "src/item/lockpick_retirement_continuation.c": "8d7815710d0a231909c23fe41707cd509e323f26bdcfed8db8a046ca87d8e22b",
-      "src/item/lockpick_retirement_continuation.h": "f420bdd8ac732aa298c931e09dad285ecaa4be2b62a15e2a8c7e6cf408180e54",
+      "src/item/lockpick_retirement_continuation.c": "e93345ead726bdf62f2b5c63824d03ca16cdcdf4d42e0dadef9a40256cfd1908",
+      "src/item/lockpick_retirement_continuation.h": "6137393545c45a44c155c52477d824d86844ac1a6ed908574eeaa1546ff4ef9f",
       "src/item/native_quest_transport.h": "38dfcf2343b53adfa71b439f8552b3898000b4ca664b6c9daf68935721e0e6dc",
       "src/item/quest_reward_continuation.h": "f5b994c3a0cbe5d053b725b15527bc856e2869cd85466d20fc3f637e225610d0",
       "src/persistence/economic_sql_auction_bid_transaction.c": "2f2e402df47df7ed2d721591718eb9522c06e7c364584f7a89d0d44acae8de23",
@@ -66923,7 +66923,9 @@
       "tests/async/test_publication_retention_runtime.py": "6b6582f9511e4b375caef046c9f8b1321fa8debcbabe65ef768f07e14645367b",
       "tests/async/test_item_movement_input_queue.py": "09f36720de4b9de76260cd5f42d4c79076bf0c62a888ac979514678ec1509381",
       "tests/async/test_item_movement_prompt_runtime.py": "4bb624536db82fe3594b379c822a8979a8be42362a890a0c0c5bd0b5179a8800",
-      "tests/async/test_publication_ack_checkpoint.py": "c9d34251986e5e4cbe72bf9396e882b7451a85acfe4bb5b6dd622b17f322d0ef"
+      "tests/async/test_publication_ack_checkpoint.py": "c9d34251986e5e4cbe72bf9396e882b7451a85acfe4bb5b6dd622b17f322d0ef",
+      "tests/async/item_transfer_complete_bounded_test.cpp": "176c8644449f19c450799b0bc4c7a3df9a4d145e2234c949a1dd60f13b1b24b2",
+      "tests/async/test_item_transfer_complete_bounded.py": "f5f7c546ee566265e4a842be2cd264285a4d73c146365ee44483027c06f5c367"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {

@@ -19177,3 +19177,8 @@ Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
 ## Lockpick retirement wire correctness - 2026-10-11
 
 [Issue report](LOCKPICK_RETIREMENT_WIRE_CORRECTNESS_2026-10-11.md) records actual combined Source9 SQL/flat full-build PASS, focused/profile outcomes, separate standalone v3 both15/2653 PASS, and restored metadata. Existing zero-root encoder fix;1 existing pin and exact2736 to2739 coordinates. Root owns current registration/metadata/staging; separate local commits publish only qualified combined final Source. HRT was already adopted at97ded; full protocol remains open. Full protocol and R1-R8, architecture, gameplay, actual database durability,32MiB whole-host peak,cold restore/shutdown and release remain open. Accounting remains inactive/CLOSED; the declined spell path is preserved; coverage is incomplete and release BLOCKED.
+
+
+## Generic Item complete Source counterparts - 2026-10-11
+
+[Issue report](GENERIC_ITEM_SOURCE_PROVIDER_INTEGRATION_2026-10-11.md) records actual combined Source9 SQL/flat full-build PASS, focused/profile outcomes, separate standalone v3 both15/2653 PASS, and restored metadata. Source4 plus permanent C++/v3 runner and2 central entries;494 to496 pins,490 existing preserved. Root owns current registration/metadata/staging; separate local commits publish only qualified combined final Source. HRT was already adopted at97ded; full protocol remains open. Full protocol and R1-R8, architecture, gameplay, actual database durability,32MiB whole-host peak,cold restore/shutdown and release remain open. Accounting remains inactive/CLOSED; the declined spell path is preserved; coverage is incomplete and release BLOCKED.

@@ -34,4 +34,26 @@ bool lockpick_retirement_payload_valid(const item_transfer_payload &) noexcept;
 bool lockpick_retirement_payload_valid_bounded(const item_transfer_payload &,
 					       bool (*)(size_t, void *) noexcept, void *,
 					       size_t) noexcept;
+
+// Genuine complete companion for the exact original held-pick payload
+// predicate: fixed20 decoder plus full bounded literal-list decoder. Admit
+// full SOURCE + INITIAL transiently before entry, retain only supplement.
+// This companion self-admits its own Source/private DTOs before construction;
+// full child Source/INITIAL is transient, genuine child supplement retained.
+// Literal capacity/nested heaps remain owned through post-return validation
+// and cleanup. Inputs/ancestor/prior outputs and callback bodies are outer-owned.
+// Strong pure outputs; unsupported GNU13 ordinary LP64 profile returns false.
+// Original APIs/algorithms/wire/selection/activation gates remain unchanged.
+bool lockpick_retirement_payload_valid_complete_bounded(const item_transfer_payload &,
+							bool (*)(size_t, void *) noexcept, void *,
+							size_t) noexcept;
+bool lockpick_retirement_payload_valid_complete_source_frame_bytes(size_t *) noexcept;
+bool lockpick_retirement_payload_valid_complete_source_supplement_frame_bytes(size_t *) noexcept;
+bool lockpick_retirement_payload_valid_complete_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t lockpick_retirement_payload_valid_complete_source_query_frame_bytes() noexcept
+{
+	// Full getter output/P+child,total2N+return/support2B, checked add P/N/B
+	// and actual published child getter P/2B. Size_t outputs are caller-owned.
+	return 3 * sizeof(void *) + 3 * sizeof(size_t) + 5 * sizeof(bool);
+}
 #endif
