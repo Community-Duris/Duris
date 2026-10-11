@@ -1,3 +1,14 @@
+## Native-birth sanitizer warning repair — 2026-10-11
+
+[Warning repair](NATIVE_BIRTH_SANITIZER_WARNING_FIX_2026-10-11.md) fixes two
+strict unused-code errors while preserving unsupported-profile refusal.
+Both production target builds and strict ASan/UBSan objects pass for MariaDB
+and flatfile (six invocations/eight objects). Two existing pins and genuine
+coordinates refresh; 484 total,482 other pins/931 policies preserved. This is
+object qualification only; full links, common/craft regressions and original
+R1–R8/architecture/gameplay/SQL/recovery/release gates remain open. Inactive/CLOSED
+and incomplete coverage remain unchanged.
+
 ## Legacy publication fixture repair — 2026-10-11
 
 [Fixture repair](LEGACY_PUBLICATION_FIXTURE_REPAIR_2026-10-11.md) restores
