@@ -18720,3 +18720,13 @@ and protected WIP remain preserved. Inventory478/931/2911/2853,0new/unmapped
 does not establish completion. Full host/native/gameplay/persistence/recovery/
 R1-R8/release stay OPEN; targeted compiler proof is recorded above.
 Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Correct quest coin-give builtin Source allowance implemented - 2026-10-10
+
+[Source checkpoint](QUEST_COIN_GIVE_BUILTIN_SOURCE_CORRECTION_2026-10-10.md) Unsupported new builtin callee Source terms removed; genuine scopes retained. Strict object passes both modes; selecting host qualification remains open.
+Independent RAW and actual formatted source reviews passed; original behavior
+and protected WIP remain preserved. Inventory478/931/2911/2853,0new/unmapped
+does not establish completion. Full host/native/gameplay/persistence/recovery/
+R1-R8/release stay OPEN; targeted compiler proof is recorded above.
+Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
