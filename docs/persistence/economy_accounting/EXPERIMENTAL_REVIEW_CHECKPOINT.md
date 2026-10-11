@@ -4657,3 +4657,8 @@ and protected WIP remain preserved. Inventory481/931/2911/2853,0new/unmapped
 does not establish completion. Full host/native/gameplay/persistence/recovery/
 R1-R8/release stay OPEN; targeted compiler proof is recorded above.
 Inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
+
+
+## Additive Cost and six native fee/money Source providers - 2026-10-11
+
+[Item provider integration](NATIVE_FEE_MONEY_COST_SOURCE_PROVIDER_INTEGRATION_2026-10-11.md) records genuine finite Source and changed-line formatted review, full production SQL/flat links for the combined raw snapshot and four unsupported-profile objects. Only Item2 is published in this milestone. All 931 writer policies, 482 unowned pins of 484 and census 2,911 remain unchanged. Generic Item, HRT, whole-host/runtime/SQL durability/restore/architecture/release gates remain open; accounting stays inactive/CLOSED with incomplete coverage and BLOCKED release.
