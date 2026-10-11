@@ -8687,6 +8687,19 @@
       ],
       "purpose": "Two ordinary whole currency production objects and four genuine currency/critical provider component runs across supported/assertions and both header backends; original136 wire equivalence, transient Source/INITIAL partition, every actual reserve ordinal denial, old-output/capacity preservation and defensive refusal. Codec prerequisite only; original ATM, shared authority and release remain open.",
       "seconds": 27.78468362300191
+    },
+    "test_currency_bank_admission_bounded.py": {
+      "profile": "native",
+      "mode": "script",
+      "minimum_cases": 1,
+      "cpu": 2,
+      "memory_mb": 8192,
+      "timeout_seconds": 5400,
+      "locks": [
+        "native-compiler"
+      ],
+      "purpose": "Two ordinary admission production objects and four eight-provider immutable bank component runs; original136 wire/opaque byte5/timestamp/reason intent equivalence, real Source+INITIAL/retained capacity partition, every actual reserve ordinal denial and defensive strong refusal. Prerequisite only; fresh ATM/shared authority and release remain open.",
+      "seconds": 417.00455259298906
     }
   }
 }
