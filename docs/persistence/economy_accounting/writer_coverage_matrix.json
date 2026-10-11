@@ -160,7 +160,7 @@
       "scripts/economic_sql_audit_snapshot.py": "b11872745b57c339995ab890171b5003f8132e194a73ae4f5fa69bc92fd2f8ae",
       "scripts/generate_economy_writer_coverage.py": "176fd8349d3f0115285f1902c94f3f6af09c3f86d623bf453b6aed1b158b77df",
       "scripts/persistence_backup.py": "14585a68763936717e928de8a4cd1868c4a7722720b103c1a7be352089f24368",
-      "scripts/persistence_restore.py": "97c9e08db82092b07a31c23ff894e9b643693543c6d2203e70895a50833fb6d8",
+      "scripts/persistence_restore.py": "c6226b82f8c7ae9288827050cbbcabf29d26c629920ff786f21cefd0184c0c06",
       "scripts/qualify_database_restore.py": "61eee5a95b79bb6302c77b18400aa8873e4c0248c1bcf4088182ba53142aab3a",
       "scripts/reconcile_economy_accounting.py": "fc4bb9555326967bd14c0892e6998553cd58dbb4294d628f8643304f97748bc8",
       "scripts/validate_data_lifecycle.py": "3a294a1a9d7ee432558d916859706932c3541fe74e99d4b297d5c150dbdced38",
@@ -613,7 +613,7 @@
       "tests/async/test_inert_money_literal.py": "92ad092458d7ad5ef4ca15200a53e8532f69d36f3f0831fc723fca82eda0da70",
       "tests/async/test_item_equipment_reconciliation.py": "22fa4d61539c18fa7f8c5518d494d8d9c4bd2ee890a58c352a61f64781f1efa8",
       "tests/async/test_item_ownership_runtime.py": "98d7fde83b4cf1357e53b1f9712af05b408b2c013fa1de476945938c9a1c5c02",
-      "tests/async/test_persistence_backup.py": "a2584d98454661467f98873e40a957d3a1e503fa8b5fd513691e6023bc5ce946",
+      "tests/async/test_persistence_backup.py": "7a330310230f808c7a840709f1af5a551637f10c14df7c904c286ea6bc5b3c81",
       "tests/async/test_persistence_mode.py": "c5e2eb9dd405e7a4e05e5100ae2b03209facf15113ce8267c7a8b6987b47485b",
       "tests/async/test_plan5_child_identity.py": "b90e28215109a9234b4d09ce0ea5408c6da631d45dc0e76397d695fcd97e1e67",
       "tests/async/test_player_save_journal.py": "52cfe3a4c6ac0998d7546b55d362817fa3309f4818e7478775d749bef26325d5",
@@ -36685,7 +36685,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          223
+          231
         ],
         "file": "scripts/persistence_restore.py",
         "function": "restore",
