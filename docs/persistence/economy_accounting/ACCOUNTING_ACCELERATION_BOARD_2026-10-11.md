@@ -18,6 +18,26 @@ ACTIVE on this chat/current Sol6.1/xhigh. No per-commit full-build/matrix repeat
 
 ## Current accepting gate
 
+Latest qualified component: ACC-08 on published primary
+`7f1d766c068501427c099360bb4d1985240395a4` / tree
+`2ec2ee21a1be222719f4969ae5909f4677690b2f`. Original registered Item
+entry0/129.014213s, SQL-header and flat each15 groups/2653 refusal points/
+2653 reservations, original lockpick/malformed-binding/NQF1 markers, zero skips.
+Original checker rejects `missing required cases: main`; required [script,main],
+all markers and5400s timeout remain. Outer1 is the actual acceptance refusal,
+with no collector error or full matrix invocation. Default source contracts0.
+Independent hashes find one stale integration_manifest pin in writers/matrix;
+portable two-field refresh is apply/reverse checked and candidate contracts0,
+all496 candidate pins exact. Original validator also passed; no validator
+red-to-green claim. Candidate patch remains unadopted. All3983 Git inputs
+unchanged; sole2GiB/CPU1 QA removed/lease RELEASED, seven unrelated services and
+four passive volumes preserved. Bounded WORLD review5e679b5fe independently
+verifies the sealed packet,3983 selected Git inputs and exact two-field patch;
+reviewer returns IDLE, with no native/validator/resource job. See
+`ITEM_COMPLETE_BOUNDED_REGISTERED_GATE_2026-10-11.md` and its imported standalone review.
+No NPC gameplay, runtime/architecture/whole-host32MiB/durability/restore/release
+proof is promoted. Earlier gates below retain their original sources and results.
+
 ACC-01 terminal PASS at 2026-10-11 01:18 MDT: fresh strict SQL and flat
 production compile/link (789 objects each), maintained inactive flat boot/shutdown,
 and 10/10 runtime source-contract tests on frozen
@@ -179,10 +199,10 @@ original "do it", superseding "go with the useful parts". Local model GPT-6.1 So
 
 | Lane | Chat / worktree / branch | Current ticket |
 | --- | --- | --- |
-| Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | ACC-07 native policy PASS/registered-case rejection reviewed; source contracts0, exact primary repair handoff; ACC-05/06 and9c release refusal preserved; no active grant |
+| Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | ACC-08 native Item PASS/required-main refusal and two-field pin repair; source/candidate contracts0; ACC-07 and older exact proofs preserved; no active grant |
 | Remote primary | Non-connected RGitGoin; private session/WIP inaccessible; published `experimental-accounting` | Existing Plans1-4/shared runtime/final integration ownership retained; no delegation ACK required; architecture/toolchain/storage/32MiB proof queue |
-| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Publishedeaa43822 corrected independent ACC-07 review; e922 restore-coin source-only report/patch; preserved5bc/ACC-05/06 proofs; finite wait, no next native grant |
-| World/quest (parked) | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | IDLE/clean f7228f3fe; original failure and component PASS handoffs preserved; proposed runtime allocation WITHDRAWN, no resources |
+| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Publishedeaa43822 corrected independent ACC-07 review; e922 restore-coin source-only report/patch; full goal BLOCKED by owner with scope preserved; finite wait, no native grant |
+| World/quest (parked) | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | IDLE/clean5e679b5fe after exact resource-free ACC-08 review; olderf722 failure/component handoffs preserved; runtime allocation WITHDRAWN, no standing task or resources |
 | Shop/backend (parked) | `01a129b4-a553-78e0-85c2-69e34d8e0d59`; `C:/Users/alexa/.codex/worktrees/969b/NewDuris Max`; `codex/accounting-accel-shop` | IDLE/clean6022; parked handoff preserved; ACC-04-TX unstarted possible future ticket only, no grant; allocation WITHDRAWN |
 
 - Native source: `83e2e4392064667fc4f64780183d17b5acc431ef`.
@@ -252,6 +272,8 @@ override availability or invent tokens/receipts for accepting tests.
 | ACC-06-RETENTION-LINK-01 | Original11-TU native_fixture actual SQL link failure followed by exact+3-TU repair with unchanged fixture/flags/asserts and SQL/flat ASan/UBSan execution/frame decoding | Terminal session36030/exit0 on frozen055+3; originalSQL1/11symbols/originalflat NOT_RUN, both candidate builds/runtimes/decode/bytes PASS_LINK_STRUCTURAL_COMPONENT_ONLY; independently1472-member seal verified/RELEASED; reviewed narrow repair imported, broad Plan5 work excluded; no full retention or newer9c871 proof |
 | RELEASE-9c871c875 | Original validate_economy_accounting.py default and --release, exact source/evidence/source-derived row handoff | Default0, release1 missing executable evidence; source-only packet verified/imported, first primary/#481 account.item_reward; no native/backend/game/release qualification and no repeated unchanged audit |
 | ACC-07-HELD-POLICY-01 | Original registered held policy entry on frozen97, original case acceptance checker, focused structural contracts | Entry0/both modes PASS; checker rejects missing main case; outer1 collector failure preserved, no native repeat; independent review/owned QA removed/RELEASED; no full matrix, SQL durability or release |
+| ACC-08-ITEM-BOUNDED-01 | Original registered bounded Item entry on frozen7f1d766c0, unchanged original outcome checker and default contracts | Entry0/both modes15 groups/2653 refusal points each; missing required main case remains; contracts0, sole QA removed/RELEASED; no full build/matrix or broader qualification |
+| ITEM-MANIFEST-PIN | Exact two-field portable hash refresh on7f1d766c0, unchanged cases/policies/source; apply/reverse check and candidate validator | Qualified source-pin accuracy repair only; original/candidate default validator both0; registered main refusal unchanged; primary adoption UNCONFIRMED |
 | PRIMARY-01 | Connected save/coordinator/item lifecycle map then verified boundary/caller/admission closure | Existing primary implementation ownership; no withdrawn delegation dependency |
 | PRIMARY-02 | Supported toolchain/runtime/library correspondence, complete storage/frame/transitive proof, aggregate 32MiB accept/refuse | Remains explicit; object compile/source packets do not close it |
 | FINAL | Gameplay/persistence/schema/backup/restore/recovery/fault/load/resource/R1-R8 gates agree on one frozen candidate | Reviewed implementation batches and per-slice architecture evidence |
@@ -775,13 +797,16 @@ Do not repeat this source/release audit on unchanged9c or open standing helper
 research; wait for meaningful source/evidence or an exact independently owned
 executable slice. Full Work1-5/R6-R8 acceptance remains open.
 
-Finite queue after ACC-07: primary compatible held-policy case-observation repair
-with original entry and unchanged checker both passing; actual same-root writer
-evidence and coherent schema/restore route; exact source-only restore-coin
-three-provider patch for adoption. Current97 source contracts pass but policy
-registration remains rejected. No full build/matrix or unchanged audit repeat,
-standing helper research, new cohort or runtime allocation. Historical proofs
-remain on their original sources; full deliverable remains OPEN.
+Finite queue after ACC-08: primary genuine main invocation/outcome observation
+under existing [script,main] for both Item and held-policy registrations;
+primary adoption of the exact two-field manifest-pin patch; actual same-root
+writer evidence and coherent0062/default65 restore route, with the existing
+source-only restore-coin three-provider packet. Current7f source contracts pass
+but the executed Item registration remains rejected. Wait for a substantive
+published repair/evidence batch or exact independently owned executable slice.
+No full build/matrix, unchanged audit repeat, standing helper research or runtime
+allocation. Historical proofs retain their original sources; full deliverable
+remains OPEN and the withdrawn speedup percentage is excluded.
 
 Exact PRIMARY handoff for the native recipe: adopt only the three `SOURCES`
 entries from integration `6bfa0f7ebdd5f2f46841047fdd10522e4d27dfea` in

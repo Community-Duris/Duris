@@ -1,0 +1,22 @@
+--- a/docs/persistence/economy_accounting/writers.json
++++ b/docs/persistence/economy_accounting/writers.json
+@@ -66758,7 +66758,7 @@
+       "src/world/economic_initialized_world_snapshot.c": "fbc3ed55b7ff3be943997ddad7977f6435f5bfe9873948f2343017c725d01b07",
+       "src/economy/smith_native_producer.c": "fbba97fb794c435aaefc7fd5ae6d973f3e1a4841e99a0b68f9d8ebd98267b1e2",
+       "tests/async/auction_transaction_mysql_harness.cpp": "599ac00a253497ddeab609bfc5a12189a1bc4a8d38f1cb89923a792aef8fb4d1",
+-      "tests/integration_manifest.json": "a1c78d916a646baf5e668365a877dc5bd83f5f9bec205237c4dfd9a63cc68741",
++      "tests/integration_manifest.json": "268f2921125a4b9b47607c28ed12dcf42ad8c4e29e08d6a29fbf1640946b4dc2",
+       "src/flatfile/flatfile_accounting_zone_reset_item_transaction.h": "586a7224701eee6606c3567f6ca48faa40fb1497b1a56e1d5e3195b36d72f418",
+       "src/persistence/sql_room_creation_correspondence.h": "294430cc6d97023f0e36db560cadee313227d11ca41c4850ed0fc0719ff55116",
+       "src/economy/auction_player_forest_detail.h": "1a8d764ae5b50b62f3f9f38118876b3560d7cf195727b9c48f185724bf79d0a2",
+--- a/docs/persistence/economy_accounting/writer_coverage_matrix.json
++++ b/docs/persistence/economy_accounting/writer_coverage_matrix.json
+@@ -634,7 +634,7 @@
+       "tests/async/test_spell_component_retirement_publication.py": "dbb84c30138984db14db13a695ea5d7130937c0dc7b7339085955136897ef0b8",
+       "tests/async/test_staging_migration_fork_mysql.py": "908ab9a227cf732b86bd3503aa0d3ccec07e0d2f35998568ea41d56543ba723d",
+       "tests/async/test_txn_publication_copyover_drain.py": "64d323b2b5041115c0f70602d6f51bbdc83ac337d9309838095391baa745a843",
+-      "tests/integration_manifest.json": "a1c78d916a646baf5e668365a877dc5bd83f5f9bec205237c4dfd9a63cc68741"
++      "tests/integration_manifest.json": "268f2921125a4b9b47607c28ed12dcf42ad8c4e29e08d6a29fbf1640946b4dc2"
+     },
+     "status": "source_integrated_unqualified"
+   },
