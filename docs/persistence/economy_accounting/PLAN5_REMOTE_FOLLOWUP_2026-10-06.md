@@ -3445,3 +3445,28 @@ runner/matrix/migration/contract/registry edit. Currentnativeprofilecauseproved
 withoutretroactiveclaimaboutdiscardedfull-runstderr. Full65/restore/authority/
 retention/erasure/recovery/load/release OPEN; inactive/CLOSED/fullgoalACTIVE.
 Additivecuratorinput; no notebookimport/combinedqualification.
+
+## 2026-10-11 — DIAG-02 one-line fixture repair prepared separately
+
+[DIAG-02 repair preparation](PLAN5_SCHEMA65_DIAG02_REPAIR_PREPARATION_2026-10-11.md)
+corrects only the exact65 checker argument to runtime['schema65']; top-level64
+setup unchanged. Ownershipjob/env/container/volumerouting changes have separate
+diffs. DIAG-01 executedhelpers/source/seal/data remainimmutable. FreshDIAG-02
+source6bfa0f7e6906files; classifier3/3pass, AST/nestedcontractshape check, transport
+preparation0 source/helper/file-set and missinggrant1 beforeDocker/job/build.
+No nativeexecution/resourcegrant/claim. Evidence
+D:/Dev/Tests/Duris/accounting-plan5/ACC-02-ORIGINAL65-DIAG-02.
+Preparation1ac8482e9a2ac4e33e9d7b265d573675fe2185aedc3d2dd21b2b5d764025a30a,
+fixturea00761125cdf1ab09622d9b6467505c8a84d6d2a6d5316f2a3961b88bf43a5fa,
+transportacd3cfbdde217bfeee7cdd7526021334da76d492bd95583f8e6d87c6ee026bcc,
+semanticdiffdbd9179bf52a6c99bbb41f59c377cf6230c58bfd043994b63f4c2a4af27d352c,
+validationc95dd1f6a86a0cef5c315d5caae6cca4ec3941e3c3689b44bdcf41a854d2f580.
+Base5674270da389324bd7df5ae9fd8695de51b1db9b; result/remote bound in
+owned delivery/preparation-result.json. Onlyreport/additivefollowup maintained;
+no sharedmatrix/runner/schema/contracts/registry edit. Realpinned65/rerun/
+wrongselector/nativecorrectedfixture NOT_RUN. Distinctreviewedgrant before any
+cohort; requestedoneMaria512mCPU1+serialQA2gCPU2/300s, freshdata/readonlysource/
+Doutputs, exactownedgracefulcleanup/seal/inventories/globalrelease controls same.
+No automaticfullmatrix/Cpp/qualifiedfield adoption/olddata reuse. Full65/restore/
+authority/retention/erasure/recovery/load/release OPEN; inactive/CLOSED/fullgoal
+ACTIVE; additivecuratorinput/no notebookimport/combinedqualification.
