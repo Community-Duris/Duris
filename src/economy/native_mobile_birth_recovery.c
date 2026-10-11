@@ -4207,3 +4207,352 @@ bool native_mobile_birth_shared_shop_recovery_valid_fixed_bounded(
 	return native_mobile_birth_shared_shop_recovery_validate_fixed_bounded(
 		       envelope, reserve, context, base) == error::ok;
 }
+
+// Additive exact-target complete INITIAL providers.
+static economic_accounting_error birth_initial_historical_decode_fixed_impl(
+	const critical_command &command, const std::span<const uint8_t> &bytes,
+	native_mobile_birth_recovery_context *output, recovery_policy policy,
+	recovery_reserve_fn reserve, void *context, size_t outer_live,
+	size_t *retained_context_heap_bytes) noexcept
+{
+	if (!output)
+		return error::corrupt_evidence;
+	// Admit every initial signature/getter/budget scope before querying or
+	// constructing the actual work. Inputs and previous destination stay outer.
+	size_t source = 0, initial = 0, query_peak = outer_live;
+	if (!recovery_add(query_peak, birth_historical_entry_query_bytes) || !reserve ||
+	    !reserve(query_peak, context) ||
+	    !(policy == recovery_policy::historical ?
+		      native_mobile_birth_recovery_historical_source_frame_bytes(&source) :
+		      native_mobile_birth_cash_role_recovery_fixed_source_frame_bytes(&source)) ||
+	    !native_mobile_birth_recovery_historical_initial_inline_bytes(&initial))
+		return error::capacity;
+	query_peak = outer_live;
+	if (!recovery_add(query_peak, source) || !recovery_add(query_peak, initial) ||
+	    !reserve(query_peak, context))
+		return error::capacity;
+	birth_historical_budget budget{ reserve, context, outer_live, source, initial };
+	if (!budget.admit())
+		return error::capacity;
+	try
+	{
+		birth_historical_decode_work work;
+		work.checked = preflight(&command, bytes, &work.view, policy);
+		if (work.checked != error::ok)
+			return work.checked;
+		// Initial historical evidence rejects receipts before command/image work,
+		// exactly at the original initial decoder's post-preflight decision.
+		if (work.view.body[0])
+			return error::corrupt_evidence;
+		if (!birth_fixed_command_values(command, &work.canonical, &work.recipes, policy,
+						budget) ||
+		    !std::equal(work.canonical.begin(), work.canonical.end(),
+				work.view.command.begin(), work.view.command.end()) ||
+		    work.view.count != work.recipes.size())
+			return budget.denied ? error::capacity : error::payload_conflict;
+		work.recipe_values = work.recipes;
+		if (policy == recovery_policy::shared_shop &&
+		    !birth_fixed_checkpoint_matches(command, work.view.checkpoint, budget))
+			return budget.denied ? error::capacity : error::payload_conflict;
+		work.offset = work.view.items_offset;
+		for (size_t i = 0; i < work.recipes.size(); ++i)
+		{
+			work.count = static_cast<uint32_t>(get(bytes.data() + work.offset + 16, 4));
+			work.index = recipe_index(work.recipe_values,
+						  get(bytes.data() + work.offset, 8));
+			if (work.index == work.recipes.size() ||
+			    work.count != step_count(work.recipes[work.index]))
+				return error::corrupt_evidence;
+			work.offset += ITEM_BYTES + work.count;
+		}
+		read_body(work.view.body, &work.candidate);
+		if (!birth_historical_context_valid_range(
+			    command, work.recipe_values, work.candidate, work.view.count,
+			    recovery_wire_item_access{ bytes, work.view },
+			    recovery_wire_count_access{ bytes, work.view },
+			    recovery_wire_effect_access{ bytes, work.view }, budget, policy))
+			return budget.denied ? error::capacity : error::corrupt_evidence;
+		work.request = 0;
+		if (!recovery_rows(work.request, work.view.count,
+				   sizeof(native_mobile_birth_recovery_item)) ||
+		    !budget.admit(work.request))
+			return error::capacity;
+		work.candidate.items.reserve(work.view.count);
+		if (!budget.retain(work.request))
+			return error::capacity;
+		work.transferred = work.request;
+		work.offset = work.view.items_offset;
+		for (size_t i = 0; i < work.view.count; ++i)
+		{
+			auto item = read_item(bytes.data() + work.offset);
+			work.count = static_cast<uint32_t>(get(bytes.data() + work.offset + 16, 4));
+			work.offset += ITEM_BYTES;
+			work.request = 0;
+			if (!recovery_rows(work.request, work.count,
+					   sizeof(native_mobile_birth_recovery_effect)) ||
+			    !budget.admit(work.request))
+				return error::capacity;
+			item.effects.reserve(work.count);
+			if (!budget.retain(work.request) ||
+			    !recovery_add(work.transferred, work.request))
+				return error::capacity;
+			for (size_t e = 0; e < work.count; ++e)
+				item.effects.push_back(effect(bytes[work.offset++]));
+			work.candidate.items.push_back(std::move(item));
+		}
+		static_assert(
+			std::is_nothrow_move_assignable_v<native_mobile_birth_recovery_context>);
+		*output = std::move(work.candidate);
+		if (retained_context_heap_bytes)
+			*retained_context_heap_bytes = work.transferred;
+		return error::ok;
+	}
+	catch (...)
+	{
+		return error::capacity;
+	}
+}
+
+namespace
+{
+// Exact initial-only progress graph: no terminal/all_of descendants.
+constexpr size_t birth_initial_no_progress_source =
+	// no_progress(value&,bool); three distinct bits(ref,uint8 return) types.
+	sizeof(void *) + sizeof(bool) + 3 * (sizeof(void *) + sizeof(uint8_t)) +
+	// Four range references/begin/end/element references own their destinations.
+	16 * sizeof(void *) +
+	// Effect/choice array const begin,end,data (receiver/reference result).
+	12 * sizeof(void *) +
+	// Each item/effect vector: const begin/end receivers, declared pointer
+	// iterator constructor, dereference, increment, equality, base.
+	// No compatible-pointer conversion temporary or implicit trivial iterator
+	// constructor/destructor is invented. Result iterators are range-owned.
+	2 * (12 * sizeof(void *) + sizeof(bool));
+template <class T> constexpr size_t birth_initial_vector_cleanup_source =
+	// vector/base/nontrivial Impl/allocator destructor receivers; actual
+	// allocator/range/aux destruction, mutable allocator getter, deallocate
+	// wrappers/sized delete and the two genuine wrapper predicate results.
+	22 * sizeof(void *) + 5 * sizeof(size_t) + 2 * sizeof(bool) +
+	(std::is_trivially_destructible_v<T> ? 0 : 5 * sizeof(void *));
+constexpr size_t birth_initial_context_lifetime_source =
+	// Plain context default receiver, two plain action members, mobile;
+	// receipt{} and fixed arrays{} aggregate-initialize, no trivial calls.
+	4 * sizeof(void *) + 6 * sizeof(void *) + sizeof(void *) +
+	birth_initial_vector_cleanup_source<native_mobile_birth_recovery_item> +
+	// Item destructor receiver is already in the nontrivial item cleanup;
+	// its nested effect vector has no effect destructor body.
+	birth_initial_vector_cleanup_source<native_mobile_birth_recovery_effect>;
+constexpr size_t birth_initial_span_source =
+	// span() and dynamic extent(count); declared span copy assignment and
+	// destructor. Implicit trivial extent assignment contributes no call.
+	2 * sizeof(void *) + sizeof(size_t) + 3 * sizeof(void *) + sizeof(void *) +
+	// Genuine range construction from the immutable attachment vector:
+	// span(range), data/size CPOs, vector data/_M_data_ptr/size, pointer-count
+	// constructor, to_address/__to_address and dynamic extent constructor.
+	20 * sizeof(void *) + 4 * sizeof(size_t);
+struct birth_initial_historical_work
+{
+	native_mobile_birth_recovery_context value;
+	std::span<const uint8_t> attachment;
+};
+struct birth_initial_role_work
+{
+	native_mobile_birth_recovery_context progress;
+	native_mobile_birth_shared_shop_recovery_context shared;
+	std::span<const uint8_t> attachment;
+};
+constexpr size_t birth_initial_historical_source =
+	// Callback three pointer/ref formals, outer/base N and returned bool;
+	// checked recovery_add ref/extra/result. No callback descendant authority.
+	4 * sizeof(void *) + 3 * sizeof(size_t) + 2 * sizeof(bool) +
+	// Real workspace default/destructor and context member lifecycle.
+	2 * sizeof(void *) + birth_initial_context_lifetime_source + birth_initial_span_source +
+	birth_initial_no_progress_source;
+constexpr size_t birth_initial_role_common_source =
+	// Public wrapper and private original predicate1 helper signatures;
+	// helper base, policy/predicate, return bools, checked-add descendants.
+	7 * sizeof(void *) + 4 * sizeof(size_t) + 3 * sizeof(bool) + sizeof(recovery_policy) +
+	sizeof(unsigned) +
+	// Original workspace has TWO separate contexts even in the cash arm.
+	// Shared aggregate default/destructor are nontrivial because of vectors.
+	4 * sizeof(void *) + 2 * birth_initial_context_lifetime_source + 6 * sizeof(void *) +
+	birth_initial_vector_cleanup_source<uint8_t> + birth_initial_span_source +
+	// Preserve both original initial no_progress call occurrences. These
+	// are conservative sequential real calls, not two distinct type families.
+	2 * birth_initial_no_progress_source;
+constexpr size_t birth_initial_shared_progress_move_source =
+	// std::move(context) and generated nontrivial context move assignment.
+	5 * sizeof(void *) +
+	// Exact equal-allocator vector<item> move controller and actual tmp/A.
+	// __move_storage is a real local bool; traits constexpr query is not a
+	// runtime callee result. No scalar/array trivial assignment bodies.
+	40 * sizeof(void *) + sizeof(bool) + sizeof(std::true_type) +
+	sizeof(std::vector<native_mobile_birth_recovery_item>) +
+	sizeof(std::allocator<native_mobile_birth_recovery_item>);
+constexpr size_t birth_initial_historical_inline =
+	sizeof(birth_initial_historical_work) + sizeof(std::span<const uint8_t>);
+constexpr size_t birth_initial_role_inline =
+	sizeof(birth_initial_role_work) + sizeof(std::span<const uint8_t>);
+bool birth_initial_role_fixed_impl(const critical_native_recovery_envelope &envelope,
+				   recovery_policy policy, unsigned predicate,
+				   recovery_reserve_fn reserve, void *context,
+				   size_t outer) noexcept
+{
+	// Verbatim original envelope guards; only initial predicate1 is called.
+	if (!envelope.revision ||
+	    (envelope.phase != critical_native_recovery_phase::execution_pending &&
+	     envelope.phase != critical_native_recovery_phase::continuation_pending) ||
+	    (predicate == 1 &&
+	     (envelope.revision != 1 ||
+	      envelope.phase != critical_native_recovery_phase::execution_pending)) ||
+	    (predicate == 2 &&
+	     (envelope.revision <= 1 ||
+	      envelope.phase != critical_native_recovery_phase::continuation_pending)))
+		return false;
+	if (!birth_historical_source_policy)
+		return false;
+	size_t base = outer;
+	if (!recovery_add(base, birth_initial_role_common_source) ||
+	    (policy == recovery_policy::shared_shop &&
+	     !recovery_add(base, birth_initial_shared_progress_move_source)) ||
+	    !recovery_add(base, birth_initial_role_inline) || !reserve || !reserve(base, context))
+		return false;
+	birth_initial_role_work work;
+	work.attachment = envelope.attachment;
+	if (policy == recovery_policy::shared_shop)
+	{
+		if (native_mobile_birth_shared_shop_recovery_decode_fixed_bounded(
+			    envelope.command, work.attachment, &work.shared, reserve, context,
+			    base) != error::ok)
+			return false;
+		work.progress = std::move(work.shared.progress);
+	}
+	else if (native_mobile_birth_cash_role_recovery_decode_fixed_bounded(
+			 envelope.command, work.attachment, &work.progress, reserve, context,
+			 base) != error::ok)
+		return false;
+	return (envelope.revision != 1 ||
+		(envelope.phase == critical_native_recovery_phase::execution_pending &&
+		 !work.progress.receipt_present && no_progress(work.progress))) &&
+	       (envelope.phase == critical_native_recovery_phase::execution_pending ||
+		body_terminal(work.progress)) &&
+	       (predicate != 1 || (!work.progress.receipt_present && no_progress(work.progress))) &&
+	       (predicate != 2 || body_terminal(work.progress));
+}
+} // namespace
+
+bool native_mobile_birth_recovery_initial_fixed_bounded(
+	const critical_native_recovery_envelope &envelope, recovery_reserve_fn reserve,
+	void *context, size_t outer) noexcept
+{
+	if (envelope.revision != 1 ||
+	    envelope.phase != critical_native_recovery_phase::execution_pending)
+		return false;
+	if (!birth_historical_source_policy)
+		return false;
+	size_t base = outer;
+	if (!recovery_add(base, birth_initial_historical_source) ||
+	    !recovery_add(base, birth_initial_historical_inline) || !reserve ||
+	    !reserve(base, context))
+		return false;
+	birth_initial_historical_work work;
+	work.attachment = envelope.attachment;
+	return birth_initial_historical_decode_fixed_impl(envelope.command, work.attachment,
+							  &work.value, recovery_policy::historical,
+							  reserve, context, base,
+							  nullptr) == error::ok &&
+	       !work.value.receipt_present && no_progress(work.value);
+}
+bool native_mobile_birth_cash_role_recovery_initial_fixed_bounded(
+	const critical_native_recovery_envelope &envelope, recovery_reserve_fn reserve,
+	void *context, size_t outer) noexcept
+{
+	return birth_initial_role_fixed_impl(envelope, recovery_policy::ordinary_cash_role, 1,
+					     reserve, context, outer);
+}
+bool native_mobile_birth_shared_shop_recovery_initial_fixed_bounded(
+	const critical_native_recovery_envelope &envelope, recovery_reserve_fn reserve,
+	void *context, size_t outer) noexcept
+{
+	return birth_initial_role_fixed_impl(envelope, recovery_policy::shared_shop, 1, reserve,
+					     context, outer);
+}
+
+bool native_mobile_birth_recovery_initial_fixed_bounded_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !birth_historical_source_policy)
+		return false;
+	*output = birth_initial_historical_source;
+	return true;
+}
+
+bool native_mobile_birth_recovery_initial_fixed_bounded_source_supplement_frame_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !birth_historical_source_policy)
+		return false;
+	*output = 0;
+	return true;
+}
+
+bool native_mobile_birth_recovery_initial_fixed_bounded_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !birth_historical_source_policy)
+		return false;
+	*output = birth_initial_historical_inline;
+	return true;
+}
+
+bool native_mobile_birth_cash_role_recovery_initial_fixed_bounded_source_frame_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !birth_historical_source_policy)
+		return false;
+	*output = birth_initial_role_common_source;
+	return true;
+}
+
+bool native_mobile_birth_cash_role_recovery_initial_fixed_bounded_source_supplement_frame_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !birth_historical_source_policy)
+		return false;
+	*output = 0;
+	return true;
+}
+
+bool native_mobile_birth_cash_role_recovery_initial_fixed_bounded_initial_inline_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !birth_historical_source_policy)
+		return false;
+	*output = birth_initial_role_inline;
+	return true;
+}
+
+bool native_mobile_birth_shared_shop_recovery_initial_fixed_bounded_source_frame_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !birth_historical_source_policy)
+		return false;
+	*output = birth_initial_role_common_source + birth_initial_shared_progress_move_source;
+	return true;
+}
+
+bool native_mobile_birth_shared_shop_recovery_initial_fixed_bounded_source_supplement_frame_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !birth_historical_source_policy)
+		return false;
+	*output = 0;
+	return true;
+}
+
+bool native_mobile_birth_shared_shop_recovery_initial_fixed_bounded_initial_inline_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !birth_historical_source_policy)
+		return false;
+	*output = birth_initial_role_inline;
+	return true;
+}
