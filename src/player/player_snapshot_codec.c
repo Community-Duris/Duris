@@ -69,6 +69,13 @@ struct decoder
 	size_t objects = 0;
 	player_snapshot_codec_result result = player_snapshot_codec_result::ok;
 
+	player_snapshot_codec_result failure() const
+	{
+		return result == player_snapshot_codec_result::ok ?
+			       player_snapshot_codec_result::invalid_value :
+			       result;
+	}
+
 	template <typename T> bool number(T &value)
 	{
 		if (result != player_snapshot_codec_result::ok || size - offset < sizeof(T))
@@ -741,7 +748,7 @@ player_item_snapshot_list_decode(const uint8_t *encoded, size_t encoded_size,
 		decoder in = { encoded, encoded_size };
 		std::vector<player_item_snapshot> items;
 		if (!decode_items(in, items))
-			return in.result;
+			return in.failure();
 		if (in.offset != in.size || !valid_item_relationships(items))
 			return player_snapshot_codec_result::invalid_value;
 		*items_out = std::move(items);
@@ -865,34 +872,43 @@ struct live_item_encoder_scan
 				++depth;
 			}
 			if (!numbers(sizeof(int32_t) + sizeof(int16_t) + sizeof(uint64_t) +
-				     sizeof(int64_t) + sizeof(int32_t) + sizeof(int8_t) + sizeof(uint8_t)) ||
+				     sizeof(int64_t) + sizeof(int32_t) + sizeof(int8_t) +
+				     sizeof(uint8_t)) ||
 			    !string(row.name) || !string(row.short_description) ||
 			    !string(row.description) || !string(row.action_description) ||
 			    !numbers(row.values.size() * sizeof(int32_t) +
 				     row.timers.size() * sizeof(int64_t) + 5 * sizeof(uint32_t) +
 				     sizeof(int32_t) + sizeof(int8_t) + sizeof(int32_t) +
-				     2 * sizeof(int16_t) + row.bitvectors.size() * sizeof(uint64_t)))
+				     2 * sizeof(int16_t) +
+				     row.bitvectors.size() * sizeof(uint64_t)))
 				return false;
 			for (const auto &affect : row.affects)
 				if (!numbers(affect.size() * sizeof(int16_t)))
 					return false;
-			if (!count(row.dynamic_affects.size(), sizeof(player_item_dynamic_affect_snapshot),
+			if (!count(row.dynamic_affects.size(),
+				   sizeof(player_item_dynamic_affect_snapshot),
 				   profile.dynamic_affect_count) ||
-			    !numbers(row.dynamic_affects.size() * (2 * sizeof(int16_t) + sizeof(uint64_t))) ||
-			    !count(row.extra_descriptions.size(), sizeof(player_item_extra_description_snapshot),
+			    !numbers(row.dynamic_affects.size() *
+				     (2 * sizeof(int16_t) + sizeof(uint64_t))) ||
+			    !count(row.extra_descriptions.size(),
+				   sizeof(player_item_extra_description_snapshot),
 				   profile.extra_description_count))
 				return false;
 			for (const auto &description : row.extra_descriptions)
-				if (!string(description.keyword) || !string(description.description) || !numbers(1) ||
-				    !count(description.spell_ids.size(), sizeof(int32_t), profile.spell_id_count) ||
+				if (!string(description.keyword) ||
+				    !string(description.description) || !numbers(1) ||
+				    !count(description.spell_ids.size(), sizeof(int32_t),
+					   profile.spell_id_count) ||
 				    !numbers(description.spell_ids.size() * sizeof(int32_t)))
 					return false;
 		}
 		if (profile.fresh_decode_storage_policy_supported)
 		{
 			profile.decoded_payload_bytes = sizeof(std::vector<player_item_snapshot>);
-			if (!add(profile.decoded_payload_bytes, profile.decoded_row_storage_bytes) ||
-			    !add(profile.decoded_payload_bytes, profile.decoded_string_storage_bytes))
+			if (!add(profile.decoded_payload_bytes,
+				 profile.decoded_row_storage_bytes) ||
+			    !add(profile.decoded_payload_bytes,
+				 profile.decoded_string_storage_bytes))
 				return false;
 		}
 		profile.relationship_scratch_bytes = sizeof(std::vector<size_t>);
@@ -1041,10 +1057,11 @@ bool player_item_snapshot_list_encoder_working_bytes(
 	return true;
 }
 
-player_snapshot_codec_result player_item_snapshot_list_encode_bounded(
-	const std::vector<player_item_snapshot> &items, std::vector<uint8_t> *output,
-	bool (*reserve_scratch_peak)(size_t, void *) noexcept, void *context,
-	size_t outer_live_scratch) noexcept
+player_snapshot_codec_result
+player_item_snapshot_list_encode_bounded(const std::vector<player_item_snapshot> &items,
+					 std::vector<uint8_t> *output,
+					 bool (*reserve_scratch_peak)(size_t, void *) noexcept,
+					 void *context, size_t outer_live_scratch) noexcept
 {
 	if (!output || !reserve_scratch_peak)
 		return player_snapshot_codec_result::invalid_value;
@@ -1054,8 +1071,9 @@ player_snapshot_codec_result player_item_snapshot_list_encode_bounded(
 		       reserve_scratch_peak(outer_live_scratch + extra, context);
 	};
 	if (sizeof(player_item_snapshot_list_allocation_profile) >
-	    SIZE_MAX - sizeof(live_item_encoder_scan) ||
-	    !admit(sizeof(player_item_snapshot_list_allocation_profile) + sizeof(live_item_encoder_scan)))
+		    SIZE_MAX - sizeof(live_item_encoder_scan) ||
+	    !admit(sizeof(player_item_snapshot_list_allocation_profile) +
+		   sizeof(live_item_encoder_scan)))
 		return player_snapshot_codec_result::limit_exceeded;
 	player_item_snapshot_list_allocation_profile profile;
 	const auto status = player_item_snapshot_list_encoder_preflight(items, &profile);
@@ -1598,9 +1616,9 @@ player_snapshot_codec_result player_snapshot_encode(const player_snapshot &snaps
 				return valid;
 		}
 		out.bytes.reserve(snapshot.encoded_size_bound);
-		const bool ward_fields =
-			std::any_of(snapshot.affects.begin(), snapshot.affects.end(),
-				    [](const auto &af) { return af.ward_source_type != 0; });
+		const bool ward_fields = std::any_of(snapshot.affects.begin(),
+						     snapshot.affects.end(), [](const auto &af)
+						     { return af.ward_source_type != 0; });
 		out.number<uint32_t>(snapshot.schema_version +
 				     (ward_fields ? PLAYER_SNAPSHOT_WARD_WIRE_OFFSET : 0));
 		out.number<int32_t>(snapshot.pid);
@@ -1764,7 +1782,7 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 		player_snapshot snapshot = {};
 		uint64_t encoded_bound = 0;
 		if (!in.number(snapshot.schema_version))
-			return in.result;
+			return in.failure();
 		const uint32_t raw_wire_version = snapshot.schema_version;
 		const bool ward_fields = raw_wire_version >= 20 && raw_wire_version <= 32;
 		const uint32_t wire_version =
@@ -1788,30 +1806,29 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 		if (!in.number(snapshot.pid) || !in.number(snapshot.revision) ||
 		    !in.number(snapshot.components) || !in.number(snapshot.save_intent) ||
 		    !in.number(snapshot.room_vnum) || !in.number(encoded_bound))
-			return in.result;
+			return in.failure();
 		snapshot.encoded_size_bound = encoded_bound;
 		if (!valid_metadata(snapshot))
 			return player_snapshot_codec_result::invalid_value;
-		if (!in.vector(snapshot.status_integers,
-			       [&](auto &row)
-			       {
-				       uint16_t field = 0;
-				       if (!in.number(field))
-					       return false;
-				       if (field >
-					   static_cast<uint16_t>(player_status_field::last_ip))
-				       {
-					       in.result =
-						       player_snapshot_codec_result::invalid_value;
-					       return false;
-				       }
-				       if (!in.number(row.signed_value) ||
-					   !in.number(row.unsigned_value) ||
-					   !in.boolean(row.is_unsigned))
-					       return false;
-				       row.field = static_cast<player_status_field>(field);
-				       return true;
-			       }) ||
+		if (!in.vector(
+			    snapshot.status_integers,
+			    [&](auto &row)
+			    {
+				    uint16_t field = 0;
+				    if (!in.number(field))
+					    return false;
+				    if (field > static_cast<uint16_t>(player_status_field::last_ip))
+				    {
+					    in.result = player_snapshot_codec_result::invalid_value;
+					    return false;
+				    }
+				    if (!in.number(row.signed_value) ||
+					!in.number(row.unsigned_value) ||
+					!in.boolean(row.is_unsigned))
+					    return false;
+				    row.field = static_cast<player_status_field>(field);
+				    return true;
+			    }) ||
 		    !in.vector(snapshot.status_strings,
 			       [&](auto &row)
 			       {
@@ -1830,13 +1847,13 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 				       row.field = static_cast<player_status_string_field>(field);
 				       return true;
 			       }))
-			return in.result;
+			return in.failure();
 		for (int32_t &value : snapshot.conditions)
 			if (!in.number(value))
-				return in.result;
+				return in.failure();
 		for (int32_t &value : snapshot.quest_values)
 			if (!in.number(value))
-				return in.result;
+				return in.failure();
 		if (!decode_index_rows(in, snapshot.languages) ||
 		    !decode_index_rows(in, snapshot.introductions) ||
 		    !decode_index_rows(in, snapshot.timers) ||
@@ -1908,10 +1925,10 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 			    snapshot.trophies, [&](auto &row)
 			    { return in.number(row.zone_number) && in.number(row.experience); }) ||
 		    !in.boolean(snapshot.recipes_are_external))
-			return in.result;
+			return in.failure();
 		if (wire_version >= 5 &&
 		    !in.string(snapshot.output_preferences, OUTPUT_PREFERENCE_MAX_BYTES))
-			return in.result;
+			return in.failure();
 		if (player_snapshot_has_quest_receipt_schema(wire_version) &&
 		    !in.vector(snapshot.quest_xp_receipts,
 			       [&](auto &receipt)
@@ -1929,7 +1946,7 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 				       return in.number(receipt.reward_index) &&
 					      in.number(receipt.amount);
 			       }))
-			return in.result;
+			return in.failure();
 		if (player_snapshot_has_spell_receipt_schema(wire_version) &&
 		    !in.vector(snapshot.spell_effect_receipts,
 			       [&](auto &receipt)
@@ -1945,7 +1962,7 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 				       in.offset += receipt.operation_id.bytes.size();
 				       return in.number(receipt.effect_id);
 			       }))
-			return in.result;
+			return in.failure();
 		if (player_snapshot_has_craft_receipt_schema(wire_version) &&
 		    !in.vector(snapshot.craft_receipts,
 			       [&](auto &receipt)
@@ -1962,18 +1979,18 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 				       return in.number(receipt.discipline) &&
 					      in.number(receipt.experience);
 			       }))
-			return in.result;
+			return in.failure();
 		if (player_snapshot_is_death_request_schema(snapshot.schema_version) ||
 		    player_snapshot_is_death_evidence_schema(snapshot.schema_version))
 		{
 			snapshot.death.emplace();
 			if (!decode_death(in, *snapshot.death))
-				return in.result;
+				return in.failure();
 			if (player_snapshot_is_death_evidence_schema(snapshot.schema_version))
 			{
 				snapshot.death->conflict_evidence.emplace();
 				if (!decode_evidence(in, *snapshot.death->conflict_evidence))
-					return in.result;
+					return in.failure();
 			}
 		}
 		if (!valid_death(snapshot) || !valid_quest_xp_receipts(snapshot) ||
@@ -2862,6 +2879,8 @@ struct snapshot_bounded_decoder
 		, result(work.raw.result)
 	{
 	}
+	player_snapshot_codec_result failure() const { return owner.raw.failure(); }
+
 	template <typename T> bool number(T &value)
 	{
 		// Original number's this/value, unsigned bits, index, offset/query result.
@@ -3473,7 +3492,7 @@ player_snapshot_decode_bounded(const uint8_t *encoded, size_t encoded_size,
 		auto &snapshot = work.snapshot;
 		uint64_t encoded_bound = 0;
 		if (!in.number(snapshot.schema_version))
-			return in.result;
+			return in.failure();
 		const uint32_t raw_wire_version = snapshot.schema_version;
 		const bool ward_fields = raw_wire_version >= 20 && raw_wire_version <= 32;
 		const uint32_t wire_version =
@@ -3497,32 +3516,31 @@ player_snapshot_decode_bounded(const uint8_t *encoded, size_t encoded_size,
 		if (!in.number(snapshot.pid) || !in.number(snapshot.revision) ||
 		    !in.number(snapshot.components) || !in.number(snapshot.save_intent) ||
 		    !in.number(snapshot.room_vnum) || !in.number(encoded_bound))
-			return in.result;
+			return in.failure();
 		snapshot.encoded_size_bound = encoded_bound;
 		if (!work.peak(sizeof(void *) + sizeof(bool) + sizeof(uint32_t)))
 			return player_snapshot_codec_result::allocation_failure;
 		if (!valid_metadata(snapshot))
 			return player_snapshot_codec_result::invalid_value;
-		if (!in.vector(snapshot.status_integers,
-			       [&](auto &row)
-			       {
-				       uint16_t field = 0;
-				       if (!in.number(field))
-					       return false;
-				       if (field >
-					   static_cast<uint16_t>(player_status_field::last_ip))
-				       {
-					       in.result =
-						       player_snapshot_codec_result::invalid_value;
-					       return false;
-				       }
-				       if (!in.number(row.signed_value) ||
-					   !in.number(row.unsigned_value) ||
-					   !in.boolean(row.is_unsigned))
-					       return false;
-				       row.field = static_cast<player_status_field>(field);
-				       return true;
-			       }) ||
+		if (!in.vector(
+			    snapshot.status_integers,
+			    [&](auto &row)
+			    {
+				    uint16_t field = 0;
+				    if (!in.number(field))
+					    return false;
+				    if (field > static_cast<uint16_t>(player_status_field::last_ip))
+				    {
+					    in.result = player_snapshot_codec_result::invalid_value;
+					    return false;
+				    }
+				    if (!in.number(row.signed_value) ||
+					!in.number(row.unsigned_value) ||
+					!in.boolean(row.is_unsigned))
+					    return false;
+				    row.field = static_cast<player_status_field>(field);
+				    return true;
+			    }) ||
 		    !in.vector(snapshot.status_strings,
 			       [&](auto &row)
 			       {
@@ -3541,13 +3559,13 @@ player_snapshot_decode_bounded(const uint8_t *encoded, size_t encoded_size,
 				       row.field = static_cast<player_status_string_field>(field);
 				       return true;
 			       }))
-			return in.result;
+			return in.failure();
 		for (int32_t &value : snapshot.conditions)
 			if (!in.number(value))
-				return in.result;
+				return in.failure();
 		for (int32_t &value : snapshot.quest_values)
 			if (!in.number(value))
-				return in.result;
+				return in.failure();
 		if (!snapshot_bounded_decode_index_rows(in, snapshot.languages) ||
 		    !snapshot_bounded_decode_index_rows(in, snapshot.introductions) ||
 		    !snapshot_bounded_decode_index_rows(in, snapshot.timers) ||
@@ -3619,10 +3637,10 @@ player_snapshot_decode_bounded(const uint8_t *encoded, size_t encoded_size,
 			    snapshot.trophies, [&](auto &row)
 			    { return in.number(row.zone_number) && in.number(row.experience); }) ||
 		    !in.boolean(snapshot.recipes_are_external))
-			return in.result;
+			return in.failure();
 		if (wire_version >= 5 &&
 		    !in.string(snapshot.output_preferences, OUTPUT_PREFERENCE_MAX_BYTES))
-			return in.result;
+			return in.failure();
 		if (player_snapshot_has_quest_receipt_schema(wire_version) &&
 		    !in.vector(snapshot.quest_xp_receipts,
 			       [&](auto &receipt)
@@ -3640,7 +3658,7 @@ player_snapshot_decode_bounded(const uint8_t *encoded, size_t encoded_size,
 				       return in.number(receipt.reward_index) &&
 					      in.number(receipt.amount);
 			       }))
-			return in.result;
+			return in.failure();
 		if (player_snapshot_has_spell_receipt_schema(wire_version) &&
 		    !in.vector(snapshot.spell_effect_receipts,
 			       [&](auto &receipt)
@@ -3656,7 +3674,7 @@ player_snapshot_decode_bounded(const uint8_t *encoded, size_t encoded_size,
 				       in.offset += receipt.operation_id.bytes.size();
 				       return in.number(receipt.effect_id);
 			       }))
-			return in.result;
+			return in.failure();
 		if (player_snapshot_has_craft_receipt_schema(wire_version) &&
 		    !in.vector(snapshot.craft_receipts,
 			       [&](auto &receipt)
@@ -3673,21 +3691,21 @@ player_snapshot_decode_bounded(const uint8_t *encoded, size_t encoded_size,
 				       return in.number(receipt.discipline) &&
 					      in.number(receipt.experience);
 			       }))
-			return in.result;
+			return in.failure();
 		if (player_snapshot_is_death_request_schema(snapshot.schema_version) ||
 		    player_snapshot_is_death_evidence_schema(snapshot.schema_version))
 		{
 			if (!in.emplace(snapshot.death))
-				return in.result;
+				return in.failure();
 			if (!snapshot_bounded_decode_death(in, *snapshot.death))
-				return in.result;
+				return in.failure();
 			if (player_snapshot_is_death_evidence_schema(snapshot.schema_version))
 			{
 				if (!in.emplace(snapshot.death->conflict_evidence))
-					return in.result;
+					return in.failure();
 				if (!snapshot_bounded_decode_evidence(
 					    in, *snapshot.death->conflict_evidence))
-					return in.result;
+					return in.failure();
 			}
 		}
 		// Original allocation-free metadata/receipt validators retain their

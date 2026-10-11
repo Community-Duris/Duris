@@ -3320,7 +3320,7 @@ void do_breathe(P_char ch, char *arg, int /*cmd*/)
 	}
 	else
 	{
-		if (arg || *arg)
+		if (arg && *arg)
 		{
 			one_argument(arg, buf);
 			dir = search_block(buf, dirs, FALSE);

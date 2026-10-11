@@ -1,6 +1,18 @@
 {
   "version": 1,
   "tests": {
+  "test_ship_retry_budget.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":5,"purpose":"Production ship retry work is bounded and fair under full pools, storage failure and owner erasure."},
+  "test_falling_world_exits.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":1,"purpose":"Authored chasm downward exits lead to their next depth and fall loops remain guarded."},
+  "test_shop_list_extract_contract.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.1,"purpose":"Shop iteration preserves the successor before extracting invalid stock."},
+  "test_ship_save_failure_keeps_db_id.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":45,"purpose":"Ship row identity across update failure and ambiguous insert commit replies."},
+  "test_ship_purchase_room_guards.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":45,"purpose":"Hull purchase refusal and refund when rooms fill or an owner has an unplaced ship."},
+  "test_ship_boot_room_pool_full.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":45,"purpose":"Real ship registry and room allocation under pool exhaustion, shutdown and retry."},
+  "test_ship_boot_loads_every_row.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":45,"purpose":"SQL boot processes every persisted ship owner without fixed-list truncation."},
+  "test_random_boundary_runtime.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":45,"purpose":"Full signed RNG intervals and unmatched random-equipment spell ids under sanitizers."},
+  "test_hostname_close_runtime.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":45,"purpose":"Reverse-DNS worker completion across close and descriptor reuse; connection state contracts."},
+  "test_editor_free.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":45,"purpose":"Real line-editor odd-count cleanup and insertion refusal under ASan/LSan."},
+  "test_boards_headline_bounds.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":45,"purpose":"Board input allocation and headline truncation under ASan/UBSan."},
+
     "telemetry_rollup_budget_test.py": {
       "profile": "fast",
       "mode": "unittest",

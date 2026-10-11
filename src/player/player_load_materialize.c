@@ -523,6 +523,8 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 	for (const player_snapshot_integer &entry : result.snapshot.status_integers)
 		apply_integer(ch, entry, &hit_difference);
 	ch->only.pc->pid = result.pid;
+	ch->only.pc->unloaded_components = PLAYER_CHECKPOINT_COMPONENT_ALL &
+					   ~result.snapshot.components;
 	if (!gameplay_read_state_publish(
 		    &ch->only.pc->gameplay_reads, result.recent_pvp_deaths.data(),
 		    result.recent_pvp_deaths.size(), result.completed_epic_zones.data(),

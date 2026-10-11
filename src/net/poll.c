@@ -1008,8 +1008,7 @@ vector<poll_data> poll_get_all(bool active_only)
 /* get poll by id */
 poll_data poll_get_by_id(int poll_id)
 {
-	poll_data poll;
-	poll.id = 0;
+	poll_data poll = {};
 
 #ifdef __NO_MYSQL__
 	return get_flat_poll_by_id(poll_id, nullptr);

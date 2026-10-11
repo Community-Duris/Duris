@@ -1768,10 +1768,12 @@ bool identify_random(P_obj obj)
 	if (!obj->value[5])
 		return false;
 
-	for (i = 0; i < 62 && spells_data[i].spell != obj->value[5]; i++)
+	for (i = 0;
+	     i < static_cast<int>(ARRAY_SIZE(spells_data)) && spells_data[i].spell != obj->value[5];
+	     i++)
 		;
 
-	if (i == 62 || !*spells_data[i].name)
+	if (i == static_cast<int>(ARRAY_SIZE(spells_data)) || !*spells_data[i].name)
 		return false;
 
 	strcpy(old_name, obj->short_description);

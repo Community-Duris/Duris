@@ -126,6 +126,36 @@ void refund_ship_epics(P_char ch, const ship_hull_purchase_context &context)
 }
 
 /*
+ * Tell `ch` they cannot buy a first ship because they own one that is stored
+ * but not in the world, first trying to bring it back.  Returns false when
+ * they have no stored ship.  A second ship could never be saved beside the
+ * stored one, because ships are unique by owner.
+ */
+static bool refuse_for_stored_ship(P_char ch)
+{
+	switch (place_stored_ship(GET_NAME(ch)))
+	{
+	case stored_ship_state::none:
+		return false;
+	case stored_ship_state::placed:
+		send_to_char(
+			"&+gYou already own a ship.  It was waiting in dry dock, and is back at its dock now.&n\n",
+			ch);
+		break;
+	case stored_ship_state::no_room:
+		send_to_char(
+			"&+gYou already own a ship, in dry dock until the harbour has room for it.  Try again later.&n\n",
+			ch);
+		break;
+	case stored_ship_state::unreadable:
+		send_to_char("&+gYour ship's records could not be read.  Please notify a god.&n\n",
+			     ch);
+		break;
+	}
+	return true;
+}
+
+/*
  * Completion callback for a hull purchase's epic-point transaction: the point
  * at which the ship actually changes.
  *
@@ -163,6 +193,19 @@ void ship_hull_purchase_committed(P_char ch, bool committed, const epic_command_
 			refund_ship_epics(ch, context);
 			return;
 		}
+		if (!ship_rooms_fit_class(ship, context.hull_type))
+		{
+			send_to_char(
+				"The shipyard has no room to build that hull now; your epics are being refunded.\n",
+				ch);
+			refund_ship_epics(ch, context);
+			return;
+		}
+	}
+	else if (refuse_for_stored_ship(ch))
+	{
+		refund_ship_epics(ch, context);
+		return;
 	}
 	if (context.coin_delta > 0 && GET_MONEY(ch) < context.coin_delta)
 	{
@@ -188,6 +231,8 @@ void ship_hull_purchase_committed(P_char ch, bool committed, const epic_command_
 		name_ship(context.name, ship);
 		if (!load_ship(ship, context.room))
 		{
+			shipObjHash.erase(ship);
+			delete_ship(ship, true);
 			send_to_char(
 				"The shipyard could not load your ship; your epics are being refunded.\n",
 				ch);
@@ -2692,6 +2737,13 @@ int buy_hull(P_char ch, P_ship ship, int owned, char *arg1, char *arg2)
 		{
 			return TRUE;
 		}
+		if (!ship_rooms_fit_class(ship, hull_type))
+		{
+			send_to_char(
+				"&+gThe shipyard has no room to build that hull right now.  Try again later.&n\n",
+				ch);
+			return TRUE;
+		}
 		/* There are checks for hull change being valid now.
 		 for( int k = 0; k < MAXSLOTS; k++ )
 		 {
@@ -2790,6 +2842,10 @@ int buy_hull(P_char ch, P_ship ship, int owned, char *arg1, char *arg2)
 	}
 	else
 	{
+		if (refuse_for_stored_ship(ch))
+		{
+			return TRUE;
+		}
 		if (!check_ship_name(0, ch, arg2))
 		{
 			return TRUE;
@@ -2876,6 +2932,8 @@ int buy_hull(P_char ch, P_ship ship, int owned, char *arg1, char *arg2)
 		if (!load_ship(ship, ch->in_room))
 		{
 			logit(LOG_FILE, "Error in load_ship(): %d\n", shiperror);
+			shipObjHash.erase(ship);
+			delete_ship(ship, true);
 			send_to_char_f(ch, "&=LrError loading ship (%d), please notify a god.&n\n",
 				       shiperror);
 			return TRUE;

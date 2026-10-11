@@ -302,11 +302,13 @@ terminal_slice = (
     + PIPELINE[await_start:await_end]
 )
 # Retain the actual lease storage and PID lookup in both extracted coordinators.
-literal_fixture_state = section(PIPELINE, "struct literal_inventory_checkpoint",
-                                "bool literal_inventory_blob(")
+literal_fixture_state = section(PIPELINE, "enum class literal_checkpoint_profile",
+                                "bool literal_inventory_blob(") + "\n" + extract_function(
+    "player_save_pipeline.c", "bool smith_profile(literal_checkpoint_profile p)")
 terminal_preamble = r'''
 #include "persistence/persistence_diagnostics.h"
 #include "player/player_save_pipeline.h"
+#include "economy/economic_gameplay_authority.h"
 #include "player/player_snapshot.h"
 #include "player/player_snapshot_capture.h"
 #include "core/defines.h"
@@ -509,6 +511,7 @@ print("[PASS] actual literal PID lookup fences held ordinary/death intents befor
 receipt_harness = r'''
 #include "persistence/persistence_diagnostics.h"
 #include "player/player_save_pipeline.h"
+#include "economy/economic_gameplay_authority.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
 #include "core/defines.h"
@@ -518,7 +521,8 @@ receipt_harness = r'''
 #include <new>
 #include <array>
 using player_save_execution_guard::resident_claim;
-struct char_data { int pid; unsigned int runtime_flags = 0; uint64_t runtime_id = 71; };
+struct partial_load_pc { uint64_t unloaded_components = 0; };
+struct char_data { int pid; unsigned int runtime_flags = 0; uint64_t runtime_id = 71; struct { partial_load_pc *pc = nullptr; } only{}; };
 #undef GET_PID
 #undef IS_NPC
 #define GET_PID(ch) ((ch)->pid)
@@ -601,9 +605,17 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot, resident_
     captured = std::move(snapshot);
     return refuse_enqueue ? player_save_pipeline_result::overloaded : player_save_pipeline_result::queued;
 }
-''' + literal_fixture_state + extract_function("player_save_pipeline.c", "bool merge_quest_xp_receipts(") + "\n" + extract_function("player_save_pipeline.c", "bool merge_spell_effect_receipts(") + "\n" + extract_function("player_save_pipeline.c", "bool merge_craft_receipts(") + "\n" + extract_function(
+''' + literal_fixture_state + section(PIPELINE, "constexpr player_component_mask_t SHOP_CHECKPOINT_COMPONENTS", "bool held_retirement_checkpoint_blob(") + extract_function("player_save_pipeline.c", "player_component_mask_t literal_checkpoint_components(") + r'''
+bool flat_shop_context_matches(const literal_inventory_checkpoint &, P_char) noexcept { return true; }
+bool smith_flat_context_matches(const literal_inventory_checkpoint &, P_char) noexcept { return true; }
+bool economic_gameplay_authority::active_regular_sql() { return false; }
+player_snapshot_capture_result player_snapshot_capture_literal_inventory_roots(
+    P_char, player_revision_t, player_component_mask_t, int, int, std::span<const uint64_t>, player_snapshot *) {
+    assert(false); return player_snapshot_capture_result::invalid_identity;
+}
+''' + extract_function("player_save_pipeline.c", "bool merge_quest_xp_receipts(") + "\n" + extract_function("player_save_pipeline.c", "bool merge_spell_effect_receipts(") + "\n" + extract_function("player_save_pipeline.c", "bool merge_craft_receipts(") + "\n" + extract_function(
     "player_save_pipeline.c", "static player_save_pipeline_result checkpoint_dirty_with_quest_xp("
-) + r'''
+) + "\n" + extract_function("player_save_pipeline.c", "player_save_pipeline_result player_save_pipeline_checkpoint_dirty(") + "\n" + extract_function("player_save_pipeline.c", "player_save_pipeline_result player_save_pipeline_request(") + r'''
 void verify() {
     assert(captured.components & PLAYER_COMPONENT_AFFECTS);
     assert(captured.spell_effect_receipts.size() == 1);
@@ -616,6 +628,19 @@ void verify() {
 }
 int main() {
     char_data player {41};
+    partial_load_pc pc; player.only.pc = &pc;
+    assert(player_revision_hydrate(41, 0));
+    pc.unloaded_components = PLAYER_COMPONENT_PETS;
+    assert(player_save_pipeline_request(&player, PLAYER_COMPONENT_PETS, RENT_CRASH, 1201) == player_save_pipeline_result::invalid);
+    assert(!captured.pid);
+    assert(player_save_pipeline_request(&player, PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_PETS, RENT_CRASH, 1201) == player_save_pipeline_result::queued);
+    assert(captured.components == PLAYER_COMPONENT_STATUS);
+    captured = {};
+    player.runtime_flags = CHAR_RFLAG_LOAD_DEGRADED;
+    assert(player_save_pipeline_request(&player, PLAYER_COMPONENT_STATUS, RENT_CRASH, 1201) == player_save_pipeline_result::unavailable);
+    assert(!captured.pid);
+    player.runtime_flags = 0; pc.unloaded_components = 0;
+    player_revision_reset_for_tests();
     assert(player_revision_hydrate(41, 0));
     player_spell_effect_receipt_snapshot receipt = {};
     receipt.operation_id.bytes[0] = 77;
@@ -794,21 +819,32 @@ print("[PASS] held/stale literal scopes refuse before queueing; empty receipt ma
 
 # This API advertises a SQL database completion, not a flat-file worker ACK.
 # Compile actual public bodies under the flat backend with no capture, scope,
-# registry, or persistence implementations: reaching those dependencies must
-# fail compilation/linking. Only the normal save-admission boundary below is
-# modeled to verify the flat hydration API delegates its result for both states.
+# registry, or persistence implementations. Hydration separately models the
+# current quarantine, lifecycle and login-fence state instead of the retired
+# ordinary-save delegation.
 flat_harness = r'''
 #define __NO_MYSQL__ 1
+#include "persistence/critical_command.h"
+#include <mutex>
 #include "player/player_save_pipeline.h"
+#include "economy/economic_gameplay_authority.h"
 #include <cassert>
 struct char_data {};
 struct obj_data {};
-static bool ordinary_admission = false;
-static int ordinary_admission_calls = 0;
-bool player_save_pipeline_save_admitted(int pid) {
-    assert(pid == 41);
-    ++ordinary_admission_calls;
-    return ordinary_admission;
+bool quarantined = false, lifecycle_admission_closed = false, execution_started = false;
+std::mutex pipeline_mutex;
+struct { bool initialized = true; } health;
+bool player_save_journal_pid_quarantined(int) { return quarantined; }
+void *find_target_save_login_fence_locked(int) { return nullptr; }
+struct hydration_literal { bool held = false, restored_sql_drop = false; std::vector<uint8_t> payload; player_literal_inventory_token token{}; };
+hydration_literal *find_literal_inventory_locked(int) { return nullptr; }
+struct terminal_fence { bool death_pinned = false; };
+terminal_fence *find_terminal_fence_locked(int) { return nullptr; }
+critical_command_codec_result critical_command_decode(const uint8_t *, size_t, critical_command *) {
+    assert(false); return critical_command_codec_result::invalid;
+}
+bool coin_physical_recovery_identity(const critical_command &, int *, uint64_t *) {
+    assert(false); return false;
 }
 ''' + extract_function("player_save_pipeline.c", "player_literal_inventory_state\nplayer_save_pipeline_literal_inventory_begin(") + "\n" + extract_function(
     "player_save_pipeline.c", "player_literal_inventory_state\nplayer_save_pipeline_literal_inventory_poll("
@@ -837,9 +873,14 @@ int main() {
     critical_command command{};
     assert(!player_save_pipeline_restore_sql_drop_obligation(command));
     assert(!player_save_pipeline_authoritative_hydration_admitted(41));
-    ordinary_admission = true;
+    execution_started = true;
     assert(player_save_pipeline_authoritative_hydration_admitted(41));
-    assert(ordinary_admission_calls == 2);
+    quarantined = true;
+    assert(!player_save_pipeline_authoritative_hydration_admitted(41));
+    quarantined = false; lifecycle_admission_closed = true;
+    assert(!player_save_pipeline_authoritative_hydration_admitted(41));
+    lifecycle_admission_closed = false;
+    assert(!player_save_pipeline_authoritative_hydration_admitted(0));
 }
 '''
 with tempfile.TemporaryDirectory(prefix="duris-flat-literal-refusal-") as directory:
@@ -850,4 +891,4 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-literal-refusal-") as direct
                     "-Isrc", str(program), "-o", str(binary)], cwd=ROOT, check=True)
     subprocess.run([str(binary)], check=True, timeout=10)
 print("[PASS] actual flat-backend literal begin/poll/hold refuse without capture, scope, or hold dependencies and preserve output token")
-print("[PASS] actual flat restored-SQL-drop registration refuses; hydration delegates both normal admission outcomes")
+print("[PASS] actual flat restored-SQL-drop registration refuses; hydration enforces lifecycle, quarantine and identity admission")

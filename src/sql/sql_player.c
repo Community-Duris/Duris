@@ -365,8 +365,7 @@ bool sql_locker_owner_can_access(const char *locker_name, int owner_pid, int rac
 		return false;
 	/* Locate the one case-insensitive locker name supplied by the caller. */
 	auto locker =
-		std::find_if(lockers.begin(), lockers.end(),
-			     [locker_name](const auto &entry)
+		std::find_if(lockers.begin(), lockers.end(), [locker_name](const auto &entry)
 			     { return strcasecmp(entry.locker_name.c_str(), locker_name) == 0; });
 	if (locker == lockers.end() || locker->owner_pid != owner_pid || locker->owner_assoc_id ||
 	    locker->racewar != racewar)
@@ -468,6 +467,16 @@ bool sql_save_ship(P_ship ship)
 P_ship sql_load_ship(const char *owner_name)
 {
 	return NULL;
+}
+P_ship sql_place_ship(const char * /*owner_name*/, bool *unplaced)
+{
+	if (unplaced)
+		*unplaced = false;
+	return NULL;
+}
+int sql_ship_stored(const char * /*owner_name*/)
+{
+	return -1;
 }
 bool sql_load_all_ships(void)
 {
@@ -12483,8 +12492,7 @@ void sql_restore_saved_items(void)
 		std::unordered_set<P_obj> tree_objects;
 		if (!sql_saved_item_custody_matches(obj, obj->obj_uid, 0, room_vnum, &tree_uids,
 						    &tree_objects) ||
-		    std::any_of(tree_uids.begin(), tree_uids.end(),
-				[&published_uids](uint64_t uid)
+		    std::any_of(tree_uids.begin(), tree_uids.end(), [&published_uids](uint64_t uid)
 				{ return published_uids.find(uid) != published_uids.end(); }) ||
 		    [&]()
 		    {
@@ -12628,6 +12636,17 @@ static bool sql_save_ship_slots(P_ship ship, char *queryBuffer, int batchSize, i
 	return true;
 }
 
+/* Whether ships row `id` exists: 1 if it does, 0 if not, -1 if it cannot be read. */
+static int sql_ship_row_exists(int id)
+{
+	MYSQL_RES *result = db_query("select 1 from ships where id=%d", id);
+	if (!result)
+		return -1;
+	const int exists = mysql_fetch_row(result) ? 1 : 0;
+	mysql_free_result(result);
+	return exists;
+}
+
 bool sql_save_ship(P_ship ship)
 {
 	if (!DB || !ship || !ship->ownername)
@@ -12670,6 +12689,33 @@ bool sql_save_ship(P_ship ship)
 		own_transaction = true;
 	}
 
+	/* A save whose COMMIT failed may still have stored its row, because the
+	 * server can apply a COMMIT and lose the reply.  Look for the row before
+	 * using the id, so the ship neither updates a row that was rolled back
+	 * nor inserts a second row for its owner. */
+	if (ship->db_id != -1 && ship->db_id_unconfirmed)
+	{
+		const int exists = sql_ship_row_exists(ship->db_id);
+		if (exists < 0)
+		{
+			sql_player_error("sql_save_ship/confirm");
+			free(batch);
+			free(esc_owner);
+			if (esc_name)
+				free(esc_name);
+			if (own_transaction)
+				sql_rollback();
+			return false;
+		}
+		if (!exists)
+			ship->db_id = -1;
+		ship->db_id_unconfirmed = false;
+	}
+
+	/* Only a row this call inserted is undone by a rollback.  An existing
+	 * ship keeps its id when its update fails, or its next save would take
+	 * the insert path and collide with UNIQUE(owner_name). */
+	bool inserted = false;
 	if (ship->db_id == -1)
 	{
 		char initQuery[1024];
@@ -12723,6 +12769,7 @@ bool sql_save_ship(P_ship ship)
 		}
 
 		ship->db_id = atoi(row[0]);
+		inserted = true;
 
 		mysql_free_result(result);
 	}
@@ -12748,7 +12795,8 @@ bool sql_save_ship(P_ship ship)
 		free(batch);
 		if (own_transaction)
 			sql_rollback();
-		ship->db_id = -1;
+		if (inserted)
+			ship->db_id = -1;
 		return false;
 	}
 
@@ -12760,7 +12808,8 @@ bool sql_save_ship(P_ship ship)
 		sql_clear_results();
 		if (own_transaction)
 			sql_rollback();
-		ship->db_id = -1;
+		if (inserted)
+			ship->db_id = -1;
 		return false;
 	}
 	result = mysql_store_result(DB);
@@ -12776,6 +12825,10 @@ bool sql_save_ship(P_ship ship)
 		logit(LOG_DEBUG, "sql_save_ship: failed to commit for ship %d", ship->db_id);
 		if (sql_in_transaction())
 			sql_rollback();
+		/* The row this call inserted may have been committed anyway.  Keep
+		 * its id, and let the next save check whether the row exists. */
+		if (inserted)
+			ship->db_id_unconfirmed = true;
 		return false;
 	}
 
@@ -12950,6 +13003,57 @@ P_ship sql_load_ship(const char *owner_name)
 	return ship;
 }
 
+/*
+ * Load `owner_name`'s ship and put it in the world at its anchor.  Returns
+ * the ship, or NULL with any part-built ship destroyed and its row kept.
+ * `unplaced` says whether it was loaded but could not be placed, usually
+ * because the ship-room pool is full.
+ */
+P_ship sql_place_ship(const char *owner_name, bool *unplaced)
+{
+	*unplaced = false;
+	P_ship ship = sql_load_ship(owner_name);
+	if (!ship)
+	{
+		logit(LOG_FILE, "sql_load_all_ships: component=rows outcome=failure");
+		return NULL;
+	}
+
+	name_ship(ship->name, ship);
+	if (!load_ship(ship, real_room0(ship->anchor)))
+	{
+		/* An unplaced ship must not stay registered; the row is kept. */
+		logit(LOG_FILE, "sql_load_all_ships: component=ship outcome=failure");
+		const bool no_room = shiperror == 4;
+		shipObjHash.erase(ship);
+		delete_ship(ship, true);
+		*unplaced = no_room;
+		return NULL;
+	}
+
+	ship->mainsail = BOUNDED(0, ship->mainsail, SHIP_MAX_SAIL(ship));
+	update_crew(ship);
+	reset_crew_stamina(ship);
+	set_ship_armor(ship, false);
+	update_ship_status(ship);
+	return ship;
+}
+
+/* Whether `owner_name` has a ships row: 1 if so, 0 if not, -1 if it cannot be read. */
+int sql_ship_stored(const char *owner_name)
+{
+	char *esc_owner = sql_escape_string(owner_name);
+	if (!esc_owner)
+		return -1;
+	MYSQL_RES *result = db_query("select 1 from ships where owner_name='%s'", esc_owner);
+	free(esc_owner);
+	if (!result)
+		return -1;
+	const int stored = mysql_fetch_row(result) ? 1 : 0;
+	mysql_free_result(result);
+	return stored;
+}
+
 bool sql_load_all_ships()
 {
 	if (!DB)
@@ -12960,41 +13064,23 @@ bool sql_load_all_ships()
 		return false;
 
 	// collect owner names first to avoid nested queries
-	char owner_names[512][64];
-	int num_ships = 0;
+	std::vector<std::string> owner_names;
 
 	MYSQL_ROW row;
-	while ((row = mysql_fetch_row(result)) && num_ships < 512)
+	while ((row = mysql_fetch_row(result)))
 	{
 		if (!row[0])
 			continue;
-		strlcpy(owner_names[num_ships], row[0], sizeof owner_names[num_ships]);
-		num_ships++;
+		owner_names.emplace_back(row[0]);
 	}
 	mysql_free_result(result);
 
-	// now load each ship
-	for (int i = 0; i < num_ships; i++)
+	// now load each ship; one the room pool cannot hold is placed later
+	for (const std::string &owner_name : owner_names)
 	{
-		P_ship ship = sql_load_ship(owner_names[i]);
-		if (!ship)
-		{
-			logit(LOG_FILE, "sql_load_all_ships: component=rows outcome=failure");
-			continue;
-		}
-
-		name_ship(ship->name, ship);
-		if (!load_ship(ship, real_room0(ship->anchor)))
-		{
-			logit(LOG_FILE, "sql_load_all_ships: component=ship outcome=failure");
-			continue;
-		}
-
-		ship->mainsail = BOUNDED(0, ship->mainsail, SHIP_MAX_SAIL(ship));
-		update_crew(ship);
-		reset_crew_stamina(ship);
-		set_ship_armor(ship, false);
-		update_ship_status(ship);
+		bool unplaced = false;
+		if (!sql_place_ship(owner_name.c_str(), &unplaced) && unplaced)
+			note_unplaced_ship(owner_name.c_str());
 	}
 
 	return true;

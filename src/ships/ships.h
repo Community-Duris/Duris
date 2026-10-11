@@ -516,6 +516,7 @@ struct ShipData
 	time_t save_retry_after; /* transient retry gate for failed ship saves */
 	bool save_pending; /* queued for deferred persistence */
 	unsigned long long save_saved_signature; /* signature of last persisted state */
+	bool db_id_unconfirmed; /* db_id is from a save whose COMMIT failed; the row may not exist */
 	ShipRuntimeRef runtime_ref; /* process-local slot and reuse generation */
 };
 
@@ -718,6 +719,19 @@ void init_ship_layout(P_ship ship);
 void clear_ship_layout(P_ship ship);
 void set_ship_layout(P_ship ship, int m_class);
 bool set_ship_physical_layout(P_ship ship);
+bool ship_rooms_fit_class(P_ship ship, int m_class);
+
+// Whether an owner's stored ship could be brought into the world.
+enum class stored_ship_state
+{
+	none, // the owner has no stored ship
+	placed, // it is in the world now
+	no_room, // the ship-room pool cannot hold it yet
+	unreadable, // it could not be read
+};
+void note_unplaced_ship(const char *owner);
+stored_ship_state place_stored_ship(const char *owner);
+void retry_unplaced_ships(void);
 
 void set_ship_armor(P_ship ship, bool equal);
 

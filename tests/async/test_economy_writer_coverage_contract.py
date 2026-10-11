@@ -1136,9 +1136,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
         self.assertEqual(owners[("src/guild/artifact.c", 883, "item_publication")],
                          {"artifact.ground_restore_unqualified_creation"})
-        self.assertEqual(owners[("src/guild/artifact.c", 4974, "item_publication")],
+        self.assertEqual(owners[("src/guild/artifact.c", 4975, "item_publication")],
                          {"artifact.npc_restore_unqualified_creation"})
-        self.assertEqual(owners[("src/guild/artifact.c", 4266, "item_lifecycle")],
+        self.assertEqual(owners[("src/guild/artifact.c", 4267, "item_lifecycle")],
                          {"artifact.swap_replacement"})
         for route_id in ("artifact.cache_display_probe", "artifact.dummy_character_unload",
                          "artifact.swap_second_template_stage", "artifact.fixit_template_probe"):

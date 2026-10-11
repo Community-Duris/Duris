@@ -23,18 +23,19 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-corpse-") as temporary:
     binary = temporary_path / "flatfile_corpse_test"
     compile_result = subprocess.run(
         [
-            rel('quest_mobile_native.c'), rel('quest_mobile_native_flatfile.c'), 'tests/async/native_quest_world_unavailable.cpp',
             "g++",
             "-std=c++20",
             "-Wall",
             "-Wextra",
             "-Wpedantic",
             "-Werror",
+            "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections",
             *SANITIZE_FLAGS,
             "-D__NO_MYSQL__",
             "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST",
             "-Isrc",
             "-Isrc/no_mysql",
+            rel('quest_mobile_native.c'), rel('quest_mobile_native_flatfile.c'), 'tests/async/native_quest_world_unavailable.cpp',
             "tests/async/flatfile_corpse_repository_harness.cpp",
             rel("flatfile_corpse_repository.c"),
             rel("flatfile_collector_repository.c"),
@@ -59,6 +60,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-corpse-") as temporary:
             rel("collector_policy.c"),
             rel("shop_trade_command.c"), rel("shop_trade_recovery_manifest.c"),
             rel("critical_command.c"),
+            rel("native_quest_cost.c"), rel("native_quest_coin_give.c"), rel("lockpick_retirement_continuation.c"),
             rel("epic_command.c"),
             rel("currency_command.c"),
             rel("auction_command.c"),
