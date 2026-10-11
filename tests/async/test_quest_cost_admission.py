@@ -46,6 +46,15 @@ def generate(source, work, template):
     alias_start = index(text, alias_signature)
     alias_end = code_text(text).index(";", alias_start) + 1
     descriptor = text[alias_start:alias_end] + "\n" + body("struct quest_cost_prepare_live") + ";"
+    selected_descriptor = body("struct quest_selected_encode_live") + ";"
+    preparation = body("item_native_quest_preparation_state quest_native_completion_owner::prepare_original(")
+    assert count(preparation, "encode_selected_items(") == 1
+    assert not contains(preparation, "player_item_snapshot_list_encode(selected, &selected_bytes)")
+    checks = ("selected_roots != consumed.size()", "(!fee_only && selected.empty())",
+              "selected.size() > ITEM_TRANSFER_MAX_ITEMS", "encode_selected_items(")
+    positions = [index(preparation, check) for check in checks]
+    assert positions == sorted(positions)
+    assert contains(preparation, "encode_selected_items(&selected_bytes, quest_selected_encode_live{")
     current = body("bool quest_cost_prepare_current(")
     current_start = text.index(current)
     guard_start = code_text(text).rfind("#if", 0, current_start)
@@ -69,6 +78,8 @@ def generate(source, work, template):
         "@QUEST_CENSUS_HELPERS@": guard + helpers + "\n#endif\n",
         "@QUEST_ADAPTER@": adapter,
         "@QUEST_COMPLETION_METHODS@": completion,
+        "@QUEST_SELECTED_DESCRIPTOR@": selected_descriptor,
+        "@QUEST_SELECTED_METHOD@": body("player_snapshot_codec_result quest_native_completion_owner::encode_selected_items("),
     }
     fixture = template.read_text(encoding="utf-8")
     for token, value in substitutions.items():
@@ -188,9 +199,17 @@ def main():
                        if line.startswith("QUEST_COST_ADMISSION ")]
             assert len(reports) == 1, reports
             report = reports[0]
+            selected_reports = [json.loads(line.split(" ", 1)[1]) for line in output.splitlines()
+                                if line.startswith("QUEST_SELECTED_LIST ")]
+            assert len(selected_reports) == 1, selected_reports
+            selected_report = selected_reports[0]
             if backend == "mariadb" and not assertions:
                 assert report["success"] and report["refusal_points"] > 0 and report["no_retained_writes"], report
                 assert report["cap_boundary"] and report["registered_states"] == 8, report
+                assert selected_report["wire_cases"] == 2 and selected_report["invalid_cases"] == 4
+                assert selected_report["parent_cap_boundaries"] and selected_report["capacity_inputs"]
+                assert selected_report["registered_states"] == 8 and selected_report["child_refusal_points"] > 0
+                assert selected_report["no_retained_writes"] and selected_report["strong_output"]
                 selected = [objects / (name + ".o") for name in ("economy/native_quest_cost", "persistence/critical_command")]
                 command = [sys.executable, str(selector), *[word for path in selected for word in ("--cost-object", str(path))],
                            *[word for path in paths for word in ("--library-path", str(path))]]
@@ -198,6 +217,7 @@ def main():
                 print("Quest admission current native selectors: PASS")
             else:
                 assert report == {"unsupported_no_writes": True}, report
+                assert selected_report == {"unsupported_no_writes": True}, selected_report
             print(output, end="")
             print(f"Quest admission {label}: PASS")
     print("Quest cost admission: PASS (3 profiles; final projection component and current selectors)")
