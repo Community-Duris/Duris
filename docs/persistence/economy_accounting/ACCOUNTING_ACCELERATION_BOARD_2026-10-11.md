@@ -99,6 +99,21 @@ consumer-free, seven unrelated full service IDs preserved, matching lease
 RELEASED/global lock absent. Standalone diagnostic proof only; full RETRY-03
 remains FAILED and full matrix/startup/contracts/restore/release unqualified.
 
+Independent ACC-05-AUDIT-BUDGET-01 terminal PASS_SYNTHETIC_COMPONENT_ONLY
+10:51:23Z, frozen current-primary0555741d740cf028552fcf63973265bfbcda052c,
+original native session57445/exit0, foreground/outer0. Both unchanged Linux
+methods2/0skips, all12 original clean/damaged records at limits0/1/100 and both
+oversized refusals passed. Prices100000 roots/33552384bytes:
+max0.892706s/144.441406MiB child; mappings9948 roots/33551795bytes:
+max1.262167s/124.324219MiB child. Original30s/256MiB child, byte/row/output bounds,
+global count invariance and input immutability preserved; unittest17.318s,
+foreground18.625s. No database/build/source changes or release-host authority.
+Independent76-member/2668643-byte seal review passed; exact-owned inventory0,
+four retained passive volumes unchanged/consumer-free, seven full unrelated
+live service IDs preserved and matching global lease RELEASED/lock absent.
+Historical skipped budget cases remain historical; this is their first exact
+explicit Linux component qualification, without summing old full-suite counts.
+
 Accounting inactive; admission CLOSED; final release BLOCKED. This board records
 execution, not inventory-based completion. Original Plans 1-5 and R1-R8 evidence
 keeps its exact historical scope. Architecture work follows the first checkpoint.
@@ -110,9 +125,9 @@ original "do it", superseding "go with the useful parts". Local model GPT-6.1 So
 
 | Lane | Chat / worktree / branch | Current ticket |
 | --- | --- | --- |
-| Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | Reviewed focused diagnostic PASS/code/report/seal/release; exact diagnostic and recipe handoffs for primary; finite wait, no active resource grant |
+| Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | Reviewed diagnostic and ACC-05 component PASS/seals/releases; exact qualified evidence and diagnostic/recipe handoffs for primary; no active resource grant |
 | Remote primary | Non-connected RGitGoin; private session/WIP inaccessible; published `experimental-accounting` | Existing Plans1-4/shared runtime/final integration ownership retained; no delegation ACK required; architecture/toolchain/storage/32MiB proof queue |
-| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Publishedb8505d97b exact diagnostic fixture/report; DIAG-02 PASS/sealed/RELEASED; preparing bounded ACC-05 audit-budget cases resource-free on frozen current-primary055, no native grant; restore queue retained |
+| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Publishedbea3c44ee terminal ACC-05 report; original two Linux budget methods PASS/sealed/RELEASED on primary055; narrow packet imported, no new grant; restore/native SQL preconditions retained |
 | World/quest (parked) | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | IDLE/clean f7228f3fe; original failure and component PASS handoffs preserved; proposed runtime allocation WITHDRAWN, no resources |
 | Shop/backend (parked) | `01a129b4-a553-78e0-85c2-69e34d8e0d59`; `C:/Users/alexa/.codex/worktrees/969b/NewDuris Max`; `codex/accounting-accel-shop` | IDLE/clean6022; parked handoff preserved; ACC-04-TX unstarted possible future ticket only, no grant; allocation WITHDRAWN |
 
@@ -179,7 +194,7 @@ override availability or invent tokens/receipts for accepting tests.
 | ACC-02 | Genuine two-engine schema65 matrix and exact restore/startup histories; independent audit and native room/restore gates | RETRY-03 remains FAILED; DIAG-02 completes focused native diagnostic after owned one-line repair; primary matrix adoption/meaningful-batch qualification pending, no full matrix grant |
 | ACC-03-RC | Existing `test_native_quest_recovery_context.py` actual-provider ASan/UBSan component or exact first failure | Component PASS/sealed/RELEASED; exact three-line recipe/pin handoff remains for primary adoption, WORLD parked |
 | ACC-04-TX | Existing `test_shop_trade_transaction.py` component or exact first failure, then retention/repository gates | Parked unstarted preparation only; no standing dispatch/grant; current private capability aborts remain unqualified |
-| ACC-05-AUDIT-BUDGET-01 | Two existing Linux near-limit price/mapping audit-budget methods, no skips; original limits0/1/100, clean/conflict/corrupt/oversized controls, 30s/256MiB child bounds, input unchanged | Plan5 resource-free preparation on exact current-primary055 two-file input; independent of matrix repair; one proposed QA cohort only, no native grant yet |
+| ACC-05-AUDIT-BUDGET-01 | Two existing Linux near-limit price/mapping audit-budget methods, no skips; original limits0/1/100, clean/conflict/corrupt/oversized controls, 30s/256MiB child bounds, input unchanged | Terminal original session57445/exit0,2/0skips/12records and both oversized controls PASS_SYNTHETIC_COMPONENT_ONLY on exact primary055; independently76-member seal verified/RELEASED; no full matrix or release-host promotion |
 | PRIMARY-01 | Connected save/coordinator/item lifecycle map then verified boundary/caller/admission closure | Existing primary implementation ownership; no withdrawn delegation dependency |
 | PRIMARY-02 | Supported toolchain/runtime/library correspondence, complete storage/frame/transitive proof, aggregate 32MiB accept/refuse | Remains explicit; object compile/source packets do not close it |
 | FINAL | Gameplay/persistence/schema/backup/restore/recovery/fault/load/resource/R1-R8 gates agree on one frozen candidate | Reviewed implementation batches and per-slice architecture evidence |
@@ -600,18 +615,63 @@ source pins are reproduced in the report, not replaced by a source-only check.
 Finite next queue: exact diagnostic source handoff and three-provider native
 recipe/pin adoption remain PRIMARY-owned; then a meaningful combined-source
 matrix/restore qualification when its prerequisites are repaired. Independent
-`ACC-05-AUDIT-BUDGET-01` now selected from the existing NOT_RUN queue: Plan5
-prepares exactly `AuditBudgetTests.test_near_limit_price_view_cli_budget_and_limit_invariance`
+`ACC-05-AUDIT-BUDGET-01` completed from the existing NOT_RUN queue: Plan5 executed
+exactly `AuditBudgetTests.test_near_limit_price_view_cli_budget_and_limit_invariance`
 and `AuditBudgetTests.test_near_limit_mapping_snapshot_cli_budget_and_limit_invariance`
 on frozen published current-primary0555741d740cf028552fcf63973265bfbcda052c.
-Two-file input is the original reconciler and test module; broader unadopted
-Plan5 operator deltas excluded. Synthetic offline CLI component only; original
+Actual input is the original reconciler, test module, independent
+economic_restore_evidence.py EAP1 decoder and read-only registry.json used by
+Reconciler.__init__. Pre-grant review identified the deferred selected-path
+decoder import missing from the first preparation; that preparation is retained
+and corrected before resources. Broader unadopted Plan5 operator deltas excluded.
+Synthetic offline CLI component only; original
 32MiB/100000row/100output, 30s/256MiB child and output-limit invariance controls
 preserved, no SQL/game/whole-host acceptance. Proposed one foreground2GiB/CPU2
 QA/native600s with read-only direct D source and owned D tmp/evidence; no DB,
 build, source edits or full-suite repeat. Preparation/resource guards must be
-reviewed before exclusive grant. No standing WORLD/SHOP dispatch; all four
-passive database volumes and unrelated services remain preserved.
+reviewed before exclusive grant. Review completed and sole QA-only grant issued
+10:49:40Z: preparation6f5189db7e1bab5c101d4c669cf2b5e997b9c02b86c58c83ec8e6b0c0e9721bb,
+transportb3303bd954ec8d07bd390d3395c67948960bfe400039b28bc0ca14fac8e7985e,
+seal-helper414b71eb0d505900347d46efdfdac5b70368780337e2530a8b293e58542fe502,
+grantc73937ca62c93a10d917164296cfadcf1d8d43462e79ead032049223f794fc7a.
+Independent preparation/grant reviewebf6a93a41aa6eb239f4a97532ab4eef797d6e5401dac4e2a9a137908f41eefe
+verified four exact Git blobs/archive, preserved v1 evidence, actual small
+price/mapping import probes, compatible-slot/owned absence and seven live full
+service IDs. Fresh7.1305GiB Windows/1525.119GiB Dfree. Original native session57445
+terminal0/foreground0/outer0, unittest2/0skips/17.318s; all12 budget records and
+oversized controls PASS. Sealc2f946d03dde30c0158ef7f86d9891f28939d2b4b9dd6b623d4f84efea6cd245,
+independent terminal review5be8e7f7c122146e5bfcf0622e07c894ba7371fb92ddf905c7cea2c44e0c10ba,
+76members/2668643bytes/four exact source files/helpers unchanged. Root review
+initially expected Linux /d/ mount strings; actual Docker metadata uses Windows
+D paths. Failed host guard/script preserved externally, then exact resolved
+D task mounts checked; no native rerun/result/evidence change. Matching lease
+RELEASED, exact-owned0 and global absent, four passive database volumes unchanged/
+consumer-free and seven unrelated full live service IDs preserved. Narrow report
+publicationbea3c44ee0dcb34fffa166eee9d51dcfdd27a49d imported byte-exact with its
+linked initial preparation and dependency-correction reports, preserving their
+historical NOT_RUN/failure claims. No broad follow-up/reader/runtime/registry/
+migration delta imported. Import receipt
+c9dda68f044bbb9b68718996eac418571ef5c96b05e9f5727be385903c49205c.
+Terminal report SHAe71802e7abf56ed43cff513f789335e26984c0d58ca69232824cee0e8602ed37;
+producer delivery/result.json536fcba3af5b45004dcc8342883c7128eb4606e6729e779e5d968dc048837b45
+remains immutable. Exact primary packet is this qualified four-input composition,
+original native command/logs/session, complete controls, source/report/seal/review
+pins and verified release; no whole-branch qualification or activation claim.
+No standing WORLD/SHOP dispatch or next grant.
+
+Finite next executable queue: full matrix/shared restore preconditions and
+`NativeStakeSQLTests.test_native_stake_sql_both_engines`. The latter remains
+NOT_RUN on current-primary composition: native_stake_sql calls load_manifest()
+and run_pending() with default65 manifest, then requires head
+62/0062_economic_pending_claim_consumption. This is an actual source precondition,
+not an executed new failure. Shared manifest/route/authority decisions stay
+PRIMARY-owned; do not substitute head65 or a manifest to evade acceptance.
+Keep its original SQL/flat ASan/UBSan fixtures and both-engine SELECT-only/
+rollback/input/native-plan/source-policy/refusal controls when a coherent source
+ticket is available. It also requires a fresh owned directory beneath
+bin/tests/plan5-price-view-sql; any future build must bind the corresponding
+task-specific D bin directly. No new build/SQL run now, and no full matrix repeat
+on the unchanged failed source. Wait for a meaningful repaired primary batch.
 
 Exact PRIMARY handoff for the native recipe: adopt only the three `SOURCES`
 entries from integration `6bfa0f7ebdd5f2f46841047fdd10522e4d27dfea` in
