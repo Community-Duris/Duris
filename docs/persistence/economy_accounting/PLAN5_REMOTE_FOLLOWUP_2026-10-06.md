@@ -3224,3 +3224,22 @@ Owned base 5afb2af41337bc387b79b2d6956827e3eaa5c798; refreshed primary 83e2e4392
 ### JSON nesting refusal and approved transition boundary — 2026-10-11
 
 Owned base 0446c40d658b57f110e7bdc66b8d52aaba3bbf33; pinned primary 83e2e4392064667fc4f64780183d17b5acc431ef; after composition 3af5fac01ed3deb0030b19a4de9941c1202b295a. Actual nested JSON escaped as traceback/exit1; decoder-only RecursionError normalization now yields controlled exit2 before any view. New existing-module42controls: old42failures, repaired focused1/1 plus five reader methods5/5,0errors/0skips. Actual Windows Python3.12.10 CLI/files/parser, no mocks/native/DB runs. Other56 reconciler functions/202 old test functions and prior UID/origin fixes preserved. Evidence D:/Dev/Tests/Duris/accounting-plan5/json-nesting-20261011, seal 0fec964e2dbfc1d49166a727aa5161a07c9f9705146f0dae2f754c04779e3fd0; report PLAN5_JSON_NESTING_AND_TRANSITION_HANDOFF_2026-10-11.md includes full current ownership/interfaces/jobs and first schema65/native-restore step. Both Python sessions terminal; no current jobs/leases; five prior receipt-linked containers verified exited and preserved. Primary offline test-registration/source-pin handoff remains narrow; no API/schema change. Publish receipt then pause unchanged full goal under verified human-approved finish-and-pause transition; start no adjacent slice until replacement orchestrator/assignment. All32 tested bodies, other30 preserved files,7historicaltips and prior follow-up prefix bound by receipt. Full native/schema65/room/erasure/retention/recovery/gameplay/budget/R1-R8/release open; inactive/CLOSED and all safety restrictions preserved. Curator-ready; notebook nonblocking; notebook import/application/ack/new-fix adoption unclaimed.
+
+
+## 2026-10-11 — Narrow reader dependency cut and active ACC-02 transition
+
+Base owned `fcefe3a1e54d68694a2a3b573e09a53bb31d914c`; exact private tested integration `e153862c9bf47e6cc1300d63d438eb9dd8147053` plus only the CLI
+transport and four test methods, composition `9e5b8332c6a5213bdcada82d717101d0f0cb2cb0`. See
+[reader dependency handoff](PLAN5_READER_DEPENDENCY_HANDOFF_2026-10-11.md) and its
+attached patch. Historical prerequisites are `0a16ba2187ecfc77b6306c0e3f9a3be5d85eeb4e`
+and `f7203b4c438b35da1f1d1fcf3267d3e740a65ada`. Five Windows reader methods passed;
+one FIFO platform skip, no errors/failures; existing production/domain AST and 138
+test methods preserved. Harness export errors retained explicitly. Sealed D:
+evidence `da92961970b26d9bbb43d57f4b485b41236e55b3285fe2b27d5d4926bc2c4947`. Result/source hashes are bound by the delivery receipt.
+
+The approved transition superseded the planned hold before any pause occurred:
+full goal ACTIVE, ACC-02 preparation proceeds on the orchestrator's frozen source,
+heavy matrix awaits ACC-01 release/exclusive grant. Current source passes do not
+close schema65/native restore/retention/room/wallet/release gates. No maintained
+shared interface edits; primary owns registration/pin integration. Additive curator
+input only; no notebook import or primary acknowledgment claimed.
