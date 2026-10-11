@@ -689,4 +689,23 @@ item_transfer_quest_offering_continuation_valid_complete_source_query_frame_byte
 	return 4 * sizeof(void *) + 7 * sizeof(size_t) + 5 * sizeof(bool);
 }
 
+// Full prospective native-mobile validation graph; runtime owner retains
+// own Source only, recursion admits its actual depth separately. Child full
+// Source+INITIAL is transient, only original child supplements remain outer.
+bool item_transfer_native_mobile_context_valid_complete_bounded(const item_transfer_payload &,
+								uint16_t,
+								bool (*)(size_t, void *) noexcept,
+								void *, size_t) noexcept;
+bool item_transfer_native_mobile_context_valid_complete_source_frame_bytes(size_t *) noexcept;
+bool item_transfer_native_mobile_context_valid_complete_source_supplement_frame_bytes(
+	size_t *) noexcept;
+bool item_transfer_native_mobile_context_valid_complete_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t
+item_transfer_native_mobile_context_valid_complete_source_query_frame_bytes() noexcept
+{
+	// Public getter own P+2N+2B, checked add P+N+B; three genuine distinct
+	// nested full queries P+2B each. Caller output size_t remains separate.
+	return 5 * sizeof(void *) + 3 * sizeof(size_t) + 9 * sizeof(bool);
+}
+
 #endif
