@@ -56,4 +56,28 @@ native_quest_coin_give_result
 native_quest_coin_give_decode_bounded(std::span<const uint8_t>, native_quest_coin_give_projection *,
 				      bool (*)(size_t, void *) noexcept, void *, size_t) noexcept;
 
+// Complete Source of the original bounded NQG1 encode/decode only. Before
+// entry admit the genuine query, then full Source+initial transiently; retain
+// only the authentic supplement in outer through the unchanged old child.
+// Input, old output/capacity and enclosing objects remain caller-owned. Private
+// projection/vector construction follows an existing actual reservation;
+// decode's earlier header validation is covered by full preentry Source.
+// Pure unsupported/null queries preserve output. No current-state observation,
+// allocation, callback, money/source/publication or activation authority.
+bool native_quest_coin_give_encode_source_frame_bytes(size_t *) noexcept;
+bool native_quest_coin_give_encode_source_supplement_frame_bytes(size_t *) noexcept;
+bool native_quest_coin_give_encode_initial_inline_bytes(size_t *) noexcept;
+bool native_quest_coin_give_decode_source_frame_bytes(size_t *) noexcept;
+bool native_quest_coin_give_decode_source_supplement_frame_bytes(size_t *) noexcept;
+bool native_quest_coin_give_decode_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t native_quest_coin_give_encode_source_query_frame_bytes() noexcept
+{
+	// Namespace-scope constants only: actual output pointer and returned bool.
+	return sizeof(size_t *) + sizeof(bool);
+}
+constexpr size_t native_quest_coin_give_decode_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + sizeof(bool);
+}
+
 #endif

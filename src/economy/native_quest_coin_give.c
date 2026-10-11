@@ -421,3 +421,204 @@ native_quest_coin_give_result native_quest_coin_give_decode_bounded(
 
 #endif
 }
+
+namespace
+{
+// Additive SOURCE contracts for the exact original bounded codecs above.
+// Existing fixed admission credits remain exact. No surplus from an unused
+// reserve/insert/copy/default vector arm is borrowed for a different scope.
+constexpr size_t give_source_P = sizeof(void *);
+constexpr size_t give_source_N = sizeof(size_t);
+constexpr size_t give_source_B = sizeof(bool);
+
+// Original project credit owns the actual candidate/units and all declared
+// scalar parameters/locals. Its native_counts credit lacks the range reference;
+// begin/end -> data lacks eight P. Its eight P+N observer slots match two size
+// and six subscript calls: six returned references and two additional genuine
+// subscript calls remain. The two native_counts calls finish sequentially, with
+// the first bool consumed by && before the second: that same nonrecursive body
+// lane is reused, rather than inventing two simultaneously retained count DTOs.
+// Generated scopes: candidate default+cleanup/four array cleanup6P, units
+// cleanupP, four chained array assignments12P, output projection assignment
+// (this/other/returned + four member array assignments)15P. Aggregate array{} has no
+// invented constructor body and scalar arithmetic needs no extra helper.
+constexpr size_t give_source_project_supplement =
+	1 * give_source_P + 8 * give_source_P + 6 * give_source_P +
+	2 * (2 * give_source_P + give_source_N) + 34 * give_source_P;
+
+// Original equality credit retains the exact projection this/other/bool,
+// four array equality functions, all four equal/aux/aux1/equal<true> chains,
+// three raw niter_base calls per array, __len and both memcmp declarations.
+// Three begin/end->data calls need six additional P per array. The actual
+// __simple local and __memcmp constant-evaluated result are two separate B.
+constexpr size_t give_source_equal_supplement = 4 * (6 * give_source_P + 2 * give_source_B);
+
+// The original wire observer slots are P+N; actual operator[] additionally
+// returns a reference P. Encode has three size/capacity and nine subscript
+// scopes. Decode has three size and ten subscript scopes: the first twelve
+// old slots cover three size+nine subscript; one whole final subscript remains.
+// Decoder's original get credit owns offset/count/value/returned uint64 but
+// omits its loop index. Both actual by-value span parameters have genuine
+// copy(this/other) and cleanup(this) scopes, including their actual dynamic
+// __extent_storage member copy(this/other) and cleanup(this). Physical span
+// and member INLINE remain in the original wire credit. span::size reaches
+// the separate dynamic member _M_extent(this,returned-size) once in the header.
+// No pointer/count constructor runs in this child.
+constexpr size_t give_source_encode_wire_supplement = 9 * give_source_P;
+constexpr size_t give_source_decode_wire_supplement =
+	9 * give_source_P + (2 * give_source_P + give_source_N) + give_source_N +
+	2 * (3 * give_source_P) + 2 * (3 * give_source_P) + give_source_P + give_source_N;
+
+// Original encoder own slots match value/output/reserve/context/catch, outer
+// and both wire loop indices, projection and pointer-array inline. Projected
+// default/cleanup with four scalar-array cleanup is6P; pointer-array cleanupP.
+// Decode retains value/projected and its pointer array in original fixed;
+// generated two projection defaults/cleanup12P, pointer-array cleanupP, and
+// output projection assignment with four array assignments15P remain.
+constexpr size_t give_source_encode_value_supplement = 7 * give_source_P;
+constexpr size_t give_source_decode_value_supplement = 28 * give_source_P;
+
+// Complete reached vector(n,0,a) / true move / cleanup supplement. Original
+// constructor credit covers vector/base/impl/data/create-storage and allocator
+// copy; new_allocator default/copy add3P and allocator temporary cleanup2P.
+// Existing allocation/deallocation, max-size/min and trivial Destroy arguments
+// stay in their exact original allocator credit. Runtime C++20 allocation,
+// deallocation, uninitialized-fill, byte-fill and Destroy each have a genuine
+// constant-evaluated bool result. The selected propagate-on-move query has
+// its actual bool result. Selected type_traits integral_constant has static
+// value and aliases but no instance fields or declared constructor/destructor;
+// its true_type aggregate tag{} adds no callable construction/cleanup Source.
+// The unchanged original tag-value allowance remains its original credit.
+// __fill_a1<byte>'s actual len and declared
+// memset arguments/result add2N+2P+int; its byte __tmp is already credited.
+// Move's actual allocator-taking temporary constructor is11P; get_allocator's
+// own this/allocator-copy/base-copy is5P plus its returned allocator object.
+// Both vector std::move callsites and allocator std::move add6P; generated
+// allocator/base assignments6P (this/other/returned each); swap-data temporary default/cleanup2P;
+// returned allocator temporary cleanup2P. Vector/base impl/data/allocator/
+// new_allocator cleanup adds5P beyond old explicit vector destructor credit.
+// Same nonrecursive _M_get_Tp_allocator, swap/copy and cleanup lanes are reused
+// only after a prior call returns; real caller objects remain in old fixed.
+constexpr size_t give_source_vector_supplement =
+	5 * give_source_P + 6 * give_source_B + 2 * give_source_N + 2 * give_source_P +
+	sizeof(int) + 11 * give_source_P + 5 * give_source_P + sizeof(std::allocator<uint8_t>) +
+	6 * give_source_P + 6 * give_source_P + 2 * give_source_P + 2 * give_source_P +
+	5 * give_source_P;
+
+// give_bound_peak's original own has its actual helper reserve/context, outer/
+// fixed/extra, add reference/extra/result and reserve context/bool. The actual
+// absolute reserve argument's size_t is the remaining scope. The helper's
+// constexpr own N is paid by the exact otherwise-unmapped fourth N in each
+// original public encode/decode fixed: outer/a/i consume only three of those
+// four original N slots. This credit persists during every nested peak call.
+// The helper has no DTO/controller constructor or dynamic census. Calls return
+// before reuse; no unrelated spare allocation/vector credit is substituted.
+constexpr size_t give_source_peak_supplement = give_source_N;
+constexpr size_t give_source_peak_original =
+	4 * give_source_P + 4 * give_source_N + 3 * give_source_B;
+
+constexpr size_t give_source_encode_supplement =
+	give_source_project_supplement + give_source_equal_supplement +
+	give_source_encode_wire_supplement + give_source_encode_value_supplement +
+	give_source_vector_supplement + give_source_peak_supplement;
+constexpr size_t give_source_decode_supplement =
+	give_source_project_supplement + give_source_equal_supplement +
+	give_source_decode_wire_supplement + give_source_decode_value_supplement +
+	give_source_peak_supplement;
+
+// Full SOURCE is an upper union of actual original fixed admission credits and
+// the exact unmatched scopes above. The unchanged second/third encoder cuts own
+// real vector INLINE/heap and real move temporary; no176-byte heap is a Source
+// frame. Old output vector/capacity and borrowed projection stay caller-owned.
+constexpr size_t give_source_encode_full = give_bound_encode_frames + sizeof(std::vector<uint8_t>) +
+					   give_bound_vector_frames + give_bound_fill_frames +
+					   give_bound_move_frames + give_source_peak_original +
+					   give_source_encode_supplement;
+constexpr size_t give_source_decode_full =
+	give_bound_decode_frames + give_source_peak_original + give_source_decode_supplement;
+}
+
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&       \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) && defined(__linux__) && \
+	defined(__x86_64__) &&                                                                \
+	!(defined(_GLIBCXX_SANITIZE_STD_ALLOCATOR) && defined(_GLIBCXX_SANITIZE_VECTOR) &&    \
+	  _GLIBCXX_SANITIZE_STD_ALLOCATOR && _GLIBCXX_SANITIZE_VECTOR)
+#define DURIS_NQG1_SOURCE_PROFILE_SUPPORTED 1
+#else
+#define DURIS_NQG1_SOURCE_PROFILE_SUPPORTED 0
+#endif
+
+bool native_quest_coin_give_encode_source_frame_bytes(size_t *output) noexcept
+{
+#if DURIS_NQG1_SOURCE_PROFILE_SUPPORTED
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8)
+		return false;
+	*output = give_source_encode_full;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
+bool native_quest_coin_give_decode_source_frame_bytes(size_t *output) noexcept
+{
+#if DURIS_NQG1_SOURCE_PROFILE_SUPPORTED
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8)
+		return false;
+	*output = give_source_decode_full;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
+bool native_quest_coin_give_encode_source_supplement_frame_bytes(size_t *output) noexcept
+{
+#if DURIS_NQG1_SOURCE_PROFILE_SUPPORTED
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8)
+		return false;
+	*output = give_source_encode_supplement;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
+bool native_quest_coin_give_decode_source_supplement_frame_bytes(size_t *output) noexcept
+{
+#if DURIS_NQG1_SOURCE_PROFILE_SUPPORTED
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8)
+		return false;
+	*output = give_source_decode_supplement;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
+bool native_quest_coin_give_encode_initial_inline_bytes(size_t *output) noexcept
+{
+#if DURIS_NQG1_SOURCE_PROFILE_SUPPORTED
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8)
+		return false;
+	*output = 0;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
+bool native_quest_coin_give_decode_initial_inline_bytes(size_t *output) noexcept
+{
+#if DURIS_NQG1_SOURCE_PROFILE_SUPPORTED
+	if (!output || sizeof(void *) != 8 || sizeof(size_t) != 8)
+		return false;
+	*output = 0;
+	return true;
+#else
+	(void)output;
+	return false;
+#endif
+}
+#undef DURIS_NQG1_SOURCE_PROFILE_SUPPORTED
