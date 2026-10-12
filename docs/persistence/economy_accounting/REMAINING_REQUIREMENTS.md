@@ -65,7 +65,7 @@ the safe current behavior is refusal or inactive legacy operation.
 ## Required architecture work
 
 The required Save/Coordinator/Item movement, WORLD/reset/birth, SHOP recovery and
-backend responsibility boundaries remain part of completion. Follow stage 5 in
+backend responsibility boundaries remain part of completion. Follow M3 in
 the completion plan: one connected boundary at a time, actual callers and owners,
 preserved private capabilities/wire semantics, verifiable storage allowances and
 meaningful production/executable checks. Avoid duplicate mutation/recovery owners.
