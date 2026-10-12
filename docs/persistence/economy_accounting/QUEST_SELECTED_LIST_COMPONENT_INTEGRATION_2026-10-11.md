@@ -1,7 +1,0 @@
-# Quest selected-list component — 2026-10-11
-
-The original selected-list encode now uses the real bounded encoder and temporary Item admission. One permanent invocation preserves final cost-projector/selectors coverage and verifies original nested/empty wire, malformed rows, real parent cap/capacity/strong-output behavior and separately labeled child callback refusals. SQL succeeds; flat/assertions refuse without writes.
-
-Base `371c5e4144b80dae411025d1facf8957cd4a8fb9`; recipe `a9eb473e75cb7a571ac1e45fc00ad4b7d06f711e6200fee2d8be78a1feb92bbd`; permanent `faa7acee89f71702aec678a709d79ca60913f972d8bfe4d0df76014116c08ca2`; Root receipt `aa64d0c6392b0e234220fe1f0fb6177f92ce0840c01923a1859df20cf23c7276`. Measured permanent command 179.1013223179907 seconds; parent dispatch 271.86000000001513 seconds. The measured command fitted the unchanged5400 registry cap. Actual terminal/native logs, compiler/library/profile identities and source format equivalence are authenticated.
-
-507 Source pins,931 policies,2911 census occurrences and2853 sites remain; only29 unchanged Quest census lines and existing sites reanchor. No new row, gate or minimum case count. Earlier preparation/observation/selection, legacy builder, whole producer, gameplay/custody/service ACK, persistence/recovery/emitted32MiB/host/release gates and combined Plans2–4/R1–R8 remain OPEN. Plan1 remains complete within its accepted historical scope. Accounting inactive/CLOSED, coverage incomplete, release BLOCKED, goal ACTIVE.
