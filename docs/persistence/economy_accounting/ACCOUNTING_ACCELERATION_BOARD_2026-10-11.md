@@ -23,9 +23,9 @@ recipe at primary9d2bdd74 and currentf215. Standalone report imported byte-exact
 independent raw-Git/complete AST/entire metadata-document inverse and all12 sealed
 members verified. Recipe source adoption CONFIRMED; native/full retention/restore
 NOT_RUN here. Two direct native inputs differ from original055; ACC06 executable
-proof remains at055+3. Full Plan5 goal ACTIVE after owner-reported user resume,
-acceptance OPEN; primary notebook adoption UNCONFIRMED. No new shared source,
-runtime, metadata, interface/schema fields, job or resource grant.
+proof remains at055+3. Full Plan5 goal BLOCKED after the owner's three resumed
+dependency checks; acceptance OPEN and primary notebook adoption UNCONFIRMED.
+No new shared source, runtime, metadata, interface/schema fields, job or resource grant.
 See PLAN5_RETENTION_PRIMARY_SOURCE_ADOPTION_2026-10-11.md.
 
 ## Current qualification gate
@@ -418,7 +418,7 @@ original "do it", superseding "go with the useful parts". Local model GPT-6.1 So
 | --- | --- | --- |
 | Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | ACC-16 immutable bank admission component PASS onf215;4013 inputs/sealed/released; currentf215 pin candidate qualified; prior96e3/22da/4e69 results and371 failure preserved; finite wait/no grant |
 | Remote primary | Non-connected RGitGoin; private session/WIP inaccessible; published `experimental-accounting` | Existing Plans1-4/shared runtime/final integration ownership retained; no delegation ACK required; architecture/toolchain/storage/32MiB proof queue |
-| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Published52ca6d9f exact primary retention source-adoption closure; prior eaa43822 ACC-07 and e922 restore-coin reports preserved; full goal ACTIVE after owner-reported user resume, acceptance OPEN; no native grant |
+| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Published52ca6d9f exact primary retention source-adoption closure; prior eaa43822 ACC-07 and e922 restore-coin reports preserved; full goal BLOCKED after owner-reported three resumed dependency checks, acceptance OPEN; no native grant |
 | World/quest (parked) | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | IDLE/clean5e679b5fe after exact resource-free ACC-08 review; olderf722 failure/component handoffs preserved; runtime allocation WITHDRAWN, no standing task or resources |
 | Shop/backend (parked) | `01a129b4-a553-78e0-85c2-69e34d8e0d59`; `C:/Users/alexa/.codex/worktrees/969b/NewDuris Max`; `codex/accounting-accel-shop` | IDLE/clean6022; parked handoff preserved; ACC-04-TX unstarted possible future ticket only, no grant; allocation WITHDRAWN |
 
@@ -1045,7 +1045,7 @@ The genuine main-outcome repair is qualified by ACC-09 and removed from that que
 Plan5 retention recipe source adoption is closed by published52ca6d9f,
 independently rechecked onf215; it is absent from the pending source queue.
 Current full retention/schema61 and restore0062 versus default65 remain
-primary-owned coherent-route gates. Owner-reported full goal resume is ACTIVE;
+primary-owned coherent-route gates. Owner-reported full goal is now BLOCKED;
 no independent current executable slice or native grant follows from this closure.
 
 Exact PRIMARY handoff for the native recipe: adopt only the three `SOURCES`
@@ -1241,3 +1241,13 @@ Full Plan5 goal ACTIVE after owner-reported human resume supersedes its historic
 BLOCKED status; all acceptance scope remains OPEN. Primary notebook adoption
 UNCONFIRMED. Seven foreign services preserved/heavy lock ABSENT/owned jobs0;
 helpers stay parked. No speedup, full deliverable or release completion inferred.
+
+Plan5 subsequently reports its resumed full goal BLOCKED after three consecutive
+continuations with the same external dependency and no independently executable
+owned slice. This supersedes the historical ACTIVE status above, without closing
+acceptance or changing evidence. Published52ca6d9f/currentf215 unchanged; no live
+QA job or heavy lock. Its independent verification of curator7c384ca5 import is
+sealed at delivery/producer-import-verification.json under the producer evidence
+root, SHA21c438acbcae09e9cfa183e16b8ede052c2487856c0480b789a66c3aa9d82164.
+Finite queue retained; no repeated source/native/DB/validator audit, new dispatch,
+resource grant or completion claim follows from this status-only handoff.
