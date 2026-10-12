@@ -3723,3 +3723,26 @@ database qualification not inferred. Corrected handoff base77dec0864f6b16e217812
 result/remote in separate delivery/handoff-correction-publication.json afterward.
 Curator-ready correction; primary/notebook adoption unconfirmed, resources0,
 full Plan5/R6–R8/release OPEN and accounting inactive/CLOSED/fullgoalACTIVE.
+
+## 2026-10-11 — Primary retention recipe source adoption independently closed
+
+[Primary recipe adoption](PLAN5_RETENTION_PRIMARY_SOURCE_ADOPTION_2026-10-11.md)
+verifies primary9d2bdd74 parent7f1d766c and currentf215679503d787a25af52fa8103506159a50013d /
+tree79fd73dfd09c6eb1231fa76b088374ba5860c266. Exact archived/adopted/current module
+blobe11c04b55d5fe971fcaf3d8697c87a14412664f4/SHA3dc38861 match. Only3provider
+entries; complete original AST inverse, unchanged1,917-byte probe/allflags/assertions/
+modes/otherfunctions/DBbranches. Native providerfiles11->14 plusone generatedprobe.
+Both metadata maps add only the actual recipe hash at adoption497/496 preserved;
+removing that key reproduces entire parentJSON. Current511maps retain that exactpin.
+No old metadata snapshot import or claim of whole current pin qualification.
+
+Source-only helper0/3.7345636s; receipt2a133d1c2de38248c0c39a280df6cc6dbd5c4a91287fa7463c4aa263972ec88f;
+sealb39d3ddbe2f578c096449c8aa7c367bfa68c43331d6b0b221b91b46eec369eff,
+12files/16523594bytes. Two actual native inputs changed since originalACC06;
+old native receipt/seal preserved and no proof/cache carried to currentsource.
+Current native/fullretention/restore/DB NOT_RUN; original61/0062 vsdefault65 route
+stillprimary-owned, no assertion waiver/head substitution or shared change.
+Owned report+additivefollowup only; broad own source retained. Baseeaa43822ad001a9b017c38565a2e7af073f420f3,
+result/remote in separate delivery/publication.json afterpublish. Recipe source
+adoption CONFIRMED; notebook adoption UNCONFIRMED, native resources0, fullPlan5/
+R6–R8/release OPEN, inactive/CLOSED/fullgoalACTIVE after user resume.
