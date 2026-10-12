@@ -1,3 +1,5 @@
+#include <unordered_set>
+#include "item/item_transfer_room_parents.h"
 #include "persistence/sql_room_item_payload.h"
 #include "player/player_snapshot_codec.h"
 #include "core/defines.h"
@@ -3594,4 +3596,303 @@ try
 catch (const std::bad_alloc &)
 {
 	return refuse(ENOMEM);
+}
+
+sql_room_item_parent_projection_result sql_room_item_payload_parent_after(
+	const item_transfer_payload &payload, const sql_room_item_graph &before,
+	const std::vector<sql_room_item_parent_weight_fact> &weight_facts,
+	sql_room_item_parent_after_plan *output) noexcept
+{
+	using result = sql_room_item_parent_projection_result;
+	const auto codec_refusal = [](player_snapshot_codec_result code, result malformed)
+	{
+		return code == player_snapshot_codec_result::allocation_failure ?
+			       result::allocation_unavailable :
+			       malformed;
+	};
+	if (!output || before.items.size() != before.identities.size() ||
+	    before.items.size() > SQL_ROOM_ITEM_ROOT_MAX || !payload.item_count ||
+	    payload.item_count > ITEM_TRANSFER_MAX_ITEMS || !payload.item_blob_size ||
+	    payload.item_blob_size > payload.item_blob.size() ||
+	    payload.expected_from_revision == UINT64_MAX ||
+	    payload.expected_to_revision == UINT64_MAX)
+		return result::invalid;
+	try
+	{
+		std::vector<player_load_item_identity> candidates;
+		const auto members = item_transfer_room_parent_candidates(payload, before.owner,
+									  before.owner_revision,
+									  before.identities,
+									  &candidates);
+		if (members == item_transfer_room_parent_error::allocation_failure)
+			return result::allocation_unavailable;
+		if (members != item_transfer_room_parent_error::ok)
+			return members == item_transfer_room_parent_error::stale ? result::stale :
+										   result::invalid;
+		const bool put = payload.reason == item_transfer_reason::player_put;
+		std::vector<player_item_snapshot> selected;
+		const auto decoded = player_item_snapshot_list_decode(
+			payload.item_blob.data(), payload.item_blob_size, &selected);
+		if (decoded != player_snapshot_codec_result::ok)
+			return codec_refusal(decoded, result::invalid);
+		if (selected.size() != payload.item_count)
+			return result::invalid;
+		std::vector<uint8_t> selected_wire;
+		const auto encoded = player_item_snapshot_list_encode(selected, &selected_wire);
+		if (encoded != player_snapshot_codec_result::ok)
+			return codec_refusal(encoded, result::invalid);
+		if (selected_wire.size() != payload.item_blob_size ||
+		    !std::equal(selected_wire.begin(), selected_wire.end(),
+				payload.item_blob.begin()))
+			return result::invalid;
+		std::unordered_map<uint64_t, size_t> positions;
+		std::unordered_map<uint64_t, const item_transfer_entry *> entries;
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			const auto &entry = payload.items[index];
+			if (!entry.expected_item_revision ||
+			    entry.expected_item_revision == UINT64_MAX ||
+			    entry.expected_state != item_custody_state::active || entry.vnum <= 0 ||
+			    (index && payload.items[index - 1].item_uid >= entry.item_uid) ||
+			    !entries.emplace(entry.item_uid, &entry).second)
+				return result::invalid;
+		}
+		for (size_t index = 0; index < before.items.size(); ++index)
+		{
+			const auto &item = before.items[index];
+			const auto &identity = before.identities[index];
+			if (!exact_item(item) || item.object_uid != identity.item_uid ||
+			    item.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+			    item.parent_index >= static_cast<int32_t>(index) ||
+			    (item.parent_index == PLAYER_SNAPSHOT_NO_PARENT ?
+				     identity.parent_item_uid != 0 :
+				     identity.parent_item_uid !=
+					     before.items[item.parent_index].object_uid) ||
+			    !positions.emplace(item.object_uid, index).second)
+				return result::invalid;
+		}
+		std::unordered_set<uint64_t> selected_uids;
+		for (size_t index = 0; index < selected.size(); ++index)
+		{
+			const auto &item = selected[index];
+			const auto found = entries.find(item.object_uid);
+			if (!exact_item(item) || !selected_uids.insert(item.object_uid).second ||
+			    found == entries.end() || found->second->vnum != item.vnum ||
+			    item.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+			    item.parent_index >= static_cast<int32_t>(index) ||
+			    (item.parent_index >= 0 &&
+			     found->second->parent_item_uid !=
+				     selected[item.parent_index].object_uid) ||
+			    (item.parent_index == PLAYER_SNAPSHOT_NO_PARENT &&
+			     item_transfer_selected_root(payload, item.object_uid) !=
+				     item.object_uid))
+				return result::invalid;
+		}
+		for (const auto &item : selected)
+		{
+			const auto &entry = *entries.at(item.object_uid);
+			const auto root =
+				entries.find(item_transfer_selected_root(payload, item.object_uid));
+			if (root == entries.end() || !entry.root_item_uid ||
+			    entry.root_item_uid != root->second->root_item_uid ||
+			    entry.parent_item_uid == entry.item_uid)
+				return result::invalid;
+		}
+		std::vector<uint64_t> roots;
+		// Every literal root was already matched to the original per-UID
+		// selection predicate above. Collect this owned projection locally so
+		// allocation exceptions reach our typed result rather than a legacy bool.
+		roots.reserve(payload.item_count);
+		for (const auto &item : selected)
+			if (item.parent_index == PLAYER_SNAPSHOT_NO_PARENT)
+				roots.push_back(item.object_uid);
+		std::sort(roots.begin(), roots.end());
+		if (roots.empty())
+			return result::invalid;
+		if (!put)
+		{
+			std::vector<player_item_snapshot> observed, remaining;
+			const auto extracted = player_item_snapshot_extract_forest(
+				before.items, roots, &observed, &remaining);
+			if (extracted != player_snapshot_codec_result::ok)
+				return codec_refusal(extracted, result::invalid);
+			std::vector<uint8_t> observed_wire;
+			const auto observed_code =
+				player_item_snapshot_list_encode(observed, &observed_wire);
+			if (observed_code != player_snapshot_codec_result::ok)
+				return codec_refusal(observed_code, result::stale);
+			if (observed_wire != selected_wire)
+				return result::stale;
+		}
+		std::unordered_map<uint64_t, sql_room_item_parent_weight_fact> facts;
+		std::unordered_set<uint64_t> used_facts;
+		for (const auto &fact : weight_facts)
+			if (!fact.item_uid || !facts.emplace(fact.item_uid, fact).second)
+				return result::invalid;
+		sql_room_item_parent_after_plan plan;
+		plan.room_after = before;
+		plan.room_after.owner_revision = before.owner_revision + 1;
+		plan.selected_after = selected;
+		// Preserve the captured forest root order for native sequential weight rules.
+		for (const auto &root_literal : selected)
+		{
+			if (root_literal.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+				continue;
+			const uint64_t uid = root_literal.object_uid;
+			const auto entry = entries.find(uid);
+			if (entry == entries.end())
+				return result::invalid;
+			const uint64_t parent_uid = put ? payload.target_parent_item_uid :
+							  entry->second->parent_item_uid;
+			if (!parent_uid)
+				continue;
+			const auto parent = positions.find(parent_uid);
+			const auto literal = std::find_if(selected.begin(), selected.end(),
+							  [&](const auto &item)
+							  { return item.object_uid == uid; });
+			if (parent == positions.end() || literal == selected.end())
+				return result::invalid;
+			const size_t parent_index = parent->second;
+			const auto &parent_before = plan.room_after.items[parent_index];
+			if (put && parent_before.type != ITEM_CONTAINER &&
+			    parent_before.type != ITEM_QUIVER)
+				return result::invalid;
+			const sql_room_item_parent_weight_fact *fact = nullptr;
+			const auto captured = facts.find(parent_uid);
+			sql_room_item_parent_weight_fact updated;
+			if (captured != facts.end())
+			{
+				if (captured->second.item_revision !=
+				    before.identities[parent_index].item_revision)
+					return result::stale;
+				updated = captured->second;
+				// Earlier roots in this same command may already have changed the
+				// direct sum. Keep one exact original fact and an owned current sum.
+				fact = &updated;
+				used_facts.insert(parent_uid);
+			}
+			player_item_snapshot parent_after;
+			const auto projected = sql_room_item_parent_literal_after(
+				parent_before, { &*literal, 1 }, put, fact, &parent_after);
+			if (projected != result::ok)
+				return projected;
+			if (captured != facts.end())
+			{
+				const int64_t contents =
+					int64_t(updated.direct_contents_weight) +
+					(put ? 1 : -1) * std::max<int64_t>(literal->weight, 0);
+				captured->second.direct_contents_weight =
+					static_cast<int32_t>(contents);
+			}
+			int64_t propagated = std::max<int64_t>(parent_after.weight, 0) -
+					     std::max<int64_t>(parent_before.weight, 0);
+			int32_t ancestor = parent_before.parent_index;
+			plan.room_after.items[parent_index] = std::move(parent_after);
+			for (size_t depth = 0; ancestor != PLAYER_SNAPSHOT_NO_PARENT && propagated;
+			     ++depth)
+			{
+				if (depth >= PLAYER_SNAPSHOT_MAX_DEPTH || ancestor < 0 ||
+				    static_cast<size_t>(ancestor) >= before.items.size())
+					return result::invalid;
+				auto &item = plan.room_after.items[static_cast<size_t>(ancestor)];
+				const auto ancestor_fact = facts.find(item.object_uid);
+				if (ancestor_fact != facts.end())
+				{
+					const int64_t contents =
+						int64_t(ancestor_fact->second
+								.direct_contents_weight) +
+						propagated;
+					if (contents < 0 || contents > INT32_MAX)
+						return result::overflow;
+					ancestor_fact->second.direct_contents_weight =
+						static_cast<int32_t>(contents);
+				}
+				const int64_t next = int64_t(item.weight) + propagated;
+				if (next < INT32_MIN || next > INT32_MAX)
+					return result::overflow;
+				propagated = std::max<int64_t>(next, 0) -
+					     std::max<int64_t>(item.weight, 0);
+				item.weight = static_cast<int32_t>(next);
+				ancestor = item.parent_index;
+			}
+		}
+		if (used_facts.size() != facts.size())
+			return result::invalid;
+		for (const auto &identity : candidates)
+		{
+			const size_t index = positions.at(identity.item_uid);
+			player_item_snapshot old = before.items[index],
+					     next = plan.room_after.items[index];
+			old.parent_index = next.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+			std::vector<uint8_t> a, b;
+			const auto old_code = player_item_snapshot_list_encode({ old }, &a);
+			if (old_code != player_snapshot_codec_result::ok)
+				return codec_refusal(old_code, result::invalid);
+			const auto next_code = player_item_snapshot_list_encode({ next }, &b);
+			if (next_code != player_snapshot_codec_result::ok)
+				return codec_refusal(next_code, result::invalid);
+			if (a == b)
+				continue;
+			if (identity.item_revision == UINT64_MAX)
+				return result::overflow;
+			player_load_item_identity after = identity;
+			++after.item_revision;
+			after.owner_revision = plan.room_after.owner_revision;
+			plan.changed_ancestors.push_back(
+				{ identity, after, std::move(old), std::move(next) });
+			plan.room_after.identities[index] = after;
+		}
+		for (const auto &item : selected)
+		{
+			const auto &entry = *entries.at(item.object_uid);
+			player_load_item_identity after;
+			if (!item_transfer_target_topology(payload, entry.item_uid,
+							   &after.root_item_uid,
+							   &after.parent_item_uid))
+				return result::invalid;
+			after.item_uid = entry.item_uid;
+			after.item_revision = entry.expected_item_revision + 1;
+			after.owner = payload.to_owner;
+			after.owner_revision = payload.expected_to_revision + 1;
+			after.state = item_custody_state::active;
+			plan.selected_after_identities.push_back(after);
+		}
+		if (put)
+		{
+			if (before.items.size() > SQL_ROOM_ITEM_ROOT_MAX - selected.size())
+				return result::overflow;
+			const int32_t offset = static_cast<int32_t>(before.items.size());
+			const auto parent = positions.at(payload.target_parent_item_uid);
+			for (size_t index = 0; index < selected.size(); ++index)
+			{
+				auto item = selected[index];
+				item.parent_index = item.parent_index == PLAYER_SNAPSHOT_NO_PARENT ?
+							    static_cast<int32_t>(parent) :
+							    item.parent_index + offset;
+				plan.room_after.items.push_back(std::move(item));
+				plan.room_after.identities.push_back(
+					plan.selected_after_identities[index]);
+			}
+		}
+		else
+		{
+			std::vector<player_item_snapshot> removed, remaining;
+			const auto removed_code = player_item_snapshot_extract_forest(
+				plan.room_after.items, roots, &removed, &remaining);
+			if (removed_code != player_snapshot_codec_result::ok)
+				return codec_refusal(removed_code, result::invalid);
+			std::vector<player_load_item_identity> remaining_identities;
+			for (const auto &item : remaining)
+				remaining_identities.push_back(
+					plan.room_after.identities[positions.at(item.object_uid)]);
+			plan.room_after.items = std::move(remaining);
+			plan.room_after.identities = std::move(remaining_identities);
+		}
+		*output = std::move(plan);
+		return result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return result::allocation_unavailable;
+	}
 }

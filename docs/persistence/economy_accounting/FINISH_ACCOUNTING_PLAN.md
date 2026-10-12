@@ -315,3 +315,13 @@ The original event-thread owner and fatal/logging providers can be linked
 independently with one shared owner state and the existing panic/log law.
 The ownership runtime recipe uses those real providers and its original
 controls; these dependency extractions do not qualify full Source or release.
+
+Typed ROOM parent AFTER preparation composes the original canonical Item codec
+with complete ancestry and keeper custody deltas. Child codec and extraction
+allocation failures retain their resource result and prior output. Maintained
+regression entries run without arguments and use retained task-temp artifacts;
+explicit artifact paths and immutable-input guards remain available. The native
+component controls exercise quiver PUT/GET, stale/duplicate refusal and every
+measured allocation cut. These are value preparation checks. Original SQL writes,
+native facts/holds, coupled immutable revisions, cold recovery, publication and
+ACK remain separate open dependencies; admission stays closed.

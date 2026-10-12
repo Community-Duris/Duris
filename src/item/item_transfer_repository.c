@@ -1,3 +1,5 @@
+#include <map>
+#include "item/item_transfer_room_parents.h"
 #include "persistence/death_recovery_visibility.h"
 #include "persistence/quest_mobile_native_sql.h"
 #include "persistence/economic_sql_native_mobile_birth_transaction.h"
@@ -5479,4 +5481,172 @@ bool item_transfer_repository_execute_smith_native(
 		return false;
 	}
 #endif
+}
+
+bool item_transfer_repository_room_parent_delta(const item_transfer_payload &payload,
+						const sql_room_item_graph &before,
+						const sql_room_item_parent_after_plan &plan,
+						const item_transfer_custody_delta &selected,
+						item_transfer_custody_delta *output) noexcept
+{
+	const auto refuse = [](int value)
+	{
+		errno = value;
+		return false;
+	};
+	if (!output || selected.events.size() != payload.item_count ||
+	    selected.events.size() > ECONOMIC_ACCOUNTING_MAX_ITEM_EVENTS ||
+	    before.owner_revision == UINT64_MAX ||
+	    selected.before.size() > ECONOMIC_ACCOUNTING_MAX_ITEM_WITNESSES ||
+	    selected.after.size() > ECONOMIC_ACCOUNTING_MAX_ITEM_WITNESSES)
+		return refuse(EINVAL);
+	if (!item_owner_identity_equal(plan.room_after.owner, before.owner) ||
+	    plan.room_after.owner_revision != before.owner_revision + 1)
+		return refuse(ESTALE);
+	try
+	{
+		std::vector<player_load_item_identity> ancestors;
+		const auto status = item_transfer_room_parent_candidates(payload, before.owner,
+									 before.owner_revision,
+									 before.identities,
+									 &ancestors);
+		if (status != item_transfer_room_parent_error::ok)
+			return refuse(
+				status == item_transfer_room_parent_error::allocation_failure ?
+					ENOMEM :
+				status == item_transfer_room_parent_error::unsupported ? ENOTSUP :
+				status == item_transfer_room_parent_error::stale       ? ESTALE :
+											 EILSEQ);
+		if (plan.changed_ancestors.size() > ancestors.size())
+			return refuse(EILSEQ);
+		const auto position = [](const player_load_item_identity &row)
+		{
+			return economic_item_position{ row.owner,	    row.root_item_uid,
+						       row.parent_item_uid, row.item_revision,
+						       row.state,	    0 };
+		};
+		const auto identity_equal = [](const auto &left, const auto &right)
+		{
+			return left.database_id == right.database_id &&
+			       left.serialized_parent_id == right.serialized_parent_id &&
+			       left.quantity == right.quantity &&
+			       left.override_mask == right.override_mask &&
+			       left.item_uid == right.item_uid &&
+			       left.root_item_uid == right.root_item_uid &&
+			       left.parent_item_uid == right.parent_item_uid &&
+			       item_owner_identity_equal(left.owner, right.owner) &&
+			       left.item_revision == right.item_revision &&
+			       left.owner_revision == right.owner_revision &&
+			       left.state == right.state;
+		};
+		// Do not trust a merely well-formed base delta to describe this request.
+		// Every original event must retain the command's exact selected BEFORE
+		// and proposed placement/revision, before adding any parent event.
+		for (size_t i = 0; i < payload.item_count; ++i)
+		{
+			const auto &entry = payload.items[i];
+			const auto &event = selected.events[i];
+			uint64_t root = 0, parent = 0;
+			if (entry.expected_item_revision == UINT64_MAX ||
+			    !item_transfer_target_topology(payload, entry.item_uid, &root, &parent))
+				return refuse(EILSEQ);
+			const economic_item_position expected_before = {
+				payload.from_owner,    entry.root_item_uid,
+				entry.parent_item_uid, entry.expected_item_revision,
+				entry.expected_state,  0
+			};
+			const economic_item_position expected_after = {
+				payload.to_owner,
+				root,
+				parent,
+				entry.expected_item_revision + 1,
+				item_custody_state::active,
+				0
+			};
+			if (event.uid != entry.item_uid || event.event_index != i ||
+			    event.child_index ||
+			    !economic_item_position_equal(event.before, expected_before) ||
+			    !economic_item_position_equal(event.after, expected_after))
+				return refuse(ESTALE);
+		}
+		item_transfer_custody_delta candidate = selected;
+		const auto add_witness = [&](auto &rows, const player_load_item_identity &identity)
+		{
+			const auto found = std::find_if(rows.begin(), rows.end(),
+							[&](const auto &row)
+							{ return row.uid == identity.item_uid; });
+			if (found != rows.end())
+				return economic_item_position_equal(found->position,
+								    position(identity));
+			if (rows.size() == ECONOMIC_ACCOUNTING_MAX_ITEM_WITNESSES)
+				return false;
+			rows.push_back({ identity.item_uid, position(identity) });
+			return true;
+		};
+		for (const auto &row : before.identities)
+		{
+			if (!add_witness(candidate.before, row))
+				return refuse(EILSEQ);
+			const bool moved = std::any_of(payload.items.begin(),
+						       payload.items.begin() + payload.item_count,
+						       [&](const auto &entry)
+						       { return entry.item_uid == row.item_uid; });
+			if (!moved && !add_witness(candidate.after, row))
+				return refuse(EILSEQ);
+		}
+		uint64_t previous_uid = 0;
+		for (const auto &participant : plan.changed_ancestors)
+		{
+			const auto &old = participant.before_identity;
+			const auto &next = participant.after_identity;
+			const auto found = std::lower_bound(ancestors.begin(), ancestors.end(),
+							    old.item_uid,
+							    [](const auto &row, uint64_t uid)
+							    { return row.item_uid < uid; });
+			if (old.item_uid <= previous_uid || old.item_revision == UINT64_MAX ||
+			    found == ancestors.end() || !identity_equal(*found, old))
+				return refuse(ESTALE);
+			auto expected = old;
+			expected.item_revision += 1;
+			expected.owner_revision = before.owner_revision + 1;
+			if (!identity_equal(expected, next))
+				return refuse(ESTALE);
+			const auto projected =
+				std::find_if(plan.room_after.identities.begin(),
+					     plan.room_after.identities.end(), [&](const auto &row)
+					     { return row.item_uid == old.item_uid; });
+			if (projected == plan.room_after.identities.end() ||
+			    !identity_equal(*projected, next))
+				return refuse(EILSEQ);
+			auto after = std::find_if(candidate.after.begin(), candidate.after.end(),
+						  [&](const auto &row)
+						  { return row.uid == old.item_uid; });
+			if (after == candidate.after.end() ||
+			    !economic_item_position_equal(after->position, position(old)) ||
+			    candidate.events.size() >= ECONOMIC_ACCOUNTING_MAX_ITEM_EVENTS)
+				return refuse(EILSEQ);
+			after->position = position(next);
+			candidate.events.push_back({ static_cast<uint32_t>(candidate.events.size()),
+						     0, old.item_uid, position(old),
+						     position(next) });
+			previous_uid = old.item_uid;
+		}
+		const auto by_uid = [](const auto &left, const auto &right)
+		{ return left.uid < right.uid; };
+		std::sort(candidate.before.begin(), candidate.before.end(), by_uid);
+		std::sort(candidate.after.begin(), candidate.after.end(), by_uid);
+		const auto valid = economic_item_effects_validate(candidate.before, candidate.after,
+								  candidate.events, 0);
+		if (valid != economic_accounting_error::ok)
+			// All size/child limits above are already fenced. The unchanged
+			// validator's remaining capacity return is its caught bad_alloc.
+			return refuse(valid == economic_accounting_error::capacity ? ENOMEM :
+										     EILSEQ);
+		*output = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return refuse(ENOMEM);
+	}
 }

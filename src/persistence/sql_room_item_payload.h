@@ -2,6 +2,11 @@
 #define DURIS_SQL_ROOM_ITEM_PAYLOAD_H
 
 #include "player/player_load_repository.h"
+#include "core/defines.h"
+#include <algorithm>
+#include <climits>
+#include <new>
+#include <span>
 #include "persistence/economic_sql_source_snapshot.h"
 #include "economy/zone_reset_item_command.h"
 #include "economy/zone_reset_item_origin.h"
@@ -31,6 +36,129 @@ struct sql_room_item_graph
 	// forest/recipes survive removed descendants; values alone grant no admission.
 	std::optional<zone_reset_item_retained_origin> creation_origin;
 };
+
+// Values only. The original keeper must bind every row/fact to its locked
+// command, owner cut and native source hold before applying any participant.
+enum class sql_room_item_parent_projection_result : uint8_t
+{
+	ok,
+	invalid,
+	stale,
+	weight_fact_required,
+	overflow,
+	allocation_unavailable,
+};
+struct sql_room_item_parent_weight_fact
+{
+	uint64_t item_uid = 0;
+	uint64_t item_revision = 0;
+	// Actual native prototype probe and all direct children, including NORENT.
+	// Raw direct sum uses GET_OBJ_WEIGHT's positive clamp before reduction.
+	int32_t prototype_shell_weight = 0;
+	int32_t direct_contents_weight = 0;
+};
+// Shared arithmetic only, used by the SQL value plan and original flat room
+// afterimage. Original UID/version authentication stays in the calling owner.
+// A reduction requires an explicitly captured shell/all-contents fact; no
+// prototype or empty-shell value is inferred from the stored weight.
+inline sql_room_item_parent_projection_result
+sql_room_item_parent_literal_after(const player_item_snapshot &before,
+				   std::span<const player_item_snapshot> selected, bool put,
+				   const sql_room_item_parent_weight_fact *fact,
+				   player_item_snapshot *output) noexcept
+{
+	using result = sql_room_item_parent_projection_result;
+	if (!output || selected.empty())
+		return result::invalid;
+	try
+	{
+		int64_t delta = 0, positive = 0;
+		int32_t roots = 0;
+		for (const auto &item : selected)
+			if (item.parent_index == PLAYER_SNAPSHOT_NO_PARENT)
+			{
+				if (++roots > static_cast<int32_t>(ITEM_TRANSFER_MAX_ITEMS) ||
+				    (!put && item.weight == INT32_MIN))
+					return result::overflow;
+				delta += put ? int64_t(item.weight) : -int64_t(item.weight);
+				positive += std::max<int64_t>(item.weight, 0);
+				if (put && before.type == ITEM_QUIVER &&
+				    (item.type != ITEM_MISSILE ||
+				     item.values[3] != before.values[2]))
+					return result::invalid;
+			}
+		if (!roots || delta < INT32_MIN || delta > INT32_MAX || positive > INT32_MAX)
+			return result::overflow;
+		int64_t after_weight = int64_t(before.weight) + delta;
+		if (after_weight < INT32_MIN || after_weight > INT32_MAX)
+			return result::overflow;
+		const int32_t reduction =
+			before.type == ITEM_CONTAINER ? std::clamp(before.values[4], 0, 90) : 0;
+		if (reduction)
+		{
+			if (!fact)
+				return result::weight_fact_required;
+			if (fact->item_uid != before.object_uid || fact->direct_contents_weight < 0)
+				return result::invalid;
+			int64_t contents = int64_t(fact->direct_contents_weight) +
+					   (put ? positive : -positive);
+			if (contents < 0 || contents > INT32_MAX)
+				return result::invalid;
+			contents -= contents * reduction / 100;
+			after_weight = int64_t(fact->prototype_shell_weight) + contents;
+			if (after_weight < INT32_MIN || after_weight > INT32_MAX)
+				return result::overflow;
+		}
+		else if (fact)
+			return result::invalid;
+		int64_t count = before.values[3];
+		if (before.type == ITEM_QUIVER)
+		{
+			if (count < 0 ||
+			    (put && ((before.values[1] & CONT_CLOSED) ||
+				     count + roots > before.values[0])) ||
+			    (!put && count < roots))
+				return result::invalid;
+			count += put ? roots : -roots;
+			if (count < 0 || count > INT32_MAX)
+				return result::overflow;
+		}
+		player_item_snapshot candidate = before;
+		candidate.weight = static_cast<int32_t>(after_weight);
+		if (before.type == ITEM_QUIVER)
+			candidate.values[3] = static_cast<int32_t>(count);
+		*output = std::move(candidate);
+		return result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return result::allocation_unavailable;
+	}
+}
+
+struct sql_room_item_parent_participant
+{
+	player_load_item_identity before_identity, after_identity;
+	// Canonical single-node literals: topology lives in the original identity,
+	// so array renumbering alone never becomes a spurious participant.
+	player_item_snapshot before_literal, after_literal;
+};
+struct sql_room_item_parent_after_plan
+{
+	sql_room_item_graph room_after;
+	std::vector<player_item_snapshot> selected_after;
+	std::vector<player_load_item_identity> selected_after_identities;
+	std::vector<sql_room_item_parent_participant> changed_ancestors;
+};
+// Strong owned output. No SQL writes, hydration, revision/publication permit,
+// schema/codec change or callback occurs. Selected roots use literal forest order;
+// the original keeper must bind the same native publication order and captured
+// shell facts. Root owns the actual atomic ancestor
+// revision+ledger/reference/retained/cold proof and original native fact capture.
+sql_room_item_parent_projection_result
+sql_room_item_payload_parent_after(const item_transfer_payload &, const sql_room_item_graph &before,
+				   const std::vector<sql_room_item_parent_weight_fact> &,
+				   sql_room_item_parent_after_plan *) noexcept;
 
 // Pure, bounded capture validation. Incomplete/prototype-dependent text is not
 // admissible; ordinary producer capture is deliberately not widened here.

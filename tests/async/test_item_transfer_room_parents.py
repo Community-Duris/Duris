@@ -5,6 +5,8 @@ SQL-header and flat-file ASan/UBSan controls enumerate BEFORE identities only.
 No SQL transaction, owner authority, property AFTER, native/durable or Source
 qualification is inferred. Compiler, exact argv and source hashes are retained.
 """
+import sys
+sys.dont_write_bytecode = True
 import argparse
 import hashlib
 import json
@@ -13,7 +15,6 @@ from pathlib import Path
 import shlex
 import signal
 import subprocess
-import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -31,9 +32,9 @@ def main():
     parser.add_argument("--source-root", type=Path, default=ROOT)
     parser.add_argument("--proposal-root", type=Path, default=ROOT)
     parser.add_argument("--compiler", default="g++")
-    parser.add_argument("--output-dir", type=Path, required=True,
+    parser.add_argument("--output-dir", type=Path,
                         help="Task-specific evidence directory; use D: storage")
-    parser.add_argument("--build-root", type=Path, required=True,
+    parser.add_argument("--build-root", type=Path,
                         help="Task-specific binary scratch directory under D:/Dev/Builds")
     parser.add_argument("--compile-timeout", type=positive_seconds, default=300)
     parser.add_argument("--run-timeout", type=positive_seconds, default=60)
@@ -42,11 +43,18 @@ def main():
     environment = dict(os.environ, PYTHONDONTWRITEBYTECODE="1",
                        ASAN_OPTIONS="detect_leaks=1:halt_on_error=1",
                        UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1")
-    output = args.output_dir.resolve()
+    task_root = None
+    if args.output_dir is None or args.build_root is None:
+        temp_root = Path(tempfile.gettempdir()).resolve()
+        if any(temp_root.is_relative_to(root) for root in (source, args.proposal_root.resolve())):
+            parser.error("Temporary evidence/build paths must be outside the immutable input roots")
+        task_root = Path(tempfile.mkdtemp(prefix="duris-room-parent-identities-", dir=temp_root))
+    output = (args.output_dir if args.output_dir is not None else task_root / "evidence").resolve()
     output.mkdir(parents=True, exist_ok=True)
-    build = args.build_root.resolve()
+    build = (args.build_root if args.build_root is not None else task_root / "build").resolve()
     build.mkdir(parents=True, exist_ok=True)
     environment["TMPDIR"] = str(build)
+    print("ARTIFACT_DIR " + str(output), flush=True)
     version = execute([args.compiler, "-dumpfullversion"], cwd=source,
                       timeout=min(30, args.compile_timeout), env=environment, capture_output=True).strip()
     harness = args.proposal_root.resolve() / "tests/async/item_transfer_room_parents_test.cpp"

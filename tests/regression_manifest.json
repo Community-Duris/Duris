@@ -8790,8 +8790,34 @@
       "locks": [
         "native-compiler"
       ],
-      "seconds": 14.098,
+      "seconds": 12.399,
       "purpose": "Pure complete ROOM BEFORE ancestry membership with old cached clocks, exact 7 healthy and 45 refusal controls, every observed allocation cut and strong output; actual SQL-header/flat sanitizer providers, no authority or mutation."
+    },
+    "test_sql_room_parent_after.py": {
+      "profile": "native",
+      "mode": "script",
+      "minimum_cases": 1,
+      "cpu": 1,
+      "memory_mb": 2048,
+      "timeout_seconds": 1200,
+      "locks": [
+        "native-compiler"
+      ],
+      "seconds": 23.38,
+      "purpose": "Owned complete ROOM parent AFTER value projection using full canonical Item codec and topology providers; original quiver/container/stale/overflow/strong-output controls, no locked/native/durable Source authority. Maintained no-argument entry uses retained task-temp artifacts."
+    },
+    "test_item_transfer_room_parent_delta.py": {
+      "profile": "native",
+      "mode": "script",
+      "minimum_cases": 1,
+      "cpu": 1,
+      "memory_mb": 2048,
+      "timeout_seconds": 1800,
+      "locks": [
+        "native-compiler"
+      ],
+      "seconds": 65.733,
+      "purpose": "Real canonical codec to SQL parent projection to keeper delta PUT/GET in SQL-header and flat ASan/UBSan; original4 healthy/44 refusal/113 allocation cuts plus2 composed routes/8 projected-plan refusals and every measured typed projection/keeper allocation cut. Component GC, no SQL/native/cold/publication authority. Maintained no-argument entry supported."
     }
   }
 }

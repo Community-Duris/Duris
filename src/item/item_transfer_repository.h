@@ -29,6 +29,20 @@ struct item_transfer_custody_delta
 	std::vector<economic_item_event> events;
 };
 
+struct sql_room_item_graph;
+struct sql_room_item_parent_after_plan;
+// Pure preparation for the original keeper. Bind selected movement and changed
+// ROOM ancestors into one complete custody delta, retaining unchanged witnesses.
+// The caller authenticates the locked graph, literal AFTER plan and native facts.
+// This neither writes storage nor grants publication, replay or ACK authority.
+// Strong output; the existing SQL writer/readers must adopt all participants
+// together before a caller may publish the resulting values.
+bool item_transfer_repository_room_parent_delta(const item_transfer_payload &,
+						const sql_room_item_graph &,
+						const sql_room_item_parent_after_plan &,
+						const item_transfer_custody_delta &selected,
+						item_transfer_custody_delta *output) noexcept;
+
 // Typed admitted HRT execution only: called after participating owner locks
 // and revision checks, before selected custody/physical reads or mutation.
 // The callback returns an errno value; nonzero follows existing SQL rollback.
