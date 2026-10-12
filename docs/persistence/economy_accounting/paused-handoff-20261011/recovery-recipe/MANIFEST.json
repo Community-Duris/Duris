@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "scope": "Root-only isolated original17providerTUs+fixture recovery context component; stopped handoff",
+  "state": "UNEXECUTED_FINITE_REVIEW_PENDING",
+  "members": [
+    {
+      "path": "CONFIG.json",
+      "bytes": 242026,
+      "sha256": "a3e6791dc58dd8f51b438fadf9e99ad3be7e48a2f7aceb84534af881d106e167"
+    },
+    {
+      "path": "CURRENTF215-REBIND.json",
+      "bytes": 6258,
+      "sha256": "bd3723554f2afa6d14a9a527491cc4a50a8f66d598a545a70f7e57ccfe76aafc"
+    },
+    {
+      "path": "guest.py",
+      "bytes": 3962,
+      "sha256": "a9039db9d0e0db37ccb4b36bba476a8aeaa5a40a60a9b18d75722944e47e17e7"
+    },
+    {
+      "path": "ROOT-COMMANDS.md",
+      "bytes": 2994,
+      "sha256": "36c973ebfe90c034ca92b909e10cbe6de499f742e5fca4e844424736d7f42691"
+    },
+    {
+      "path": "root_run.py",
+      "bytes": 5945,
+      "sha256": "cfa08787d7d98b27cb4487b5e23b8127981037ca25250e6794111b239e75d8f9"
+    },
+    {
+      "path": "trusted_scoped.py",
+      "bytes": 7976,
+      "sha256": "85c6c07ed2edea087e4878792a3a2c381ca7f11063590e5d088e11328a790644"
+    },
+    {
+      "path": "STATIC-CHECKS.json",
+      "bytes": 709,
+      "sha256": "4e05bf59566afcc77b7f138f5a80fdf2ac7392b778d3bf09f402bbffc393a7e9"
+    }
+  ]
+}
