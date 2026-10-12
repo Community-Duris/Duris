@@ -2,14 +2,13 @@
 
 Deliver one executable combined candidate, then finish the supported gameplay,
 architecture and independent release gates in bounded parallel lanes. This plan
-is a proposal prepared on 2026-10-11 from cleanup source
+was prepared on 2026-10-11 and approved for execution on 2026-10-12 from cleanup source
 `c8452833c5e2d4819341a144444dd9638c4fe78d` and the paused handoff at
 `11ea970dc616a04069cda703d3afe9cc02b4c7d1`. The maintained implementation base
 is `f215679503d787a25af52fa8103506159a50013d`.
 
 The user approved preparing the 330-document archive and asked for a faster
-multi-agent completion plan. Runtime implementation is not restarted by this
-document. Accounting remains INACTIVE, admission CLOSED, coverage INCOMPLETE and
+multi-agent completion plan. Implementation resumes under the ownership and acceptance gates below. Accounting remains INACTIVE, admission CLOSED, coverage INCOMPLETE and
 release BLOCKED. R1–R8, the [five domain plans](DELIVERY_PLAN.md), required
 responsibility boundaries and existing product decisions remain required.
 Historical Plan 1 acceptance retains only its recorded scope. Technical completion
@@ -17,27 +16,22 @@ does not authorize activation, production operations, deployment or PR merge.
 
 ## Starting facts and reusable inputs
 
-- Read the [complete paused handoff](SHARED_IMPLEMENTATION_PAUSED_HANDOFF_2026-10-11.md).
-  Its [29-file shared patch](paused-handoff-20261011/shared-candidate.patch) and
-  [fingerprints](paused-handoff-20261011/CANDIDATE.json) are proposals, not installed
+- Read the [complete paused handoff](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/SHARED_IMPLEMENTATION_PAUSED_HANDOFF_2026-10-11.md).
+  Its [29-file shared patch](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/paused-handoff-20261011/shared-candidate.patch) and
+  [fingerprints](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/paused-handoff-20261011/CANDIDATE.json) are proposals, not installed
   or compiled implementations. The patch excludes the WORLD/SHOP leased files.
 - Maintained Birth has Source/Warm and SHOP has a retained CURRENT census, but
   neither supplies the seven exports required by the shared candidate. Seven
   definitions alone do not qualify the full descendant/caller/runtime closure.
 - Boot currently has the verification interval between `complete_boot()` and
   `before_world_callbacks()`; its genuine independent verifier invocation is missing.
-- The [recovery runner patch](paused-handoff-20261011/recovery-runner.patch) adds
+- The [recovery runner patch](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/paused-handoff-20261011/recovery-runner.patch) adds
   three omitted real providers to an existing fixture. It is independently runnable
   after deliberate rebind/review and does not depend on the seven exports.
 - The current coverage contract has 54/57 passing cases: stale bandage anchor,
   ambiguous room-payload selector and stale `tests/run_test_entry.py` hash remain.
   The missing-main adapter implementation was already fixed at `c72a56041`; use
   its actual regression and reconcile metadata instead of implementing it again.
-- Documentation-contract setup is blocked by existing non-UTF8 bytes in
-  `COMPLETE_NATIVE_TRANSFORM_FOREST_RECOVERY_CODECS_2026-10-10.md` and
-  `ORIGINAL_NATIVE_MOBILE_CONSTRUCTOR_ADMISSION_2026-10-10.md`. Both are retained,
-  byte-identical to the starting source. Record their narrow encoding repair as a
-  documentation task; preserve the completed documentation audit's corrections.
 - Plan 5 `52ca6d9fba8da46bb63c1ce4d2da328e6bf6ab29` retains a failed full schema65
   matrix on `a60f5dcc...`, a later focused DIAG-02 pass, and prepared RETRY-03
   using native Linux MariaDB storage. No completed full retry is reported.
@@ -54,8 +48,7 @@ does not authorize activation, production operations, deployment or PR merge.
 
 Use one integrator and three bounded delivery owners. The integrator is the
 existing primary or an explicitly approved successor, never both. Reconcile
-stopped-owner leases and exact branch/dirty state before resumption. Prefer
-existing established owners; this proposal dispatches no chats or workers.
+stopped-owner leases and exact branch/dirty state before resumption. Use the accepted four-owner team after source intake and exclusive file leases.
 
 | Lane | Exclusive write set | First deliverable |
 | --- | --- | --- |
@@ -102,12 +95,11 @@ survey, new framework or repeated ownership acknowledgment cycle is needed.
 
 | Task | Work and dependency | Exit evidence |
 | --- | --- | --- |
-| I1 | Repair the three current coverage findings without weakening classification; reconcile the already fixed main adapter's source hash. Review/rebind the recovery patch and [recipe](paused-handoff-20261011/recovery-recipe/ROOT-COMMANDS.md). | Current coverage checks pass; actual unchanged recovery fixture passes; runner adopted and real pin added to both maps only after PASS |
+| I1 | Repair the three current coverage findings without weakening classification; reconcile the already fixed main adapter's source hash. Review/rebind the recovery patch and [recipe](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/paused-handoff-20261011/recovery-recipe/ROOT-COMMANDS.md). | Current coverage checks pass; actual unchanged recovery fixture passes; runner adopted and real pin added to both maps only after PASS |
 | W1 | Reconcile preserved WORLD changes and implement three missing exports with genuine constructors, parsers, templates, strings/vectors and reached library/provider lifetimes. | Definitions/declarations, complete Source/INITIAL/query union, supported/refused profiles, strong outputs/cleanup, affected production and native checks |
 | S1 | Implement four missing replay exports, preserving real pending/cold/private-stage ownership, original SQL/flat authority and disjoint Source/INITIAL. | Complete getter/query execution and returned values, overflow/refusal, retention/publication/replay checks; exact source and provider proof |
 | A1 | Build the independent native verifier using raw held-session inputs and existing ABI; no primary report/count substitutes for reconstruction. | Genuine healthy and corrupted same-session correspondence tests, stale/session/resource/cleanup refusals, no accidental mutation/activation |
 | A2 | Reconcile Plan 5 source adoption, prepared schema65 retry and current retention/restore route with a frozen candidate. | Unchanged full two-engine matrix completes on the commissioned profile; measured schema evidence and real current lifecycle acceptance |
-| DOC1 | Narrow repair of the two retained non-UTF8 documents; keep audit updates and all substantive statements. | Documentation-contract execution and byte/text comparison; no encoding workaround that hides maintained documents |
 
 W1, S1 and A1/A2 source preparation proceed concurrently with I1. A1 and A2
 share the established independent owner; source work may continue while its
@@ -283,7 +275,7 @@ schema intake. Shared integration, final schema acceptance and release joins
 remain serial. There is no verified basis for a percentage speedup or delivery
 date; estimate after M1 from measured task durations and the actual remaining queue.
 
-The [archive index](ARCHIVED_ACCOUNTING_DOCUMENTS.md) preserves recovery of 330
+The [context archive index](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/ARCHIVED_ACCOUNTING_DOCUMENTS.md) preserves recovery of 330
 historical documents. The completed documentation audit and its substantive
 updates remain protected. Historical source/evidence retains its original pins;
 this new plan and its preparation do not promote any release gate.

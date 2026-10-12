@@ -35,4 +35,4 @@ literal tree API and canonical codec, with original UIDs and parent placement.
 This is a scoped inactive fixture, separate from active birth admission and
 authenticated SQL/custody/publication/ACK/cold recovery. Its driver is a nested
 qualification helper, not an automatically selected top-level regression or a
-new release gate. See the [recorded native evidence](../../../docs/persistence/economy_accounting/ALCHEMIST_ACTUAL_RESET_LITERAL_QUALIFICATION_2026-10-06.md).
+new release gate. See the [recorded native evidence](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/ALCHEMIST_ACTUAL_RESET_LITERAL_QUALIFICATION_2026-10-06.md).

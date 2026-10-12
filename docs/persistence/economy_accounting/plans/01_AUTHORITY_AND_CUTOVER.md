@@ -79,7 +79,7 @@ SQL lifecycle runner for native database behavior.
 | Focused common-owner checks and both builds | Eleven focused owners,35 worker/journal cases per backend,22 checked-release,14 startup and18 recovery-session cases pass their frozen inputs. Current SQL/flat strict builds include the census correction. |
 | Actual ordinary-drop publication and two cold boots | Maintained three-file regression compiled against all1248 current production inputs; both-engine real `do_drop`, native full payload/custody and guarded ACK pass, with no reseeding between two full-world boots. |
 
-See [the consolidated source-bound report](../SAVE_RESIDENCE_INTEGRATION_2026-10-04.md)
+See [the consolidated source-bound report](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/SAVE_RESIDENCE_INTEGRATION_2026-10-04.md)
 for exact inputs, earlier failures, native budgets and cleanup. This table does
 not mark registry rows qualified or authorize whole-game activation.
 

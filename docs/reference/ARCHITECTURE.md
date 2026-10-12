@@ -545,7 +545,7 @@ it does not imply that all work remains unmerged. Exact commits,
 source links, independent reviews, and qualification limits are preserved in the
 [dated architecture review](../design/ARCHITECTURE_REVIEW_2026-10-07.md).
 Current combined accounting integration and its remaining gates are recorded in
-the [October 9 candidate handoff](../persistence/economy_accounting/COMBINED_ACCOUNTING_CANDIDATE_HANDOFF_2026-10-09.md).
+the [October 9 candidate handoff](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/COMBINED_ACCOUNTING_CANDIDATE_HANDOFF_2026-10-09.md).
 
 | Stream and reviewed pin | Additional architecture | Status boundary |
 | --- | --- | --- |

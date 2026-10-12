@@ -59,7 +59,7 @@ value against current claim holdings. Missing coverage and malformed, mixed,
 orphan, overdrawn or wrong-account allocations remain findings. Source/posting
 metadata spans every64-pair batch; only exact requested pairs are counted,
 while actual duplicate rows still refuse. See
-[the primary snapshot qualification](PLAN5_PARTIAL_SNAPSHOT_PRIMARY_QUALIFICATION_2026-10-06.md).
+[the primary snapshot qualification](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/PLAN5_PARTIAL_SNAPSHOT_PRIMARY_QUALIFICATION_2026-10-06.md).
 Complete source capture, producer authentication and release remain unqualified;
 a successful check never authorizes correction of a finding.
 
@@ -78,7 +78,7 @@ quiescence procedure; independent runs do not constitute one combined cut.
 Provenance UID filters require the stored UID to be an exact integer. Float,
 Boolean and string aliases do not identify that UID. Retained/unattributed
 histories, global refusal and output limits retain their original behavior.
-See [the primary UID qualification](PLAN5_UID_PROVENANCE_PRIMARY_QUALIFICATION_2026-10-06.md).
+See [the primary UID qualification](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/PLAN5_UID_PROVENANCE_PRIMARY_QUALIFICATION_2026-10-06.md).
 
 For repeated SQL canonical-root checks, add `--progress-path` pointing to a
 protected local file. Its parent directory must already exist. The maintained
@@ -243,7 +243,7 @@ receipt, allocation, orphan, activation and release authority remains unproven;
 `complete`, `consistent_entire_sweep` and `release_qualified` stay false.
 Other retained/native namespaces, flatfile resumability, full quiescent
 comparison and release-host performance remain separate gates. See
-[the composite namespace qualification](PLAN5_SQL_COMPOSITE_SWEEP_QUALIFICATION_2026-10-06.md).
+[the composite namespace qualification](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/PLAN5_SQL_COMPOSITE_SWEEP_QUALIFICATION_2026-10-06.md).
 
 Every non-exception view includes the whole audited input's `coverage` object:
 `lineage`, `selected_epoch`, `complete`, `quiescent`, and `exception_count`.
@@ -266,9 +266,9 @@ restitution. Totals remain selected-epoch evidence, grouped by account kind and
 reason, with the full count retained at `--limit 0`. Other discrepancies in a
 committed root remain audit exceptions: a displayed total does not certify that
 root, its policy or its native effect. See
-[the exact outcome qualification](PLAN5_SUPPLY_OUTCOME_VIEW_QUALIFICATION_2026-10-06.md).
+[the exact outcome qualification](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/PLAN5_SUPPLY_OUTCOME_VIEW_QUALIFICATION_2026-10-06.md).
 Duplicate projection qualification is recorded in
-[the unique evidence report](PLAN5_SUPPLY_EVIDENCE_QUALIFICATION_2026-10-06.md).
+[the unique evidence report](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/PLAN5_SUPPLY_EVIDENCE_QUALIFICATION_2026-10-06.md).
 
 The bounded `--view prices` query combines selected-epoch roots with captured
 `native.lineage_realized_prices`. Each row contains only `epoch`,
@@ -790,7 +790,7 @@ all-zero absent witness while naming the new UID. Missing historical equipment
 remains unknown and is handled by the separate equipment audit. These checks
 use the independent retained-evidence interpreter, without importing mutation
 code or changing native rows. See
-[the exact position qualification](PLAN5_ITEM_CUSTODY_POSITION_QUALIFICATION_2026-10-06.md).
+[the exact position qualification](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/PLAN5_ITEM_CUSTODY_POSITION_QUALIFICATION_2026-10-06.md).
 
 The containment audit applies to both live and quarantined children. Parent and
 child owner identity and root must agree throughout the captured ancestor path;
@@ -798,7 +798,7 @@ a quarantined child cannot use a destroyed parent as a current containment edge.
 `inconsistent_native_topology` remains a finding even when opening and current
 projections match. Valid forests may mix live and quarantined nodes. Detail
 limit0 preserves the full finding counts and CLI status. See
-[the exact quarantined containment qualification](PLAN5_QUARANTINED_TOPOLOGY_QUALIFICATION_2026-10-06.md).
+[the exact quarantined containment qualification](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/PLAN5_QUARANTINED_TOPOLOGY_QUALIFICATION_2026-10-06.md).
 
 ## Quarantined coin diagnostics
 
@@ -809,7 +809,7 @@ Quarantined coins remain outside active holdings and live-pile census totals.
 Existing missing-holding, dangling-mapping, stale-custody and partial-capture
 findings remain. Missing payloads are retained as unknown, and malformed states
 or negative denominations still refuse. See
-[the exact quarantined coin qualification](PLAN5_QUARANTINED_COIN_QUALIFICATION_2026-10-06.md).
+[the exact quarantined coin qualification](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/PLAN5_QUARANTINED_COIN_QUALIFICATION_2026-10-06.md).
 
 ## Retained flatfile intent and plan semantics
 
@@ -847,7 +847,7 @@ The original flatfile child-reservation refusal remains. These checks use an
 independent interpretation of the versioned wire contract; production mutation
 code supplies qualification oracles only in tests. Every observation leaves
 retained economic bytes unchanged. See
-[the exact semantic qualification](PLAN5_FLATFILE_PLAN_SEMANTICS_QUALIFICATION_2026-10-06.md).
+[the exact semantic qualification](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/PLAN5_FLATFILE_PLAN_SEMANTICS_QUALIFICATION_2026-10-06.md).
 
 ## Durable flatfile root and authority pages
 
@@ -886,7 +886,7 @@ Empty legacy authority remains uninitialized and creates no checkpoint.
 Root semantic validity and authority crosslinks are partial observations.
 All page reports keep complete sweep, release and full holding/baseline/lifecycle
 coverage flags false. See [primary integration](
-PLAN5_FLATFILE_PAGES_PRIMARY_INTEGRATION_2026-10-06.md).
+https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/PLAN5_FLATFILE_PAGES_PRIMARY_INTEGRATION_2026-10-06.md).
 
 ## Native mobile custody grammar
 
@@ -944,7 +944,7 @@ The retained-evidence qualifier and native replay can pass while the live-state
 reader reports equipment drift; those observations have different scopes.
 This recipe retains its partial-capture findings and cannot qualify a complete
 world backup, managed backup generation, service boot or release. See
-[the exact cold-restore qualification](PLAN5_EQUIPMENT_COLD_RESTORE_QUALIFICATION_2026-10-06.md).
+[the exact cold-restore qualification](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/PLAN5_EQUIPMENT_COLD_RESTORE_QUALIFICATION_2026-10-06.md).
 
 These are release gates to measure on each backend and the final integrated
 commit. They are not claimed as measured results here.
@@ -962,11 +962,11 @@ commit. They are not claimed as measured results here.
 The release report must name exact tested commit, backend and image/version,
 commands, sampled workload, route coverage and any intentionally unsupported
 route. Synthetic fixtures and real player journeys are separate lines. Current
-evidence and blockers are in [the release report](RELEASE_REPORT_2026-09-27.md).
+evidence and blockers are in [the release report](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/RELEASE_REPORT_2026-09-27.md).
 
 ## Maximum lifecycle one-shot workload — 2026-10-06
 
-The [primary maximum-budget qualification](PLAN5_LIFECYCLE_BUDGET_PRIMARY_INTEGRATION_2026-10-06.md)
+The [primary maximum-budget qualification](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/PLAN5_LIFECYCLE_BUDGET_PRIMARY_INTEGRATION_2026-10-06.md)
 measures the unchanged maximum native-codec lifecycle fixture at 9,574 physical
 reads, 19,639,289 bytes and 2,675 directory entries. The one-shot read cap is
 16,384; 128 MiB, 8,192 entries and the cooperative 30-second deadline remain.
@@ -1110,13 +1110,13 @@ They do not certify native holdings, general orphan closure, the entire sweep
 or release. `complete`, `consistent_entire_sweep`, `baseline_books_closed`,
 `orphan_namespace_closed`, `native_holdings_compared` and `release_qualified`
 remain false. See [primary qualification](
-PLAN5_HISTORY_NAMESPACE_PRIMARY_INTEGRATION_2026-10-07.md).
+https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/PLAN5_HISTORY_NAMESPACE_PRIMARY_INTEGRATION_2026-10-07.md).
 
 
 ## Independent current native and auction readers - 2026-10-07
 
 The complete source closure is integrated; native qualification on the final
-candidate remains pending. See [primary evidence](PLAN5_OPERATOR_PRIMARY_INTEGRATION_2026-10-07.md).
+candidate remains pending. See [primary evidence](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/PLAN5_OPERATOR_PRIMARY_INTEGRATION_2026-10-07.md).
 Use the qualified restore tool against an owned private restored copy. These
 commands borrow the existing authority read lock, refuse pending transactions
 and malformed input, and perform no recovery or storage mutation.

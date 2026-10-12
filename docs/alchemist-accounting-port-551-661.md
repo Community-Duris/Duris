@@ -5,7 +5,7 @@ accounting branch's existing authority contracts. Native craft accounting and
 retained-pouch support delivered subsequently are reused by the #551 durable
 alchemy publication extension. Virtual NPC vial issuance remains a separate
 #661/#490 source qualification. Current scoped evidence is recorded in
-[persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md](persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md).
+[persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md).
 
 ## Persisted identities
 

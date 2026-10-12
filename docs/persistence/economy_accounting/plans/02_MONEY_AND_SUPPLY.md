@@ -145,7 +145,7 @@ backend/gameplay/recovery batch, remain required.
 ### October7 ordinary coin endpoint-counter regression qualified
 
 
-[Focused qualification](../COIN_RECOVERY_OWNER_COUNTER_QUALIFICATION_2026-10-07.md)
+[Focused qualification](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/COIN_RECOVERY_OWNER_COUNTER_QUALIFICATION_2026-10-07.md)
 repairs both locked endpoint counters and exact item owner_revision. Original
 source fails three regressions; corrected maintained source passes all ten native
 ASan/UBSan cases. Authority/world seams limit this evidence to cache projection.

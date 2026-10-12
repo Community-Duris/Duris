@@ -3,7 +3,7 @@
 Use the [completion plan](FINISH_ACCOUNTING_PLAN.md) for execution and
 [R1–R8](REMAINING_REQUIREMENTS.md) for acceptance. The five domain plans retain
 their detailed functional requirements; their old starting revisions and status
-paragraphs are historical. The paused primary handoff governs current inputs.
+paragraphs are historical. Historical handoffs and reports are retained in the separate accounting context worktree; the completion plan governs current delivery.
 
 | Domain plan | Completion responsibility | Contract |
 | --- | --- | --- |

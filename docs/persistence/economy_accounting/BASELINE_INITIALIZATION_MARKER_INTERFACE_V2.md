@@ -81,7 +81,7 @@ compiler/test/native/SQL runs have occurred for this contract.
 
 ## Later lifecycle integration checkpoint
 
-Source2b4591c21 adds [private staged composition](FLATFILE_LIFECYCLE_COMPOSITION_PREPARATION_2026-10-04.md)
+Source2b4591c21 adds [private staged composition](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/FLATFILE_LIFECYCLE_COMPOSITION_PREPARATION_2026-10-04.md)
 through mappings, epoch membership, marker initialization, baseline book/receipt and
 selection without duplicate final destinations. Its external boundary assertion
 is not native proof; full source coverage, authenticated boundary authority,

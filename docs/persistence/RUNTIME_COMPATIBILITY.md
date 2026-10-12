@@ -18,7 +18,7 @@ manifest therefore does not match the current compiled history identity.
 Reconcile and qualify the exact source/schema pair on a disposable target before
 SQL startup. Do not skip the new migration, alter receipts, or replace sealed
 fingerprints to make the gate pass. The
-[combined candidate handoff](economy_accounting/COMBINED_ACCOUNTING_CANDIDATE_HANDOFF_2026-10-09.md)
+[combined candidate handoff](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/COMBINED_ACCOUNTING_CANDIDATE_HANDOFF_2026-10-09.md)
 records the pending build and SQL qualification boundary.
 
 ## Required installation sequence

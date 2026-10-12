@@ -76,4 +76,4 @@ Current accounting identities and native route requirements are detailed in
 [alchemist-accounting-port-551-661.md](alchemist-accounting-port-551-661.md).
 The #551 continuation extension freezes poison notching and retains alchemy
 publication across player saves and restart; see the dated
-[active recovery evidence](persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md).
+[active recovery evidence](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md).
