@@ -6968,6 +6968,92 @@ bool shop_trade_original_procedure_binding_stage::prepare_native_birth_flat_boun
 	return false;
 #endif
 }
+bool shop_trade_original_procedure_binding_stage::retained_source_frame_bytes(
+	size_t *output) noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(__GNUC__) && __GNUC__ == 13 && \
+	__GNUC_MINOR__ == 3 && !defined(__clang__) && defined(_GLIBCXX_USE_CXX11_ABI) &&          \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&      \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                           \
+	!defined(_GLIBCXX_CONCEPT_CHECKS) && !defined(__SANITIZE_ADDRESS__) &&                    \
+	!defined(__SANITIZE_THREAD__) && defined(__linux__) && defined(__x86_64__) &&             \
+	defined(__GLIBC__) && defined(__GLIBC_MINOR__) &&                                         \
+	(__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 27))
+	if (!output)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	using scope_vector = decltype(flat_scopes_);
+	using scope_iterator = scope_vector::const_iterator;
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(bool) != 1 ||
+	    sizeof(scope_iterator) != 8)
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	// Original receiver, chain/bytes/total, both distinct retained locals and
+	// size_t return; range reference, saved begin/end and actual scope reference.
+	// Retained binding/request/owner objects are CURRENT, not another inline copy.
+	constexpr size_t own = sizeof(const shop_trade_original_procedure_binding_stage *) +
+			       6 * sizeof(size_t) + sizeof(const scope_vector *) +
+			       2 * sizeof(scope_iterator) +
+			       sizeof(const scope_vector::value_type *);
+	// Actual const-vector begin/end each: receiver, normal_iterator constructor
+	// receiver/reference and converted const-pointer temporary. C++20 != reaches
+	// rewritten == (two operand refs/bool) and its two base receiver/ref returns;
+	// dereference/increment each contributes receiver and reference return.
+	constexpr size_t range = 18 * sizeof(void *) + sizeof(bool);
+	// const vector::capacity owns only its receiver and returned size_type.
+	// The original chain observer adds receiver/bytes/size_t return, then its
+	// private request-vector capacity. It performs no chain scan or allocation.
+	constexpr size_t chain = sizeof(const proclib_recovery_chain_stage *) + 2 * sizeof(size_t) +
+				 sizeof(const decltype(chain_.requests_) *) + sizeof(size_t);
+	// Each real scope observer has receiver/bytes/size_t return. Its string
+	// capacity -> is_local -> data/local_data -> pointer_to -> addressof ->
+	// __addressof declarations include every receiver/argument/pointer return,
+	// including the data result surviving the right-hand local_data evaluation.
+	constexpr size_t scope = 13 * sizeof(void *) + 3 * sizeof(size_t) + sizeof(bool);
+	// Original shared_ptr bool, arrow -> _M_get -> get: seven pointer carriers
+	// and bool return. Flat and NPC calls are sequential and share the maximum
+	// complete child lifetime; no retained control block is copied by observation.
+	constexpr size_t shared = 7 * sizeof(void *) + sizeof(bool);
+	constexpr size_t frames =
+		own + std::max({ sizeof(const decltype(bindings_) *) + sizeof(size_t),
+				 sizeof(const scope_vector *) + sizeof(size_t), range, chain,
+				 shared + scope });
+	*output = frames;
+	return true;
+#else
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#endif
+}
+
+size_t shop_trade_original_procedure_binding_stage::retained_source_query_frame_bytes() noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(__GNUC__) && __GNUC__ == 13 && \
+	__GNUC_MINOR__ == 3 && !defined(__clang__) && defined(_GLIBCXX_USE_CXX11_ABI) &&          \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&      \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                           \
+	!defined(_GLIBCXX_CONCEPT_CHECKS) && !defined(__SANITIZE_ADDRESS__) &&                    \
+	!defined(__SANITIZE_THREAD__) && defined(__linux__) && defined(__x86_64__) &&             \
+	defined(__GLIBC__) && defined(__GLIBC_MINOR__) &&                                         \
+	(__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 27))
+	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(bool) != 1 ||
+	    sizeof(decltype(flat_scopes_)::const_iterator) != 8)
+		return SIZE_MAX;
+	// Getter output/bool and errno-location pointer on refusal; actual getter
+	// automatic constexpr source values and this query's returned size_t. The
+	// constexpr max initializer is evaluated at translation, never a runtime
+	// initializer_list/std::max call or an execution of retained_bytes.
+	return 2 * sizeof(void *) + 7 * sizeof(size_t) + sizeof(bool);
+#else
+	return SIZE_MAX;
+#endif
+}
+
 size_t shop_trade_original_procedure_binding_stage::retained_bytes() const noexcept
 {
 	const size_t chain = chain_.retained_bytes();
@@ -15691,6 +15777,9 @@ bool quest_mobile_native_item_stage::prepare_impl_npc_flat_bounded(
 	}
 #if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
 	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)source;
+	(void)context;
+	(void)outer;
 	errno = ENOTSUP;
 	return false;
 #else
@@ -16303,6 +16392,12 @@ bool quest_mobile_native_item_stage::prepare_retaining_npc_flat_bounded(
 	}
 #if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
 	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)nr;
+	(void)type;
+	(void)reserved_uid;
+	(void)scope;
+	(void)context;
+	(void)outer_live;
 	errno = ENOTSUP;
 	return false;
 #else
@@ -17027,6 +17122,8 @@ bool quest_mobile_native_item_stage::read_original_shell_bounded(
 #if !defined(__linux__) || !defined(__GLIBC__) || !defined(__x86_64__) || !defined(__LP64__) ||    \
 	!defined(MEMCHK) || MEMCHK != 1 || !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || \
 	!defined(_GLIBCXX_USE_CXX11_ABI) || !_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)context;
+	(void)outer_live;
 	errno = ENOTSUP;
 	return false;
 #else
@@ -18375,6 +18472,8 @@ bool quest_mobile_native_item_stage::capture_recipe_bounded(
 		return false;
 #if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
 	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)context;
+	(void)outer_live;
 	errno = ENOTSUP;
 	return false;
 #else
@@ -18764,4 +18863,179 @@ bool quest_mobile_native_stage::choose_publication_step_bounded(
 	{
 		return false;
 	}
+}
+
+// Passive complete native retention child contract. These getters never read a
+// stage, pool, object, registry, source pin or thread identity. Native execution
+// qualification is separate from this declared-source inventory.
+namespace
+{
+constexpr size_t native_retained_p = sizeof(void *);
+constexpr size_t native_retained_n = sizeof(size_t);
+constexpr size_t native_retained_b = sizeof(bool);
+constexpr size_t native_retained_thread =
+	sizeof(bool) + 2 * sizeof(std::thread::id) + sizeof(void *) +
+	2 * sizeof(std::thread::native_handle_type) + sizeof(bool);
+constexpr size_t native_retained_vector = native_retained_p + native_retained_n;
+// capacity -> _M_is_local -> _M_data/_M_local_data -> pointer_to ->
+// addressof -> __addressof. The left data pointer can survive the right chain.
+constexpr size_t native_retained_string =
+	11 * native_retained_p + native_retained_n + native_retained_b;
+constexpr size_t native_retained_scope =
+	native_retained_p + 2 * native_retained_n + native_retained_string;
+constexpr size_t native_retained_shared = 7 * native_retained_p + native_retained_b;
+// GNU13 vector<bool> capacity, two _Bit_const_iterator objects; begin and its
+// bit/base constructor this/pointer/offset declarations. No element is copied.
+constexpr size_t native_retained_bits =
+	native_retained_p + native_retained_n + 3 * sizeof(std::vector<bool>::const_iterator) +
+	native_retained_p + 2 * (2 * native_retained_p + sizeof(unsigned int));
+constexpr size_t native_retained_array = 5 * native_retained_p + 3 * native_retained_n;
+constexpr size_t native_retained_add = native_retained_p + native_retained_n + native_retained_b;
+constexpr size_t native_retained_rows =
+	native_retained_p + 2 * native_retained_n + native_retained_b + native_retained_add;
+// MEMCHK request reader body/bytes-ref/header/result and its checked adds.
+constexpr size_t native_retained_request =
+	3 * native_retained_p + native_retained_b + native_retained_add;
+// shell_private_request(body,minimum,output), header, own result and errno leaf.
+constexpr size_t native_retained_shell_request =
+	4 * native_retained_p + native_retained_n + native_retained_b + native_retained_p;
+constexpr size_t native_retained_shell =
+	// object/output, bytes, Floyd slow/fast and range description; own result.
+	5 * native_retained_p + native_retained_n + native_retained_b + native_retained_thread +
+	native_retained_shell_request + native_retained_p;
+constexpr size_t native_retained_zombie =
+	// this/output, bytes/result; thread, zombies capacity and errno leaf.
+	2 * native_retained_p + native_retained_n + native_retained_b + native_retained_thread +
+	native_retained_vector + native_retained_p;
+constexpr size_t native_retained_item_ordinary =
+	// this/state, bytes/return; add/multiply capture objects; two scope outputs,
+	// affect/string-index/description loops. strings INLINE is separate below.
+	6 * native_retained_p + 5 * native_retained_n +
+	// add lambda(this,amount,result), multiply(this,count,width,result).
+	2 * native_retained_p + 3 * native_retained_n + 2 * native_retained_b +
+	native_retained_thread + native_retained_shared + native_retained_scope +
+	native_retained_vector + native_retained_bits + native_retained_array +
+	sizeof(const char *) + sizeof(size_t); // genuine strlen call boundary
+constexpr size_t native_retained_item_excluding =
+	// this/output/state, bytes, both scope locals, Floyd/range descriptions,
+	// prospective probe/game outputs and own bool result.
+	6 * native_retained_p + 5 * native_retained_n + native_retained_b + native_retained_thread +
+	native_retained_shared + native_retained_scope + native_retained_rows +
+	native_retained_bits + native_retained_vector + native_retained_request +
+	native_retained_shell + native_retained_zombie;
+// Both reachable branches are conservatively summed as genuine call families.
+// No constructor/parser/allocator is called by these observation-only bodies.
+constexpr size_t native_retained_item_source =
+	native_retained_item_ordinary + native_retained_item_excluding +
+	sizeof(const quest_mobile_native_item_stage *) + sizeof(bool); // empty/is_flat
+constexpr size_t native_retained_malloc =
+	4 * native_retained_p + native_retained_n + native_retained_b;
+constexpr size_t native_retained_mobile_pool =
+	// output, slow/fast/selected/entry, bytes/request and bool result.
+	5 * native_retained_p + 2 * native_retained_n + native_retained_b + native_retained_thread +
+	native_retained_malloc + native_retained_add;
+constexpr size_t native_retained_mobile_private =
+	// this/output, pool/request; cycle slow/fast and live-list iterator.
+	5 * native_retained_p + 2 * native_retained_n + native_retained_b +
+	native_retained_mobile_pool + native_retained_malloc + native_retained_p;
+constexpr size_t native_retained_affect_actual =
+	// this/output, bytes and add closure; add(this,count,width,result).
+	3 * native_retained_p + native_retained_n + native_retained_b + native_retained_p +
+	2 * native_retained_n + native_retained_b + native_retained_thread +
+	2 * native_retained_shared + native_retained_vector + native_retained_p;
+constexpr size_t native_retained_affect_charge =
+	// this/output, candidate and add closure; same actual lambda declarations.
+	3 * native_retained_p + native_retained_n + native_retained_b + native_retained_p +
+	2 * native_retained_n + native_retained_b + native_retained_shared + native_retained_vector;
+constexpr size_t native_retained_mobile_source = native_retained_mobile_private +
+						 native_retained_affect_actual +
+						 native_retained_affect_charge;
+
+constexpr bool native_retained_supported() noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(__GNUC__) && __GNUC__ == 13 && \
+	__GNUC_MINOR__ == 3 && !defined(__clang__) && defined(_GLIBCXX_USE_CXX11_ABI) &&          \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&      \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                           \
+	!defined(_GLIBCXX_CONCEPT_CHECKS) && !defined(__SANITIZE_ADDRESS__) &&                    \
+	!defined(__SANITIZE_THREAD__) && defined(_GLIBCXX_HAS_GTHREADS) &&                        \
+	defined(_GLIBCXX_NATIVE_THREAD_ID) && defined(__linux__) && defined(__x86_64__) &&        \
+	defined(__GLIBC__) && defined(__GLIBC_MINOR__) &&                                         \
+	(__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 27)) && defined(MEMCHK) &&        \
+	MEMCHK == 1 && defined(MM_STATS)
+	return sizeof(void *) == 8 && sizeof(size_t) == 8 && sizeof(bool) == 1 &&
+	       sizeof(int) == 4 && sizeof(unsigned int) == 4 && CHAR_BIT == 8 &&
+	       sizeof(std::thread::id) == 8 && sizeof(std::thread::native_handle_type) == 8 &&
+	       sizeof(std::vector<uint8_t>::const_iterator) == 8 &&
+	       sizeof(std::vector<bool>::const_iterator) == 16 &&
+	       __gnu_cxx::__default_lock_policy == __gnu_cxx::_S_atomic;
+#else
+	return false;
+#endif
+}
+}
+
+bool quest_mobile_native_item_retained_observation_source_frame_bytes(size_t *output) noexcept
+{
+	if (!native_retained_supported())
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	if (!output)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	*output = native_retained_item_source;
+	return true;
+}
+bool quest_mobile_native_item_retained_observation_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!native_retained_supported())
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	if (!output)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	*output = sizeof(std::array<char *, 4>);
+	return true;
+}
+size_t quest_mobile_native_item_retained_observation_source_query_frame_bytes() noexcept
+{
+	// Getter output/result, support result, errno-location result and accessor N.
+	return native_retained_supported() ?
+		       2 * native_retained_p + native_retained_n + 3 * native_retained_b :
+		       SIZE_MAX;
+}
+size_t quest_mobile_native_item_retained_observation_initial_query_frame_bytes() noexcept
+{
+	return native_retained_supported() ?
+		       2 * native_retained_p + native_retained_n + 3 * native_retained_b :
+		       SIZE_MAX;
+}
+bool quest_mobile_native_mobile_retained_observation_source_frame_bytes(size_t *output) noexcept
+{
+	if (!native_retained_supported())
+	{
+		errno = ENOTSUP;
+		return false;
+	}
+	if (!output)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	*output = native_retained_mobile_source;
+	return true;
+}
+size_t quest_mobile_native_mobile_retained_observation_source_query_frame_bytes() noexcept
+{
+	return native_retained_supported() ?
+		       2 * native_retained_p + native_retained_n + 3 * native_retained_b :
+		       SIZE_MAX;
 }

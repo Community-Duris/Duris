@@ -152,6 +152,13 @@ class quest_mobile_native_birth_ordinary_execution_lease final
 bool quest_mobile_native_birth_retained_storage_bytes(size_t *) noexcept;
 // Pure fixed named-source scratch; does not scan, register or grant authority.
 bool quest_mobile_native_birth_current_source_frames(size_t *) noexcept;
+// INITIAL is disjoint from Source and CURRENT: the actual transient native-item
+// strings array, including the same sequential Warm/ROOM child lifetime once.
+// Query accessors price getter + accessor execution, never the observed census.
+// Unsupported profiles preserve getter outputs; query returns SIZE_MAX and errno.
+bool quest_mobile_native_birth_current_initial_inline_bytes(size_t *) noexcept;
+size_t quest_mobile_native_birth_current_source_profile_query_frames() noexcept;
+size_t quest_mobile_native_birth_current_initial_query_frames() noexcept;
 
 class quest_mobile_native_birth_owner final
 {

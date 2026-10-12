@@ -100,6 +100,11 @@ class shop_trade_original_procedure_binding_stage
 		const shop_trade_original_procedure_binding_stage &) = delete;
 	shop_trade_original_procedure_binding_stage &
 	operator=(const shop_trade_original_procedure_binding_stage &) = delete;
+	// Pure declared-source profile of the original retained_bytes observer,
+	// including its actual chain, flat/NPC scopes and GNU13 library descendants.
+	// These queries grant no binding, allocation, census or mutation authority.
+	static bool retained_source_frame_bytes(size_t *) noexcept;
+	static size_t retained_source_query_frame_bytes() noexcept;
 
     private:
 	friend class shop_trade_native_publication_owner;

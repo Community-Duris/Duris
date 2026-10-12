@@ -166,6 +166,19 @@ class zone_reset_room_publication_owner final
 	// private census. SQL and the existing six-owner policy retain their observer.
 	static bool retained_size_registered_literal_pool(const zone_reset_room_publication_stage &,
 							  size_t *) noexcept;
+
+    public:
+	// Complete declared Source of both registered census branches, including
+	// nonempty literal forests and owned native-stage observers. The original
+	// retained heaps and borrowed warm factories are not charged a second time.
+	// INITIAL is disjoint from Source. Queries include execution of the passive
+	// getter and its child queries; SIZE_MAX means an unsupported profile.
+	static bool retained_registered_literal_pool_source_frame_bytes(size_t *) noexcept;
+	static bool retained_registered_literal_pool_initial_inline_bytes(size_t *) noexcept;
+	static size_t retained_registered_literal_pool_source_query_frame_bytes() noexcept;
+	static size_t retained_registered_literal_pool_initial_query_frame_bytes() noexcept;
+
+    private:
 	// Genuine passive outside observer for the private registered full ROOT
 	// policy. Actual locked callbacks must use the paired coordinator lender.
 	static bool current_coordinator_storage(size_t *) noexcept;

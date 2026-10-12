@@ -700,6 +700,8 @@ economic_accounting_error shop_trade_accounting_decode_bounded(
 		return error::invalid_version;
 #if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
 	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)context;
+	(void)outer;
 	return error::capacity;
 #else
 	shop_accounting_decode_budget budget{ reserve, context, outer };

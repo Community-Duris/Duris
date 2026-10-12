@@ -34196,7 +34196,7 @@
       "sites": [
         [
           "src/economy/shop_trade_transaction.c",
-          3936,
+          3939,
           "economic_submit"
         ]
       ],
@@ -34580,22 +34580,22 @@
       "sites": [
         [
           "src/economy/shop_trade_transaction.c",
-          2455,
-          "coin_assignment"
-        ],
-        [
-          "src/economy/shop_trade_transaction.c",
-          2457,
-          "coin_assignment"
-        ],
-        [
-          "src/economy/shop_trade_transaction.c",
-          2459,
+          2458,
           "coin_assignment"
         ],
         [
           "src/economy/shop_trade_transaction.c",
           2460,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/shop_trade_transaction.c",
+          2462,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/shop_trade_transaction.c",
+          2463,
           "coin_assignment"
         ]
       ],
@@ -34906,22 +34906,22 @@
       "sites": [
         [
           "src/economy/shop_trade_transaction.c",
-          2817,
-          "coin_assignment"
-        ],
-        [
-          "src/economy/shop_trade_transaction.c",
-          2819,
-          "coin_assignment"
-        ],
-        [
-          "src/economy/shop_trade_transaction.c",
-          2821,
+          2820,
           "coin_assignment"
         ],
         [
           "src/economy/shop_trade_transaction.c",
           2822,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/shop_trade_transaction.c",
+          2824,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/shop_trade_transaction.c",
+          2825,
           "coin_assignment"
         ]
       ],
@@ -35399,17 +35399,17 @@
       "sites": [
         [
           "src/economy/shop_trade_transaction.c",
-          2988,
-          "economic_submit"
-        ],
-        [
-          "src/economy/shop_trade_transaction.c",
-          3036,
+          2991,
           "economic_submit"
         ],
         [
           "src/economy/shop_trade_transaction.c",
           3039,
+          "economic_submit"
+        ],
+        [
+          "src/economy/shop_trade_transaction.c",
+          3042,
           "economic_submit"
         ]
       ],
@@ -45458,22 +45458,22 @@
       "sites": [
         [
           "src/world/db.c",
-          7369,
+          7455,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9499,
+          9585,
           "item_lifecycle"
         ],
         [
           "src/world/object_template.h",
-          116,
+          121,
           "item_lifecycle"
         ],
         [
           "src/world/object_template.h",
-          180,
+          185,
           "item_lifecycle"
         ]
       ],
@@ -46408,7 +46408,7 @@
       "sites": [
         [
           "src/world/db.c",
-          9493,
+          9579,
           "item_lifecycle"
         ]
       ],
@@ -46823,22 +46823,22 @@
       "sites": [
         [
           "src/world/db.c",
-          9754,
+          9840,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9792,
+          9878,
           "item_publication"
         ],
         [
           "src/world/db.c",
-          10516,
+          10602,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          10604,
+          10690,
           "item_publication"
         ]
       ],
@@ -46883,12 +46883,12 @@
       "sites": [
         [
           "src/world/db.c",
-          10837,
+          10923,
           "item_publication"
         ],
         [
           "src/world/db.c",
-          10838,
+          10924,
           "item_publication"
         ]
       ],
@@ -46933,12 +46933,12 @@
       "sites": [
         [
           "src/world/db.c",
-          10771,
+          10857,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          10842,
+          10928,
           "item_publication"
         ]
       ],
@@ -46983,22 +46983,22 @@
       "sites": [
         [
           "src/world/db.c",
-          9876,
+          9962,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9910,
+          9996,
           "item_publication"
         ],
         [
           "src/world/db.c",
-          10646,
+          10732,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          10709,
+          10795,
           "item_publication"
         ]
       ],
@@ -47043,22 +47043,22 @@
       "sites": [
         [
           "src/world/db.c",
-          9822,
+          9908,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9853,
+          9939,
           "item_publication"
         ],
         [
           "src/world/db.c",
-          10183,
+          10269,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          10221,
+          10307,
           "item_publication"
         ]
       ],
@@ -47103,87 +47103,82 @@
       "sites": [
         [
           "src/world/db.c",
-          9764,
+          9850,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9774,
+          9860,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9781,
+          9867,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9789,
+          9875,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9832,
+          9918,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9841,
+          9927,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9848,
+          9934,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9886,
+          9972,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9896,
+          9982,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9904,
+          9990,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          9920,
+          10006,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          10202,
+          10288,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          10211,
+          10297,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          10217,
+          10303,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          10539,
+          10625,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          10573,
-          "item_lifecycle"
-        ],
-        [
-          "src/world/db.c",
-          10583,
+          10659,
           "item_lifecycle"
         ],
         [
@@ -47193,32 +47188,37 @@
         ],
         [
           "src/world/db.c",
-          10681,
+          10755,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          10699,
+          10767,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          10724,
+          10785,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          10794,
+          10810,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          10806,
+          10880,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          10822,
+          10892,
+          "item_lifecycle"
+        ],
+        [
+          "src/world/db.c",
+          10908,
           "item_lifecycle"
         ]
       ],
@@ -48228,12 +48228,12 @@
       "sites": [
         [
           "src/world/db.c",
-          7744,
+          7830,
           "item_lifecycle"
         ],
         [
           "src/world/db.c",
-          7751,
+          7837,
           "item_lifecycle"
         ]
       ],
@@ -48734,22 +48734,22 @@
       "sites": [
         [
           "src/economy/shop_trade_transaction.c",
-          7862,
-          "coin_assignment"
-        ],
-        [
-          "src/economy/shop_trade_transaction.c",
-          7864,
-          "coin_assignment"
-        ],
-        [
-          "src/economy/shop_trade_transaction.c",
-          7866,
+          7865,
           "coin_assignment"
         ],
         [
           "src/economy/shop_trade_transaction.c",
           7867,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/shop_trade_transaction.c",
+          7869,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/shop_trade_transaction.c",
+          7870,
           "coin_assignment"
         ]
       ],
@@ -48793,7 +48793,7 @@
       "sites": [
         [
           "src/economy/shop_trade_transaction.c",
-          8143,
+          8146,
           "item_lifecycle"
         ]
       ],
@@ -66477,7 +66477,7 @@
       "src/economy/native_quest_consumption_capture.h": "7f204f5c8dfa3ae7b5d4568944a48ac34803cabf42e5a09331c27060b1f00852",
       "src/economy/shop.c": "de8bdbe95cfa626c6ca869495ccc34afc0097af4c964d021ad2d66cb99d34393",
       "src/economy/shop.h": "8fcceb4db03ab4f0db88489ae9aa0b9e8edb8bfc53de092fb03be11460a5a610",
-      "src/economy/shop_trade_accounting.c": "51180c8de6e309e0247fec29f059d0fb51483e1b8b8b06521a8ec23febd407a0",
+      "src/economy/shop_trade_accounting.c": "8dd62ab3d2730b2618f8b58ea0286305de24fe1caed090240f3d3cf57af5040e",
       "src/economy/shop_trade_accounting.h": "8544c6191556f19f4895bfe5b2c27b471a06e7a70a4cf257004e40e0014abf3b",
       "src/economy/shop_trade_command.c": "c263d0305ed1168e062f88ee6d0d41ab9e873a3746e84a7028a5991cfc3f84bb",
       "src/economy/shop_trade_command.h": "a6b37724a2559fd31c1f2c21abf3eb116b08ff0df70768a8ca99d95243df2a26",
@@ -66489,8 +66489,8 @@
       "src/economy/shop_trade_recovery_manifest.h": "59daea00a74db495dfd9de25e7a72348325a6e7a1d97de80b3b8735eec95649a",
       "src/economy/shop_trade_runtime.c": "de093cab3c9e350e1ab882643be91a2cc87d37c9bb4a8363b16bf2270eae2c97",
       "src/economy/shop_trade_runtime.h": "1b27401fcba5f6e32e6adeca06b3a07cfdd3e0f7b62ac8cfc78c21b1ec7c5529",
-      "src/economy/shop_trade_transaction.c": "92693faedc9e37e0e70cd6306876ed04bb715eed80130af4cdccf222cf124a84",
-      "src/economy/shop_trade_transaction.h": "e3935244d6c41ac096b336b563a4d51380d25725bde469ac9475dff9a92a20f8",
+      "src/economy/shop_trade_transaction.c": "04186d578330f94c4f8e7ef1acce0f44f85713ae94189c073f84c4dd660f659e",
+      "src/economy/shop_trade_transaction.h": "356e371f3c0a75f84c1100e231c49fd7ddad1f1338e5d197464e991de4946d92",
       "src/economy/shop_trade_world_witness.c": "f1b1c99c9a8cb8ffcecd86580482f13b6b15b2b36873701702c036820842c8c7",
       "src/economy/shop_trade_world_witness.h": "defe52ec94a82de755fc9c45876c606d23ac5414c6d0c5a3507e400f62251973",
       "src/flatfile/flatfile_accounting_authority.c": "51fc6088ea8f7e1b7bdd257a0c69eca9c42928dd1340ad97758e84cbc9206734",
@@ -66545,7 +66545,7 @@
       "src/player/player_save_execution_guard.h": "576469a11eb894030701ffcdead6638b2c75e154f711b2ade7b4798dd0729ef6",
       "src/player/player_save_pipeline.c": "cbf1d1b016aaf0f7af5ee08daef843acb939a806e6538b71bdd312ac780ebab2",
       "src/player/player_save_pipeline.h": "35e41e7408fc730c8c14488f9e8527a5ba22584ae581e1e39e84dc4718fbc97f",
-      "src/player/player_snapshot_codec.c": "61d6bf7e7981f70984ac71bc45b80e51d92d68f1854d01e875bf81740b3688a3",
+      "src/player/player_snapshot_codec.c": "2e8265999eb8bc23e6c48ec68578684d946451ed0c83b62c6354305a2922b8b3",
       "src/player/player_snapshot_repository.c": "cde7ec90d5d0ce53a54e2b43bbbfe1167a648644ac066e80077e42c810d03352",
       "src/specs/specs.heavens.c": "8d533fffdd1092c7deac2ae04cae7f6355858f1fe1230289dea3e23de4cb9d73",
       "src/specs/specs.library.c": "87d4ec73ea64b883700679098bfcdbeb8b35e8d7bfdf5735ab2f5b8ac6ea6299",
@@ -66553,7 +66553,7 @@
       "src/specs/specs.venthix.c": "83fc76787a5d77953049b9f3dc1f4c2ea097be483c9e388707b2895a57213f1c",
       "src/specs/specs.venthix.h": "36084a038b8129caab5e8bb5e862c48ce0a76c8cd080096e7682655f9d1d65a7",
       "src/sql/sql_player.c": "d395dec3c0e7c8e777af5c024d5ae2208b75bee53fb9ff5a3c80d5988a78de77",
-      "src/world/db.c": "77dfda1700c1f61c8aa9a0be72199e5aa4367456784dcf15922120b058bd0d02",
+      "src/world/db.c": "b16019b2b3ccb60ad05813454f8e322f715bd37eb940d8a975d0611820cf2388",
       "src/world/db.h": "a1fb7ea194bdc41748489a80cfef90f67309963c206ec80cf017698a62344b3d",
       "src/world/handler.c": "c36e6d644619fef5312f4712815713c42744ebcb6b65945534fa3881b589f7a3",
       "src/world/handler.h": "c51e0fd93b78f917c262e85d1295a3f26d38568108da02c9842d8f94224c8667",
@@ -66566,13 +66566,13 @@
       "src/world/native_quest_frozen_continuation.h": "70d9427e8e0af7012e6041d68656087302094c18fc5798b209155c61c2107341",
       "src/world/native_quest_recovery_context.c": "ac3653ea6c27c27919283370a0a46c95178e99cebbcedd2b7057135701595363",
       "src/world/native_quest_recovery_context.h": "420dfd3de61d7e0d4962fb66520e33a63685522b1d409ab51c6d3d43c767542f",
-      "src/world/object_template.h": "d9ffc85894b08eeb13e1a626fc4f3beb9d35dc041758c660de4cff0cd92f54be",
+      "src/world/object_template.h": "f2e6fb3cdfaeac1c9d17223fd0e4d26abaabeeae4880d10d3fb0a2dcbaabea21",
       "src/world/quest_mobile_native.c": "0335382dea0cda046239d8cf080bddf30ae4f36e2086febf8007040d307323fd",
       "src/world/quest_mobile_native.h": "1db1575e5f27f476198bbb909c6303c03d43496ebff96e85907d0c646a9684f7",
       "src/world/quest_mobile_native_binding.c": "028824588cfcdffd7efd81bd543afd86cf0ec9d8dce6f3ece7877e2e80626343",
       "src/world/quest_mobile_native_binding.h": "77c4b60254b6f0642c19000934d083b4fe4f94997c9079504cef312494c76f9d",
-      "src/world/quest_mobile_native_birth.c": "2ccd06e664d13d4ba99fee561e8841eab5b9d6f093997ab875e247c8f75a1ed1",
-      "src/world/quest_mobile_native_birth.h": "0dc4dcc275463f75a1da55861e28828060b85e7f5d26b28401edf490a294e345",
+      "src/world/quest_mobile_native_birth.c": "507c164a3a46b76a3ca7e1a835e4bb9d2582d55ec563777161ca948e90564703",
+      "src/world/quest_mobile_native_birth.h": "d372922ac6ef25c53c4c510a7e8de8b98a6bf394f57e09fb0ff5984b17852d16",
       "src/world/quest_mobile_native_reference.c": "b12d47277965f858f2c9e3c7bd8dd432421c5197e201b1f79bc5a8bd08d02694",
       "src/world/quest_mobile_native_reference.h": "526dd67615cb302229b6119b17778e35810f3faf702a64f427329668ce0b3045",
       "src/world/specs.prototypes.h": "814e7a01ae7f3bd62639226728e1933f05ca467d1472baad3746078dfac5d685",
@@ -66731,7 +66731,7 @@
       "src/economy/native_mobile_birth_cash_role_recipe.c": "9590550bc142ee104eace9b76deab792a884f55366723eabdca63dfdca8a015f",
       "src/flatfile/flatfile_authority_transaction.c": "0f0d2b991ada0e7031ccf00cd6681f6dfcab79f0aec561532124ca7080334d19",
       "src/persistence/critical_outbox.c": "767038ebacb1892fc0e79c29be0b128fcbf5bc8d694650ca5f0031c83cd6103a",
-      "src/world/zone_reset_room_publication.h": "ddbdfc8b34f93f664994d75cda77b119a5fbf8d9ed88d5d83090e55b58ac2595",
+      "src/world/zone_reset_room_publication.h": "14d1f5cc2e5dddbac7efcd035b0b7246115af851cf4b90ad9945c0f77af89d57",
       "tests/async/modern_room_fixture_support.inc": "3919d7b897aabc31e87bf7750ca5ae91431fb6ce7b3188e6a33a2c4ec9a642df",
       "src/economy/crafting.c": "5979d2d68e5ce0f90502521f8506b3b909650792854a0da752da01d0ccaa225e",
       "src/flatfile/flatfile_accounting_shop_transaction.c": "290a974b3e1772ba46c0c9e8c86a51963e5d6c4f89c914ed12e9776eec060aa7",
@@ -66799,7 +66799,7 @@
       "src/flatfile/flatfile_shop_trade_repository.c": "4e608a0be63fd3fbc7bf432af29b154658b8de4245b88f8606b32917e8b4d01d",
       "tests/async/collector_physical_component_cases.inc": "5501477bed36e49bacc18f4593cd84199244308f8fddefd910b097090603d9f7",
       "tests/async/auction_legacy_identity_cases.inc": "07ac7110cbc99a9848472ed1bfbb31df8b59479e91652fbdf28b01586874583e",
-      "src/world/zone_reset_room_publication.c": "43c9d6def63b3ad30d55208423bfbff854f3ea2e3bf21d4dc13a77c6a68b0795",
+      "src/world/zone_reset_room_publication.c": "1912021747a7aeac7e3ae3eab7c2d0352adafd2425bc901a9bf80b584bbfa950",
       "src/flatfile/flatfile_shop_native_checkpoint.c": "8b311979b435a2fcea692430c1eb9091a4e9e2565d9f119d6ac50993d302de15",
       "src/persistence/economic_sql_initialized_activation_view.h": "920af96f4f6e8b62c1385e38dfed58bee4c2c096e2735e3fbf0151d8582a5b69",
       "src/persistence/zone_reset_item_terminal_sql.c": "54ae802793d2d2cf2e86143dc96aaf60ed6d568f33f49570621bd04e1cd10945",
@@ -66825,7 +66825,7 @@
       "src/flatfile/flatfile_item_accounting_reference.h": "a027f934d96a892d2839b9d6eb22e67bee3eec3fee57e25533fa0c03f03b2417",
       "src/world/new_events.c": "d2e380a15479823f47a2709f5060cebe85aaa0b1dd4caa0daf97e606449981f8",
       "src/world/events.h": "895f70d0ba4e67b1398c4bac52da6d3aa6f1a3b15b358eaac0ad37499d1384bd",
-      "src/core/utility.c": "73182463eebd06a54a41ab7eddb43b7c4bc884e313df5c2b83156034c94abd54",
+      "src/core/utility.c": "04a28345cbd748b49178e5f1970643f38e92be5b5f1c258ebe948970277943a0",
       "src/core/utility.h": "51553ee47aae026cd856d61a7d55e7fb9ea33f17ebea0c57b9e0a8997b89e2ae",
       "src/net/comm.h": "f7d70e14e2c44badc0cb008548652299ccd0c2baede65ec3e2d83ceafbffe643",
       "src/world/nevent_periodic.c": "8015cc43e89b58256cd7ea580bec2d44a640aa2f836c42a3ae34cd13ab78e29e",
@@ -66940,7 +66940,11 @@
       "tests/async/test_currency_command_build_bounded.py": "59c7a174fea46274fc9ad68a28e872d68ce38e612a8ea6254b34c03f9c67c0a7",
       "tests/async/currency_command_build_bounded_test.cpp": "337c44f9ecc88c784dc8a4b5ac8de198672d9fdfc6b2dac8b474ec05d6eb1407",
       "tests/async/test_currency_bank_admission_bounded.py": "be545d94176ac82d285f89496dde01d7cc1ced2d5f8eebe4fce15380d3aad696",
-      "tests/async/currency_bank_admission_bounded_test.cpp": "079c2e84931ab72193ebdb42bf9810e980f0667a4f79c3ec2c20686f43e2de92"
+      "tests/async/currency_bank_admission_bounded_test.cpp": "079c2e84931ab72193ebdb42bf9810e980f0667a4f79c3ec2c20686f43e2de92",
+      "tests/async/native_birth_binding_source_profile_test.cpp": "517aa685435be12737e05f6e8ee05e43aba835cc51cf95aff3ac18f819556162",
+      "tests/async/test_native_birth_binding_source_profile.py": "c291f9121db6e82db7b22e44be22a9a312969016a5b0d9cf77008398d9707f4c",
+      "tests/async/shop_replay_current_profile_harness.cpp": "e4634a40fa126ec0427b1016c379b0dfe778629cf2e1f4400555ee9f35bc483b",
+      "tests/async/test_shop_replay_current_profile.py": "a98165050aa3e93943389cc752b54f028d8928129b9a901ff61a422f8d90662d"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {

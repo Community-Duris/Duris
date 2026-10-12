@@ -8684,6 +8684,8 @@ constexpr size_t original_wizlog_frames =
 	original_wizlog_formatter_remaining_source_frames + original_wizlog_thread_source_frames +
 	original_wizlog_output_observer_source_frames;
 
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
 bool original_wizlog_finish(original_wizlog_workspace &work, bool *returned,
 			    bool completed) noexcept
 {
@@ -8702,6 +8704,7 @@ bool original_wizlog_finish(original_wizlog_workspace &work, bool *returned,
 	const bool admitted = original_wizlog_global_relay::admit(work.live, &work.relay);
 	return completed && admitted;
 }
+#endif
 }
 
 bool diagnostic_wizlog_bounded(int level, bool *returned,

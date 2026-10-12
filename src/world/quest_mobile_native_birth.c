@@ -4,6 +4,7 @@
 #include "flatfile/flatfile_authority_transaction.h"
 #include "flatfile/quest_mobile_native_flatfile.h"
 #include "world/zone_reset_item_owner.h"
+#include "world/zone_reset_room_publication.h"
 #include "world/db.h"
 #include "persistence/persistence_mode.h"
 #include "world/native_mobile_birth_artifact.h"
@@ -12095,49 +12096,167 @@ constexpr size_t birth_current_source_probe =
 constexpr size_t birth_current_source_prospective_stage = birth_current_source_max(
 	birth_current_source_stage, birth_current_source_stage_common + 2 * birth_current_source_n +
 					    birth_current_source_probe);
-constexpr size_t birth_current_source_frames_value =
-	birth_current_source_birth_outer +
-	birth_current_source_max(
-		birth_current_source_warm,
-		birth_current_source_birth_body +
-			birth_current_source_max(
-				birth_current_source_body,
-				birth_current_source_max(
-					birth_current_source_mobile,
-					birth_current_source_max(
-						birth_current_source_affects,
-						birth_current_source_max(
-							birth_current_source_binding,
-							birth_current_source_prospective_stage)))));
+
+// Complete CURRENT local graph, separate from the historical restoration maps
+// above. Native/binding/ROOM descendants are joined from their real providers.
+// Warm's thirteen closure objects and the selected lexical root/child ranges
+// coexist; invocation carriers below conservatively sum actual lambda families.
+constexpr size_t birth_current_unique_queries = 15 * sizeof(void *) + 2 * sizeof(bool);
+constexpr size_t birth_current_shared_queries = 7 * sizeof(void *) + sizeof(bool);
+constexpr size_t birth_current_hash_queries = 4 * sizeof(void *) + 2 * sizeof(size_t);
+constexpr size_t birth_current_warm_local_source =
+	birth_current_source_warm_captures + 4 * sizeof(void *) + 2 * sizeof(size_t) +
+	2 * birth_current_source_range + sizeof(bool) +
+	// add/array/text/literal/recipe/binding/factory/source_scope/command/
+	// context/envelope/writer/child: this, formals, retained locals, returns.
+	25 * sizeof(void *) + 5 * sizeof(size_t) + 13 * sizeof(bool) + birth_current_source_string +
+	birth_current_source_vector + birth_current_unique_queries + birth_current_shared_queries +
+	birth_current_hash_queries +
+	// Actual range helper declarations: begin/end normal_iterator construction,
+	// C++20 rewritten comparison/base, dereference and increment.
+	18 * sizeof(void *) + sizeof(bool) +
+	// empty/is_flat/persistence/literal selectors and game-thread child.
+	2 * (sizeof(void *) + sizeof(bool)) + 2 * sizeof(bool) + birth_current_source_thread;
+constexpr size_t birth_current_local_source =
+	birth_current_source_birth_outer + birth_current_source_birth_body +
+	birth_current_source_body + birth_current_source_scope + birth_current_unique_queries +
+	birth_current_shared_queries +
+	// New-body this/value/result and fixed-storage returned size_t. The source
+	// pin wrappers are observed, not copied or constructed by CURRENT.
+	2 * sizeof(void *) + sizeof(bool) + sizeof(size_t) +
+	// Actual body branch locals: retained, affect/mobile totals, binding, stage;
+	// is_flat receiver/result and writer invocation receiver/argument/result.
+	5 * sizeof(size_t) + 3 * sizeof(void *) + 2 * sizeof(bool) + 18 * sizeof(void *) +
+	sizeof(bool) + birth_current_source_thread + birth_current_warm_local_source;
+
+constexpr bool birth_current_supported() noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(__GNUC__) && __GNUC__ == 13 && \
+	__GNUC_MINOR__ == 3 && !defined(__clang__) && defined(_GLIBCXX_USE_CXX11_ABI) &&          \
+	_GLIBCXX_USE_CXX11_ABI == 1 && __cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) &&      \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL) &&                           \
+	!defined(_GLIBCXX_CONCEPT_CHECKS) && !defined(__SANITIZE_ADDRESS__) &&                    \
+	!defined(__SANITIZE_THREAD__) && defined(_GLIBCXX_HAS_GTHREADS) &&                        \
+	defined(_GLIBCXX_NATIVE_THREAD_ID) && defined(__linux__) && defined(__x86_64__) &&        \
+	defined(__GLIBC__) && defined(__GLIBC_MINOR__) &&                                         \
+	(__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 27)) && defined(MEMCHK) &&        \
+	MEMCHK == 1
+	return sizeof(void *) == 8 && sizeof(size_t) == 8 && sizeof(std::ptrdiff_t) == 8 &&
+	       sizeof(std::thread::id) == 8 && sizeof(std::thread::native_handle_type) == 8 &&
+	       sizeof(std::vector<uint8_t>::const_iterator) == 8 &&
+	       sizeof(std::vector<bool>::const_iterator) == 16 && sizeof(unsigned int) == 4 &&
+	       sizeof(int) == 4 && sizeof(bool) == 1 && CHAR_BIT == 8 &&
+	       __gnu_cxx::__default_lock_policy == __gnu_cxx::_S_atomic;
+#else
+	return false;
+#endif
 }
+}
+
+// Passive DB provider declarations; public stage authority is unchanged.
+bool quest_mobile_native_item_retained_observation_source_frame_bytes(size_t *) noexcept;
+bool quest_mobile_native_item_retained_observation_initial_inline_bytes(size_t *) noexcept;
+size_t quest_mobile_native_item_retained_observation_source_query_frame_bytes() noexcept;
+size_t quest_mobile_native_item_retained_observation_initial_query_frame_bytes() noexcept;
+bool quest_mobile_native_mobile_retained_observation_source_frame_bytes(size_t *) noexcept;
+size_t quest_mobile_native_mobile_retained_observation_source_query_frame_bytes() noexcept;
 
 bool quest_mobile_native_birth_current_source_frames(size_t *output) noexcept
 {
-#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
-	!_GLIBCXX_USE_CXX11_ABI || __cplusplus != 202002L || defined(_GLIBCXX_DEBUG) ||         \
-	defined(_GLIBCXX_ASSERTIONS) || defined(_GLIBCXX_PARALLEL) || !defined(__linux__) ||    \
-	!defined(__GLIBC__) || !defined(__x86_64__)
-	(void)output;
-	errno = ENOTSUP;
-	return false;
-#else
+	if (!birth_current_supported())
+	{
+		errno = ENOTSUP;
+		return false;
+	}
 	if (!output)
 	{
 		errno = EINVAL;
 		return false;
 	}
-	if (sizeof(void *) != 8 || sizeof(size_t) != 8 || sizeof(std::ptrdiff_t) != 8 ||
-	    sizeof(std::thread::id) != 8 || sizeof(std::thread::native_handle_type) != 8 ||
-	    sizeof(std::vector<uint8_t>::const_iterator) != 8 ||
-	    sizeof(std::vector<bool>::const_iterator) != 16 || sizeof(unsigned int) != 4 ||
-	    sizeof(int) != 4 || sizeof(bool) != 1 || CHAR_BIT != 8)
+	size_t room = 0, binding = 0, item = 0, mobile = 0;
+	if (!zone_reset_room_publication_owner::retained_registered_literal_pool_source_frame_bytes(
+		    &room) ||
+	    !shop_trade_original_procedure_binding_stage::retained_source_frame_bytes(&binding) ||
+	    !quest_mobile_native_item_retained_observation_source_frame_bytes(&item) ||
+	    !quest_mobile_native_mobile_retained_observation_source_frame_bytes(&mobile))
+		return false;
+	size_t total = birth_current_local_source;
+	// Preserve strong output on a child refusal or aggregate overflow. These
+	// are sequential real child occurrences; the conservative sum grants no
+	// authority or change to the authentic CURRENT/Warm ownership partition.
+	if (!birth_current_add(total, room) || !birth_current_add(total, binding) ||
+	    !birth_current_add(total, item) || !birth_current_add(total, mobile))
+		return false;
+	*output = total;
+	return true;
+}
+
+bool quest_mobile_native_birth_current_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!birth_current_supported())
 	{
 		errno = ENOTSUP;
 		return false;
 	}
-	*output = birth_current_source_frames_value;
+	if (!output)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	size_t item = 0, room = 0;
+	if (!quest_mobile_native_item_retained_observation_initial_inline_bytes(&item) ||
+	    !zone_reset_room_publication_owner::retained_registered_literal_pool_initial_inline_bytes(
+		    &room))
+		return false;
+	// Native item observations in stock/Warm/ROOM are sequential. Keep their
+	// largest actual inline lifetime once; Source contains no strings array.
+	*output = item > room ? item : room;
 	return true;
-#endif
+}
+
+size_t quest_mobile_native_birth_current_source_profile_query_frames() noexcept
+{
+	if (!birth_current_supported())
+		return SIZE_MAX;
+	size_t room = zone_reset_room_publication_owner::
+		retained_registered_literal_pool_source_query_frame_bytes();
+	size_t binding =
+		shop_trade_original_procedure_binding_stage::retained_source_query_frame_bytes();
+	size_t item = quest_mobile_native_item_retained_observation_source_query_frame_bytes();
+	size_t mobile = quest_mobile_native_mobile_retained_observation_source_query_frame_bytes();
+	// Getter output/four child outputs/total/result/support and checked-add/
+	// errno leaf; accessor four locals/own return/support. Child accessors and
+	// actual getter calls are sequential but are conservatively summed.
+	size_t total = 3 * sizeof(void *) + 12 * sizeof(size_t) + 5 * sizeof(bool);
+	if (room == SIZE_MAX || binding == SIZE_MAX || item == SIZE_MAX || mobile == SIZE_MAX ||
+	    room > SIZE_MAX - total)
+		return SIZE_MAX;
+	total += room;
+	if (binding > SIZE_MAX - total)
+		return SIZE_MAX;
+	total += binding;
+	if (item > SIZE_MAX - total)
+		return SIZE_MAX;
+	total += item;
+	if (mobile > SIZE_MAX - total)
+		return SIZE_MAX;
+	return total + mobile;
+}
+
+size_t quest_mobile_native_birth_current_initial_query_frames() noexcept
+{
+	if (!birth_current_supported())
+		return SIZE_MAX;
+	size_t item = quest_mobile_native_item_retained_observation_initial_query_frame_bytes();
+	size_t room = zone_reset_room_publication_owner::
+		retained_registered_literal_pool_initial_query_frame_bytes();
+	// Getter output/two locals/result/support/errno; accessor two child locals,
+	// total/return/support. Pure accessors never invoke the observed getters.
+	size_t total = 2 * sizeof(void *) + 6 * sizeof(size_t) + 3 * sizeof(bool);
+	if (item == SIZE_MAX || room == SIZE_MAX || item > SIZE_MAX - total)
+		return SIZE_MAX;
+	total += item;
+	return room > SIZE_MAX - total ? SIZE_MAX : total + room;
 }
 
 // Exact additive lower interfaces owned by other agents. No duplicate codec.

@@ -2331,6 +2331,8 @@ struct item_list_bounded_decoder
 	}
 };
 
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
 bool item_list_decode_items(item_list_bounded_decoder &in, std::vector<player_item_snapshot> &items)
 {
 	constexpr size_t own = sizeof(item_list_live_frame) + 3 * sizeof(void *) +
@@ -2435,6 +2437,7 @@ bool item_list_relationships(item_list_decode_workspace &owner)
 	return true;
 }
 
+#endif
 } // namespace
 
 // Complete original item-list wire decoder and relationship validation. The

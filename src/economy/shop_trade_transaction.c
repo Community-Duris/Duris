@@ -29,6 +29,7 @@
 #include <memory>
 #include <limits>
 #include <type_traits>
+#include <thread>
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
 #include "persistence/shop_item_runtime_payload.h"
@@ -187,6 +188,8 @@ class shop_trade_native_publication_owner final
     public:
 	static bool passive_current_storage_bytes(size_t *) noexcept;
 	static size_t passive_storage_observer_frame_bytes() noexcept;
+	static bool passive_current_source_frame_bytes(size_t *) noexcept;
+	static size_t passive_current_source_query_frame_bytes() noexcept;
 };
 
 namespace
@@ -8754,6 +8757,243 @@ size_t shop_trade_transaction_replay_storage_observer_frame_bytes() noexcept
 
 namespace
 {
+bool shop_current_source_policy() noexcept
+{
+#if defined(__linux__) && defined(__x86_64__) && defined(__GLIBCXX__) &&                       \
+	defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(__GNUC__) &&            \
+	__GNUC__ == 13 && __GNUC_MINOR__ == 3 && !defined(__clang__) &&                        \
+	defined(_GLIBCXX_USE_CXX11_ABI) && _GLIBCXX_USE_CXX11_ABI == 1 &&                      \
+	__cplusplus == 202002L && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_ASSERTIONS) && \
+	!defined(_GLIBCXX_PARALLEL) && !defined(_GLIBCXX_PARALLEL_ASSERTIONS) &&               \
+	!defined(_GLIBCXX_CONCEPT_CHECKS) && !defined(__SANITIZE_ADDRESS__) &&                 \
+	!defined(__SANITIZE_THREAD__) &&                                                       \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0) &&               \
+	(!defined(_GLIBCXX_INLINE_VERSION) || _GLIBCXX_INLINE_VERSION == 0) &&                 \
+	defined(_GLIBCXX_HAS_GTHREADS) && !defined(__NO_REDIS__) && defined(__GLIBC__) &&      \
+	defined(__GLIBC_MINOR__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 27))
+	return sizeof(void *) == 8 && sizeof(size_t) == 8 && sizeof(bool) == 1 &&
+	       sizeof(std::string) == 32 && sizeof(std::vector<uint8_t>) == 24 &&
+	       sizeof(std::thread::id) == sizeof(void *) &&
+	       __gnu_cxx::__default_lock_policy == __gnu_cxx::_S_atomic;
+#else
+	return false;
+#endif
+}
+
+namespace shop_current_source
+{
+constexpr size_t P = sizeof(void *), N = sizeof(size_t), B = sizeof(bool);
+
+// Each typed vector observer is a different declaration family. Ranges own
+// their real hidden reference, row reference and begin/end iterator objects;
+// methods own begin/end/normal_iterator construction, ++, *, base and the
+// C++20 rewritten != through the selected operator==.
+// No vector or row constructor, resize, COPY or destructor is selected here.
+template <class V> constexpr size_t capacity = P + N;
+template <class V>
+constexpr size_t range = 2 * P + 2 * sizeof(typename V::const_iterator) + 8 * P + 6 * P + B + 4 * P;
+template <class V> constexpr size_t visitor_vector = 2 * P + B + capacity<V>;
+template <class V> constexpr size_t snapshot_vector = 2 * P + N + 2 * B + capacity<V>;
+
+// Mutable pending.begin/end/iterator construction, ++, dereference/_M_valptr
+// and aligned-buffer/addressof; the SQL image uses distinct const iterators.
+// Map size and std::get<0>/<1>/__pair_get are reached, never find/insert/erase.
+template <class M, class I> constexpr size_t map = 2 * P + B + P + N + 4 * P + 2 * sizeof(I) + 8 * P
+						   + 2 * P + B + 4 * P + 4 * (2 * P) +
+						   2 * (2 * P + 2 * P);
+
+// Unique-pointer bool/get, * and ->, _M_ptr/_M_head and tuple/head-base get.
+// Each retained pointee selects these borrowed methods, never a deleter.
+template <class T> constexpr size_t unique = P + B + 2 * P + 2 * (2 * P) + 2 * P + 4 * (2 * P) + B;
+// optional bool/engaged, const& operator*, base/payload _M_get and the
+// ordinary __glibcxx_assert's constant-evaluated result (condition unevaluated).
+template <class T> constexpr size_t optional = P + B + P + B + 2 * P + 2 * (2 * P) + B;
+
+constexpr size_t own =
+	// Public CURRENT wrapper/output and owning scan output/return. The genuine
+	// shop_replay_bytes object is INITIAL only, including its default value.
+	2 * (P + B) +
+	// Owning scan: p/c/s references, binding/heap/index locals and seven-forest
+	// backing array/initializer_list (with actual begin/end/size declarations).
+	3 * P + 5 * N + 7 * P +
+	sizeof(std::initializer_list<const std::vector<player_item_snapshot> *>) + 4 * P +
+	2 * (2 * P) + P + N +
+	// nevent_is_game_thread -> this_thread::get_id -> id(native); equality
+	// uses two by-value id arguments and returns bool. pthread_self's native
+	// handle return is included; no scheduler/current-registry walk is reached.
+	B + sizeof(std::thread::id) + P + sizeof(std::thread::native_handle_type) +
+	2 * sizeof(std::thread::id) + B;
+constexpr size_t checked =
+	// shop_replay_bytes::add(this,amount); snapshot item_list_add and private
+	// literal_raw_add are distinct reference/amount/result declarations.
+	3 * (P + N + B);
+constexpr size_t string =
+	// visitor string(this,s), its address/object locals and string data,
+	// capacity/is_local/local_data/pointer_traits/addressof/__addressof.
+	2 * P + 2 * sizeof(uintptr_t) + B + P + N + P + B + 5 * (2 * P);
+constexpr size_t visitor =
+	// item/snapshot/command/payload each owns this/value/heap/return; items,
+	// custody, keeper, flat_native own their real references and bool returns.
+	4 * (2 * P + N + B) + 4 * (2 * P + B) + visitor_vector<std::vector<uint8_t>> +
+	visitor_vector<std::vector<uint64_t>> + visitor_vector<std::vector<player_item_snapshot>> +
+	visitor_vector<std::vector<flatfile_item_ownership_record>> +
+	visitor_vector<std::vector<flatfile_shop_native_pet_cut>> +
+	visitor_vector<decltype(cold_flat_literal_stage::staged)> +
+	visitor_vector<decltype(cold_flat_literal_stage::reload)> +
+	visitor_vector<decltype(cold_flat_literal_stage::enrollment_counts)> +
+	visitor_vector<decltype(cold_flat_literal_stage::reload_item::proclib_probes)> +
+	visitor_vector<decltype(flatfile_shopkeeper_record::affects)> +
+	visitor_vector<decltype(flatfile_economic_authority_snapshot::mappings)> +
+	visitor_vector<decltype(flatfile_player_domain_record::recent_pvp_deaths)> +
+	visitor_vector<decltype(flatfile_player_domain_record::completed_epic_zones)> +
+	range<std::vector<player_item_snapshot>> +
+	range<std::vector<flatfile_item_ownership_record>> +
+	range<std::vector<flatfile_shop_native_pet_cut>> +
+	range<decltype(flatfile_economic_authority_snapshot::mappings)> +
+	range<decltype(cold_flat_literal_stage::reload)> +
+	// std::array forests begin/end, vector size/index for original staged/source,
+	// reload and literal members; these queries do not copy retained forests.
+	3 * (2 * P + N) + 3 * (P + N) + 2 * (P + N + 2 * P);
+
+constexpr size_t snapshot =
+	// Actual player_snapshot_current_heap_bytes and snapshot_current_items /
+	// evidence: their signatures, scalar bytes/result, selected range storage,
+	// string_request(value,fresh,bytes,count,result) and policy bool.
+	2 * P + N + 2 * B + 2 * (2 * P + B) + 2 * P + N + 2 * B + B +
+	snapshot_vector<decltype(player_snapshot::status_integers)> +
+	snapshot_vector<decltype(player_snapshot::status_strings)> +
+	snapshot_vector<decltype(player_snapshot::languages)> +
+	snapshot_vector<decltype(player_snapshot::granted_commands)> +
+	snapshot_vector<decltype(player_snapshot::skills)> +
+	snapshot_vector<decltype(player_snapshot::affects)> +
+	snapshot_vector<decltype(player_snapshot::items)> +
+	snapshot_vector<decltype(player_snapshot::pets)> +
+	snapshot_vector<decltype(player_snapshot::shapes)> +
+	snapshot_vector<decltype(player_snapshot::trophies)> +
+	snapshot_vector<decltype(player_snapshot::quest_xp_receipts)> +
+	snapshot_vector<decltype(player_snapshot::spell_effect_receipts)> +
+	snapshot_vector<decltype(player_snapshot::craft_receipts)> +
+	snapshot_vector<decltype(player_death_snapshot::custody)> +
+	snapshot_vector<decltype(player_death_snapshot::unresolved_operations)> +
+	snapshot_vector<decltype(player_death_evidence_table::columns)> +
+	snapshot_vector<decltype(player_death_evidence_table::rows)> +
+	snapshot_vector<player_death_evidence_row> +
+	range<decltype(player_snapshot::status_strings)> +
+	range<decltype(player_snapshot::affects)> + range<decltype(player_snapshot::pets)> +
+	range<decltype(player_death_evidence_table::columns)> +
+	range<decltype(player_death_evidence_table::rows)> + range<player_death_evidence_row> +
+	// Named death/evidence references, optional checks/dereferences and actual
+	// inner cell string observation. Array/snapshot inline values remain CURRENT.
+	2 * P + optional<player_death_snapshot> + optional<player_death_conflict_evidence> +
+	optional<std::string> +
+	// snapshot_current_items has its own range storage around the shared row
+	// observer. Both actual ranges exist; typed iterator methods are shared.
+	2 * P + 2 * sizeof(std::vector<player_item_snapshot>::const_iterator);
+
+constexpr size_t command =
+	// Original critical_command_current_heap_bytes -> critical_decode_heap,
+	// its scalar bytes and all four typed capacities. No encode/copy profile.
+	2 * (2 * P + B) + N + capacity<decltype(critical_command::keys)> +
+	capacity<decltype(critical_command::expected_revisions)> +
+	capacity<decltype(critical_command::payload)> +
+	// Separate critical_decode_add(reference,amount,result).
+	P + N + B;
+
+constexpr size_t owners = map<decltype(pending), decltype(pending)::iterator> +
+			  unique<trade_preparation> + unique<cold_trade_restore> +
+			  unique<critical_command> + unique<flat_trade_preparation> +
+			  unique<shop_trade_flat_native_checkpoint_stage> +
+			  unique<cold_flat_working_variants> + unique<cold_flat_literal_stage>;
+#ifndef __NO_MYSQL__
+constexpr size_t sql = map<shop_item_runtime_image, shop_item_runtime_image::const_iterator> +
+		       // enrollment_counts is sized only, never traversed by this observer.
+		       2 * P + B + P + N + visitor_vector<decltype(cold_trade_restore::staged)> +
+		       visitor_vector<decltype(cold_trade_restore::reload)> +
+		       visitor_vector<decltype(cold_trade_restore::reload_item::proclib_probes)> +
+		       range<decltype(cold_trade_restore::reload)>;
+#else
+constexpr size_t sql = 0; // These #ifndef bodies are absent from the flat scan.
+#endif
+constexpr size_t full = own + checked + string + visitor + snapshot + command + owners + sql;
+}
+}
+
+bool shop_trade_native_publication_owner::passive_current_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !shop_current_source_policy())
+		return false;
+	size_t binding = 0;
+	if (!shop_trade_original_procedure_binding_stage::retained_source_frame_bytes(&binding))
+		return false;
+	size_t bytes = shop_current_source::full;
+	for (const size_t child :
+	     { binding, player_item_snapshot_current_heap_observer_frame_bytes(),
+	       shop_trade_accounting_decoded_heap_observer_frame_bytes(),
+	       shop_trade_original_item_stage::current_private_heap_observer_frame_bytes() })
+	{
+		if (child > SIZE_MAX - bytes)
+			return false;
+		bytes += child;
+	}
+	*output = bytes;
+	return true;
+}
+
+bool shop_trade_transaction_replay_current_source_frame_bytes(size_t *output) noexcept
+{
+	return shop_trade_native_publication_owner::passive_current_source_frame_bytes(output);
+}
+
+bool shop_trade_transaction_replay_current_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !shop_current_source_policy())
+		return false;
+	*output = sizeof(shop_replay_bytes);
+	return true;
+}
+
+size_t shop_trade_native_publication_owner::passive_current_source_query_frame_bytes() noexcept
+{
+	if (!shop_current_source_policy())
+		return SIZE_MAX;
+	// Public forwarding getter + owning getter (output,binding,bytes,return),
+	// actual four-value backing array/list/range/child, policy, three leaf
+	// allowance getter returns and this query's bytes/binding/result.
+	size_t bytes = 2 * sizeof(void *) + 2 * sizeof(size_t) + 2 * sizeof(bool) +
+		       4 * sizeof(size_t) + sizeof(std::initializer_list<size_t>) +
+		       3 * sizeof(void *) + sizeof(size_t) + 2 * sizeof(bool) + 3 * sizeof(size_t) +
+		       3 * sizeof(size_t) +
+		       // initializer_list ctor/begin/end/size, reached by the owning getter.
+		       2 * sizeof(void *) + sizeof(size_t) + 4 * sizeof(void *) + sizeof(void *) +
+		       sizeof(size_t);
+	const size_t binding =
+		shop_trade_original_procedure_binding_stage::retained_source_query_frame_bytes();
+	if (binding > SIZE_MAX - bytes)
+		return SIZE_MAX;
+	bytes += binding;
+	return bytes;
+}
+
+size_t shop_trade_transaction_replay_current_source_query_frame_bytes() noexcept
+{
+	const size_t child =
+		shop_trade_native_publication_owner::passive_current_source_query_frame_bytes();
+	// Actual public query's local and numeric return, both own size_t carriers.
+	if (child > SIZE_MAX - 2 * sizeof(size_t))
+		return SIZE_MAX;
+	return child + 2 * sizeof(size_t);
+}
+
+size_t shop_trade_transaction_replay_current_initial_query_frame_bytes() noexcept
+{
+	if (!shop_current_source_policy())
+		return SIZE_MAX;
+	// INITIAL getter(output,bool), actual policy bool and accessor size_t return.
+	return sizeof(void *) + 2 * sizeof(bool) + sizeof(size_t);
+}
+
+namespace
+{
 size_t shop_replay_fixed_source_frames() noexcept
 {
 #if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
@@ -8876,12 +9116,12 @@ size_t shop_replay_fixed_source_frames() noexcept
 #endif
 }
 
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
 bool shop_replay_uid_sort_source_frames(size_t count, size_t *output) noexcept
 {
 	if (!output)
 		return false;
-#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
-	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG)
 	using iterator = std::vector<uint64_t>::iterator;
 	using compare = __gnu_cxx::__ops::_Iter_less_iter;
 	using value_compare = __gnu_cxx::__ops::_Val_less_iter;
@@ -8922,11 +9162,8 @@ bool shop_replay_uid_sort_source_frames(size_t count, size_t *output) noexcept
 		return false;
 	*output = std::max(setup + depth * recursive + leaf + comparator, unique_erase);
 	return true;
-#else
-	(void)count;
-	return false;
-#endif
 }
+#endif
 
 struct shop_replay_work
 {
@@ -9108,6 +9345,11 @@ bool shop_trade_transaction_restore_replayed_command_bounded(
 	const bool flat = persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY;
 #if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
 	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG)
+	(void)original;
+	(void)pipeline;
+	(void)context;
+	(void)outer;
+	(void)flat;
 	return false;
 #else
 #ifdef __NO_MYSQL__

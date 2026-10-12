@@ -20,18 +20,20 @@ does not authorize activation, production operations, deployment or PR merge.
   Its [29-file shared patch](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/paused-handoff-20261011/shared-candidate.patch) and
   [fingerprints](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/paused-handoff-20261011/CANDIDATE.json) are proposals, not installed
   or compiled implementations. The patch excludes the WORLD/SHOP leased files.
-- Maintained Birth has Source/Warm and SHOP has a retained CURRENT census, but
-  neither supplies the seven exports required by the shared candidate. Seven
-  definitions alone do not qualify the full descendant/caller/runtime closure.
+- Birth, SHOP and ROOM now supply passive Source, INITIAL and query exports
+  with focused supported/refusal profile controls. These interfaces close the
+  metadata dependency; the full descendant/caller and nonempty runtime closure
+  remains required before shared accounting qualification.
 - Boot currently has the verification interval between `complete_boot()` and
   `before_world_callbacks()`; its genuine independent verifier invocation is missing.
 - The [recovery runner patch](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/paused-handoff-20261011/recovery-runner.patch) adds
   three omitted real providers to an existing fixture. It is independently runnable
   after deliberate rebind/review and does not depend on the seven exports.
-- The current coverage contract has 54/57 passing cases: stale bandage anchor,
-  ambiguous room-payload selector and stale `tests/run_test_entry.py` hash remain.
-  The missing-main adapter implementation was already fixed at `c72a56041`; use
-  its actual regression and reconcile metadata instead of implementing it again.
+- The starting coverage contract had 54/57 passing cases: a stale bandage anchor,
+  ambiguous room-payload selector and stale `tests/run_test_entry.py` hash. The
+  scoped passive package now passes all 57 source-contract checks; census and
+  runtime/backend coverage remain incomplete, and release remains blocked.
+  The missing-main adapter implementation was already fixed at `c72a56041`.
 - Plan 5 `52ca6d9fba8da46bb63c1ce4d2da328e6bf6ab29` retains a failed full schema65
   matrix on `a60f5dcc...`, a later focused DIAG-02 pass, and prepared RETRY-03
   using native Linux MariaDB storage. No completed full retry is reported.

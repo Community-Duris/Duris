@@ -29,6 +29,7 @@
 #include <type_traits>
 #include <map>
 #include <memory>
+#include <thread>
 #include <utility>
 
 extern P_obj object_list;
@@ -4875,6 +4876,147 @@ bool zone_reset_room_publication_owner::retained_size_registered_literal_pool(
 			       item_native_quest_global_budget_scope_owner::literal_pool_owned() ?
 		       retained_size_excluding_literal_pools(stage, output) :
 		       retained_size(stage, output);
+}
+
+// These passive DB profiles describe the actual item-stage observers selected
+// above. They do not construct stages, observe live state or grant permission.
+bool quest_mobile_native_item_retained_observation_source_frame_bytes(size_t *) noexcept;
+bool quest_mobile_native_item_retained_observation_initial_inline_bytes(size_t *) noexcept;
+size_t quest_mobile_native_item_retained_observation_source_query_frame_bytes() noexcept;
+size_t quest_mobile_native_item_retained_observation_initial_query_frame_bytes() noexcept;
+
+namespace room_registered_retained_source
+{
+constexpr size_t P = sizeof(void *), N = sizeof(size_t), B = sizeof(bool);
+
+// Each preserved census owns stage/output/state references, bytes, its five
+// closures (add/array/text/item/command: P/P/P/2P/P), and returned bool.
+// The six real ranges own range/begin/end/element references; factory also
+// owns its retained scalar. This includes nonempty extra-description forests.
+constexpr size_t census_own = 3 * P + N + 6 * P + B + 6 * 4 * P + N;
+constexpr size_t add = P + N + B;
+constexpr size_t array = P + 2 * N + B;
+constexpr size_t text = 2 * P + B;
+constexpr size_t item = 3 * P + B;
+constexpr size_t command = 2 * P + B;
+
+// GNU13 string capacity -> is_local -> data/local_data -> pointer_to ->
+// addressof/__addressof. No string copies or allocation are selected.
+constexpr size_t string_capacity = 11 * P + N + B;
+constexpr size_t vector_capacity = P + N;
+// Const vector begin/end own this plus the normal_iterator constructors'
+// this/pointer-reference and the real converted const-pointer temporaries.
+// Comparison reaches both base queries; increment/dereference return refs.
+constexpr size_t const_vector_range = 18 * P + B;
+// unique_ptr bool/get/*/-> reach tuple/head access and get's pointer return;
+// dereference includes the ordinary constexpr assertion query. The wrapper
+// remains an existing retained object, with no owning copy or destructor.
+constexpr size_t unique_queries = 15 * P + 2 * B;
+// optional's bool and arrow select _M_is_engaged, base/payload _M_get and
+// __addressof; ordinary assertion contributes __is_constant_evaluated. No
+// optional value copy, reset or destruction is reached.
+constexpr size_t optional_queries = 10 * P + 3 * B;
+// unordered_set bucket_count/size each reach their hashtable counterpart.
+constexpr size_t hash_queries = 4 * P + 2 * N;
+// empty() has this and its returned bool; native-stage storage is a DB child.
+constexpr size_t factory_empty = P + B;
+
+// All fourteen top-level capacity call sites, the three item-description
+// types, cold effects, recipe libraries and each four-field command branch
+// are represented. Repeated call sites conservatively sum the same family;
+// this is not a claim that those sequential scalar frames coexist.
+constexpr size_t census = census_own + add + array + text + item + command + string_capacity +
+			  (14 + 3 + 1 + 1 + 2 * 4) * vector_capacity + 6 * const_vector_range +
+			  unique_queries + optional_queries + hash_queries + factory_empty;
+// Real synchronous Linux/glibc GNU13 native-thread declaration graph. The
+// returned get_id prvalue initializes equality's existing by-value parameter.
+constexpr size_t thread = sizeof(void *) + 2 * sizeof(std::thread::id) +
+			  2 * sizeof(std::thread::native_handle_type) + 2 * B;
+// Registered wrapper stage/output/bool, persistence guard's bool, and literal
+// pool ownership's bool. Both actual observer bodies are included; their
+// identical library families are conservatively joined for each body.
+constexpr size_t without_db = 2 * P + 3 * B + thread + 2 * census;
+constexpr size_t getter = P + 2 * N + B;
+constexpr size_t checked_add = P + N + B;
+constexpr size_t query = 3 * N;
+
+bool supported() noexcept
+{
+#if !defined(__linux__) || !defined(__GLIBC__) || !defined(_GLIBCXX_RELEASE) ||             \
+	_GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) ||                       \
+	_GLIBCXX_USE_CXX11_ABI != 1 || __cplusplus != 202002L || defined(_GLIBCXX_DEBUG) || \
+	defined(_GLIBCXX_ASSERTIONS) || defined(_GLIBCXX_PARALLEL) ||                       \
+	defined(__SANITIZE_ADDRESS__) || defined(__SANITIZE_THREAD__) ||                    \
+	!defined(_GLIBCXX_HAS_GTHREADS) || !defined(_GLIBCXX_NATIVE_THREAD_ID) ||           \
+	!defined(__GLIBC_MINOR__) || (__GLIBC__ < 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ < 27))
+	return false;
+#else
+	return P == 8 && N == 8 && sizeof(std::ptrdiff_t) == 8 && sizeof(std::thread::id) == 8 &&
+	       sizeof(std::thread::native_handle_type) == 8 && B == 1;
+#endif
+}
+
+bool append(size_t &total, size_t amount) noexcept
+{
+	if (amount == SIZE_MAX || amount > SIZE_MAX - total)
+		return false;
+	total += amount;
+	return true;
+}
+}
+
+bool zone_reset_room_publication_owner::retained_registered_literal_pool_source_frame_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !room_registered_retained_source::supported())
+		return false;
+	size_t child = 0, total = room_registered_retained_source::without_db;
+	if (!quest_mobile_native_item_retained_observation_source_frame_bytes(&child) ||
+	    !room_registered_retained_source::append(total, child))
+		return false;
+	*output = total;
+	return true;
+}
+
+bool zone_reset_room_publication_owner::retained_registered_literal_pool_initial_inline_bytes(
+	size_t *output) noexcept
+{
+	if (!output || !room_registered_retained_source::supported())
+		return false;
+	size_t child = 0;
+	if (!quest_mobile_native_item_retained_observation_initial_inline_bytes(&child) ||
+	    child == SIZE_MAX)
+		return false;
+	// Neither ROOM body owns INITIAL workspace. The DB child's actual item
+	// string array is excluded from Source and retained only by this contract.
+	*output = child;
+	return true;
+}
+
+size_t
+zone_reset_room_publication_owner::retained_registered_literal_pool_source_query_frame_bytes() noexcept
+{
+	if (!room_registered_retained_source::supported())
+		return SIZE_MAX;
+	size_t total = room_registered_retained_source::query +
+		       room_registered_retained_source::getter +
+		       room_registered_retained_source::checked_add +
+		       2 * sizeof(bool); // Both actual supported-profile calls.
+	const size_t child =
+		quest_mobile_native_item_retained_observation_source_query_frame_bytes();
+	return room_registered_retained_source::append(total, child) ? total : SIZE_MAX;
+}
+
+size_t
+zone_reset_room_publication_owner::retained_registered_literal_pool_initial_query_frame_bytes() noexcept
+{
+	if (!room_registered_retained_source::supported())
+		return SIZE_MAX;
+	size_t total = room_registered_retained_source::query + sizeof(void *) + sizeof(size_t) +
+		       3 * sizeof(bool);
+	const size_t child =
+		quest_mobile_native_item_retained_observation_initial_query_frame_bytes();
+	return room_registered_retained_source::append(total, child) ? total : SIZE_MAX;
 }
 
 bool zone_reset_room_publication_owner::completion_warm_bounded(

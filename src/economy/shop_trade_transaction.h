@@ -313,4 +313,15 @@ bool shop_trade_transaction_restore_replayed_command_bounded(
 bool shop_trade_transaction_replay_current_storage_bytes(size_t *) noexcept;
 size_t shop_trade_transaction_replay_storage_observer_frame_bytes() noexcept;
 
+// Passive metadata for the actual CURRENT scan above, independently of the
+// allocating replay/COPY profile. INITIAL owns only its inline accumulator;
+// Source owns signatures, scalar locals, ranges and reached observer scopes.
+// No scan, allocation, game-thread binding or publication follows these queries.
+// Unsupported profiles refuse with the scalar output unchanged; query accessors
+// return SIZE_MAX. Source declarations are not emitted-stack qualification.
+bool shop_trade_transaction_replay_current_source_frame_bytes(size_t *) noexcept;
+bool shop_trade_transaction_replay_current_initial_inline_bytes(size_t *) noexcept;
+size_t shop_trade_transaction_replay_current_source_query_frame_bytes() noexcept;
+size_t shop_trade_transaction_replay_current_initial_query_frame_bytes() noexcept;
+
 #endif
