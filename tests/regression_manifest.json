@@ -8779,6 +8779,19 @@
       "seconds": 0,
       "timeout_seconds": 1200,
       "purpose": "Complete maintained native component controls; duration not yet inventoried, source/component scope only and full backend/game/release gates remain open."
+    },
+    "test_item_transfer_room_parents.py": {
+      "profile": "native",
+      "mode": "script",
+      "minimum_cases": 1,
+      "cpu": 1,
+      "memory_mb": 2048,
+      "timeout_seconds": 1200,
+      "locks": [
+        "native-compiler"
+      ],
+      "seconds": 14.098,
+      "purpose": "Pure complete ROOM BEFORE ancestry membership with old cached clocks, exact 7 healthy and 45 refusal controls, every observed allocation cut and strong output; actual SQL-header/flat sanitizer providers, no authority or mutation."
     }
   }
 }

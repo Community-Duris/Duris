@@ -277,6 +277,8 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence/copyover.o \
 				 persistence/copyover_codec.o \
 				 core/common.o \
+				 core/fatal_error.o \
+				 core/logging.o \
 				 world/condition.o \
 				 world/bloodstains.o \
 				 core/constant.o \
@@ -312,6 +314,7 @@ OBJS =  $(SHIP_OBJS) \
 				 world/world_activity.o \
 				 world/event_names.o \
 				 world/new_events.o \
+				 world/event_thread_owner.o \
 				 world/nevent_periodic.o \
 				 combat/training_dummy.o \
 				 combat/attack_continuation.o \
@@ -475,6 +478,7 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence/player_death_restitution_repository.o \
 				 persistence/corpse_lifecycle_command.o \
 				 item/item_transfer_command.o \
+				 item/item_transfer_room_parents.o \
 				 item/lockpick_retirement_continuation.o \
 				 item/held_retirement_recovery.o \
 				 item/craft_pouch_mutation.o \
@@ -930,11 +934,11 @@ $(DMS_BINARY): $(DMS_OBJS) $(BACKEND_STAMP)
 pfile: $(PFILE_BINARY)
 
 $(PFILE_BINARY): $(PFILE_OBJS) $(SHARED_PFILE_OBJS) $(OBJDIR)/core/mm.o $(OBJDIR)/core/common.o \
-		$(OBJDIR)/core/memory.o $(OBJDIR)/combat/spell_ward_identity.o
+		$(OBJDIR)/core/memory.o $(OBJDIR)/core/fatal_error.o $(OBJDIR)/combat/spell_ward_identity.o
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(LDFLAGS) -g -o $@ \
 		$(PFILE_OBJS) $(SHARED_PFILE_OBJS) \
-		$(OBJDIR)/core/common.o $(OBJDIR)/core/mm.o $(OBJDIR)/core/memory.o $(OBJDIR)/combat/spell_ward_identity.o $(LIBS)
+		$(OBJDIR)/core/common.o $(OBJDIR)/core/mm.o $(OBJDIR)/core/memory.o $(OBJDIR)/core/fatal_error.o $(OBJDIR)/combat/spell_ward_identity.o $(LIBS)
 
 # Build any C object into OBJDIR, creating folders as needed.
 $(OBJDIR)/%.o: %.c

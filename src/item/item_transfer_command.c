@@ -1418,27 +1418,6 @@ bool item_transfer_target_topology(const item_transfer_payload &payload, uint64_
 	return target_topology_for(payload, item_uid, root_item_uid, parent_item_uid);
 }
 
-bool item_owner_identity_valid(const item_owner_identity &owner)
-{
-	if (owner.type <= item_owner_type::unknown || owner.type > item_owner_type::native_mobile)
-		return false;
-	if (owner.type == item_owner_type::system || owner.type == item_owner_type::destruction)
-		return owner.id == 0 && owner.context_id == 0;
-	if (owner.type == item_owner_type::collector)
-		return owner.id != 0 && owner.context_id == 0;
-	if (owner.type == item_owner_type::native_mobile)
-		return owner.id && owner.id != UINT64_MAX && !owner.context_id;
-	if (owner.type == item_owner_type::pet)
-		return owner.id != 0 && owner.context_id != 0 && owner.context_id <= INT32_MAX;
-	return owner.id != 0;
-}
-
-bool item_owner_identity_equal(const item_owner_identity &left, const item_owner_identity &right)
-{
-	return left.type == right.type && left.id == right.id &&
-	       left.context_id == right.context_id;
-}
-
 uint64_t item_corpse_owner_id(uint32_t player_pid, uint32_t corpse_save_id)
 {
 	if (!player_pid || !corpse_save_id)

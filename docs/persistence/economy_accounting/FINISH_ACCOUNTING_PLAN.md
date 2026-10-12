@@ -299,3 +299,19 @@ storage I/O, preserving ENOMEM and prior output. Its maintained SQL/flat
 production and sanitizer refusal controls exercise the actual decoder and the
 original complete item codec. Birth-recovery consumer and whole initialized
 world qualification remain separate; this leaf does not open admission.
+
+ROOM transfer preparation can enumerate exact BEFORE ancestors for nested PUT
+and subtree GET under the existing owner fence. The pure helper preserves old
+cached item clocks, validates complete topology and retains strong output on
+allocation failure. Its focused SQL/flat controls are measured; actual changed
+ancestor literals, coupled revisions and durable/live/cold publication remain
+separate open dependencies. This helper does not open admission.
+
+The original owner validity and equality functions are available inline in the
+existing command header with identical bodies. Focused ancestry controls use
+those actual production functions without a private provider extraction.
+
+The original event-thread owner and fatal/logging providers can be linked
+independently with one shared owner state and the existing panic/log law.
+The ownership runtime recipe uses those real providers and its original
+controls; these dependency extractions do not qualify full Source or release.

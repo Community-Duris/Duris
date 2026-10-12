@@ -390,8 +390,26 @@ enum class item_transfer_failure_stage : uint8_t
 	coin_payload_revision = 1u << 4,
 };
 
-bool item_owner_identity_valid(const item_owner_identity &owner);
-bool item_owner_identity_equal(const item_owner_identity &left, const item_owner_identity &right);
+inline bool item_owner_identity_valid(const item_owner_identity &owner)
+{
+	if (owner.type <= item_owner_type::unknown || owner.type > item_owner_type::native_mobile)
+		return false;
+	if (owner.type == item_owner_type::system || owner.type == item_owner_type::destruction)
+		return owner.id == 0 && owner.context_id == 0;
+	if (owner.type == item_owner_type::collector)
+		return owner.id != 0 && owner.context_id == 0;
+	if (owner.type == item_owner_type::native_mobile)
+		return owner.id && owner.id != UINT64_MAX && !owner.context_id;
+	if (owner.type == item_owner_type::pet)
+		return owner.id != 0 && owner.context_id != 0 && owner.context_id <= INT32_MAX;
+	return owner.id != 0;
+}
+
+inline bool item_owner_identity_equal(const item_owner_identity &left, const item_owner_identity &right)
+{
+	return left.type == right.type && left.id == right.id &&
+	       left.context_id == right.context_id;
+}
 uint64_t item_transfer_selected_root(const item_transfer_payload &payload, uint64_t item_uid);
 bool item_transfer_selected_roots(const item_transfer_payload &payload,
 				  std::vector<uint64_t> *roots);
