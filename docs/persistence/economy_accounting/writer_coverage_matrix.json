@@ -623,7 +623,7 @@
       "tests/async/test_data_lifecycle_manifest.py": "3ec3020da2b1c102e10329d6e77de307dd2d89e82c0f6e1ee756c35d82e70d05",
       "tests/async/test_economic_sql_lifecycle_activation_contract.py": "186f0327fa342eb3b6a6833177b449eb9728e3907e86e1acd03c93e1f85c1e44",
       "tests/async/test_economic_sql_uid_scope.py": "901242f7d071d57041740195c7d06dd53cf2181852ace4dc7e14a48b20d343b7",
-      "tests/async/test_economy_writer_coverage_contract.py": "089f47d41bf9c0883c1fd3b99ecc150037a0796c81c28f82b32524195c42279c",
+      "tests/async/test_economy_writer_coverage_contract.py": "bd06793b139a804ef4c9f4ab3db975cab13674ef3d7297433b20fc1dc19c0295",
       "tests/async/test_flatfile_collector_repository.py": "0a38db332267215177db3a38c9b594657b6f3c5d3c90a3ca3abb86b81f88cbfe",
       "tests/async/test_held_retirement_publication_policy.py": "f2ad079f6a8fcda953f32af6a6cdb3fe41832f7ae4ab04d382f91fa15fcd024d",
       "tests/async/test_immutable_migration_runner.py": "b8fe07002ef91a27c1ca379a816008ae09482c6980e78a7afee3f68fbdc8f220",
@@ -649,7 +649,7 @@
       "tests/async/test_txn_publication_copyover_drain.py": "64d323b2b5041115c0f70602d6f51bbdc83ac337d9309838095391baa745a843",
       "tests/integration_manifest.json": "ee6ccdc392e4990cf2e7c7a274b50eec0ed7e2b08d6c22f6b61aae7375db2687",
       "tests/regression_manifest.json": "d49a62a1f69ab968e67cef0b97167577fb2dc2cfac17644c84d82731c547ee41",
-      "tests/run_test_entry.py": "bdfbc6eb466ddbb3887dbc639530cf76bff50142e86d11c79dc99d5ac45cc07d"
+      "tests/run_test_entry.py": "31739c3dd193c48b1656f83c72208df66bf3453ee42c9578bdbc660639c07e4b"
     },
     "status": "source_integrated_unqualified"
   },

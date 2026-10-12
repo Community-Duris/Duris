@@ -110,8 +110,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertEqual(component["double_entry_evidence"]["status"],
                          "sql_payload_component_without_independent_accounting_root")
         self.assertTrue(component["blocking_policy_after_activation"]["must_block_on_activation"])
-        site = self.current_site("src/persistence/sql_room_item_payload.c", "sql_economy",
-                                 "INSERT INTO sql_room_item_payload")
+        site = self.source_site("src/persistence/sql_room_item_payload.c",
+                                "bool sql_room_item_payload_record(", "sql_economy",
+                                "\"INSERT INTO sql_room_item_payload")
         self.assertEqual(rows[ids[0]]["sites"], [list(site)])
         self.assertEqual(sum(list(site) in row.get("sites", []) for row in rows.values()), 1)
         for route_id in ids[1:3]:
@@ -732,11 +733,14 @@ class SplitEconomyActivationContract(unittest.TestCase):
             for site in writer.get("sites", []):
                 if site[0] == path:
                     owners.setdefault(tuple(site), set()).add(writer["id"])
-        self.assertEqual(owners[(path, 1214, "economic_submit")],
+        self.assertEqual(owners[self.source_site(path, "void do_bandage(", "economic_submit",
+                                                "item_movement_transaction_submit(")],
                          {"tradeskill.bandage_durable_submission"})
-        self.assertEqual(owners[(path, 1011, "item_lifecycle")],
+        self.assertEqual(owners[self.source_site(path, "static bool publish_bandage_consumption(",
+                                                "item_lifecycle", "extract_obj(")],
                          {"tradeskill.bandage_durable_publication"})
-        self.assertEqual(owners[(path, 1230, "item_lifecycle")],
+        self.assertEqual(owners[self.source_site(path, "void do_bandage(", "item_lifecycle",
+                                                "extract_obj(bandage, TRUE)")],
                          {"tradeskill.bandage"})
         self.assertTrue(self.routes["tradeskill.bandage_durable_submission"]
                         ["blocking_policy_after_activation"]["must_block_on_activation"])
