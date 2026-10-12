@@ -18,7 +18,32 @@ ACTIVE on this chat/current Sol6.1/xhigh. No per-commit full-build/matrix repeat
 
 ## Current qualification gate
 
-Latest qualified primary96e34552f / tree3d2af74f08: actual original late Quest
+Latest qualified primaryf21567950 / tree79fd73dfd0: additive immutable bank-only
+admission counterpart. ACC-16 original registered run_test0/193.968944s,
+actual script/main passed/zero skips;34 whole provider objects/four components.
+Supported SQL-header254cases/134denials/56genuine post-refusal
+callbacks; flat254cases/134denials/56refresh callbacks;
+each assertions2strong refusals. Original136wire/opaque byte5/timestamp/reason
+intent compatibility/input capacities/source-INITIAL partition preserved.
+Default contracts0/12.151073s. Native seal
+d7c1094fe849253aa71af570ba6977dcc382ac018a254961047d1b9141fb0bea; review
+0f71459ca5fcae3cf3ca716f5952926913fe9ca930f9b1d1d8b227ac44c3b935.
+All4013 exact Git inputs unchanged; CPU1/2GiB owned QA removed/lease RELEASED,
+seven foreign services/four passive volumes preserved, heavy lock ABSENT.
+Original admission implementation/header prefixes preserved; all931 policies/
+2911 census/2853sites/coordinates/matrix values except pins equal96e3. Three
+old pins refresh/other506 remain/two new tests/511total; raw510/511 retains
+known adapter CRLF alias. Currentf215 two-field patchb30ec100 gives511/511,
+other510 preserved/apply-reverse0/adoption UNCONFIRMED. See
+BANK_IMMUTABLE_ADMISSION_COMPONENT_QUALIFICATION_2026-10-11.md. Constructed
+immutable schema2 component only; fresh ATM/shared authority/prepare_currency/
+caller/game/SQL/durability/restore/declaration/native ABI/emitted aggregate32MiB/
+host/fullmatrix/release remain OPEN. Original run_test removes raw temporary
+observer JSON; actual TestResult/cases/output retained. Private packets
+report-only; one native cohort/no repeat. Helpers parked; earlier results/failures
+retain original source scope. October11 heartbeat/October12 exact UTC receipts.
+
+Earlier qualified primary96e34552f / tree3d2af74f08: actual original late Quest
 builder selection and bounded companion, preserving cost/selected/current
 selectors. ACC-15 original registered entry0/420.138327s, script/main
 passed/all seven markers/zero skips/original checker[]. Three profiles69 objects
@@ -379,7 +404,7 @@ original "do it", superseding "go with the useful parts". Local model GPT-6.1 So
 
 | Lane | Chat / worktree / branch | Current ticket |
 | --- | --- | --- |
-| Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | ACC-15 original late Quest builder component PASS on96e3;4010 inputs/sealed/released; current96e3 pin candidate qualified; prior22da/4e69 results and371 failure preserved; finite wait/no grant |
+| Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | ACC-16 immutable bank admission component PASS onf215;4013 inputs/sealed/released; currentf215 pin candidate qualified; prior96e3/22da/4e69 results and371 failure preserved; finite wait/no grant |
 | Remote primary | Non-connected RGitGoin; private session/WIP inaccessible; published `experimental-accounting` | Existing Plans1-4/shared runtime/final integration ownership retained; no delegation ACK required; architecture/toolchain/storage/32MiB proof queue |
 | Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Publishedeaa43822 corrected independent ACC-07 review; e922 restore-coin source-only report/patch; full goal BLOCKED by owner with scope preserved; finite wait, no native grant |
 | World/quest (parked) | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | IDLE/clean5e679b5fe after exact resource-free ACC-08 review; olderf722 failure/component handoffs preserved; runtime allocation WITHDRAWN, no standing task or resources |
@@ -463,6 +488,7 @@ override availability or invent tokens/receipts for accepting tests.
 | ACC-13-QUEST-SELECTED-LIST-01 | Exact original current4e69 registered cost/selected-list entry with complete frozen Quest data, all original controls/checker and default contracts | Entry0/335.401178s, actual script/main/all6markers/0skips/checker[]; three profiles54objects/four current selectors; cost8refusal points and selected2child refusals/parent cap/capacity/strong output; contracts0/13.460406s;4059-member seal verified/4006 inputs unchanged/owned QA removed/RELEASED; component limits preserved |
 | ACC-14-CURRENCY-BOUNDED-BUILDER-01 | Exact original22da registered currency builder regression and default contracts | run_test0/65.942023s/script-main passed/0skips; ten whole objects/four components; supported each46cases/11reserve denials/136-byte equivalence, assertions each4strong refusals; contracts0/14.416360s;4044-member seal verified/4009 inputs unchanged/owned QA removed/RELEASED; original ATM/authority/ABI/aggregate32MiB/full producer gates remain OPEN |
 | ACC-15-QUEST-NATIVE-BUILDER-01 | Exact original96e3 registered combined cost/selected/native builder entry and contracts | Entry0/420.138327s/script-main/all7markers/0skips/checker[]; three profiles69objects/four current selectors; builder4wire/486real child refusals/parent cap-capacity/strong output/INITIAL/retained-once/registry/thread; contracts0/13.717218s;4058-member seal verified/4010 inputs unchanged/owned QA removed/RELEASED; whole preparation/service/release gates remain OPEN |
+| ACC-16-BANK-BOUNDED-ADMISSION-01 | Exact originalf215 immutable bank regression and contracts | run_test0/193.968944s/script-main passed/0skips;34objects/four components; supported cases/denials/refresh SQL254/134/56 and flat254/134/56, assertions2each; contracts0/12.151073s;4048-member seal verified/4013 inputs unchanged/owned QA removed/RELEASED; fresh authority/caller/service/release gates remain OPEN |
 | PRIMARY-01 | Connected save/coordinator/item lifecycle map then verified boundary/caller/admission closure | Existing primary implementation ownership; no withdrawn delegation dependency |
 | PRIMARY-02 | Supported toolchain/runtime/library correspondence, complete storage/frame/transitive proof, aggregate 32MiB accept/refuse | Remains explicit; object compile/source packets do not close it |
 | FINAL | Gameplay/persistence/schema/backup/restore/recovery/fault/load/resource/R1-R8 gates agree on one frozen candidate | Reviewed implementation batches and per-slice architecture evidence |
@@ -986,11 +1012,11 @@ Do not repeat this source/release audit on unchanged9c or open standing helper
 research; wait for meaningful source/evidence or an exact independently owned
 executable slice. Full Work1-5/R6-R8 acceptance remains open.
 
-Finite queue after ACC-15 original late Quest builder component PASS: failed371
-and corrected371 source-only snapshot remain preserved; no stale standalone371
-retry is queued. One meaningful96e3 cohort qualified its combined component;
-earlier22da currency/4e69 Quest results retain their original source/data scope.
-Primary adoption of current96e3 two-field raw-Git adapter-pin normalization
+Finite queue after ACC-16 immutable bank component PASS: failed371 and its
+corrected source-only snapshot remain preserved; no stale standalone371 retry
+is queued. One meaningfulf215 cohort qualified the immutable bank prerequisite;
+earlier96e3 Quest/22da currency/4e69 results retain original source/data scope.
+Primary adoption of currentf215 two-field raw-Git adapter-pin normalization
 remains pending; actual same-root writer evidence and coherent0062/default65
 restore route, with the existing
 source-only restore-coin three-provider packet; caller integration and native
