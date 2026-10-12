@@ -151,14 +151,30 @@ uint64_t get_u64(const uint8_t *bytes, size_t offset)
 	return value;
 }
 
+// The exact reflected IEEE recurrence is evaluated at translation, so every
+// runtime byte keeps one table lookup and shift. No journal format, seed,
+// incremental boundary or durable checkpoint policy changes.
+struct journal_crc32_lookup
+{
+	uint32_t values[256]{};
+	constexpr journal_crc32_lookup() noexcept
+	{
+		for (unsigned int index = 0; index < 256; ++index)
+		{
+			uint32_t crc = index;
+			for (unsigned int bit = 0; bit < 8; ++bit)
+				crc = (crc >> 1) ^ (UINT32_C(0xedb88320) & (0U - (crc & 1U)));
+			values[index] = crc;
+		}
+	}
+};
+constexpr journal_crc32_lookup journal_crc32_table{};
+
 uint32_t crc32_update(uint32_t crc, const uint8_t *bytes, size_t size)
 {
 	for (size_t index = 0; index < size; ++index)
-	{
-		crc ^= bytes[index];
-		for (unsigned int bit = 0; bit < 8; ++bit)
-			crc = (crc >> 1) ^ (UINT32_C(0xedb88320) & (0U - (crc & 1U)));
-	}
+		crc = (crc >> 8) ^
+		      journal_crc32_table.values[(crc ^ bytes[index]) & UINT32_C(0xff)];
 	return crc;
 }
 

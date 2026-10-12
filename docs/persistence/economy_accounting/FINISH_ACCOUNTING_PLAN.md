@@ -231,6 +231,10 @@ skips/refusals, source pins, evidence and resource release.
 Issue #490 remains the technical implementation/qualification tracker; #664's
 private historical-case work retains its separate scope and authorization.
 
+The journal CRC uses a compile-time table for the original IEEE recurrence.
+Focused equivalence controls cover existing frames and incremental checksums;
+Save admission deadlines and full accounting release gates remain open.
+
 ## Resource and verification discipline
 
 Start with one heavy cohort at a time. Inspect current compatible containers,

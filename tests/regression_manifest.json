@@ -8521,6 +8521,19 @@
         "recovery"
       ]
     },
+    "test_player_save_journal_crc.py": {
+      "profile": "native",
+      "mode": "script",
+      "minimum_cases": 1,
+      "cpu": 1,
+      "memory_mb": 2048,
+      "seconds": 30.636735,
+      "timeout_seconds": 180.0,
+      "locks": [
+        "native-compiler"
+      ],
+      "purpose": "Complete journal-provider CRC equivalence: original recurrence, seeds, all bytes, frame shapes, incremental boundaries, checksum exclusion and corruption; no worker deadline or release qualification."
+    },
     "test_player_save_worker_admission.py": {
       "profile": "native",
       "mode": "script",
