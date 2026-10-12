@@ -1,0 +1,86 @@
+{
+  "status": "PRIVATE_CURRENTF215_REBIND_AND_PROSPECTIVE_STORAGE_POLICY_NOT_RUN",
+  "parent_manifest_sha256": "ce507ddf9ab428f754b7a5962a39d3cfe9b643162de9e4f8bb8fd79cc47b532f",
+  "revision_before": "96e34552f387dfe43a48fe73b03b07441b6589b6",
+  "revision_after": "f215679503d787a25af52fa8103506159a50013d",
+  "changed_production_input_rows": [
+    {
+      "before": {
+        "path": "src/economy/economic_command_admission.c",
+        "bytes": 13209,
+        "sha256": "7357959763514749caef941e4036a1654c5f1b818cb662713630ec5fc3c53c9b"
+      },
+      "after": {
+        "path": "src/economy/economic_command_admission.c",
+        "bytes": 29824,
+        "sha256": "12b277271bd10ccef6c7c32cd41d85494f3540f4142cfd57960a4e5b087c63d3"
+      }
+    },
+    {
+      "before": {
+        "path": "src/economy/economic_command_admission.h",
+        "bytes": 2152,
+        "sha256": "3d1336dabf0461511e0be5097cc137e9f08a8ae15a334c7c4dd034270d3793f1"
+      },
+      "after": {
+        "path": "src/economy/economic_command_admission.h",
+        "bytes": 4447,
+        "sha256": "374c98f77ce4cd41c7d36dddedf9add4d49313c78421f88103b3be56096a72ee"
+      }
+    }
+  ],
+  "current_production_map": {
+    "path": "tmp/bank-admission-publication-root-20261011/PRODUCTION-PINS.json",
+    "bytes": 218141,
+    "sha256": "6e1198e0e2e95830e2f6b5bae8ba31e4094321c781b6d71df13c18ec7bfe13e5",
+    "files": 1424
+  },
+  "current_publication": {
+    "path": "tmp/bank-admission-publication-root-20261011/PUBLICATION.json",
+    "bytes": 3837,
+    "sha256": "2ad2c4e9924d49f083bf88bdc1adc607c7910b0793e077c1410559e7802420a5"
+  },
+  "input_copy_guard_count": 1425,
+  "src_inputs": 1423,
+  "whole_production_TUs": 17,
+  "fixture_source_count": 1,
+  "guest_trusted_runner_fixture_flags_timeouts_preserved": true,
+  "root_literal_transforms": [
+    {
+      "old": "assert out.parent==repo/'tmp' and not out.exists() and not out.is_relative_to(HERE)",
+      "new": "assert out.parent==repo/'tmp' and not out.exists() and not out.is_relative_to(HERE)\nassert out.name=='recovery-context-currentf215-native-root-v3-20261011'"
+    },
+    {
+      "old": "cfg=json.loads((HERE/'CONFIG.json').read_bytes())\n",
+      "new": "cfg=json.loads((HERE/'CONFIG.json').read_bytes())\n\n# Prospective host supervision: logical file bytes and actual free space are\n# separate measurements. Sampling is not an instantaneous disk reservation.\nARTIFACT_LIMIT=1024**3\nFREE_RESERVE=512*1024**2\nPREFLIGHT_FREE=ARTIFACT_LIMIT+FREE_RESERVE\nSTORAGE_SAMPLE_SECONDS=1.0\n\ndef storage_guard(preflight=False):\n    owned=0\n    for path in out.rglob('*'):\n        if path.is_symlink() or (hasattr(path,'is_junction') and path.is_junction()):\n            raise RuntimeError('Owned OUT contains a linked entry')\n        if path.is_file():\n            owned+=path.stat().st_size\n    free=shutil.disk_usage(out).free\n    sample=dict(owned_logical_bytes=owned,actual_free_bytes=free,\n                logical_limit_bytes=ARTIFACT_LIMIT,free_reserve_bytes=FREE_RESERVE,\n                preflight_free_bytes=PREFLIGHT_FREE,sample_interval_seconds=STORAGE_SAMPLE_SECONDS)\n    if owned>ARTIFACT_LIMIT or free<(PREFLIGHT_FREE if preflight else FREE_RESERVE):\n        raise RuntimeError('Host storage guard violation: '+json.dumps(sample,sort_keys=True))\n    return sample\n"
+    },
+    {
+      "old": "        process=subprocess.Popen(command,stdout=log,stderr=subprocess.STDOUT)\n        code=process.wait(timeout=cfg['host_seconds'])",
+      "new": "        result['storage_preflight']=storage_guard(preflight=True)\n        process=subprocess.Popen(command,stdout=log,stderr=subprocess.STDOUT)\n        while process.poll() is None:\n            result['storage_last_live']=storage_guard()\n            remaining=cfg['host_seconds']-(time.monotonic()-start)\n            if remaining<=0:\n                raise subprocess.TimeoutExpired(command,cfg['host_seconds'])\n            time.sleep(min(STORAGE_SAMPLE_SECONDS,remaining))\n        code=process.returncode\n        # Final growth must not bypass the last live sample before real PASS.\n        result['storage_before_pass']=storage_guard()"
+    },
+    {
+      "old": "    try:result['cleanup']=t.host_container_cleanup(container)",
+      "new": "    try:\n        if process is not None:result['cleanup']=t.host_container_cleanup(container)\n        else:result['cleanup']=dict(container_not_started=True,container=container)"
+    },
+    {
+      "old": "            t.dump(out/'HOST-DISPATCH-RESULTS.json',result)",
+      "new": "            try:result['storage_after_cleanup']=storage_guard()\n            except BaseException as exc:\n                result.update(status='FAIL',storage_after_cleanup_failure=str(exc))\n                t.dump(out/'HOST-DISPATCH-RESULTS.json',result)\n                raise\n            t.dump(out/'HOST-DISPATCH-RESULTS.json',result)\n            # Include the actual final record in total retained artifacts. No\n            # more successful-run files are written after this final check.\n            try:storage_guard()\n            except BaseException as exc:\n                result.update(status='FAIL',storage_after_record_failure=str(exc))\n                t.dump(out/'HOST-DISPATCH-RESULTS.json',result)\n                raise"
+    }
+  ],
+  "root_inverse_exact": true,
+  "storage_policy": {
+    "logical_artifact_budget_bytes": 1073741824,
+    "free_reserve_bytes": 536870912,
+    "preflight_free_required_bytes": 1610612736,
+    "periodic_seconds": 1,
+    "actual_sizes": "UNMEASURED",
+    "instantaneous_or_reserved_capacity_claim": false,
+    "owned_OUT": "tmp/recovery-context-currentf215-native-root-v3-20261011",
+    "cleanup": "Existing exact derived-container cleanup and owned Popen kill/reap; no container cleanup if Popen not created",
+    "failure_artifacts": "PRESERVED; no deletion to make space",
+    "checks": "preflight/live/beforePASS/aftercleanup/afteractualfinalrecord",
+    "final_sample": "after-cleanup logical/free sample recorded; after-record enforcement before normal host exit, failures rewrite recordFAIL"
+  },
+  "qualification": "original17wholeProviderTUs+fixture pure-value ASan/UBSan component only; no full recovery/SQL/ACK/activation/Root/32MiB proof",
+  "native": "NOT_RUN"
+}
