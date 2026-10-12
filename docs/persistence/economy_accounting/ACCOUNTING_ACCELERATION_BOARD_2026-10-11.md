@@ -16,6 +16,18 @@ return idle. Old helpers/heartbeat stay parked/PAUSED. No source ownership or
 acceptance requirement transferred or waived. Updated15-minute heartbeat verified
 ACTIVE on this chat/current Sol6.1/xhigh. No per-commit full-build/matrix repeats.
 
+## Latest reviewed owner handoff
+
+Plan5 published52ca6d9f confirms the already-adopted three-provider retention
+recipe at primary9d2bdd74 and currentf215. Standalone report imported byte-exact;
+independent raw-Git/complete AST/entire metadata-document inverse and all12 sealed
+members verified. Recipe source adoption CONFIRMED; native/full retention/restore
+NOT_RUN here. Two direct native inputs differ from original055; ACC06 executable
+proof remains at055+3. Full Plan5 goal ACTIVE after owner-reported user resume,
+acceptance OPEN; primary notebook adoption UNCONFIRMED. No new shared source,
+runtime, metadata, interface/schema fields, job or resource grant.
+See PLAN5_RETENTION_PRIMARY_SOURCE_ADOPTION_2026-10-11.md.
+
 ## Current qualification gate
 
 Latest qualified primaryf21567950 / tree79fd73dfd0: additive immutable bank-only
@@ -406,7 +418,7 @@ original "do it", superseding "go with the useful parts". Local model GPT-6.1 So
 | --- | --- | --- |
 | Orchestrator | `01a129b3-9c1a-77b3-a10a-3ddafdb5c0a0`; `C:/Users/alexa/.codex/worktrees/5708/NewDuris Max`; `codex/accounting-accel-integration` | ACC-16 immutable bank admission component PASS onf215;4013 inputs/sealed/released; currentf215 pin candidate qualified; prior96e3/22da/4e69 results and371 failure preserved; finite wait/no grant |
 | Remote primary | Non-connected RGitGoin; private session/WIP inaccessible; published `experimental-accounting` | Existing Plans1-4/shared runtime/final integration ownership retained; no delegation ACK required; architecture/toolchain/storage/32MiB proof queue |
-| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Publishedeaa43822 corrected independent ACC-07 review; e922 restore-coin source-only report/patch; full goal BLOCKED by owner with scope preserved; finite wait, no native grant |
+| Plan 5 | `01a104cf-6aba-7021-b5cd-56345f75cf10`; `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`; `codex/accounting-plan5` | Published52ca6d9f exact primary retention source-adoption closure; prior eaa43822 ACC-07 and e922 restore-coin reports preserved; full goal ACTIVE after owner-reported user resume, acceptance OPEN; no native grant |
 | World/quest (parked) | `01a129b4-a57a-76e0-baec-42b3dd2fe62f`; `C:/Users/alexa/.codex/worktrees/2c0d/NewDuris Max`; `codex/accounting-accel-world` | IDLE/clean5e679b5fe after exact resource-free ACC-08 review; olderf722 failure/component handoffs preserved; runtime allocation WITHDRAWN, no standing task or resources |
 | Shop/backend (parked) | `01a129b4-a553-78e0-85c2-69e34d8e0d59`; `C:/Users/alexa/.codex/worktrees/969b/NewDuris Max`; `codex/accounting-accel-shop` | IDLE/clean6022; parked handoff preserved; ACC-04-TX unstarted possible future ticket only, no grant; allocation WITHDRAWN |
 
@@ -474,7 +486,7 @@ override availability or invent tokens/receipts for accepting tests.
 | ACC-03-RC | Existing `test_native_quest_recovery_context.py` actual-provider ASan/UBSan component or exact first failure | Component PASS/sealed/RELEASED; exact three-line recipe/pin handoff remains for primary adoption, WORLD parked |
 | ACC-04-TX | Existing `test_shop_trade_transaction.py` component or exact first failure, then retention/repository gates | Parked unstarted preparation only; no standing dispatch/grant; current private capability aborts remain unqualified |
 | ACC-05-AUDIT-BUDGET-01 | Two existing Linux near-limit price/mapping audit-budget methods, no skips; original limits0/1/100, clean/conflict/corrupt/oversized controls, 30s/256MiB child bounds, input unchanged | Terminal original session57445/exit0,2/0skips/12records and both oversized controls PASS_SYNTHETIC_COMPONENT_ONLY on exact primary055; independently76-member seal verified/RELEASED; no full matrix or release-host promotion |
-| ACC-06-RETENTION-LINK-01 | Original 11-TU SQL link failure then minimal +3 SQL/flat native/journal-frame component on055 | Root component proof remains055+3; exact recipe source adopted by primary9d2bdd74, moduleSHA3dc38861. New7f native report is not independently reviewed here; full retention/schema61-default65/both-engine durability remain OPEN |
+| ACC-06-RETENTION-LINK-01 | Original 11-TU SQL link failure then minimal +3 SQL/flat native/journal-frame component on055 | Root component proof remains055+3; primary9d2bdd74 exact recipe adoption reconfirmed onf215 by independent Plan5 publication52ca6d9f and coordinator review; complete AST/pin-document inverse verified, two native inputs changed; no current native/full retention/schema61-default65/both-engine proof promotion |
 | RELEASE-9c871c875 | Original validate_economy_accounting.py default and --release, exact source/evidence/source-derived row handoff | Default0, release1 missing executable evidence; source-only packet verified/imported, first primary/#481 account.item_reward; no native/backend/game/release qualification and no repeated unchanged audit |
 | ACC-07-HELD-POLICY-01 | Original registered held policy entry on frozen97, original case acceptance checker, focused structural contracts | Entry0/both modes PASS; checker rejects missing main case; outer1 collector failure preserved, no native repeat; independent review/owned QA removed/RELEASED; no full matrix, SQL durability or release |
 | ACC-08-ITEM-BOUNDED-01 | Original registered bounded Item entry on frozen7f1d766c0, unchanged original outcome checker and default contracts | Entry0/both modes15 groups/2653 refusal points each; missing required main case remains; contracts0, sole QA removed/RELEASED; no full build/matrix or broader qualification |
@@ -1030,6 +1042,12 @@ remains OPEN and the withdrawn speedup percentage is excluded. Manifest-pin
 source adoption is verified atc812928d2 and removed from the pending queue.
 The genuine main-outcome repair is qualified by ACC-09 and removed from that queue.
 
+Plan5 retention recipe source adoption is closed by published52ca6d9f,
+independently rechecked onf215; it is absent from the pending source queue.
+Current full retention/schema61 and restore0062 versus default65 remain
+primary-owned coherent-route gates. Owner-reported full goal resume is ACTIVE;
+no independent current executable slice or native grant follows from this closure.
+
 Exact PRIMARY handoff for the native recipe: adopt only the three `SOURCES`
 entries from integration `6bfa0f7ebdd5f2f46841047fdd10522e4d27dfea` in
 `tests/async/test_native_quest_recovery_context.py`: `src/economy/native_quest_cost.c`,
@@ -1196,3 +1214,30 @@ Historical3-6 more-day estimate remains low confidence and unvalidated; withdraw
 25-40% implementation-speedup assumption is excluded. Evaluate completed gates
 and adopted repairs after current reviewed failure handoff/focused diagnosis;
 no unchanged blocker sweep or repeated full qualification job.
+
+## Plan5 retention source-adoption curator closure — 2026-10-11
+
+Import only the standalone report from clean/pushed Plan5
+52ca6d9fba8da46bb63c1ce4d2da328e6bf6ab29 (baseeaa43822); blob
+ff05de4db58e7bd9d90876b80ae7f555efebf680, SHA
+dc2b4a29bdc30dfdd1478392d2410a5456511806bb1920c93a0d467ce31adaa9.
+The additive owner follow-up and broader test module stay on Plan5's branch.
+Currentf215/primary9d2bdd74 recipe is archived-candidate byte-exact; removing
+exactly three providers restores the entire original055 AST. Count11-to14 native
+providers plus the unchanged1917-byte generated probe. Removing the sole recipe
+pin from each adoption JSON restores the entire parent document and all496 old
+values; current511 maps retain that exact recipe pin. No all-current-pin audit.
+
+All12 producer-sealed members/16,523,594 bytes rechecked. Independent coordinator
+review e751c968ce9536ca3b2d1e385406c2b15a37a609e83d7b14bbad898c3843fb38;
+review seal c1f00d7a17141a2466f04dbc8c3613b44e337b271b68ad1c155943c6ffaf8b89.
+D:/Dev/Tests/Duris/accounting-accel-integration/PLAN5-RETENTION-ADOPTION-52ca6d9f-review.
+Source-only Python verification0; no module import/compiler/native/DB/validator/
+generator/server/resource job. Actual current item_transfer_command.c and
+lockpick_retirement_continuation.c differ from055; original ACC06 receipt/seal
+identities preserved and executable evidence not carried forward. Native/full
+retention/restore/DB NOT_RUN; schema61/0062 assertions and default65 unchanged.
+Full Plan5 goal ACTIVE after owner-reported human resume supersedes its historical
+BLOCKED status; all acceptance scope remains OPEN. Primary notebook adoption
+UNCONFIRMED. Seven foreign services preserved/heavy lock ABSENT/owned jobs0;
+helpers stay parked. No speedup, full deliverable or release completion inferred.
