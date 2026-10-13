@@ -373,3 +373,11 @@ The source-bound regression reproduces the old destination-node failure and
 checks the corrected path across allocation cuts and owner-table growth.
 This closes this cache atomicity defect only; accounting admission remains
 closed and the full gameplay, persistence, lifecycle and R1-R8 gates stay open.
+
+The original Gith weapon wrapper now shares class selection, template, names,
+messages and literal keyword formatting with a light typed policy provider.
+The complete original-body differential preserves native class fallback, query
+order, failure behavior, effect order and 256-byte truncation; both affected
+production builds pass. This dependency extraction grants no item creation,
+source, publication or ACK authority to prepared values. Accounting admission remains closed; the full gameplay, persistence, lifecycle
+and R1-R8 release gates remain open.

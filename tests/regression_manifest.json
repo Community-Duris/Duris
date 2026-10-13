@@ -8848,6 +8848,16 @@
       "seconds": 17.403479646978667,
       "timeout_seconds": 1800,
       "purpose": "Whole canonical ordinary item cache transfer allocation cuts, actual missing/existing owner-node and 1..64 locker bucket growth, strong BEFORE/clock preservation, exact-once same-owner/nested/destruction/restoration and malformed/stale controls. CPU/memory/deadline are owned job budgets, not measured peaks; no gameplay/Source65/activation qualification."
+    },
+    "test_githyanki_item_policy_runtime.py": {
+      "profile": "native",
+      "mode": "script",
+      "minimum_cases": 1,
+      "cpu": 2,
+      "memory_mb": 8192,
+      "seconds": 2.2738344770041294,
+      "timeout_seconds": 1800,
+      "purpose": "Canonical complete original Gith wrapper differential: 6144 class/fallback/query/effect cases, 48 formatter length/truncation/percent-as-data cases and invalid-choice strong outputs. Controlled native inputs; no accounting activation authority."
     }
   }
 }

@@ -10,6 +10,7 @@
  */
 
 #include "core/prototypes.h"
+#include "world/githyanki_item_policy.h"
 #include "combat/damage.h"
 #include "world/rested.h"
 #include "telemetry/telemetry_runtime.h"
@@ -538,65 +539,23 @@ int ward_regen(P_char ch, bool display_only)
    time */
 void githyanki_weapon(P_char ch)
 {
-	P_obj sword;
-	char strn[256];
-
-	if (GET_CLASS(ch, CLASS_NECROMANCER) || GET_CLASS(ch, CLASS_SORCERER) ||
-	    GET_CLASS(ch, CLASS_PSIONICIST) || GET_CLASS(ch, CLASS_CONJURER) ||
-	    GET_CLASS(ch, CLASS_ILLUSIONIST) || GET_CLASS(ch, CLASS_SUMMONER))
+	const auto choice = githyanki_level_item_select(ch);
+	if (!choice.vnum)
 	{
-		sword = read_object(19, VIRTUAL);
-		if (sword)
-		{
-			snprintf(strn, 256, "staff silverish silver %sz", GET_NAME(ch));
-			sword->str_mask = STRUNG_KEYS;
-			sword->name = str_dup(strn);
-
-			obj_to_char(sword, ch);
-			send_to_char(
-				"&+CWith a blinding flash of light, a staff suddenly appears in your hands!\r\n",
-				ch);
-			act("&+CIn a blinding flash of light, a staff suddenly appears in $n's hands!",
-			    FALSE, ch, 0, 0, TO_ROOM);
-		}
+		send_to_char(choice.player_message, ch);
+		return;
 	}
-	else if (GET_CLASS(ch, CLASS_WARRIOR) || GET_CLASS(ch, CLASS_REAVER))
+	P_obj sword = read_object(choice.vnum, VIRTUAL);
+	if (sword)
 	{
-		sword = read_object(418, VIRTUAL);
-		if (sword)
-		{
-			snprintf(strn, 256, "warhammer hammer silverish silver %sz", GET_NAME(ch));
-			sword->str_mask = STRUNG_KEYS;
-			sword->name = str_dup(strn);
-
-			obj_to_char(sword, ch);
-			send_to_char(
-				"&+CWith a blinding flash of light, a warhammer suddenly appears in your hands!\r\n",
-				ch);
-			act("&+CIn a blinding flash of light, a warhammer suddenly appears in $n's hands!",
-			    FALSE, ch, 0, 0, TO_ROOM);
-		}
+		char strn[256];
+		githyanki_level_item_format_keywords(strn, sizeof(strn), choice.vnum, GET_NAME(ch));
+		sword->str_mask = STRUNG_KEYS;
+		sword->name = str_dup(strn);
+		obj_to_char(sword, ch);
+		send_to_char(choice.player_message, ch);
+		act(choice.room_message, FALSE, ch, 0, 0, TO_ROOM);
 	}
-	else if (GET_CLASS(ch, CLASS_ANTIPALADIN))
-	{
-		sword = read_object(18, VIRTUAL);
-		if (sword)
-		{
-			snprintf(strn, 256, "longsword sword long silverish silver %sz",
-				 GET_NAME(ch));
-			sword->str_mask = STRUNG_KEYS;
-			sword->name = str_dup(strn);
-
-			obj_to_char(sword, ch);
-			send_to_char(
-				"&+CWith a blinding flash of light, a sword suddenly appears in your hands!\r\n",
-				ch);
-			act("&+CIn a blinding flash of light, a sword suddenly appears in $n's hands!",
-			    FALSE, ch, 0, 0, TO_ROOM);
-		}
-	}
-	else
-		send_to_char("&+CYou should have gotten a special item.  Let a god know.\r\n", ch);
 }
 
 /*

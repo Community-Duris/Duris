@@ -350,6 +350,7 @@ OBJS =  $(SHIP_OBJS) \
 				 combat/kick.o \
 				 classes/language.o \
 				 world/limits.o \
+				 world/githyanki_item_policy.o \
 				 item/linked_objects.o\
 				 net/listen.o\
 				 cmd/mail.o \
