@@ -521,7 +521,7 @@ void actual_quiver_composition()
 	get->to_owner = player;
 	get->reason = item_transfer_reason::player_get;
 	get->expected_from_revision = 11;
-	get->expected_to_revision = 8;
+	get->expected_to_revision = put->expected_from_revision + 1;
 	get->selected_item_uid = 500;
 	get->item_count = 1;
 	get->items[0] = { 500, 100, 70, 7, 17, item_custody_state::active };
@@ -537,7 +537,7 @@ void actual_quiver_composition()
 		       participant.before_identity.item_revision == 6 &&
 		       participant.after_identity.item_revision == 7);
 	assert(removed.selected_after_identities[0].item_revision == 8 &&
-	       removed.selected_after_identities[0].owner_revision == 9 &&
+	       removed.selected_after_identities[0].owner_revision == 10 &&
 	       removed.selected_after_identities[0].root_item_uid == 500 &&
 	       !removed.selected_after_identities[0].parent_item_uid);
 	assert(literal_wire({ before.items[2] }) == literal_wire({ removed.room_after.items[2] }) &&
