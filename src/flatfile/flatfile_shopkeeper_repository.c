@@ -2431,6 +2431,10 @@ constexpr size_t initial_keeper_fixed_canonical_source =
 	2 * sizeof(void *) + sizeof(bool) + 4 * (3 * sizeof(void *) + sizeof(bool)) +
 	sizeof(size_t) + 3 * 2 * sizeof(void *) + 2 * sizeof(void *) + sizeof(size_t) + sizeof(int);
 constexpr size_t initial_keeper_fixed_local_source =
+	// Actual added decoder/canonical/validator resource reference carriers,
+	// codec(this,value)/status comparison and its result, retained once.
+	3 * sizeof(void *) + sizeof(void *) + sizeof(player_snapshot_codec_result) + sizeof(bool) +
+	2 * sizeof(bool) +
 	// Full wrapper parameters/results/early source scalar and its pure getter
 	// source; caller_fixed/scan_extra/decode_fixed/canonical_fixed named consts,
 	// base/scan_live/validation/decode_live/canonicalpayload/live scalar locals.
@@ -2494,7 +2498,8 @@ bool flatfile_shopkeeper_initial_checkpoint_decode_fixed_source_supplement_frame
 namespace
 {
 bool initial_keeper_fixed_decode_catalog(const std::vector<uint8_t> &bytes,
-					 shopkeeper_catalog *catalog, size_t expected_item_count)
+					 shopkeeper_catalog *catalog, size_t expected_item_count,
+					 shop_resource_state &resource)
 {
 	constexpr size_t header_size = 8 + 4 + 4 + 8 + SHA256_DIGEST_LENGTH;
 	if (!catalog || bytes.size() < header_size ||
@@ -2555,19 +2560,19 @@ bool initial_keeper_fixed_decode_catalog(const std::vector<uint8_t> &bytes,
 			    item_bytes > PLAYER_SNAPSHOT_MAX_BYTES ||
 			    payload.offset > payload.size ||
 			    item_bytes > payload.size - payload.offset ||
-			    player_item_snapshot_list_decode(payload.data + payload.offset,
-							     item_bytes, &record.items) !=
-				    player_snapshot_codec_result::ok)
+			    !resource.codec(player_item_snapshot_list_decode(
+				    payload.data + payload.offset, item_bytes, &record.items)))
 				return false;
 			payload.offset += item_bytes;
 		}
 	}
 	catch (const std::bad_alloc &)
 	{
+		resource.status = shop_resource_status::allocation_failure;
 		return false;
 	}
 	if (payload.offset != payload.size ||
-	    !valid_catalog_bounded_scratch(decoded, expected_item_count))
+	    !shop_valid_catalog_resource(decoded, expected_item_count, resource))
 		return false;
 	*catalog = std::move(decoded);
 	return true;
@@ -2576,7 +2581,8 @@ bool initial_keeper_fixed_decode_catalog(const std::vector<uint8_t> &bytes,
 // Resource origin is retained explicitly through semantic bool predicates.
 // Legacy decoders/validators below keep their original behavior for all callers.
 bool initial_keeper_fixed_canonical(const shopkeeper_catalog &catalog, size_t original_size,
-				    size_t original_item_bytes, std::vector<uint8_t> *output)
+				    size_t original_item_bytes, std::vector<uint8_t> *output,
+				    shop_resource_state &resource)
 {
 	if (!output || catalog.revision != 1 || catalog.records.size() != 1 ||
 	    original_size < initial_checkpoint_overhead_bytes ||
@@ -2589,8 +2595,7 @@ bool initial_keeper_fixed_canonical(const shopkeeper_catalog &catalog, size_t or
 	std::vector<uint8_t> items;
 	// Original item encoder includes original relationships and complete semantic
 	// decode roundtrip. Its exact capacity/reallocation peak was admitted by caller.
-	if (player_item_snapshot_list_encode(record.items, &items) !=
-		    player_snapshot_codec_result::ok ||
+	if (!resource.codec(player_item_snapshot_list_encode(record.items, &items)) ||
 	    items.size() != original_item_bytes)
 		return false;
 	std::vector<uint8_t> canonical;
@@ -2660,7 +2665,7 @@ flatfile_shopkeeper_result flatfile_shopkeeper_initial_checkpoint_decode_fixed_b
 	constexpr size_t caller_fixed = sizeof(shopkeeper_catalog) +
 					sizeof(flatfile_shopkeeper_catalog_allocation_profile) +
 					sizeof(player_item_snapshot_list_allocation_profile) +
-					sizeof(std::vector<uint8_t>);
+					sizeof(std::vector<uint8_t>) + sizeof(shop_resource_state);
 	constexpr size_t scan_extra = sizeof(flatfile_shopkeeper_catalog_allocation_profile) +
 				      2 * sizeof(player_item_snapshot_list_allocation_profile) +
 				      2 * sizeof(decoder);
@@ -2730,10 +2735,17 @@ flatfile_shopkeeper_result flatfile_shopkeeper_initial_checkpoint_decode_fixed_b
 	try
 	{
 		shopkeeper_catalog framing;
-		if (!initial_keeper_fixed_decode_catalog(bytes, &framing, profile.item_count) ||
+		shop_resource_state resource;
+		if (!initial_keeper_fixed_decode_catalog(bytes, &framing, profile.item_count,
+							 resource) ||
 		    framing.revision != 1 || framing.records.size() != 1 ||
 		    framing.records.front().revision != 1 || framing.records.front().cash < 0)
 		{
+			if (resource.status == shop_resource_status::allocation_failure)
+			{
+				errno = ENOMEM;
+				return flatfile_shopkeeper_result::allocation_failure;
+			}
 			errno = EBADMSG;
 			return flatfile_shopkeeper_result::invalid;
 		}
@@ -2761,9 +2773,15 @@ flatfile_shopkeeper_result flatfile_shopkeeper_initial_checkpoint_decode_fixed_b
 		}
 		std::vector<uint8_t> canonical;
 		if (!initial_keeper_fixed_canonical(framing, bytes.size(),
-						    profile.largest_item_blob_bytes, &canonical) ||
+						    profile.largest_item_blob_bytes, &canonical,
+						    resource) ||
 		    canonical != bytes)
 		{
+			if (resource.status == shop_resource_status::allocation_failure)
+			{
+				errno = ENOMEM;
+				return flatfile_shopkeeper_result::allocation_failure;
+			}
 			errno = EBADMSG;
 			return flatfile_shopkeeper_result::invalid;
 		}
@@ -2774,7 +2792,7 @@ flatfile_shopkeeper_result flatfile_shopkeeper_initial_checkpoint_decode_fixed_b
 	catch (const std::bad_alloc &)
 	{
 		errno = ENOMEM;
-		return flatfile_shopkeeper_result::io_error;
+		return flatfile_shopkeeper_result::allocation_failure;
 	}
 	catch (...)
 	{

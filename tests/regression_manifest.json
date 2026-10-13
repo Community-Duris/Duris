@@ -8740,6 +8740,45 @@
       ],
       "purpose": "Two ordinary admission production objects and four eight-provider immutable bank component runs; original136 wire/opaque byte5/timestamp/reason intent equivalence, real Source+INITIAL/retained capacity partition, every actual reserve ordinal denial and defensive strong refusal. Prerequisite only; fresh ATM/shared authority and release remain open.",
       "seconds": 417.00455259298906
+    },
+    "test_flat_checkpoint_allocation_status.py": {
+      "profile": "native",
+      "mode": "script",
+      "minimum_cases": 1,
+      "cpu": 1,
+      "memory_mb": 2048,
+      "seconds": 56.447,
+      "timeout_seconds": 1200,
+      "locks": [
+        "native-compiler"
+      ],
+      "purpose": "Actual fixed checkpoint SQL/flat production and genuine sanitizer refusal controls; every observed allocation ordinal returns distinct allocation_failure/ENOMEM and preserves prior output. Measured canonical Source32b four-lane run; no birth consumer or full Source/release qualification."
+    },
+    "test_native_birth_binding_source_profile.py": {
+      "profile": "native",
+      "mode": "script",
+      "minimum_cases": 1,
+      "cpu": 2,
+      "memory_mb": 4096,
+      "locks": [
+        "native-compiler"
+      ],
+      "seconds": 0,
+      "timeout_seconds": 1200,
+      "purpose": "Complete maintained native component controls; duration not yet inventoried, source/component scope only and full backend/game/release gates remain open."
+    },
+    "test_shop_replay_current_profile.py": {
+      "profile": "native",
+      "mode": "script",
+      "minimum_cases": 1,
+      "cpu": 2,
+      "memory_mb": 4096,
+      "locks": [
+        "native-compiler"
+      ],
+      "seconds": 0,
+      "timeout_seconds": 1200,
+      "purpose": "Complete maintained native component controls; duration not yet inventoried, source/component scope only and full backend/game/release gates remain open."
     }
   }
 }

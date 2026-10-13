@@ -73,7 +73,9 @@ enum class flatfile_shopkeeper_result
 	already_exists,
 	stale,
 	invalid,
-	io_error
+	io_error,
+	// Fixed checkpoint decoder: caught allocation failure, not storage I/O.
+	allocation_failure
 };
 
 // Prospective-bounded cold INITIAL checkpoint decoder. The complete original
@@ -213,6 +215,8 @@ class flatfile_shopkeeper_initial_catalog_storage final
 // strong output; originals remain unchanged. Caller owns retained input/prior
 // output in outer. Child retains the complete SOURCE once, including real
 // original list codecs, before each fallible descendant. No I/O or authority.
+// Caught bad_alloc returns allocation_failure with errno ENOMEM and strong output.
+// Other I/O, unsupported policy and malformed outcomes retain their classifications.
 flatfile_shopkeeper_result flatfile_shopkeeper_initial_checkpoint_decode_fixed_bounded(
 	const std::vector<uint8_t> &, flatfile_shopkeeper_record *, flatfile_scratch_reserve_fn,
 	void *, size_t) noexcept;

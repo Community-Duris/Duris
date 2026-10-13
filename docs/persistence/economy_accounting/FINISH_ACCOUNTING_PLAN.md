@@ -293,3 +293,9 @@ The [context archive index](https://github.com/Community-Duris/Duris/blob/codex/
 historical documents. The completed documentation audit and its substantive
 updates remain protected. Historical source/evidence retains its original pins;
 this new plan and its preparation do not promote any release gate.
+
+The fixed flat checkpoint decoder distinguishes caught allocation failure from
+storage I/O, preserving ENOMEM and prior output. Its maintained SQL/flat
+production and sanitizer refusal controls exercise the actual decoder and the
+original complete item codec. Birth-recovery consumer and whole initialized
+world qualification remain separate; this leaf does not open admission.
