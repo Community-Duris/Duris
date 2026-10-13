@@ -1232,6 +1232,98 @@ void child_combined_retained_budget()
 	observe_child_allocations = false;
 	assert(child_allocations == 0); // Charge refuses before latest-command vector assign.
 }
+
+void bounded_transport_refusals()
+{
+	// Actual byte-budget callbacks and canonical providers only. This fixture
+	// grants no source, world, publication, checkpoint or ACK authority.
+	struct budget
+	{
+		size_t calls = 0, deny = SIZE_MAX;
+		static bool reserve(size_t bytes, void *opaque) noexcept
+		{
+			auto &self = *static_cast<budget *>(opaque);
+			return ++self.calls != self.deny && bytes <= 64 * 1024 * 1024;
+		}
+	};
+	const auto original = make(false);
+	const auto wire = encode(original.command, original.value);
+	std::vector<uint8_t> encoded{ 0xa5, 0x5a };
+	const auto sentinel = encoded;
+	context decoded = original.value;
+	// Resident probe storage must fit before any callback or output change.
+	budget overflow_encode, overflow_decode;
+	assert(native_quest_recovery_context_encode_bounded(
+		       original.command, original.value, &encoded, budget::reserve,
+		       &overflow_encode, SIZE_MAX) == result::allocation_failure);
+	assert(errno == EOVERFLOW && encoded == sentinel && !overflow_encode.calls);
+	assert(native_quest_recovery_context_decode_bounded(
+		       original.command, wire, &decoded, budget::reserve, &overflow_decode,
+		       SIZE_MAX) == result::allocation_failure);
+	assert(errno == EOVERFLOW && equal(decoded, original.value) && !overflow_decode.calls);
+	budget encode_budget, decode_budget;
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && __cplusplus == 202002L &&       \
+	!defined(_GLIBCXX_ASSERTIONS) && !defined(_GLIBCXX_PARALLEL)
+	assert(native_quest_recovery_context_encode_bounded(original.command, original.value,
+							    &encoded, budget::reserve,
+							    &encode_budget, 0) == result::ok);
+	assert(encoded == wire && encode_budget.calls);
+	// Stale resource errno cannot reclassify semantic failures in either API.
+	auto malformed = original.value;
+	malformed.give_hooks.front() = 3;
+	budget semantic_encode, semantic_decode;
+	encoded = sentinel;
+	errno = ENOBUFS;
+	assert(native_quest_recovery_context_encode_bounded(original.command, malformed, &encoded,
+							    budget::reserve, &semantic_encode,
+							    0) == result::invalid_value);
+	assert(encoded == sentinel && semantic_encode.calls);
+	auto trailing = wire;
+	trailing.push_back(0);
+	errno = ENOBUFS;
+	assert(native_quest_recovery_context_decode_bounded(original.command, trailing, &decoded,
+							    budget::reserve, &semantic_decode,
+							    0) == result::invalid_value);
+	assert(equal(decoded, original.value) && semantic_decode.calls);
+	for (size_t cut = 1; cut <= encode_budget.calls; ++cut)
+	{
+		budget denied{ 0, cut };
+		encoded = sentinel;
+		assert(native_quest_recovery_context_encode_bounded(
+			       original.command, original.value, &encoded, budget::reserve, &denied,
+			       0) == result::allocation_failure);
+		assert(encoded == sentinel && denied.calls == cut);
+	}
+	assert(native_quest_recovery_context_decode_bounded(original.command, wire, &decoded,
+							    budget::reserve, &decode_budget,
+							    0) == result::ok);
+	assert(equal(decoded, original.value) && decode_budget.calls);
+	for (size_t cut = 1; cut <= decode_budget.calls; ++cut)
+	{
+		budget denied{ 0, cut };
+		decoded = original.value;
+		assert(native_quest_recovery_context_decode_bounded(
+			       original.command, wire, &decoded, budget::reserve, &denied, 0) ==
+		       result::allocation_failure);
+		assert(equal(decoded, original.value) && denied.calls == cut);
+	}
+	std::printf("canonical NQR bounded transport: %zu encode/%zu decode refusal cuts passed\n",
+		    encode_budget.calls, decode_budget.calls);
+#else
+	errno = 0;
+	assert(native_quest_recovery_context_encode_bounded(
+		       original.command, original.value, &encoded, budget::reserve, &encode_budget,
+		       0) == result::allocation_failure);
+	assert(errno == ENOTSUP && encoded == sentinel && !encode_budget.calls);
+	errno = 0;
+	assert(native_quest_recovery_context_decode_bounded(original.command, wire, &decoded,
+							    budget::reserve, &decode_budget,
+							    0) == result::allocation_failure);
+	assert(errno == ENOTSUP && equal(decoded, original.value) && !decode_budget.calls);
+	std::puts("canonical NQR bounded transport unsupported-profile refusals passed");
+#endif
+}
 }
 
 int main()
@@ -1242,6 +1334,7 @@ int main()
 	receipt_and_publication();
 	exact_child_frames();
 	child_combined_retained_budget();
+	bounded_transport_refusals();
 	std::puts(
 		"native quest recovery context structural transport, original forests/program, bounds, receipt equivalence and strong output checks passed");
 }

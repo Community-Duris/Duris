@@ -1130,6 +1130,24 @@ constexpr size_t recovery_byte_algorithm_frames =
 namespace
 {
 using recovery_reserve = bool (*)(size_t, void *) noexcept;
+// Observe the original callback's actual refusal across all codec descendants.
+// This relay conveys bytes only; it grants no source or domain authority.
+struct recovery_reserve_probe
+{
+	recovery_reserve original;
+	void *original_context;
+	bool refused = false;
+	static bool admit(size_t bytes, void *opaque) noexcept
+	{
+		auto &self = *static_cast<recovery_reserve_probe *>(opaque);
+		if (!self.original || !self.original(bytes, self.original_context))
+		{
+			self.refused = true;
+			return false;
+		}
+		return true;
+	}
+};
 bool recovery_add(size_t &bytes, size_t value) noexcept
 {
 	if (value > SIZE_MAX - bytes)
@@ -2198,7 +2216,25 @@ size_t native_quest_recovery_codec_source_frame_bytes() noexcept
 	// Scope.parent is a genuine live pointer,not copied storage; own current/
 	// prefix arguments/results join the retained parent at every descendant.
 	const size_t borrowed = 3 * sizeof(void *) + 3 * sizeof(size_t) + 2 * sizeof(bool);
+	// Decode's public wrapper and canonical encode wrapper coexist. Charge their
+	// actual declared signatures/results separately from the private bodies.
+	// Each checked outer addition has its genuine reference/value/result scope.
+	const size_t probe_public_frames =
+		sizeof(const critical_command *) + sizeof(const native_quest_recovery_context *) +
+		sizeof(std::vector<uint8_t> *) + sizeof(recovery_reserve) + sizeof(void *) +
+		sizeof(size_t) + sizeof(player_snapshot_codec_result) +
+		sizeof(const critical_command *) + sizeof(std::span<const uint8_t>) +
+		sizeof(native_quest_recovery_context *) + sizeof(recovery_reserve) +
+		sizeof(void *) + sizeof(size_t) + sizeof(player_snapshot_codec_result) +
+		2 * (sizeof(size_t *) + sizeof(size_t) + sizeof(bool));
+	// Inner admit -> outer admit -> original reserve can all be live together.
+	// Each admit has bytes/opaque/self-reference/result, and each callback call
+	// has its actual bytes/context/result. External callback storage is not guessed.
+	const size_t probe_relay_frames =
+		2 * (sizeof(size_t) + sizeof(void *) + sizeof(recovery_reserve_probe *) +
+		     sizeof(bool) + sizeof(size_t) + sizeof(void *) + sizeof(bool));
 	return public_frames + helpers + shape + receipts + maximum + parser + defaults + borrowed +
+	       probe_public_frames + probe_relay_frames +
 	       player_item_snapshot_current_heap_observer_frame_bytes() +
 	       item_transfer_payload_current_heap_observer_frame_bytes() +
 	       native_quest_recovery_context_current_heap_observer_frame_bytes() +
@@ -2218,12 +2254,13 @@ namespace
 {
 // Reader/spans/results are lexical source, not watched physical inline.
 constexpr size_t native_entry_encode =
-	sizeof(recovery_codec_scope) + sizeof(item_transfer_payload) +
-	3 * sizeof(std::vector<uint8_t>) + 4 * sizeof(recovery_codec_live);
+	sizeof(recovery_reserve_probe) + sizeof(recovery_codec_scope) +
+	sizeof(item_transfer_payload) + 3 * sizeof(std::vector<uint8_t>) +
+	4 * sizeof(recovery_codec_live);
 constexpr size_t native_entry_decode =
-	sizeof(recovery_codec_scope) + sizeof(item_transfer_payload) +
-	sizeof(std::vector<uint8_t>) + sizeof(native_quest_recovery_context) +
-	3 * sizeof(recovery_codec_live);
+	sizeof(recovery_reserve_probe) + sizeof(recovery_codec_scope) +
+	sizeof(item_transfer_payload) + sizeof(std::vector<uint8_t>) +
+	sizeof(native_quest_recovery_context) + 3 * sizeof(recovery_codec_live);
 constexpr size_t native_entry_latest =
 	sizeof(recovery_codec_scope) + sizeof(critical_command) + sizeof(item_transfer_payload) +
 	2 * sizeof(native_quest_recovery_context) + 4 * sizeof(recovery_codec_live);
@@ -2244,11 +2281,10 @@ size_t native_quest_recovery_codec_entry_inline_bytes() noexcept
 	return native_entry_max;
 }
 
-player_snapshot_codec_result
-native_quest_recovery_context_encode_bounded(const critical_command &command,
-					     const native_quest_recovery_context &value,
-					     std::vector<uint8_t> *output, recovery_reserve reserve,
-					     void *context, size_t outer) noexcept
+static player_snapshot_codec_result native_quest_recovery_context_encode_bounded_original(
+	const critical_command &command, const native_quest_recovery_context &value,
+	std::vector<uint8_t> *output, recovery_reserve reserve, void *context,
+	size_t outer) noexcept
 {
 #if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 13 || !defined(_GLIBCXX_USE_CXX11_ABI) || \
 	!_GLIBCXX_USE_CXX11_ABI || defined(_GLIBCXX_DEBUG) || __cplusplus != 202002L ||         \
@@ -2445,7 +2481,7 @@ native_quest_recovery_context_encode_bounded(const critical_command &command,
 		return player_snapshot_codec_result::invalid_value;
 	}
 }
-player_snapshot_codec_result native_quest_recovery_context_decode_bounded(
+static player_snapshot_codec_result native_quest_recovery_context_decode_bounded_original(
 	const critical_command &command, std::span<const uint8_t> bytes,
 	native_quest_recovery_context *output, recovery_reserve reserve, void *context,
 	size_t outer) noexcept
@@ -2669,4 +2705,35 @@ player_snapshot_codec_result native_quest_recovery_context_decode_bounded(
 	{
 		return player_snapshot_codec_result::invalid_value;
 	}
+}
+
+player_snapshot_codec_result
+native_quest_recovery_context_encode_bounded(const critical_command &command,
+					     const native_quest_recovery_context &value,
+					     std::vector<uint8_t> *output, recovery_reserve reserve,
+					     void *context, size_t outer) noexcept
+{
+	recovery_reserve_probe probe{ reserve, context };
+	// This wrapper's probe remains resident throughout every descendant call.
+	// Include it in the checked owned prefix, including nested canonical encode.
+	if (!recovery_add(outer, sizeof(probe)))
+		return player_snapshot_codec_result::allocation_failure;
+	const auto result = native_quest_recovery_context_encode_bounded_original(
+		command, value, output, recovery_reserve_probe::admit, &probe, outer);
+	return probe.refused ? player_snapshot_codec_result::allocation_failure : result;
+}
+
+player_snapshot_codec_result native_quest_recovery_context_decode_bounded(
+	const critical_command &command, std::span<const uint8_t> bytes,
+	native_quest_recovery_context *output, recovery_reserve reserve, void *context,
+	size_t outer) noexcept
+{
+	recovery_reserve_probe probe{ reserve, context };
+	// This wrapper's probe remains resident throughout every descendant call.
+	// Include it in the checked owned prefix, including nested canonical encode.
+	if (!recovery_add(outer, sizeof(probe)))
+		return player_snapshot_codec_result::allocation_failure;
+	const auto result = native_quest_recovery_context_decode_bounded_original(
+		command, bytes, output, recovery_reserve_probe::admit, &probe, outer);
+	return probe.refused ? player_snapshot_codec_result::allocation_failure : result;
 }

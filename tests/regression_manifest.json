@@ -4952,8 +4952,8 @@
       "minimum_cases": 1,
       "cpu": 1,
       "memory_mb": 1024,
-      "seconds": 57.709,
-      "purpose": "Actual NQR3/native-v12 recovery context and immutable pair controls; no world or owner authority."
+      "seconds": 82.553,
+      "purpose": "Actual canonical NQR1-5 bounded codec with complete original providers: callback-refusal classification, persistent probe ownership, all-cut/strong-output/stale-errno/overflow controls. No world, native owner, activation or release authority."
     },
     "test_npc_alchemist_runtime.py": {
       "profile": "native",

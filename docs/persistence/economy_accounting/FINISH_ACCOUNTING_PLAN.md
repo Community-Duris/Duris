@@ -28,6 +28,13 @@ restore guards remain unchanged. Twelve focused legacy fixture cases and both
 affected production builds passed; this does not qualify nonempty custody,
 accounting activation, full native recovery or publication ACK.
 
+Bounded native quest recovery codecs now distinguish an actual allocation
+callback refusal from semantic invalidity and account for each resident callback
+probe throughout nested operations. The canonical regression uses the complete
+original providers and passed; both affected production builds passed on identical
+production sources. This inactive codec prerequisite does not qualify gameplay,
+accounting activation, full Source65, native recovery or publication ACK.
+
 ## Starting facts and reusable inputs
 
 - Read the [complete paused handoff](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/SHARED_IMPLEMENTATION_PAUSED_HANDOFF_2026-10-11.md).
