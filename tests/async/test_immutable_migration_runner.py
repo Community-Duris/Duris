@@ -121,9 +121,18 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
                 "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
                 "AND ENGINE='InnoDB' AND table_name IN ('economic_baseline_control',"
                 "'economic_baseline_witness','economic_baseline_reservation');")
+            pending_claim_tables_query = (
+                "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
+                "AND ENGINE='InnoDB' AND table_name IN ('economic_pending_claim_source',"
+                "'economic_pending_claim_consumption','economic_account_mapping');")
+            native_mobile_table_query = (
+                "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
+                "AND ENGINE='InnoDB' AND table_name='quest_mobile_native';")
             def empty_restore_sql(query):
                 self.assertTrue(query.startswith("SELECT "))
-                return "3" if query == baseline_tables_query else "0"
+                if query == native_mobile_table_query:
+                    return "1"
+                return "3" if query in (baseline_tables_query, pending_claim_tables_query) else "0"
             executor.sql = mock.Mock(side_effect=empty_restore_sql)
             with self.subTest(count=count), mock.patch.dict(os.environ, {
                     "DB_NAME": "duris_restore", "DB_SOCKET": "/tmp/disposable.sock"}), \
@@ -132,6 +141,8 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
                     restore_qualifier.main()
                     self.assertGreater(executor.sql.call_count, 0)
                     self.assertIn(mock.call(baseline_tables_query), executor.sql.call_args_list)
+                    self.assertIn(mock.call(pending_claim_tables_query), executor.sql.call_args_list)
+                    self.assertIn(mock.call(native_mobile_table_query), executor.sql.call_args_list)
                 else:
                     with self.assertRaisesRegex(RuntimeError, "incomplete_or_unknown"):
                         restore_qualifier.main()
@@ -588,6 +599,149 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         self.assertIn('"$SCHEMA_ONLY" == 0', verifier)
         self.assertIn("establish_character_baselines(config)", importer)
         self.assertIn('verifier = ROOT / "migrations/verify_runtime_compatibility.sh"', importer)
+
+
+class MysqlDiagnosticTransportTest(unittest.TestCase):
+    """Finite local child I/O controls; no MySQL server/schema qualification."""
+    def executor(self, child):
+        environment = {"ENVIRONMENT": "test", "DB_HOST": "127.0.0.1", "DB_NAME": "migration_test",
+                       "DB_USER": "test", "DB_PASSWD": "private-test-secret"}
+        patched = mock.patch.dict(os.environ, environment, clear=True)
+        patched.start()
+        self.addCleanup(patched.stop)
+        value = runner.MysqlExecutor(runner.load_manifest())
+        value.command = [sys.executable, "-u", "-c", child]
+        self.addCleanup(value._close_session)
+        return value
+
+    @unittest.skipUnless(os.name == "posix", "real nonblocking pipe selector requires POSIX")
+    def test_actual_child_stderr_signal_is_retained_and_session_fenced(self):
+        child = "import sys; sys.stdin.readline(); sys.stderr.write('ERROR 1644 (45000) at line 240: incompatible zone reset item origin schema\\n'); sys.stderr.flush(); sys.exit(1)"
+        value = self.executor(child)
+        with self.assertRaisesRegex(runner.MigrationContractError,
+                                   r"mysql client ERROR 1644 \(45000\): incompatible zone reset item origin schema"):
+            value.sql("SELECT 1;")
+        self.assertTrue(value._session_closed)
+        self.assertIsNone(value._client)
+        with mock.patch.object(runner.subprocess, "Popen") as spawn:
+            with self.assertRaisesRegex(runner.MigrationContractError, "session is closed"):
+                value.sql("SELECT 2;")
+            spawn.assert_not_called()
+
+    @unittest.skipUnless(os.name == "posix", "real nonblocking pipe selector requires POSIX")
+    def test_stderr_flood_is_bounded_without_deadlock(self):
+        value = self.executor("import sys; sys.stdin.readline(); sys.stderr.write('x' * 1000000); sys.stderr.flush()")
+        with self.assertRaisesRegex(runner.MigrationContractError, "diagnostic exceeds limit"):
+            value.sql("SELECT 1;")
+        self.assertTrue(value._session_closed)
+        self.assertIsNone(value._client)
+
+    @unittest.skipUnless(os.name == "posix", "real nonblocking pipe selector requires POSIX")
+    def test_client_error_does_not_echo_credentials_or_arbitrary_text(self):
+        value = self.executor("import sys; sys.stdin.readline(); sys.stderr.write(\"ERROR 1045 (28000): private-test-secret SQL SELECT secret_value FROM private_rows\\n\"); sys.stderr.flush(); sys.exit(1)")
+        with self.assertRaises(runner.MigrationContractError) as caught:
+            value.sql("SELECT 1;")
+        self.assertIn("mysql client ERROR 1045 (28000)", str(caught.exception))
+        self.assertNotIn("private-test-secret", str(caught.exception))
+        self.assertNotIn("private_rows", str(caught.exception))
+
+    @unittest.skipUnless(os.name == "posix", "real nonblocking pipe selector requires POSIX")
+    def test_positive_request_then_error_uses_same_child_and_fences(self):
+        child = r'''import re, sys
+count = 0
+for line in sys.stdin:
+    match = re.search(r"SELECT '(duris_migration_end_[a-f0-9]+)';", line)
+    if not match:
+        continue
+    count += 1
+    if count == 1:
+        print('1')
+        print(match.group(1), flush=True)
+    else:
+        sys.stderr.write('ERROR 1644 (45000): incompatible zone reset item terminal schema\n')
+        sys.stderr.flush()
+        sys.exit(1)
+'''
+        value = self.executor(child)
+        self.assertEqual(value.sql("SELECT 1;"), "1")
+        pid = value._client.pid
+        with mock.patch.object(runner.subprocess, "Popen") as spawn:
+            with self.assertRaisesRegex(runner.MigrationContractError, "terminal schema"):
+                value.sql("SELECT 2;")
+            spawn.assert_not_called()
+        self.assertGreater(pid, 0)
+        self.assertTrue(value._session_closed)
+
+    def test_ambiguous_diagnostics_cannot_authorize_a_refusal(self):
+        self.assertEqual(runner.mysql_primary_diagnostic(
+            b"ERROR 1644 (45000): incompatible zone reset item origin schema\n"
+            b"ERROR 2013 (HY000): connection lost\n"), "")
+        self.assertEqual(runner.mysql_primary_diagnostic(
+            b"ERROR 1644 (45000): arbitrary secret text\n"), "mysql client ERROR 1644 (45000)")
+
+    def test_reportable_signal_messages_are_authored_original_invariants(self):
+        manifest = runner.load_manifest()
+        source = manifest.migrations[-1].apply_path.read_bytes()
+        self.assertIn(b"SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='incompatible zone reset item origin schema'", source)
+        self.assertIn(b"SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='incompatible zone reset item terminal schema'", source)
+
+    def test_generic_session_loss_is_rejected_even_with_known_incompatible_shape(self):
+        import test_staging_migration_fork_mysql as fork
+        original = runner.load_manifest(ROOT / "migrations/migration_manifest.json")
+        replacement = runner.load_manifest(ROOT / "migrations/migration_manifest.nullable_default_0065.json")
+        engine = mock.Mock(label="mariadb10_11", database="private_fixture")
+        engine.sql.return_value = "YES\t4E554C4C\tlongblob"
+        refusal = ("migration runner blocked: migration 0065_zone_reset_item_birth_origin apply failed: "
+                   "migration SQL command failed or session lost\n")
+        with mock.patch.object(fork, "qa") as qa:
+            with self.assertRaisesRegex(AssertionError, "actual schema-invariant SQL diagnostic"):
+                fork.require_original65_refusal(engine, original, replacement, refusal, "prefix64", "64\t" + "a" * 64)
+            engine.sql.assert_not_called()
+            qa.assert_not_called()
+
+    def test_actual_diagnostic_requires_unchanged_history_state_and_both_guards(self):
+        import test_staging_migration_fork_mysql as fork
+        refusal = ("migration runner blocked: migration 0065_zone_reset_item_birth_origin apply failed: "
+                   "migration SQL command failed or session lost; mysql client ERROR 1644 (45000): "
+                   "incompatible zone reset item origin schema\n")
+        for original_name, replacement_name, _, _ in fork.SCHEMA65_MANIFESTS:
+            original = runner.load_manifest(ROOT / "migrations" / original_name)
+            replacement = runner.load_manifest(ROOT / "migrations" / replacement_name)
+            state = "64\t" + "a" * 64
+            engine = mock.Mock(label="mariadb10_11", database="private_fixture")
+            engine.sql.side_effect = ["64", state, "YES\t4E554C4C\tlongblob", state]
+            guards = [subprocess.CompletedProcess([], 1, "", "zone reset item origin schema differs\n"),
+                      subprocess.CompletedProcess([], 0, "exact zone reset item origin schema verified\n", "")]
+            with mock.patch.object(fork, "history", return_value="prefix64"), \
+                    mock.patch.object(fork, "qa", side_effect=guards) as qa:
+                result = fork.require_original65_refusal(engine, original, replacement, refusal, "prefix64", state)
+                self.assertTrue(result["original_verifier_refused"] and result["nullable_verifier_passed"])
+                self.assertEqual(qa.call_count, 2)
+                self.assertEqual(qa.call_args_list[0].args[1], ["bash", original.migrations[-1].verify_path.relative_to(ROOT).as_posix()])
+                self.assertEqual(qa.call_args_list[1].args[1], ["bash", replacement.migrations[-1].verify_path.relative_to(ROOT).as_posix()])
+
+    def test_real_signal_still_rejects_changed_state_or_invalid_variant(self):
+        import test_staging_migration_fork_mysql as fork
+        original = runner.load_manifest(ROOT / "migrations/migration_manifest.json")
+        replacement = runner.load_manifest(ROOT / "migrations/migration_manifest.nullable_default_0065.json")
+        state = "64\t" + "a" * 64
+        refusal = ("migration runner blocked: migration 0065_zone_reset_item_birth_origin apply failed: "
+                   "migration SQL command failed or session lost; mysql client ERROR 1644 (45000): "
+                   "incompatible zone reset item origin schema\n")
+        for responses, guards, expected in (
+            (["64", "64\t" + "b" * 64], [], "changed pinned64 state"),
+            (["64", state, "YES\t274E554C4C27\tlongblob"], [], "nullable-default shape"),
+            (["64", state, "YES\t4E554C4C\tlongblob"],
+             [subprocess.CompletedProcess([], 1, "", "zone reset item origin schema differs\n"),
+              subprocess.CompletedProcess([], 1, "", "different incompatible schema\n")],
+             "nullable65 verifier rejected"),
+        ):
+            engine = mock.Mock(label="mariadb10_11", database="private_fixture")
+            engine.sql.side_effect = responses
+            with mock.patch.object(fork, "history", return_value="prefix64"), \
+                    mock.patch.object(fork, "qa", side_effect=guards):
+                with self.assertRaisesRegex(AssertionError, expected):
+                    fork.require_original65_refusal(engine, original, replacement, refusal, "prefix64", state)
 
 
 if __name__ == "__main__":

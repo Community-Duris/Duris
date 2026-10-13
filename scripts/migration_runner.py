@@ -27,6 +27,7 @@ MAX_MANIFEST_BYTES = 1024 * 1024
 MAX_MIGRATION_BYTES = 8 * 1024 * 1024
 MAX_PRODUCTION_BACKUP_AGE_SECONDS = 2 * 60 * 60
 MYSQL_COMMAND_TIMEOUT_SECONDS = 120
+MAX_MYSQL_DIAGNOSTIC_BYTES = 8192
 MANIFEST_FIELDS = {"manifest_version", "runner_version", "baseline", "migrations"}
 BASELINE_FIELDS = {
     "id", "required_table_count", "required_table_fingerprint", "required_tables",
@@ -39,6 +40,22 @@ MIGRATION_FIELDS = {
 
 class MigrationContractError(Exception):
     pass
+
+
+def mysql_primary_diagnostic(payload: bytes) -> str:
+    """Retain actual error identity without echoing SQL, credentials or row data."""
+    matches = re.findall(rb"(?m)^ERROR ([0-9]+) \(([A-Z0-9]{5})\)(?: at line [0-9]+)?: ([^\r\n]*)\r?$", payload)
+    if len(matches) != 1:
+        return ""
+    errno, state, message = matches[0]
+    identity = "mysql client ERROR " + errno.decode("ascii") + " (" + state.decode("ascii") + ")"
+    # These exact authored invariant messages contain no input data. Unknown
+    # client text stays private; its numeric error/SQLSTATE still identifies it.
+    if errno == b"1644" and state == b"45000" and message in (
+            b"incompatible zone reset item origin schema",
+            b"incompatible zone reset item terminal schema"):
+        identity += ": " + message.decode("ascii")
+    return identity
 
 
 def strict_object(pairs: list[tuple[str, object]]) -> dict:
@@ -401,15 +418,17 @@ class MysqlExecutor:
             raise MigrationContractError("migration SQL request exceeds limit")
         marker = ("duris_migration_end_" + os.urandom(16).hex()).encode("ascii")
         payload += b"\n;\nSELECT '" + marker + b"';\n"
+        diagnostic = bytearray()
         try:
             if self._client is None:
                 environment = dict(os.environ)
                 environment["MYSQL_PWD"] = os.environ["DB_PASSWD"]
                 self._client = subprocess.Popen(
                     self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                    stderr=subprocess.DEVNULL, env=environment, bufsize=0)
+                    stderr=subprocess.PIPE, env=environment, bufsize=0)
                 os.set_blocking(self._client.stdin.fileno(), False)
                 os.set_blocking(self._client.stdout.fileno(), False)
+                os.set_blocking(self._client.stderr.fileno(), False)
             if self._client.poll() is not None:
                 raise MigrationContractError("migration SQL session exited")
             output = bytearray()
@@ -418,6 +437,7 @@ class MysqlExecutor:
             with selectors.DefaultSelector() as selector:
                 selector.register(self._client.stdin, selectors.EVENT_WRITE)
                 selector.register(self._client.stdout, selectors.EVENT_READ)
+                selector.register(self._client.stderr, selectors.EVENT_READ)
                 while True:
                     remaining = deadline - time.monotonic()
                     if remaining <= 0:
@@ -436,6 +456,17 @@ class MysqlExecutor:
                             sent += count
                             if sent == len(payload):
                                 selector.unregister(self._client.stdin)
+                        elif key.fileobj is self._client.stderr:
+                            try:
+                                chunk = os.read(key.fd, MAX_MYSQL_DIAGNOSTIC_BYTES - len(diagnostic) + 1)
+                            except BlockingIOError:
+                                continue
+                            if not chunk:
+                                selector.unregister(self._client.stderr)
+                                continue
+                            if len(chunk) > MAX_MYSQL_DIAGNOSTIC_BYTES - len(diagnostic):
+                                raise MigrationContractError("migration SQL diagnostic exceeds limit")
+                            diagnostic.extend(chunk)
                         else:
                             try:
                                 chunk = os.read(key.fd, 65536)
@@ -452,14 +483,20 @@ class MysqlExecutor:
                                     raise MigrationContractError("migration SQL result arrived before request completed")
                                 return output[:-len(terminator)].decode("utf-8").strip()
         except BaseException as error:
-            self._close_session()
+            self._close_session(diagnostic)
+            primary = mysql_primary_diagnostic(bytes(diagnostic))
+            if primary and (isinstance(error, BrokenPipeError) or
+                    isinstance(error, MigrationContractError) and str(error) in (
+                        "migration SQL session exited", "migration SQL session stopped reading",
+                        "migration SQL command failed or session lost")):
+                raise MigrationContractError(str(error) + "; " + primary) from error
             if isinstance(error, MigrationContractError):
                 raise
             if isinstance(error, (OSError, UnicodeError, MemoryError)):
                 raise MigrationContractError("migration SQL transport failed") from error
             raise
 
-    def _close_session(self) -> None:
+    def _close_session(self, diagnostic: bytearray | None = None) -> None:
         self._session_closed = True
         client, self._client = self._client, None
         if client is None:
@@ -471,7 +508,19 @@ class MysqlExecutor:
             except subprocess.TimeoutExpired:
                 client.kill()
                 client.wait(timeout=5)
-        for stream in (client.stdin, client.stdout):
+        if diagnostic is not None and client.stderr is not None:
+            while len(diagnostic) <= MAX_MYSQL_DIAGNOSTIC_BYTES:
+                try:
+                    chunk = os.read(client.stderr.fileno(), MAX_MYSQL_DIAGNOSTIC_BYTES - len(diagnostic) + 1)
+                except (BlockingIOError, OSError):
+                    break
+                if not chunk:
+                    break
+                if len(chunk) > MAX_MYSQL_DIAGNOSTIC_BYTES - len(diagnostic):
+                    diagnostic.clear()
+                    break
+                diagnostic.extend(chunk)
+        for stream in (client.stdin, client.stdout, client.stderr):
             if stream is not None:
                 stream.close()
 

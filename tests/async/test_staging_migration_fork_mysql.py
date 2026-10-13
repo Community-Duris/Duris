@@ -176,6 +176,59 @@ def migrate(engine: schema.Engine, manifest_name: str, success: bool = True) -> 
     return result.stdout + result.stderr
 
 
+def require_original65_refusal(engine: schema.Engine, original: runner.Manifest,
+                               replacement: runner.Manifest, refusal: str,
+                               prefix64: str, state64: str) -> dict:
+    """Classify the actual incompatible schema, not a suppressed SQL message."""
+    check(engine.label == "mariadb10_11", "original65 refusal requires MariaDB")
+    check(len(original.migrations) == len(replacement.migrations) == 65 and
+          original.migrations[-1].migration_id == "0065_zone_reset_item_birth_origin" and
+          replacement.migrations[-1].migration_id == "0065_zone_reset_item_birth_origin_nullable_default" and
+          original.migrations[:64] == replacement.migrations[:64],
+          "original65 refusal requires matching authentic64 prefixes/distinct65 heads")
+    expected = "migration runner blocked: migration 0065_zone_reset_item_birth_origin apply failed: "
+    check(refusal.startswith(expected), "original65 failed outside its apply stage: " + refusal)
+    check(re.search(r"; mysql client ERROR 1644 \(45000\): incompatible zone reset item "
+                    r"(?:origin|terminal) schema\n?$", refusal) is not None,
+          "original65 lacks the actual schema-invariant SQL diagnostic: " + refusal)
+    check(re.fullmatch(r"64\t[0-9a-f]{64}", state64) is not None, "original64 state malformed")
+    check(engine.sql("SELECT COUNT(*) FROM mud_schema_history;", database=engine.database) == "64",
+          "failed original65 recorded a receipt")
+    check(history(engine, 64) == prefix64, "failed original65 changed64 receipts")
+    state_sql = "SELECT applied_count,LOWER(HEX(history_checksum)) FROM mud_schema_migration_state WHERE state_id=1;"
+    check(engine.sql(state_sql, database=engine.database) == state64,
+          "failed original65 changed pinned64 state")
+    # SQL NULL and the literal string 'NULL' have different raw metadata. The
+    # immutable variant permits MariaDB's NULL-default metadata, not a quoted
+    # string default or another malformed terminal column.
+    metadata = engine.sql("SELECT is_nullable,IF(column_default IS NULL,'SQL_NULL',HEX(column_default)),data_type "
+                          "FROM information_schema.columns WHERE table_schema=DATABASE() "
+                          "AND table_name='zone_reset_item_birth_origin' "
+                          "AND column_name='terminal_publication_context';", database=engine.database)
+    check(metadata == "YES\t4E554C4C\tlongblob", "original65 did not retain the MariaDB nullable-default shape")
+    guards = []
+    for manifest in (original, replacement):
+        step = manifest.migrations[-1]
+        path = step.verify_path
+        check(hashlib.sha256(path.read_bytes()).hexdigest() == step.verify_checksum,
+              "immutable65 verifier changed")
+        result = qa(engine, ["bash", path.relative_to(ROOT).as_posix()])
+        guards.append((result, step))
+    old_result, old_step = guards[0]
+    new_result, new_step = guards[1]
+    check(old_result.returncode != 0 and "zone reset item origin schema differs" in
+          old_result.stdout + old_result.stderr, "original65 verifier did not reject its incompatible shape")
+    check(new_result.returncode == 0, "nullable65 verifier rejected original65 tail: " +
+          new_result.stdout + new_result.stderr)
+    check(history(engine, 64) == prefix64 and engine.sql(state_sql, database=engine.database) == state64,
+          "read-only65 guards changed pinned64 evidence")
+    return {"original_apply_refusal": refusal.strip(), "nullable_default_metadata": metadata,
+            "prefix64_receipts_unchanged": True, "prefix64_state_unchanged": True,
+            "original_verifier_sha256": old_step.verify_checksum,
+            "nullable_verifier_sha256": new_step.verify_checksum,
+            "original_verifier_refused": True, "nullable_verifier_passed": True}
+
+
 def history(engine: schema.Engine, limit: int | None = None) -> str:
     if limit is None:
         # Cover the complete registered history plus an overflow row. The
@@ -542,6 +595,7 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
             # MariaDB's known original apply refusal is recovered only while no
             #65 receipt exists; never manufacture or rewrite a recorded65 row.
             historical_routes = []
+            refusal_guards = []
             for ordinal, (old_name, new_name, old_key, new_key) in enumerate(SCHEMA65_MANIFESTS):
                 old_contract = runner.load_manifest(ROOT / "migrations" / old_name)
                 original_engine = engine_factory(label, name, password,
@@ -566,10 +620,11 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
                     check(old_receipts == history(original_engine), "variant selection changed original65 receipts")
                     key = old_key
                 else:
+                    state64 = original_engine.sql("SELECT applied_count,LOWER(HEX(history_checksum)) "
+                        "FROM mud_schema_migration_state WHERE state_id=1;", database=original_engine.database)
                     refusal = migrate(original_engine, old_name, False)
-                    check("zone reset item" in refusal, "original65 failed for an unexpected reason")
-                    check(original_engine.sql("SELECT COUNT(*) FROM mud_schema_history;",
-                          database=original_engine.database) == "64", "failed original65 recorded a receipt")
+                    refusal_guards.append(require_original65_refusal(original_engine, old_contract,
+                        runner.load_manifest(ROOT / "migrations" / new_name), refusal, prefix64_receipts, state64))
                     old_receipts = history(original_engine, 64)
                     migrate(original_engine, new_name)
                     check(old_receipts == history(original_engine, 64), "variant recovery rewrote1-64")
@@ -586,6 +641,8 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
             report[label]["original65_histories_accepted" if label == "mysql8" else
                           "original65_refusal_then_unrecorded_tail_recovery"] = True
             report[label]["existing64_shell_and_compiled_boot_preserved"] = True
+            if label == "mariadb10_11":
+                report[label]["original65_refusal_guard_evidence"] = refusal_guards
             engines.append((label, *historical_routes))
             duplicate_guard(engine_factory(label, name, password,
                                           f"duris_268_{token}_duplicatetest"),

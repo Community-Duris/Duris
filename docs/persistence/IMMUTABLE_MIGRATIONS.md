@@ -169,3 +169,12 @@ The isolated MySQL tests verify the full legacy upgrade, exact fresh-bootstrap
 equivalence, replay, schema compatibility, ordered uniqueness, honest baseline kind
 uniqueness, preservation of legacy data-copy markers, and record-preserving
 convergence of the pre-b029 `server_reboots` table on both supported engines.
+
+The runner drains the owned MySQL client stderr pipe with an 8 KiB limit and
+fences the session on transport failure. Diagnostics expose one numeric error
+and SQLSTATE; only the two authored zone-reset schema invariant messages may
+include text. Arbitrary SQL, credentials and row data are omitted. The schema65
+refusal control requires the actual invariant error before checking unchanged
+64-row history and state and running both immutable verifiers. The focused unit
+suite covers pipe failures and the commissioned empty restore metadata; a passing
+unit suite does not establish the separate real MySQL/MariaDB schema matrix.

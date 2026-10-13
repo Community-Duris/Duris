@@ -3820,11 +3820,12 @@
     "test_immutable_migration_runner.py": {
       "profile": "fast",
       "mode": "unittest",
-      "minimum_cases": 24,
+      "minimum_cases": 33,
       "cpu": 1,
       "memory_mb": 256,
-      "seconds": 0.675,
-      "purpose": "Focused immutable migration manifest and success-last runner regressions."
+      "seconds": 102.797,
+      "purpose": "Complete33 immutable runner/restore regressions with bounded owned child diagnostics and strict schema65 refusal controls. Measured Source23a; no database service or schema matrix qualification.",
+      "timeout_seconds": 600
     },
     "test_information_cache.py": {
       "profile": "native",
