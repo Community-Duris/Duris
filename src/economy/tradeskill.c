@@ -1180,6 +1180,8 @@ void event_bandage_check(P_char ch, P_char victim, P_obj, void *data)
 	{
 		send_to_char("&+WThe poison in your bloodstream is neutralized!\n", victim);
 		poison_common_remove(victim);
+		if (IS_PC(victim))
+			mark_player_dirty_components(GET_PID(victim), PLAYER_COMPONENT_AFFECTS);
 	}
 
 	if (healed == 0)
@@ -1190,6 +1192,10 @@ void event_bandage_check(P_char ch, P_char victim, P_obj, void *data)
 	}
 
 	GET_VITALITY(ch) -= (number(0, 100) > GET_CHAR_SKILL(ch, SKILL_BANDAGE)) ? 3 : 2;
+	if (IS_PC(ch))
+		mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
+	if (victim != ch && IS_PC(victim))
+		mark_player_dirty_components(GET_PID(victim), PLAYER_COMPONENT_STATUS);
 	add_event(event_bandage_check, PULSE_VIOLENCE, ch, victim, 0, 0, mdata,
 		  sizeof(struct bandage_data));
 }

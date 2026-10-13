@@ -14,6 +14,13 @@ responsibility boundaries and existing product decisions remain required.
 Historical Plan 1 acceptance retains only its recorded scope. Technical completion
 does not authorize activation, production operations, deployment or PR merge.
 
+Bandage healing and caster vitality changes now enter the existing persistent
+STATUS capture, and poison removal enters AFFECTS capture even when no healing
+follows. The original event arithmetic, random selection, healing caps,
+interruptions and durable bandage retirement remain unchanged. The focused
+regression executes the original event and damage modifier with native revision
+tracking; it does not establish coupled effect receipts, cold recovery or ACK.
+
 ## Starting facts and reusable inputs
 
 - Read the [complete paused handoff](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/SHARED_IMPLEMENTATION_PAUSED_HANDOFF_2026-10-11.md).

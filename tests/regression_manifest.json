@@ -8818,6 +8818,16 @@
       ],
       "seconds": 65.733,
       "purpose": "Real canonical codec to SQL parent projection to keeper delta PUT/GET in SQL-header and flat ASan/UBSan; original4 healthy/44 refusal/113 allocation cuts plus2 composed routes/8 projected-plan refusals and every measured typed projection/keeper allocation cut. Component GC, no SQL/native/cold/publication authority. Maintained no-argument entry supported."
+    },
+    "test_bandage_effect_checkpoint.py": {
+      "profile": "native",
+      "mode": "script",
+      "minimum_cases": 1,
+      "cpu": 2,
+      "memory_mb": 4096,
+      "seconds": 3.974,
+      "timeout_seconds": 1200,
+      "purpose": "Actual bandage event and vamp with native player revision tracking: self, PC and NPC healing/vitality/poison dirty capture, interruption and cap refusal controls; no SQL/cold/ACK qualification."
     }
   }
 }
