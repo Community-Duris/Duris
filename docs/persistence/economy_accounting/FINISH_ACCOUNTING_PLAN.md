@@ -365,3 +365,11 @@ queries, chaos rules and signed-byte assignments. A complete original-body
 differential covers the connected wrappers and strong preparation refusals.
 These owned values grant no gameplay or source authority; full level/status
 preparation, source lifetime, native publication, recovery and ACK remain open.
+
+Ordinary item cache transfers now prepare all selected AFTER rows and missing
+owner revision nodes before changing live rows or clocks. Allocation refusal
+retains the original item and owner values; retry cannot publish a second revision.
+The source-bound regression reproduces the old destination-node failure and
+checks the corrected path across allocation cuts and owner-table growth.
+This closes this cache atomicity defect only; accounting admission remains
+closed and the full gameplay, persistence, lifecycle and R1-R8 gates stay open.

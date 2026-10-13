@@ -8838,6 +8838,16 @@
       "seconds": 5.28030431602383,
       "timeout_seconds": 1800,
       "purpose": "Complete original-body skill and level-loop differential, all class/spec/NPC and chaos/song controls, strong preparation refusals and exact property-read ordering; measured pinned GNU13 sanitizer run. CPU/memory/deadline retain the owned validation job budgets, not measured peak claims."
+    },
+    "test_atomic_item_cache_transfer.py": {
+      "profile": "native",
+      "mode": "script",
+      "minimum_cases": 1,
+      "cpu": 2,
+      "memory_mb": 8192,
+      "seconds": 17.403479646978667,
+      "timeout_seconds": 1800,
+      "purpose": "Whole canonical ordinary item cache transfer allocation cuts, actual missing/existing owner-node and 1..64 locker bucket growth, strong BEFORE/clock preservation, exact-once same-owner/nested/destruction/restoration and malformed/stale controls. CPU/memory/deadline are owned job budgets, not measured peaks; no gameplay/Source65/activation qualification."
     }
   }
 }
