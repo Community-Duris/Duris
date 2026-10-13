@@ -12,6 +12,15 @@ player_snapshot_capture_result player_snapshot_capture(P_char ch, player_revisio
 						       player_component_mask_t components,
 						       int save_intent, int room_vnum,
 						       player_snapshot *snapshot_out);
+// Exact observation for prospective operation preparation. Uses the original
+// component adapters and save filters without synchronizing live ward timers.
+// Affect duration/capacity are the stored values at observation; the original
+// native effect owner still owns elapsed-time normalization, holds and AFTER.
+// This value copy is neither a status fence nor permission to mutate or ACK.
+player_snapshot_capture_result player_snapshot_observe(P_char ch, player_revision_t revision,
+						       player_component_mask_t components,
+						       int save_intent, int room_vnum,
+						       player_snapshot *snapshot_out);
 player_snapshot_capture_result
 player_item_snapshot_list_capture(P_char owner, bool equipment, bool inventory, bool omit_norent,
 				  std::vector<player_item_snapshot> *items_out,

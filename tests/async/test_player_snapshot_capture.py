@@ -194,6 +194,7 @@ DEATH_HARNESS = r"""
 #include "core/utils.h"
 #include "classes/necromancy.h"
 #include "core/files.h"
+#include "magic/spells.h"
 #include "world/vnum.obj.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
@@ -215,6 +216,17 @@ int top_of_objt = 2;
 int top_of_mobt = 1;
 extern const int top_of_world = 0;
 Skill skills[MAX_SKILLS] = {};
+static int ward_sync_calls = 0;
+void spell_ward_sync_timers(P_char ch)
+{
+    ++ward_sync_calls;
+    for (auto af = ch->affected; af; af = af->next) {
+        if (!(af->flags & AFFTYPE_SPELL_WARD)) continue;
+        --af->duration;
+        --af->ward_capacity;
+        ++af->ward_last_tick;
+    }
+}
 bool has_innate(P_char, int) { return false; }
 void logit(const char *, const char *, ...) {}
 int panic_corruption_int(const char *, const char *, ...) { std::abort(); }
@@ -235,6 +247,42 @@ int main()
     GET_GOLD(&ch) = 19;
     GET_MAX_HIT(&ch) = 500;
     GET_HIT(&ch) = -25;
+    // Prospective observation must preserve the exact live BEFORE. An ordinary
+    // checkpoint still reaches its original timer synchronizer. Use a visible
+    // side effect to prove the production adapter chooses the right boundary;
+    // this is not a qualification of ward normalization or native status AFTER.
+    affected_type ward = {}, unsaved = {};
+    ward.type = SPELL_MINOR_GLOBE;
+    ward.flags = AFFTYPE_SPELL_WARD;
+    ward.duration = 90;
+    ward.ward_capacity = 700;
+    ward.ward_last_tick = 12;
+    ward.next = &unsaved;
+    unsaved.type = SPELL_CURSE;
+    unsaved.flags = AFFTYPE_NOSAVE;
+    ch.affected = &ward;
+    player_snapshot observed;
+    assert(player_snapshot_observe(&ch, 10, PLAYER_COMPONENT_AFFECTS,
+        RENT_CRASH, 22800, &observed) == player_snapshot_capture_result::ok);
+    assert(ward_sync_calls == 0 && ward.duration == 90 &&
+        ward.ward_capacity == 700 && ward.ward_last_tick == 12);
+    assert(observed.affects.size() == 1 && observed.affects[0].duration == 90 &&
+        observed.affects[0].ward_capacity == 700);
+    observed.pid = 987;
+    unsaved.next = &ward;
+    assert(player_snapshot_observe(&ch, 10, PLAYER_COMPONENT_AFFECTS,
+        RENT_CRASH, 22800, &observed) == player_snapshot_capture_result::object_cycle);
+    assert(observed.pid == 987 && observed.affects.size() == 1 &&
+        ward_sync_calls == 0 && ward.duration == 90 && ward.ward_capacity == 700);
+    unsaved.next = nullptr;
+    player_snapshot checkpoint;
+    assert(player_snapshot_capture(&ch, 10, PLAYER_COMPONENT_AFFECTS,
+        RENT_CRASH, 22800, &checkpoint) == player_snapshot_capture_result::ok);
+    assert(ward_sync_calls == 1 && ward.duration == 89 &&
+        ward.ward_capacity == 699 && ward.ward_last_tick == 13);
+    assert(checkpoint.affects.size() == 1 && checkpoint.affects[0].duration == 89 &&
+        checkpoint.affects[0].ward_capacity == 699);
+    ch.affected = nullptr;
     indexes[0].virtual_number = VOBJ_CORPSE;
     indexes[1].virtual_number = VOBJ_COINS;
     indexes[2].virtual_number = 100;

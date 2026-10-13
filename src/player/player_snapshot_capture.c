@@ -285,13 +285,15 @@ bool capture_skills(P_char ch, player_snapshot &snapshot, capture_budget &budget
 }
 
 player_snapshot_capture_result capture_affects(P_char ch, player_snapshot &snapshot,
-					       capture_budget &budget)
+					       capture_budget &budget,
+					       bool synchronize_wards = true)
 {
 #if defined(__GNUC__) || defined(__clang__)
-	if (spell_ward_sync_timers)
+	if (synchronize_wards && spell_ward_sync_timers)
 		spell_ward_sync_timers(ch);
 #else
-	spell_ward_sync_timers(ch);
+	if (synchronize_wards)
+		spell_ward_sync_timers(ch);
 #endif
 	std::unordered_set<const affected_type *> seen;
 	for (const affected_type *affect = ch->affected; affect; affect = affect->next)
@@ -1117,9 +1119,10 @@ player_snapshot_capture_result player_snapshot_capture(P_char ch, player_revisio
 							 room_vnum, 0, snapshot_out);
 }
 
-player_snapshot_capture_result player_snapshot_capture_literal_inventory_roots(
-	P_char ch, player_revision_t revision, player_component_mask_t components, int save_intent,
-	int room_vnum, std::span<const uint64_t> inventory_roots, player_snapshot *snapshot_out)
+static player_snapshot_capture_result
+capture_snapshot(P_char ch, player_revision_t revision, player_component_mask_t components,
+		 int save_intent, int room_vnum, std::span<const uint64_t> inventory_roots,
+		 bool synchronize_wards, player_snapshot *snapshot_out)
 {
 	if (!ch || !snapshot_out || IS_NPC(ch) || !ch->only.pc || GET_PID(ch) <= 0 || !revision ||
 	    !components || (components & ~PLAYER_CHECKPOINT_COMPONENT_ALL))
@@ -1153,7 +1156,8 @@ player_snapshot_capture_result player_snapshot_capture_literal_inventory_roots(
 			return player_snapshot_capture_result::limit_exceeded;
 		if (components & PLAYER_COMPONENT_AFFECTS)
 		{
-			const auto result = capture_affects(ch, snapshot, budget);
+			const auto result =
+				capture_affects(ch, snapshot, budget, synchronize_wards);
 			if (result != player_snapshot_capture_result::ok)
 				return result;
 		}
@@ -1187,6 +1191,23 @@ player_snapshot_capture_result player_snapshot_capture_literal_inventory_roots(
 		return player_snapshot_capture_result::retryable_allocation_failure;
 	}
 	return player_snapshot_capture_result::ok;
+}
+
+player_snapshot_capture_result player_snapshot_capture_literal_inventory_roots(
+	P_char ch, player_revision_t revision, player_component_mask_t components, int save_intent,
+	int room_vnum, std::span<const uint64_t> inventory_roots, player_snapshot *snapshot_out)
+{
+	return capture_snapshot(ch, revision, components, save_intent, room_vnum, inventory_roots,
+				true, snapshot_out);
+}
+
+player_snapshot_capture_result player_snapshot_observe(P_char ch, player_revision_t revision,
+						       player_component_mask_t components,
+						       int save_intent, int room_vnum,
+						       player_snapshot *snapshot_out)
+{
+	return capture_snapshot(ch, revision, components, save_intent, room_vnum, {}, false,
+				snapshot_out);
 }
 
 player_snapshot_capture_result player_snapshot_capture_literal_inventory(

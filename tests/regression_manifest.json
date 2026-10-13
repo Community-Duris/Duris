@@ -6066,7 +6066,7 @@
       "minimum_cases": 1,
       "cpu": 1,
       "memory_mb": 512,
-      "seconds": 12.283,
+      "seconds": 25.384,
       "purpose": "Contracts for bounded immutable player snapshot capture."
     },
     "test_player_spell_effect_receipt_mysql.py": {

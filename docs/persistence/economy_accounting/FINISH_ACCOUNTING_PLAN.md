@@ -331,3 +331,9 @@ identity, active self-root, finite slot and nonzero revision constraints hold.
 The common validator preserves their persisted slot; item-effect golden controls
 and component linkage cover this case. Full shared-stock correspondence, genuine
 held ownership, recovery and release qualification remain open.
+
+Persistent BEFORE preparation can use player_snapshot_observe to copy the original
+filtered player state without synchronizing live ward timers. Ordinary save and
+death capture retain their original timer synchronization. This observation API
+grants no source, status hold, mutation, coupled commit, publication or ACK
+authority; complete remove-curse and other effect-owner release gates remain open.
