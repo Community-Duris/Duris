@@ -27,7 +27,7 @@ harness = harness.replace("// PRODUCTION_HELPER", helper)
 harness = harness.replace("// PRODUCTION_RESET", reset)
 harness = harness.replace("// PRODUCTION_RESTORE", restore)
 
-build_root = ROOT / "bin/tests"
+build_root = Path(os.environ.get("BIN_ROOT", str(ROOT / "bin"))) / "tests"
 build_root.mkdir(parents=True, exist_ok=True)
 with tempfile.TemporaryDirectory(prefix="shopkeeper-population-", dir=build_root) as temporary:
     source = Path(temporary) / "harness.cpp"
@@ -36,13 +36,13 @@ with tempfile.TemporaryDirectory(prefix="shopkeeper-population-", dir=build_root
     subprocess.run([
         "g++", "-std=c++20", "-g", "-Wall", "-Wextra", "-Werror",
         "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie",
-        "-I", str(ROOT / "src"),
+        "-I", str(ROOT / "src"), "-I/usr/include/mysql",
         str(source), str(ROOT / "src/player/player_snapshot_codec.c"),
         "-o", str(binary),
     ], check=True)
     for scenario in (
         "reset", "shared", "duplicate", "duplicate_uid", "legacy_uid", "invalid_uid",
-        "cleanup", "cash", "invalid", "uid_save", "dynamic_properties",
+        "cleanup", "cash", "invalid", "uid_save", "dynamic_properties", "late_room_failure",
     ):
         subprocess.run([str(binary), scenario], check=True, env={
             **os.environ, "ASAN_OPTIONS": "detect_leaks=1:halt_on_error=1",

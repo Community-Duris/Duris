@@ -7097,11 +7097,11 @@
     "test_shopkeeper_population.py": {
       "profile": "native",
       "mode": "script",
-      "minimum_cases": 1,
+      "minimum_cases": 12,
       "cpu": 1,
       "memory_mb": 512,
-      "seconds": 5.871,
-      "purpose": "Execute the production M-reset branch and batched SQL restore with fake world/DB I/O."
+      "seconds": 7.535,
+      "purpose": "Execute actual full catalog loader and original M-reset bodies with controlled legacy world/DB I/O: eleven original cases and late destination refusal before custody/stock publication. No nonempty custody, owned SQL, activation or release proof."
     },
     "test_shopkeeper_retry_policy.py": {
       "profile": "native",

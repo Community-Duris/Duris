@@ -11,6 +11,8 @@
 
 #include "economy/shopkeeper_save_policy.h"
 #include "player/player_snapshot_codec.h"
+#include "persistence/shop_item_runtime_payload.h"
+#include "item/item_ownership_runtime.h"
 
 constexpr int MAX_WEAR = 4, MAX_OBJ_AFFECT = 4, NOWHERE = -1;
 constexpr int VIRTUAL = 0, REAL = 1, LOG_DEBUG = 0, LOG_MOB = 1;
@@ -18,10 +20,10 @@ constexpr int LOC_CARRIED = 1, LOC_INSIDE = 2;
 constexpr unsigned char OBJ_RFLAG_CREATION_CANDIDATE = 1u << 2;
 #define REMOVE_BIT(var, bit) ((var) = (var) & ~((unsigned long)(bit)))
 constexpr int STRUNG_KEYS = 1, STRUNG_DESC2 = 2, STRUNG_DESC1 = 4, STRUNG_DESC3 = 8;
-struct Character;
-struct Object;
-using P_char = Character *;
-using P_obj = Object *;
+struct char_data;
+struct obj_data;
+using P_char = char_data *;
+using P_obj = obj_data *;
 struct object_affect
 {
 	int location, modifier;
@@ -33,7 +35,7 @@ struct obj_affect
 	obj_affect *next = nullptr;
 };
 constexpr short TAG_ALTERED_EXTRA2 = 32000;
-struct Object
+struct obj_data
 {
 	int R_num = 0, weight = 0, cost = 0, value[8] = {}, str_mask = 0, loc_p = 0, wear_flags = 0,
 	    type = 0, material = 0, db_item_id = 0, condition = 100;
@@ -53,7 +55,7 @@ struct Object
 		P_char carrying = nullptr;
 	} loc;
 };
-struct Character
+struct char_data
 {
 	int rnum = 0, in_room = NOWHERE, birthplace = 0, affects = 0;
 	int copper = 0, silver = 0, gold = 4, platinum = 0;
@@ -68,7 +70,7 @@ struct Character
 		npc_data *npc;
 	} only;
 	P_obj carrying = nullptr, equipment[MAX_WEAR] = {};
-	Character()
+	char_data()
 		: only{ &npc_storage }
 	{
 	}
@@ -167,8 +169,14 @@ int real_mobile(int vnum)
 {
 	return vnum >= 100 && vnum <= 102 ? vnum - 100 : -1;
 }
+int late_room_failure_vnum = -1;
+int room_reads[3] = {};
+int equipment_calls = 0, custody_hydration_calls = 0;
 int real_room(int vnum)
 {
+	if (vnum >= 200 && vnum <= 202 && ++room_reads[vnum - 200] > 1 &&
+	    vnum == late_room_failure_vnum)
+		return NOWHERE;
 	return vnum >= 200 && vnum <= 202 ? vnum - 200 : NOWHERE;
 }
 int real_object(int vnum)
@@ -180,7 +188,7 @@ P_char read_mobile(int id, int type)
 	const int rnum = type == VIRTUAL ? real_mobile(id) : id;
 	if (rnum < 0)
 		return nullptr;
-	P_char ch = new Character;
+	P_char ch = new char_data;
 	ch->rnum = rnum;
 	ch->next = character_list;
 	character_list = ch;
@@ -240,7 +248,7 @@ P_obj read_object(int rnum, int)
 {
 	if (rnum == read_object_fail_rnum)
 		return nullptr;
-	P_obj obj = new Object;
+	P_obj obj = new obj_data;
 	obj->R_num = rnum;
 	obj->obj_uid = next_obj_uid++;
 	objects.push_back(obj);
@@ -248,6 +256,7 @@ P_obj read_object(int rnum, int)
 }
 void equip_char(P_char ch, P_obj obj, int slot, int)
 {
+	++equipment_calls;
 	ch->equipment[slot] = obj;
 }
 void obj_to_char(P_obj obj, P_char ch)
@@ -309,14 +318,15 @@ bool sql_load_item_extra_descr_from_table(int, P_obj, const char *)
 using Rows = std::vector<std::vector<std::string>>;
 Rows saved_keepers, saved_items, saved_affects, saved_item_affects;
 bool fail_affects_query = false;
-struct MYSQL_RES
+struct fixture_mysql_result
 {
 	Rows rows;
 	size_t index = 0;
 	std::vector<char *> cells;
 };
-using MYSQL_ROW = char **;
-bool DB = true;
+std::map<MYSQL_RES *, fixture_mysql_result> mysql_results;
+MYSQL fixture_connection{};
+MYSQL *DB = &fixture_connection;
 struct
 {
 	int virtual_number = 0;
@@ -335,7 +345,7 @@ void sql_format_item_diff_fields_and_free_proto(P_obj, char *wear, char *type, c
 	for (char *field : { wear, type, material, bv1, bv2, bv3, bv4, bv5 })
 		strcpy(field, "NULL");
 }
-unsigned long mysql_insert_id(bool)
+my_ulonglong mysql_insert_id(MYSQL *)
 {
 	return next_insert_id++;
 }
@@ -360,10 +370,13 @@ MYSQL_RES *db_query(const char *query, ...)
 		rows = saved_items;
 	else if (strstr(query, "FROM shopkeeper_affects sa"))
 		rows = saved_affects;
-	return new MYSQL_RES{ rows, 0, {} };
+	auto *result = new MYSQL_RES{};
+	mysql_results.emplace(result, fixture_mysql_result{ rows, 0, {} });
+	return result;
 }
-MYSQL_ROW mysql_fetch_row(MYSQL_RES *result)
+MYSQL_ROW mysql_fetch_row(MYSQL_RES *native)
 {
+	auto *result = &mysql_results.at(native);
 	if (result->index == result->rows.size())
 		return nullptr;
 	result->cells.clear();
@@ -373,6 +386,7 @@ MYSQL_ROW mysql_fetch_row(MYSQL_RES *result)
 }
 void mysql_free_result(MYSQL_RES *result)
 {
+	assert(mysql_results.erase(result) == 1);
 	delete result;
 }
 bool sql_run_query(const char *query)
@@ -394,6 +408,50 @@ bool is_replicated_shop(int shop)
 			return true;
 	return false;
 }
+
+// This original world/DB-I/O harness selects the supported legacy catalog.
+// The sidecar owner, transaction proof and nonempty registry authority are
+// unavailable here; entering those paths is a test failure, never a fake ACK.
+bool shop_item_runtime_storage_available(MYSQL *, bool *available) noexcept
+{
+	assert(available);
+	*available = false;
+	return true;
+}
+bool shop_item_runtime_write(MYSQL *, bool, uint64_t, const player_item_snapshot &) noexcept
+{
+	std::abort();
+}
+bool shop_item_runtime_keeper_image(MYSQL *, uint64_t, uint32_t, int32_t, shop_item_runtime_image *,
+				    std::vector<item_ownership_runtime_entry> *) noexcept
+{
+	std::abort();
+}
+bool shop_item_runtime_restore_stage(obj_data *, const player_item_snapshot &) noexcept
+{
+	std::abort();
+}
+bool item_ownership_runtime_hydrate_many_atomic(const item_ownership_runtime_entry *, size_t count)
+{
+	assert(!count); // Legacy empty-image no-op only; no custody is manufactured.
+	++custody_hydration_calls;
+	return true;
+}
+bool sql_begin_transaction()
+{
+	std::abort();
+}
+class shop_payload_transaction
+{
+    public:
+	explicit shop_payload_transaction(bool enabled)
+	{
+		if (enabled)
+			std::abort();
+	}
+	bool starting() { return true; }
+	bool finish() { return true; }
+};
 
 // PRODUCTION_ITEM_PROPERTIES
 // PRODUCTION_SAVE_ITEM
@@ -418,8 +476,22 @@ void npc_alchemist_world_spawn(P_char)
 {
 	++alchemist_spawn_calls;
 }
+// The unchanged original M branch also names the separate native reset owner.
+// This fixture exercises legacy population only; every native entry fails closed.
+class quest_mobile_native_birth_owner
+{
+    public:
+	static void seal_mobile() { std::abort(); }
+	static bool pending_shop(int, int, int) { std::abort(); }
+	static size_t pending_mobiles(int) { std::abort(); }
+	static P_char prepare_mobile(int, int, uint32_t, int) { std::abort(); }
+	static bool capture_alchemist_spawn(P_char, int) { std::abort(); }
+	static void block_mobile() { std::abort(); }
+};
 void reset_mobile(int force_item_repop, bool expect_skip)
 {
+	const bool native_sql_reset = false;
+	const uint32_t cmd_no = 0;
 	int zone = 0, last_cmd = 1, last_mob_load = 1, configured_shop = -1, replicated_shop = -1;
 	P_char mob = character_list, last_mob = mob, tmp_mob = mob, last_mob_followable = mob;
 	(void)zone;
@@ -577,6 +649,30 @@ int main(int argc, char **argv)
 		       second->copper == 0);
 		assert(shop_index[0].dirty && shop_index[1].dirty);
 		assert(mob_index[0].number == 6);
+	}
+	else if (scenario == "late_room_failure")
+	{
+		P_char incumbent = spawn(0);
+		bind_shopkeeper(incumbent, 0);
+		const int original_population = mob_index[0].number;
+		saved_keepers = { { "0", "10", "100", "200", "25" },
+				  { "1", "11", "100", "201", "99" } };
+		add_item(10, 70);
+		add_item(11, 71);
+		add_item(11, 72, 3);
+		add_item(11, 73);
+		saved_items.back()[4] = "3"; // Child of the actual slot-3 root.
+		late_room_failure_vnum = 200;
+		std::fill(std::begin(room_reads), std::end(room_reads), 0);
+		assert(!sql_restore_shopkeepers());
+		assert(room_reads[0] == 2 && room_reads[1] == 2);
+		assert(!custody_hydration_calls && !equipment_calls);
+		assert(objects.empty() && character_list == incumbent && !incumbent->next);
+		assert(world[0].people == incumbent && !world[1].people);
+		assert(mob_index[0].number == original_population);
+		assert(!shop_index[0].dirty && !shop_index[1].dirty);
+		assert(!incumbent->carrying && incumbent->gold == 4);
+		assert(save_queries.empty() && mysql_results.empty());
 	}
 	else if (scenario == "duplicate")
 	{

@@ -21,6 +21,13 @@ interruptions and durable bandage retirement remain unchanged. The focused
 regression executes the original event and damage modifier with native revision
 tracking; it does not establish coupled effect receipts, cold recovery or ACK.
 
+Saved SHOP catalog destinations are now checked together before current custody
+is installed. An invalid destination discards the complete unpublished stock and
+returns failure, preserving incumbent keepers. Original equipment effects and
+restore guards remain unchanged. Twelve focused legacy fixture cases and both
+affected production builds passed; this does not qualify nonempty custody,
+accounting activation, full native recovery or publication ACK.
+
 ## Starting facts and reusable inputs
 
 - Read the [complete paused handoff](https://github.com/Community-Duris/Duris/blob/codex/accounting-handoff-context-20261012/docs/persistence/economy_accounting/SHARED_IMPLEMENTATION_PAUSED_HANDOFF_2026-10-11.md).

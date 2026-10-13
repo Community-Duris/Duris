@@ -10168,6 +10168,7 @@ struct shopkeeper_temp
 	int shopkeeper_id;
 	int mob_vnum;
 	int room_vnum;
+	int load_room;
 	P_char mob;
 	P_obj equipment[MAX_WEAR];
 	P_obj inventory;
@@ -10867,6 +10868,20 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 		discard_shopkeeper_restore_stage(keepers, all_items, true);
 		return false;
 	}
+	// Resolve every destination before installing any current custody. A failed
+	// destination must discard the whole unpublished forest, rather than leave
+	// hydrated UIDs behind or report a partially placed catalog as restored.
+	for (struct shopkeeper_temp *k = keepers; k; k = k->next)
+	{
+		k->load_room = real_room(k->room_vnum);
+		if (k->load_room == NOWHERE)
+		{
+			logit(LOG_DEBUG, "sql_restore_shopkeepers: bad room %d for shop %d",
+			      k->room_vnum, k->shop_nr);
+			discard_shopkeeper_restore_stage(keepers, all_items, true);
+			return false;
+		}
+	}
 	// One atomic runtime projection of the proved native forest. The original
 	// primitive rejects duplicate/newer/conflicting UIDs and owner counters,
 	// and rolls back allocation failure. Legacy empty images remain no-ops.
@@ -10889,14 +10904,7 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 	int loaded = 0;
 	for (struct shopkeeper_temp *k = keepers; k; k = k->next)
 	{
-		int load_room = real_room(k->room_vnum);
-		if (load_room == NOWHERE)
-		{
-			logit(LOG_DEBUG, "sql_restore_shopkeepers: bad room %d for shop %d",
-			      k->room_vnum, k->shop_nr);
-			extract_char(k->mob);
-			continue;
-		}
+		const int load_room = k->load_room;
 
 		// equip and set inventory
 		for (int slot = 0; slot < MAX_WEAR; slot++)
