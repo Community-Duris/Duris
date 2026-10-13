@@ -33,6 +33,7 @@ using namespace std;
 #include "cmd/interp.h"
 #include "item/item_uid_allocator.h"
 #include "core/utility.h"
+#include "player/skill_selection_preparation.h"
 #include "core/logging_internal.h"
 #include "core/utils.h"
 #include "guild/assocs.h"
@@ -5865,90 +5866,21 @@ int GET_ALT_SIZE(P_char ch)
 // Returns the maximum data for the skill.
 ClassSkillInfo SKILL_DATA_ALL(P_char ch, int skill)
 {
-	ClassSkillInfo dummy;
-	int required_level, new_cap;
-	int pri_class, sec_class;
-	int pri_rlevel, sec_rlevel, pri_cap, sec_cap;
-	float pri_mod = get_property("skill.cap.multi.mod.primarySkill", 100.0);
-	float sec_mod = get_property("skill.cap.multi.mod.secondarySkill", 95.0);
-
-	pri_class = flag2idx(ch->player.m_class) - 1;
-	sec_class = flag2idx(ch->player.secondary_class) - 1;
-
-	// Note: Class 0 is warrior per above.
-	if (IS_PC(ch) && (sec_class >= 0))
-	{
-		// Note: Currently you should not be spec'd and multi'd so ch->player.spec should be 0.
-		pri_rlevel = (skills[(skill)].m_class[pri_class]).rlevel[ch->player.spec];
-		sec_rlevel = (skills[(skill)].m_class[sec_class]).rlevel[ch->player.spec];
-		pri_cap = skills[skill].m_class[pri_class].maxlearn[ch->player.spec];
-		sec_cap = skills[skill].m_class[sec_class].maxlearn[ch->player.spec];
-
-		if ((pri_rlevel > 0) && (sec_rlevel < 1))
-		{
-			new_cap = (int)(pri_cap * pri_mod) / 100;
-			required_level = pri_rlevel;
-		}
-		else if ((sec_rlevel > 0) && (pri_rlevel < 1))
-		{
-			new_cap = (int)(sec_cap * sec_mod) / 100;
-			required_level = sec_rlevel + 5;
-		}
-		else if ((pri_rlevel > 0) && (sec_rlevel > 0))
-		{
-			new_cap = (MAX((int)(pri_cap * pri_mod), (int)(sec_cap * sec_mod))) / 100;
-			required_level = MIN(pri_rlevel, (sec_rlevel + 5));
-		}
-		else
-		{
-			new_cap = 0;
-			required_level = 0;
-		}
-
-		// Debugging:
-		// if( IS_SKILL(skill) ) debug( "Skill %s (%d): pri_rlevel: %d, sec_rlevel: %d, pri_cap: %d, sec_cap %d.\nnew_cap: %d, required_level: %d.",
-		//  skills[skill].name, skill, pri_rlevel, sec_rlevel, pri_cap, sec_cap, new_cap, required_level );
-
-		dummy.maxlearn[ch->player.spec] = new_cap;
-		dummy.rlevel[ch->player.spec] = required_level;
-	}
-	else if (IS_MULTICLASS_NPC(ch))
-	{
-		/* because multiclass NPCs store their multiple classes in m_class, it's not possible
-		to simply use SKILL_DATA(), as this just returns the skill data for the class with the
-		highest order flag bit. This routine should go through and find the skill with the highest
-		value for any of the set classes - Torgal 4/2009 */
-
-		int highest = 0;
-		struct ClassSkillInfo *classEntry = skills[skill].m_class;
-		struct ClassSkillInfo *highestClassEntry = classEntry;
-
-		for (int i = 0; i < CLASS_COUNT; i++, classEntry++)
-		{
-			if (ch->player.m_class & (1 << i))
-			{
-				if (classEntry->maxlearn[0] > highest)
-				{
-					highestClassEntry = classEntry;
-					highest = classEntry->maxlearn[0];
-				}
-			}
-		}
-
-		dummy = *highestClassEntry;
-	}
-	else if (pri_class >= 0 && pri_class < CLASS_COUNT)
-	{
-		dummy = SKILL_DATA(ch, skill);
-	}
-	else
+	const float primary_modifier = get_property("skill.cap.multi.mod.primarySkill", 100.0);
+	const float secondary_modifier = get_property("skill.cap.multi.mod.secondarySkill", 95.0);
+	const player_skill_selection_input input{ ch->player.m_class, ch->player.secondary_class,
+						  ch->player.spec, IS_NPC(ch) != 0,
+						  IS_MULTICLASS_NPC(ch) };
+	ClassSkillInfo selected;
+	if (!player_skill_select_original_values(input, skills[skill].m_class,
+						 { primary_modifier, secondary_modifier },
+						 &selected))
 	{
 		printf("Invalid m_class %x for %s\n", ch->player.m_class, J_NAME(ch));
 		ch->player.m_class = 1; // warrior
-		dummy = SKILL_DATA(ch, skill);
+		return SKILL_DATA(ch, skill);
 	}
-
-	return dummy;
+	return selected;
 }
 
 int GET_CHAR_SKILL_P(P_char ch, int skl)
@@ -6063,7 +5995,8 @@ int GET_LVL_FOR_SKILL(P_char ch, int skill)
 		return 0;
 	}
 
-	return SKILL_DATA_ALL(ch, skill).rlevel[ch->player.spec];
+	const auto selected = SKILL_DATA_ALL(ch, skill);
+	return player_skill_required_level_original_values(selected, ch->player.spec);
 }
 
 /* this function returns a random non-god character in room

@@ -358,3 +358,10 @@ filtered player state without synchronizing live ward timers. Ordinary save and
 death capture retain their original timer synchronization. This observation API
 grants no source, status hold, mutation, coupled commit, publication or ACK
 authority; complete remove-curse and other effect-owner release gates remain open.
+
+The original skill selectors and both level-skill loops share typed value
+calculations while retaining native class fallback, property-read order, song
+queries, chaos rules and signed-byte assignments. A complete original-body
+differential covers the connected wrappers and strong preparation refusals.
+These owned values grant no gameplay or source authority; full level/status
+preparation, source lifetime, native publication, recovery and ACK remain open.

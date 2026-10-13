@@ -604,6 +604,8 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/coin_physical_publication.o \
 				 economy/coin_physical_recovery.o \
 				 player/player_revision_state.o \
+				 player/level_skill_preparation.o \
+				 player/skill_selection_preparation.o \
 				 player/player_save_worker.o \
 				 player/player_save_journal.o \
 				 player/player_quarantine_recovery.o \
