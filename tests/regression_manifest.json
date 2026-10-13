@@ -2269,7 +2269,7 @@
       "minimum_cases": 1,
       "cpu": 1,
       "memory_mb": 512,
-      "seconds": 27.485,
+      "seconds": 55.711,
       "purpose": "Compile production accounting primitives and execute golden/property tests."
     },
     "test_economic_baseline_adapter.py": {

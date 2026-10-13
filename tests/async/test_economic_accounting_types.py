@@ -112,10 +112,11 @@ def main():
         command=shlex.split(os.environ.get('CXX','g++'))+[
             '-std=c++20','-Wall','-Wextra','-Wpedantic','-Werror','-O1','-g',
             '-fsanitize=address,undefined','-fno-omit-frame-pointer','-fno-pie','-no-pie',
+            '-ffunction-sections','-fdata-sections',
             '-I'+str(ROOT/'src'),'-I'+str(temp),
             str(ROOT/'tests/async/economic_accounting_types_test.cpp'),
             str(ROOT/'src/economy/economic_accounting_types.c'),
-            str(ROOT/'src/persistence/critical_command.c'),str(ROOT/'src/item/item_transfer_command.c'), str(ROOT/'src/world/quest_mobile_native_reference.c'), str(ROOT/'src/economy/economic_source_event.c'),str(ROOT/'src/item/craft_pouch_mutation.c'),str(ROOT/'src/combat/chaos_pouch_ledger.c'), str(ROOT/'src/player/player_snapshot_codec.c'),'-lcrypto','-o',str(executable)]
+            str(ROOT/'src/persistence/critical_command.c'),str(ROOT/'src/item/item_transfer_command.c'), str(ROOT/'src/world/quest_mobile_native_reference.c'), str(ROOT/'src/economy/economic_source_event.c'),str(ROOT/'src/item/craft_pouch_mutation.c'),str(ROOT/'src/combat/chaos_pouch_ledger.c'), str(ROOT/'src/player/player_snapshot_codec.c'),'-lcrypto','-Wl,--gc-sections','-o',str(executable)]
         subprocess.run(command,check=True)
         environment=dict(os.environ,ASAN_OPTIONS='detect_leaks=1:halt_on_error=1',UBSAN_OPTIONS='halt_on_error=1:print_stacktrace=1')
         subprocess.run([str(executable)],check=True,env=environment)

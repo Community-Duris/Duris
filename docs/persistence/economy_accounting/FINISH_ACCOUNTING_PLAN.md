@@ -325,3 +325,9 @@ component controls exercise quiver PUT/GET, stale/duplicate refusal and every
 measured allocation cut. These are value preparation checks. Original SQL writes,
 native facts/holds, coupled immutable revisions, cold recovery, publication and
 ACK remain separate open dependencies; admission stays closed.
+
+Original equipped SHOP roots are valid economic positions when the existing owner
+identity, active self-root, finite slot and nonzero revision constraints hold.
+The common validator preserves their persisted slot; item-effect golden controls
+and component linkage cover this case. Full shared-stock correspondence, genuine
+held ownership, recovery and release qualification remain open.

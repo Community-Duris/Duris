@@ -357,11 +357,116 @@ void item_effects()
 	CHECK(economic_item_effects_validate(before, {}, {}, 0) == error::capacity);
 }
 
+void shop_equipment_effects()
+{
+	// Exact retained financial49 SHOP stock root; persistence keeps slot3.
+	const economic_item_position equipped{
+		{ item_owner_type::shopkeeper, 1, 0 }, 301, 0, 1, item_custody_state::active, 3
+	};
+	const std::vector<economic_item_snapshot> stock{ { 301, equipped } };
+	CHECK(economic_item_effects_validate(stock, stock, {}, 0) == error::ok);
+	CHECK(stock[0].position.equipment_slot == 3 &&
+	      stock[0].position.owner.type == item_owner_type::shopkeeper);
+	const std::vector<economic_item_snapshot> absent{ { 301, {} } };
+	const std::vector<economic_item_event> creation{ { 0, 0, 301, {}, equipped } };
+	CHECK(economic_item_effects_validate(absent, stock, creation, 0) == error::ok);
+	auto after = stock;
+	++after[0].position.revision;
+	const std::vector<economic_item_event> touch{ { 0, 0, 301, equipped, after[0].position } };
+	CHECK(economic_item_effects_validate(stock, after, touch, 0) == error::ok);
+	CHECK(after[0].position.equipment_slot == 3 && after[0].position.owner.id == 1);
+
+	const auto refused = [&](auto mutate)
+	{
+		auto bad = stock;
+		mutate(bad[0].position);
+		CHECK(economic_item_effects_validate(bad, bad, {}, 0) == error::invalid_identity);
+		CHECK(economic_item_effects_validate(stock, bad, {}, 0) == error::invalid_identity);
+	};
+	refused([](auto &p) { p.owner.id = 0; });
+	refused([](auto &p) { p.owner.context_id = 1; });
+	refused([](auto &p) { p.owner.type = item_owner_type::unknown; });
+	refused([](auto &p) { p.owner.type = item_owner_type::room; });
+	refused([](auto &p) { p.equipment_slot = ITEM_TRANSFER_MAX_EQUIPMENT_SLOT + 1; });
+	refused([](auto &p) { p.equipment_slot = UINT16_MAX; });
+	refused(
+		[](auto &p)
+		{
+			p.parent_uid = 300;
+			p.root_uid = 300;
+		});
+	refused([](auto &p) { p.root_uid = 300; });
+	refused([](auto &p) { p.revision = 0; });
+	for (const auto state : { item_custody_state::absent, item_custody_state::destroyed,
+				  item_custody_state::quarantined })
+		refused([&](auto &p) { p.state = state; });
+
+	auto maximum = stock;
+	maximum[0].position.equipment_slot = ITEM_TRANSFER_MAX_EQUIPMENT_SLOT;
+	CHECK(economic_item_effects_validate(maximum, maximum, {}, 0) == error::ok);
+	auto inventory = stock;
+	inventory[0].position.equipment_slot = 0;
+	CHECK(economic_item_effects_validate(inventory, inventory, {}, 0) == error::ok);
+	inventory[0].position.state = item_custody_state::quarantined;
+	CHECK(economic_item_effects_validate(inventory, inventory, {}, 0) == error::ok);
+	for (const auto owner : { item_owner_identity{ item_owner_type::player, 2, 0 },
+				  item_owner_identity{ item_owner_type::native_mobile, 3, 0 } })
+	{
+		auto original = stock;
+		original[0].position.owner = owner;
+		CHECK(economic_item_effects_validate(original, original, {}, 0) == error::ok);
+		if (owner.type == item_owner_type::native_mobile)
+		{
+			original[0].position.equipment_slot = ITEM_TRANSFER_MAX_EQUIPMENT_SLOT + 1;
+			CHECK(economic_item_effects_validate(original, original, {}, 0) ==
+			      error::invalid_identity);
+		}
+	}
+	std::vector<economic_item_snapshot> forest{ { 301, equipped },
+						    { 302,
+						      { { item_owner_type::shopkeeper, 1, 0 },
+							301,
+							301,
+							1,
+							item_custody_state::active,
+							0 } },
+						    { 303,
+						      { { item_owner_type::shopkeeper, 1, 0 },
+							303,
+							0,
+							1,
+							item_custody_state::active,
+							ITEM_TRANSFER_MAX_EQUIPMENT_SLOT } } };
+	CHECK(economic_item_effects_validate(forest, forest, {}, 0) == error::ok);
+	auto changed = forest;
+	changed[1].position.equipment_slot = 4;
+	CHECK(economic_item_effects_validate(changed, changed, {}, 0) == error::invalid_identity);
+	changed = forest;
+	changed[1].uid = 301;
+	CHECK(economic_item_effects_validate(changed, changed, {}, 0) == error::invalid_identity);
+	changed = forest;
+	changed[1].position.parent_uid = 999;
+	CHECK(economic_item_effects_validate(changed, changed, {}, 0) == error::topology);
+	changed = forest;
+	changed[1].position.owner.id = 2;
+	CHECK(economic_item_effects_validate(changed, changed, {}, 0) == error::topology);
+	changed = forest;
+	changed[1].position.root_uid = 303;
+	CHECK(economic_item_effects_validate(changed, changed, {}, 0) == error::topology);
+	changed = forest;
+	changed[2].position = {
+		{ item_owner_type::shopkeeper, 1, 0 }, 301, 302, 1, item_custody_state::active, 0
+	};
+	changed[1].position.parent_uid = 303;
+	CHECK(economic_item_effects_validate(changed, changed, {}, 0) == error::topology);
+}
+
 #include "golden.inc"
 
 int main()
 {
 	item_effects();
+	shop_equipment_effects();
 	operation_links();
 	identities();
 	arithmetic();

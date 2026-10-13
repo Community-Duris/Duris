@@ -274,6 +274,11 @@ bool item_position_valid(uint64_t uid, const economic_item_position &position)
 		       !position.revision && !position.equipment_slot;
 	if (!item_owner_identity_valid(position.owner))
 		return false;
+	if (position.owner.type == item_owner_type::shopkeeper && position.equipment_slot)
+		return !position.owner.context_id && position.revision &&
+		       position.state == item_custody_state::active && !position.parent_uid &&
+		       position.root_uid && position.root_uid == uid &&
+		       position.equipment_slot <= ITEM_TRANSFER_MAX_EQUIPMENT_SLOT;
 	const bool native_mobile = position.owner.type == item_owner_type::native_mobile;
 	if (native_mobile && position.equipment_slot > ITEM_TRANSFER_MAX_EQUIPMENT_SLOT)
 		return false;
