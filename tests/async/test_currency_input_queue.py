@@ -867,12 +867,22 @@ int main()
 	recipient.runtime_id = 45;
 	recipient.only.pc = &recipient_player;
 	recipient.player.racewar = 1;
+	char recipient_account_name[] = "recipient_account";
+	acct_entry recipient_account = {};
+	recipient_account.acct_name = recipient_account_name;
+	descriptor_data recipient_descriptor = {};
+	recipient_descriptor.account = &recipient_account;
+	recipient_descriptor.connected = CON_PLAYING;
+	recipient_descriptor.next = descriptor.next;
+	descriptor.next = &recipient_descriptor;
 	for (int scenario = 0; scenario < 5; ++scenario)
 	{
 		currency_transaction_reset_for_tests();
 		coordinator_fenced = false;
 		actor.next = &recipient;
 		character_list = &actor;
+		descriptor.character = &actor;
+		recipient_descriptor.character = &recipient;
 		GET_PLATINUM(&actor) = 100;
 		GET_COPPER(&actor) = GET_SILVER(&actor) = GET_GOLD(&actor) = 0;
 		GET_PLATINUM(&recipient) = 10;
@@ -948,7 +958,10 @@ int main()
 		else
 			descriptor.character = &actor;
 		if (scenario == 2)
+		{
 			actor.next = nullptr; // Recipient detached before acknowledgement.
+			recipient_descriptor.character = nullptr;
+		}
 		if (scenario == 3)
 		{
 			// Re-entry already loaded a later wallet before this completion arrived.
@@ -1077,6 +1090,10 @@ int main()
 	assert(GET_SILVER(&actor) == 0 && GET_COPPER(&actor) == 60);
 	assert(GET_SILVER(&recipient) == 0 && GET_COPPER(&recipient) == 50);
 	assert(submission_count == admitted_before + 1);
+	descriptor.next = recipient_descriptor.next;
+	recipient_descriptor.next = nullptr;
+	recipient_descriptor.character = nullptr;
+	assert(find_player_by_pid(GET_PID(&recipient)) == nullptr);
 	actor.next = nullptr;
 	character_list = &actor;
 	currency_transaction_reset_for_tests();
