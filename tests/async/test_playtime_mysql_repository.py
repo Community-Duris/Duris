@@ -172,5 +172,8 @@ with tempfile.TemporaryDirectory(prefix="duris-playtime-sql-") as temporary:
                     "src/player/player_save_journal.c",
                     "src/player/player_snapshot_codec.c", "src/sql/item_extra_descr_codec.c",
                     "src/persistence/persistence_observability.c",
-                    "-Wl,--gc-sections", "-lmysqlclient", "-pthread", "-o", str(binary)], cwd=ROOT, check=True)
+                    "src/persistence/critical_command.c",
+                    "src/economy/economic_source_event.c",
+                    "src/item/item_transfer_command.c",
+                    "-Wl,--gc-sections", "-lmysqlclient", "-lcrypto", "-pthread", "-o", str(binary)], cwd=ROOT, check=True)
     subprocess.run([str(binary)], check=True)
