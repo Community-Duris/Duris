@@ -77,6 +77,7 @@ constexpr reason_rule RULES[] = {
 	  false },
 	{ economic_reason::item_reward, 394, economic_actor_kind::domain, true, false, false },
 	{ economic_reason::quest_cost, 326, economic_actor_kind::domain, true, false, false },
+	{ economic_reason::remove_curse, 0, economic_actor_kind::domain, false, false, false },
 };
 
 static_assert(ECONOMIC_PLAN_HEADER_BYTES + ACCOUNT_BYTES * ECONOMIC_ACCOUNTING_MAX_ACCOUNTS +
@@ -109,6 +110,9 @@ bool source_kind_allowed(economic_reason reason, economic_source_kind kind)
 		return kind == economic_source_kind::quest_completion;
 	case economic_reason::quest_cost:
 		return kind == economic_source_kind::quest_action;
+	case economic_reason::remove_curse:
+		return kind == economic_source_kind::item_action ||
+		       kind == economic_source_kind::spell_consumption;
 	case economic_reason::npc_reward:
 		return kind == economic_source_kind::npc_generation;
 	case economic_reason::chaos_reward:

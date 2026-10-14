@@ -156,6 +156,9 @@ bool economic_outcome_current_observation_cut(uint64_t *) noexcept;
 bool economic_outcome_clock_matches(const critical_operation_id &lineage,
 				    const critical_operation_id &epoch,
 				    uint64_t published_cut) noexcept;
+// The exact borrowed record passed by this coordinator's post-fsync publisher.
+// A value-equal copy, idle/current call or replay never matches this phase fact.
+bool economic_outcome_publication_record_matches(const economic_outcome_record *) noexcept;
 bool economic_outcome_entity_cut(const critical_entity_key &, uint64_t *) noexcept;
 bool economic_outcome_install_recovered_cut(uint64_t, economic_outcome_base_verify_fn,
 					    void *) noexcept;

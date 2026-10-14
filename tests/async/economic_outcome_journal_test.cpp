@@ -126,6 +126,7 @@ static bool current(void *opaque) noexcept
 	assert(!economic_outcome_capture_cut(&snapshot));
 	assert(economic_outcome_current_observation_cut(&snapshot) &&
 	       snapshot == state.expected_cut);
+	assert(!economic_outcome_publication_record_matches(state.probe));
 	assert(economic_outcome_clock_matches(id(1), id(2), snapshot));
 	assert(!economic_outcome_clock_matches(id(9), id(2), snapshot));
 	assert(!economic_outcome_clock_matches(id(1), id(9), snapshot));
@@ -138,6 +139,8 @@ static bool current(void *opaque) noexcept
 static bool publish(const economic_outcome_record &record, void *opaque) noexcept
 {
 	auto &state = *static_cast<publication_state *>(opaque);
+	assert(economic_outcome_publication_record_matches(&record));
+	assert(!economic_outcome_publication_record_matches(nullptr));
 	if (state.refuse)
 		return false;
 	assert(record.sequence && record.effects[0].after_revision == record.sequence);
@@ -162,6 +165,23 @@ static bool verify(uint64_t, void *) noexcept
 int main(int argc, char **argv)
 {
 	assert(argc == 2);
+	// Structural wire support never grants legacy SQL execution. The real RC
+	// owner must bind its complete item/status/timer result before shared commit.
+	auto rc = value(90).command;
+	rc.type = critical_command_type::remove_curse;
+	rc.payload_version = CRITICAL_REMOVE_CURSE_RAM_PAYLOAD_VERSION;
+	assert(critical_command_envelope_valid(rc));
+	assert(!critical_command_legacy_execution_supported(rc) && !critical_command_valid(rc));
+	auto wrong_rc = rc;
+	wrong_rc.payload_version = 1;
+	assert(!critical_command_envelope_valid(wrong_rc));
+	wrong_rc = rc;
+	wrong_rc.publication_required = true;
+	assert(!critical_command_envelope_valid(wrong_rc));
+	wrong_rc.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	wrong_rc.accounting_intent = { 1 }; // Structural envelope only, not a valid intent.
+	assert(critical_command_envelope_valid(wrong_rc));
+	assert(!critical_command_legacy_execution_supported(wrong_rc));
 	const auto directory = std::filesystem::path(argv[1]);
 	std::filesystem::create_directories(directory);
 	std::filesystem::permissions(directory, std::filesystem::perms::owner_all);
@@ -250,6 +270,7 @@ int main(int argc, char **argv)
 	uint64_t observation = 999;
 	assert(!economic_outcome_current_observation_cut(&observation) && observation == 999);
 	assert(economic_outcome_clock_matches(id(1), id(2), cut));
+	assert(!economic_outcome_publication_record_matches(&first));
 	assert(!economic_outcome_clock_matches({}, id(2), cut));
 	assert(!economic_outcome_clock_matches(id(1), {}, cut));
 	auto second = value(4);

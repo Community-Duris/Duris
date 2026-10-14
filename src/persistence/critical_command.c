@@ -261,6 +261,8 @@ bool critical_command_envelope_valid(const critical_command &command)
 	       command.type != critical_command_type::collector &&
 	       command.type != critical_command_type::native_mobile_birth &&
 	       command.type != critical_command_type::zone_reset_item_birth &&
+	       !(command.type == critical_command_type::remove_curse &&
+		 command.payload_version == CRITICAL_REMOVE_CURSE_RAM_PAYLOAD_VERSION) &&
 	       !(command.type == critical_command_type::shop_trade &&
 		 shop_trade_payload_version_is_accounted(command.payload_version)) &&
 	       !(command.type == critical_command_type::auction &&
@@ -268,7 +270,9 @@ bool critical_command_envelope_valid(const critical_command &command)
 	    command.accounting_intent.size() > CRITICAL_COMMAND_MAX_ACCOUNTING_INTENT_BYTES ||
 	    critical_operation_id_is_zero(command.operation_id) || !command.payload_version ||
 	    command.type < critical_command_type::test ||
-	    command.type > critical_command_type::zone_reset_item_birth ||
+	    command.type > critical_command_type::remove_curse ||
+	    (command.type == critical_command_type::remove_curse &&
+	     command.payload_version != CRITICAL_REMOVE_CURSE_RAM_PAYLOAD_VERSION) ||
 	    command.source_site < critical_source_site::command ||
 	    command.source_site > critical_source_site::operator_repair ||
 	    command.deadline_class < critical_deadline_class::interactive ||

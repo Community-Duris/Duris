@@ -12,11 +12,13 @@ uint64_t published_sequence = 0;
 bool outcome_in_progress = false;
 bool outcome_checking_current = false;
 bool outcome_fenced = false;
+const economic_outcome_record *publication_record = nullptr;
 struct ordered_scope
 {
 	ordered_scope() { outcome_in_progress = true; }
 	~ordered_scope()
 	{
+		publication_record = nullptr;
 		outcome_checking_current = false;
 		outcome_in_progress = false;
 	}
@@ -68,6 +70,12 @@ bool economic_outcome_clock_matches(const critical_operation_id &lineage,
 	return (economic_outcome_capture_cut(&confirmed) ||
 		economic_outcome_current_observation_cut(&confirmed)) &&
 	       confirmed == observed;
+}
+
+bool economic_outcome_publication_record_matches(const economic_outcome_record *record) noexcept
+{
+	return record && nevent_is_game_thread() && outcome_in_progress &&
+	       !outcome_checking_current && !outcome_fenced && publication_record == record;
 }
 
 bool economic_outcome_install_recovered_cut(uint64_t sequence,
@@ -181,7 +189,10 @@ try
 	}
 	// No world callback or worker native mutation is allowed between the
 	// domain's current check, append/fsync and this preallocated publication.
-	if (!publication.publish(record, publication.context))
+	publication_record = &record;
+	const bool published = publication.publish(record, publication.context);
+	publication_record = nullptr;
+	if (!published)
 	{
 		outcome_fenced = true;
 		publication.fence(appended.sequence, publication.context);

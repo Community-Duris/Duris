@@ -56,7 +56,11 @@ enum class economic_reason : uint16_t
 	quest_cost = 44,
 	gambling_loss = 45,
 	gambling_interruption = 46,
+	// Coupled curse status and item placement; never authorizes currency effects.
+	remove_curse = 47,
 };
+
+constexpr uint32_t ECONOMIC_WRITER_REMOVE_CURSE = 17;
 
 enum class economic_actor_kind : uint8_t
 {

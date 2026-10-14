@@ -89,7 +89,11 @@ enum class critical_command_type : uint16_t
 	native_mobile_birth,
 	// Actorless original room reset issuance; wire support alone grants no admission.
 	zone_reset_item_birth,
+	// RAM-only compound item/status route. Never admitted to legacy executors.
+	remove_curse,
 };
+
+constexpr uint16_t CRITICAL_REMOVE_CURSE_RAM_PAYLOAD_VERSION = 0x8004;
 
 enum class critical_source_site : uint16_t
 {
