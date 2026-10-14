@@ -1,6 +1,55 @@
 # Accounting completion plan: parallel delivery
 
-## Active priority: 24-hour MySQL code-first marathon
+## Active priority: October 19 accounting-off game; November 2 durable accounting
+
+The human approved these separate targets on October 14, 2026. First freeze and
+verify the accounting-off MySQL production game through normal core gameplay,
+save/quit/relogin, link loss, full restart and independent UID/money/status readback.
+Clean off play must not require the unfinished outcome journal, projector or
+activation proof. Requested accounting that is unready, uncertain or recovery
+pending must remain closed; it cannot silently fall back to off. Turning accounting
+off never discards an acknowledged or unreconciled outcome. Production deployment
+requires separate authorization.
+
+The human adopted this contract on October 14, 2026. C++ world-thread RAM owns
+live gameplay. Prepare the complete exact economic outcome and frozen RNG once,
+preallocate publication, durably append it before positive acknowledgement,
+publish once without yielding to world events, then project that same outcome
+idempotently to MySQL. Unknown append fences the affected state until exact
+reconciliation or recovery. Keep one ordered writer, a proved durable coupled
+base plus retained outcome tail, bounded backlog, and admission before actual
+player/pet/corpse/locker materialization. Late snapshots cannot reclaim later
+custody or resurrect retired items. SQL projection does not grant live permission.
+
+Valid loot and persistent-pet/NPC transfers use actual RAM UID, actor/control and
+complete holder/subtree identity. Repair only unambiguous derived-cache drift;
+missing or stale SQL/cache owner/revision alone cannot reject a valid operation.
+Preserve genuine duplicate UID, wrong holder/master, malformed forest, tombstone,
+escrow/auction/collector, conflicting replay and pending/uncertain guards.
+
+Use the approved eleven owners with exclusive function leases and one owned
+heavy-job queue. Through October 17, execute the off batch and repair actual
+regressions while RAM implementation continues. Freeze and stabilize the off
+candidate on October 18 for the October 19 target. Complete core RAM/MySQL coupling
+and fault/recovery paths on October 20–25, then independently verify and stabilize
+through November 1 for the November 2 accounting target. Dates do not manufacture
+completion. Accounting requires a maintained production build, genuine core player journeys,
+independent immutable-source review, durable money/item/status reconciliation,
+replay/conflict/stale refusal, unknown append/projection outage, relog/reconnect
+and full restart. Map R1–R8 conservation, recovery and resource obligations to
+this RAM contract; retire superseded SQL-as-permission and second AFTER-save/ACK
+proofs. A reduced enabled route set requires explicit scope approval.
+
+Preserve historical source/authorship, divergent packets and all original evidence.
+Defer flatfile/SpacetimeDB implementation, exhaustive suite and optional old
+bridge/matrix campaigns. No production or receiving-fork writes, deployment,
+migration/wipe or history cleanup is included. Publish required plan changes
+with coherent substantive implementation/tests, never as a communication commit.
+
+
+The supported MySQL schema64 profile is explicit in `migrations/migration_manifest.schema64.json`, the exact first 64 entries of the default immutable history. Backup and restore retain and validate that selector. New backup generations use version 2; the reader also preserves the original exact version 1 archive profile. Schema65 measurement and qualification remain separate and unclaimed.
+
+## Historical priority: superseded MySQL code-first marathon
 
 The human approved this sprint on 2026-10-13, from 20:22 MDT that day through
 20:22 MDT on 2026-10-14, using the same eleven accounting sessions. First complete

@@ -13,6 +13,7 @@ def require_completed_history(rows):
     if count not in (64, 65):
         raise RuntimeError("restore_migration_history_incomplete_or_unknown")
     selectors = (
+        "migration_manifest.schema64.json",
         "migration_manifest.json", "migration_manifest.staging_0045.json",
         "migration_manifest.master_0031.json",
     )

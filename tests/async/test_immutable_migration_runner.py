@@ -53,6 +53,40 @@ class FakeExecutor:
 
 
 class ImmutableMigrationRunnerTest(unittest.TestCase):
+    def test_supported_schema64_manifest_is_exact_default_prefix(self):
+        default = runner.load_manifest()
+        supported = runner.load_manifest(
+            ROOT / "migrations/migration_manifest.schema64.json")
+        self.assertEqual(len(default.migrations), 65)
+        self.assertEqual(default.migrations[-1].migration_id,
+                         "0065_zone_reset_item_birth_origin")
+        self.assertEqual(len(supported.migrations), 64)
+        self.assertEqual(supported.migrations[-1].migration_id,
+                         "0064_auction_custody_history")
+        self.assertEqual(supported.migrations, default.migrations[:64])
+        self.assertEqual(supported.baseline_id, default.baseline_id)
+        self.assertEqual(supported.required_table_count, default.required_table_count)
+        self.assertEqual(supported.required_table_fingerprint,
+                         default.required_table_fingerprint)
+
+        rows = [runner.AppliedMigration(
+            step.migration_id, step.sequence, step.description,
+            step.apply_checksum, step.verify_checksum, step.compatibility,
+            supported.runner_version) for step in supported.migrations]
+        runtime = json.loads(
+            (ROOT / "migrations/runtime_compatibility_manifest.json").read_text())
+        head = supported.migrations[-1]
+        self.assertEqual(runtime["migration_head"], {
+            "id": head.migration_id,
+            "sequence": head.sequence,
+            "apply_checksum": head.apply_checksum,
+            "verify_checksum": head.verify_checksum,
+            "history_checksum": runner.history_checksum(rows),
+        })
+        self.assertEqual(runtime["schema65"]["qualification"], "unmeasured")
+        header = (ROOT / "src/core/runtime_compatibility_contract.h").read_text()
+        self.assertIn("RUNTIME_SCHEMA65_QUALIFIED = false;", header)
+
     def test_restore_accepts_all_complete_supported_histories(self):
         paths = (
             runner.DEFAULT_MANIFEST,

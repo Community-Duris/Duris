@@ -39,11 +39,15 @@ LOCKS = {".identity.lock", ".critical-authority.lock", ".accounts.lock", ".artif
 JOURNAL_FILES = {"players": "player-save.journal", "critical": "critical-command.journal"}
 LOCK_WAIT_SECONDS = 120
 MIGRATION_SELECTORS = (
-    "migration_manifest.json", "migration_manifest.staging_0045.json",
+    "migration_manifest.json", "migration_manifest.schema64.json",
+    "migration_manifest.staging_0045.json",
     "migration_manifest.master_0031.json", "migration_manifest.nullable_default_0065.json",
     "migration_manifest.staging_0045_nullable_default_0065.json",
     "migration_manifest.master_0031_nullable_default_0065.json",
 )
+GENERATION_VERSION = 2
+LEGACY_MIGRATION_SELECTORS = tuple(
+    name for name in MIGRATION_SELECTORS if name != "migration_manifest.schema64.json")
 CAPACITY_CHECK_INTERVAL = 32 * 1024 * 1024
 BLOCKED_RETRY_FILE = ".blocked-retry.json"
 BLOCKED_RETRY_CODES = {
@@ -446,12 +450,30 @@ def migration_capture(stage, p, capacity_base):
     return captured
 
 
-def validate_migration_archive(root):
+def validate_migration_archive(root, generation_version=GENERATION_VERSION):
     try:
-        expected = set(MIGRATION_SELECTORS)
-        for name in MIGRATION_SELECTORS:
+        require(type(generation_version) is int and generation_version in (1, 2),
+                "invalid_generation_manifest")
+        selectors = (LEGACY_MIGRATION_SELECTORS if generation_version == 1
+                     else MIGRATION_SELECTORS)
+        expected = set(selectors)
+        default = migrations.load_manifest(root / "migration_manifest.json")
+        for name in selectors:
             manifest = migrations.load_manifest(root / name)
-            require(len(manifest.migrations) == 65, "invalid_migration_archive")
+            if name == "migration_manifest.schema64.json":
+                require(len(default.migrations) == 65 and len(manifest.migrations) == 64 and
+                        manifest.version == default.version and
+                        manifest.runner_version == default.runner_version and
+                        manifest.baseline_id == default.baseline_id and
+                        manifest.required_table_count == default.required_table_count and
+                        manifest.required_table_fingerprint ==
+                        default.required_table_fingerprint and
+                        manifest.required_tables == default.required_tables and
+                        manifest.migrations == default.migrations[:64],
+                        "invalid_migration_archive")
+            else:
+                require(len(manifest.migrations) == 65,
+                        "invalid_migration_archive")
             for step in manifest.migrations:
                 expected.update(path.relative_to(root).as_posix()
                                 for path in (step.apply_path, step.verify_path))
@@ -536,7 +558,7 @@ def verify(generation):
     require(GENERATION.fullmatch(generation.name), "invalid_generation_name")
     manifest = read_json(generation / "manifest.json")
     require(type(manifest) is dict and type(manifest.get("version")) is int and
-            manifest["version"] == 1 and manifest.get("mode") in MODES and
+            manifest["version"] in (1, GENERATION_VERSION) and manifest.get("mode") in MODES and
             manifest.get("generation") == generation.name and
             type(manifest.get("created")) is int and 0 <= manifest["created"] <= time.time() + 300,
             "invalid_generation_manifest")
@@ -545,8 +567,9 @@ def verify(generation):
     require(actual == manifest.get("files") and actual, "generation_checksum_mismatch")
     require(digest(generation / "runtime-schema.json") == manifest.get("runtime_schema_sha256"),
             "schema_manifest_mismatch")
-    if (generation / "migrations").exists() or "runtime_schema_profile" in manifest:
-        validate_migration_archive(generation / "migrations")
+    if manifest["version"] == 2 or (generation / "migrations").exists() or \
+            "runtime_schema_profile" in manifest:
+        validate_migration_archive(generation / "migrations", manifest["version"])
     if manifest["mode"] == "mariadb-primary":
         validate_dump(generation / "database.sql.gz", generation / "runtime-schema.json",
                       manifest.get("runtime_schema_profile", 64))
@@ -884,8 +907,8 @@ def backup(p, mode):
             require(digest(stage / "runtime-schema.json") == schema_digest,
                     "schema_changed_during_capture")
             require(inventory(stage / "migrations") == migration_snapshot, "migration_archive_changed")
-            validate_migration_archive(stage / "migrations")
-            meta = {"version": 1, "generation": name, "created": capture_started, "mode": mode,
+            validate_migration_archive(stage / "migrations", GENERATION_VERSION)
+            meta = {"version": GENERATION_VERSION, "generation": name, "created": capture_started, "mode": mode,
                     "runtime_schema_sha256": digest(stage / "runtime-schema.json"),
                     "files": inventory(stage), **detail}
             write_json(stage / "manifest.json", meta)

@@ -294,8 +294,21 @@ def validate() -> dict:
     value = load()
     from dataclasses import replace
     complete_migration = migration_runner.load_manifest()
-    # Keep the supported schema64 profile pinned to its exact historical prefix.
-    migration = replace(complete_migration, migrations=complete_migration.migrations[:64])
+    # Keep schema64 as an explicit deployable manifest, pinned to the original
+    # default-history prefix. Schema65 remains the separate default selector.
+    migration = migration_runner.load_manifest(
+        ROOT / "migrations/migration_manifest.schema64.json")
+    if len(complete_migration.migrations) != 65 or len(migration.migrations) != 64 or \
+            migration.version != complete_migration.version or \
+            migration.runner_version != complete_migration.runner_version or \
+            migration.baseline_id != complete_migration.baseline_id or \
+            migration.required_table_count != complete_migration.required_table_count or \
+            migration.required_table_fingerprint != \
+            complete_migration.required_table_fingerprint or \
+            migration.required_tables != complete_migration.required_tables or \
+            migration.migrations != complete_migration.migrations[:64]:
+        raise migration_runner.MigrationContractError(
+            "supported schema64 manifest is not the exact default-history prefix")
     if value["baseline_id"] != migration.baseline_id or \
             value["baseline_table_count"] != migration.required_table_count or \
             value["baseline_table_fingerprint"] != migration.required_table_fingerprint or \

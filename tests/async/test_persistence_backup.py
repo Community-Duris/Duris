@@ -229,6 +229,45 @@ class PolicyTests(Fixture):
                 self.assertEqual(backup.retained(items, p, now), {"latest", "second", "previous"})
 
 class GenerationTests(Fixture):
+    def test_version1_archive_remains_readable_without_schema64_selector(self):
+        # Exercise the original six-selector archive profile and generation
+        # metadata, rather than inferring legacy format from a missing file.
+        with mock.patch.object(backup, "GENERATION_VERSION", 1), \
+             mock.patch.object(backup, "MIGRATION_SELECTORS", backup.LEGACY_MIGRATION_SELECTORS):
+            generation = self.create("mariadb-primary")
+        self.assertEqual(backup.read_json(generation / "manifest.json")["version"], 1)
+        self.assertFalse((generation / "migrations/migration_manifest.schema64.json").exists())
+        self.assertEqual(backup.verify(generation)["version"], 1)
+        selector = generation / "migrations/migration_manifest.master_0031.json"
+        selector.unlink()
+        meta = backup.read_json(generation / "manifest.json")
+        meta["files"] = backup.inventory(generation)
+        meta["files"].pop("manifest.json")
+        backup.write_json(generation / "manifest.json", meta)
+        with self.assertRaisesRegex(backup.BackupError, "invalid_migration_archive"):
+            backup.verify(generation)
+
+    def test_version2_archive_requires_schema64_and_rejects_unknown_version(self):
+        generation = self.create("mariadb-primary")
+        meta = backup.read_json(generation / "manifest.json")
+        self.assertEqual(meta["version"], 2)
+        self.assertEqual(backup.verify(generation)["version"], 2)
+        meta["version"] = 3
+        backup.write_json(generation / "manifest.json", meta)
+        with self.assertRaisesRegex(backup.BackupError, "invalid_generation_manifest"):
+            backup.verify(generation)
+        meta["version"] = 1
+        backup.write_json(generation / "manifest.json", meta)
+        with self.assertRaisesRegex(backup.BackupError, "invalid_migration_archive"):
+            backup.verify(generation)
+        meta["version"] = 2
+        (generation / "migrations/migration_manifest.schema64.json").unlink()
+        meta["files"] = backup.inventory(generation)
+        meta["files"].pop("manifest.json")
+        backup.write_json(generation / "manifest.json", meta)
+        with self.assertRaisesRegex(backup.BackupError, "invalid_migration_archive"):
+            backup.verify(generation)
+
     def test_staged_migration_and_schema_changes_never_publish_or_prune(self):
         for mode in sorted(backup.MODES):
             for fault in ("payload", "selector", "extra", "schema"):
@@ -261,7 +300,8 @@ class GenerationTests(Fixture):
 
     def test_migration_archive_checks_declared_inputs_even_with_consistent_inventory(self):
         for mode in sorted(backup.MODES):
-            for fault in ("payload", "selector", "extra", "truncated"):
+            for fault in ("payload", "selector", "extra", "truncated",
+                          "schema64_truncated", "schema64_extended", "schema64_mismatch"):
                 with self.subTest(mode=mode, fault=fault):
                     self.p["root"] = self.base / ("archive-fault-" + mode + "-" + fault)
                     generation = self.create(mode)
@@ -273,6 +313,17 @@ class GenerationTests(Fixture):
                         (archive / "migration_manifest.nullable_default_0065.json").unlink()
                     elif fault == "extra":
                         (archive / "unexpected.sql").write_bytes(b"SELECT 1;\n")
+                    elif fault.startswith("schema64_"):
+                        selector = archive / "migration_manifest.schema64.json"
+                        value = backup.read_json(selector)
+                        if fault == "schema64_truncated":
+                            value["migrations"].pop()
+                        elif fault == "schema64_extended":
+                            default = backup.read_json(archive / "migration_manifest.json")
+                            value["migrations"].append(default["migrations"][64])
+                        else:
+                            value["migrations"][0]["description"] += " edited"
+                        backup.write_json(selector, value)
                     else:
                         selector = archive / "migration_manifest.nullable_default_0065.json"
                         value = backup.read_json(selector)
@@ -297,7 +348,9 @@ class GenerationTests(Fixture):
         for mode in sorted(backup.MODES):
             with self.subTest(mode=mode):
                 self.p["root"] = self.base / ("legacy-archive-" + mode)
-                generation = self.create(mode)
+                with mock.patch.object(backup, "GENERATION_VERSION", 1), \
+                     mock.patch.object(backup, "MIGRATION_SELECTORS", backup.LEGACY_MIGRATION_SELECTORS):
+                    generation = self.create(mode)
                 (generation / "migrations").rename(self.base / ("legacy-inputs-" + mode))
                 meta = backup.read_json(generation / "manifest.json")
                 meta.pop("runtime_schema_profile", None)
@@ -309,7 +362,8 @@ class GenerationTests(Fixture):
     def test_backup_retains_original_and_variant_migration_inputs(self):
         generation = self.create("mariadb-primary")
         self.assertEqual(backup.verify(generation).get("runtime_schema_profile", 64), 64)
-        for selector in ("migration_manifest.json", "migration_manifest.staging_0045.json",
+        for selector in ("migration_manifest.json", "migration_manifest.schema64.json",
+                         "migration_manifest.staging_0045.json",
                          "migration_manifest.master_0031.json",
                          "migration_manifest.nullable_default_0065.json",
                          "migration_manifest.staging_0045_nullable_default_0065.json",
@@ -1090,6 +1144,7 @@ class RestoreTests(Fixture):
             ("migration_manifest.nullable_default_0065.json", "55ab85c769d0f271c0c01b2ec55ac01217548d8062be3f837692bf05987b57ba"),
             ("migration_manifest.staging_0045_nullable_default_0065.json", "9e81f924525c9e089a92559d1429e83f7e1c05cead3ca652a89eb68ec5534f97"),
             ("migration_manifest.master_0031_nullable_default_0065.json", "45b830b94d19c1ab6ff017e33125e0426099a3a2508fb2d0a19b573ece5c0e02"),
+            ("migration_manifest.schema64.json", "8dbe4e1771a71d2eff1d496990d7afcf0a55e8fab932c59838ace4c8eb806fe2"),
         )
         histories = set()
         for selector, checksum in selectors:
@@ -1098,9 +1153,12 @@ class RestoreTests(Fixture):
                 step.migration_id, step.sequence, step.description,
                 step.apply_checksum, step.verify_checksum, step.compatibility,
                 manifest.runner_version) for step in manifest.migrations]
-            self.assertEqual(len(rows), 65)
+            expected_count = 64 if selector == "migration_manifest.schema64.json" else 65
+            self.assertEqual(len(rows), expected_count)
             self.assertEqual(migrations.history_checksum(rows), checksum)
             for count in (64, 65):
+                if count > len(rows):
+                    continue
                 history = rows[:count]
                 with self.subTest(selector=selector, count=count):
                     output = "\n".join("\t".join(map(str, (
@@ -1114,6 +1172,26 @@ class RestoreTests(Fixture):
                     self.assertEqual(executor.sql.call_count, 2)
                     histories.add(migrations.history_checksum(history))
         self.assertEqual(len(histories), 9)
+
+    def test_restore_rejects_edit_to_explicit_schema64_history(self):
+        schema64 = migrations.load_manifest(
+            ROOT / "migrations/migration_manifest.schema64.json")
+        rows = [migrations.AppliedMigration(
+            step.migration_id, step.sequence, step.description,
+            step.apply_checksum, step.verify_checksum, step.compatibility,
+            schema64.runner_version) for step in schema64.migrations]
+        rows[-1] = replace(rows[-1], verify_checksum="0" * 64)
+        selectors = (
+            "migration_manifest.schema64.json", "migration_manifest.json",
+            "migration_manifest.staging_0045.json", "migration_manifest.master_0031.json",
+        )
+        manifests = {name: migrations.load_manifest(ROOT / "migrations" / name)
+                     for name in selectors}
+        with mock.patch.object(
+                migrations, "load_manifest",
+                side_effect=lambda path: manifests[Path(path).name]):
+            with self.assertRaisesRegex(RuntimeError, "incomplete_or_unknown"):
+                database_restore.require_completed_history(rows)
 
     def test_restore_history_rejects_partial_mixed_and_all_receipt_field_edits(self):
         selectors = (
