@@ -881,6 +881,9 @@ bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator fo
 		guard.release();
 		return publish_accounted_coin(pending.find(original_key), actor, committed, result);
 	}
+	// A death can detach its descriptor before this receipt arrives. The same
+	// retained body that received the wallet must receive its physical pile.
+	actor = coin_wallet_by_pid(entry.pid);
 	// Extract the node so a successful callback can advance a bulk command. A
 	// temporarily unavailable live destination keeps this same operation for retry.
 	auto node = pending.extract(found);

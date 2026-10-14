@@ -215,13 +215,7 @@ const char *get_account_name_safe(P_char character)
 	return character && GET_PID(character) == 45 ? "recipient_account" : "queue_account";
 }
 
-P_char find_player_by_pid(int pid)
-{
-	for (P_char character = character_list; character; character = character->next)
-		if (character->only.pc && GET_PID(character) == pid)
-			return character;
-	return nullptr;
-}
+''' + extract(SRC / "utility.c", "P_char find_player_by_pid(int pid)") + r'''
 
 critical_submit_result critical_command_coordinator_submit(critical_command command_value)
 {
@@ -1473,6 +1467,64 @@ int main()
     actor.carrying = nullptr;
     converted->loc_p = LOC_NOWHERE;
     extract_obj(converted, false);
+	// A retained body remains the physical destination after descriptor loss.
+	// In death recovery it is also dead and held outside every room; descriptor
+	// lookup must stay authentic so this cannot pass through a connected actor.
+	for (bool pending_death : {false, true})
+	{
+		const int room_before = actor.in_room;
+		const auto position_before = actor.specials.position;
+		const std::array<int32_t, 4> retained_cash = {37, 5, 2, 1};
+		std::copy(retained_cash.begin(), retained_cash.end(), actor.points.cash);
+		const auto retained_wallet_revision = player.wallet_revision;
+		assert(money_to_inventory(&actor));
+		assert(coin_transfer_command_decode_payload(submitted_command, &death_money));
+		assert(item_transfer_command_decode_payload(death_money.destination.change, &death_pile));
+		const uint64_t retained_uid = death_pile.selected_item_uid;
+		P_obj retained_pile = find_live_item_uid(retained_uid);
+		assert(retained_pile && OBJ_NOWHERE(retained_pile));
+		assert(actor.carrying == nullptr && currency_transaction_player_busy(&actor));
+		for (size_t i = 0; i < retained_cash.size(); ++i)
+			assert(actor.points.cash[i] == retained_cash[i]);
+		descriptor.character = nullptr;
+		if (pending_death)
+		{
+			descriptor.connected = CON_ACCT_SELECT_CHAR;
+			actor.in_room = NOWHERE;
+			SET_POS(&actor, STAT_DEAD);
+		}
+		assert(character_list == &actor);
+		assert(find_player_by_pid(GET_PID(&actor)) == nullptr);
+		const size_t live_before_publication = live_items.size();
+		pile_ack(true);
+		assert(!currency_transaction_player_busy(&actor));
+		assert(actor.carrying == retained_pile && OBJ_CARRIED_BY(retained_pile, &actor));
+		assert(find_live_item_uid(retained_uid) == retained_pile);
+		assert(live_items.size() == live_before_publication);
+		assert(player.wallet_revision == retained_wallet_revision + 1);
+		assert(item_ownership_runtime_lookup(retained_uid, &death_custody));
+		assert(death_custody.owner.type == item_owner_type::player &&
+		       death_custody.owner.id == 42 && death_custody.root_item_uid == retained_uid &&
+		       death_custody.parent_item_uid == 0 && death_custody.item_revision == 1 &&
+		       death_custody.state == item_custody_state::active);
+		for (size_t i = 0; i < retained_cash.size(); ++i)
+			assert(actor.points.cash[i] == 0 && retained_pile->value[i] == retained_cash[i]);
+		// The exact duplicate receipt cannot create, credit, or attach another pile.
+		pile_ack(true);
+		assert(actor.carrying == retained_pile && retained_pile->next_content == nullptr);
+		assert(find_live_item_uid(retained_uid) == retained_pile &&
+		       live_items.size() == live_before_publication);
+		assert(player.wallet_revision == retained_wallet_revision + 1);
+		for (size_t i = 0; i < retained_cash.size(); ++i)
+			assert(actor.points.cash[i] == 0 && retained_pile->value[i] == retained_cash[i]);
+		actor.carrying = nullptr;
+		retained_pile->loc_p = LOC_NOWHERE;
+		extract_obj(retained_pile, false);
+		actor.in_room = room_before;
+		actor.specials.position = position_before;
+		descriptor.connected = CON_PLAYING;
+		descriptor.character = &actor;
+	}
 	// Held item admission neither credits coins nor starts a coin transaction.
 	actor.in_room = bag.loc.room = 0;
 	GET_COPPER(&actor) = GET_SILVER(&actor) = GET_GOLD(&actor) = GET_PLATINUM(&actor) = 0;
