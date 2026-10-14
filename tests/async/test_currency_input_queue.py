@@ -8,6 +8,12 @@ import tempfile
 
 from _paths import ROOT, SRC, rel
 
+# Complete original retained Save/ACK providers from the maintained coin
+# retention recipe. The original authority implementation stays linked.
+HELD_COIN_PROVIDERS = ('player_save_pipeline.c', 'player_save_journal.c', 'player_save_worker.c', 'player_revision_state.c', 'coin_physical_recovery.c', 'new_events.c', 'auction_repository.c', 'auction_accounting.c', 'auction_command.c', 'auction_listing_accounting.c', 'auction_money_claim_accounting.c', 'auction_item_claim_accounting.c', 'auction_settlement_accounting.c', 'native_mobile_birth_command.c', 'collector_accounting.c', 'collector_command.c', 'collector_codec.c', 'quest_mobile_native.c', 'persistence_observability.c', 'auction_native_command_context.c', 'native_mobile_birth_recipe.c', 'native_mobile_birth_constructor_recipe.c', 'collector_policy.c', 'native_mobile_birth_cash_role_recipe.c', 'native_mobile_birth_cash_role_command.c', 'zone_reset_item_command.c')
+# Exact existing abort-only scheduler boundary; this fixture never rebinds.
+SCHEDULER_CORRUPTION_BOUNDARY = 'void panic_corruption(const char *, const char *, ...)\n{\n    std::fputs("UNEXPECTED_SCHEDULER_CORRUPTION\\n", stderr);\n    std::abort();\n}'
+
 
 def extract(source: Path, signature: str) -> str:
     """Return one complete C/C++ function beginning at ``signature``."""
@@ -1616,6 +1622,7 @@ def main(flatfile: bool = False) -> int:
     """Compile and execute the held-currency queue regression."""
     harness = "\n".join([
         PRELUDE,
+        SCHEDULER_CORRUPTION_BOUNDARY,
         BANK_PUBLICATION,
         COIN_GIVE,
         COIN_PILES,
@@ -1640,6 +1647,9 @@ def main(flatfile: bool = False) -> int:
     mysql_cflags = shlex.split(
         subprocess.check_output(["mysql_config", "--cflags"], text=True)
     )
+    mysql_libs = shlex.split(
+        subprocess.check_output(["mysql_config", "--libs"], text=True)
+    )
     with tempfile.TemporaryDirectory() as directory:
         source = Path(directory) / "currency_input_queue.cpp"
         binary = Path(directory) / "currency_input_queue"
@@ -1661,7 +1671,10 @@ def main(flatfile: bool = False) -> int:
                 rel("native_quest_coin_give.c"), rel("lockpick_retirement_continuation.c"),
                 rel("economic_accounting_item_reference.c"),
                 rel("player_snapshot_codec.c"), rel("item_ownership_runtime.c"),
-                "-Wl,--gc-sections", "-lcrypto", "-o", str(binary),
+                *[rel(name) for name in HELD_COIN_PROVIDERS],
+                "tests/async/coin_owner_unreachable_native_boundary.cpp",
+                "-Wl,--wrap=_Z30coin_physical_recovery_publishRK16critical_commandRK19critical_completion",
+                "-Wl,--gc-sections", "-lcrypto", *mysql_libs, "-o", str(binary),
             ],
             cwd=ROOT,
             check=True,
