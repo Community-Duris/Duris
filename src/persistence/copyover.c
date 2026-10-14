@@ -3,6 +3,7 @@
  * keeps player connections alive across process replacement
  */
 
+#include "net/consumable_descriptor_lifetime.h"
 #include "persistence/persistence_log.h"
 #include "core/prototypes.h"
 #include "core/game_loop_watchdog.h"
@@ -1259,6 +1260,7 @@ static P_char copyover_load_player(const char *name, P_desc d)
 
 int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 {
+	const uint64_t consumable_recovery_before = consumable_descriptor_lifetime_hooks::recovery_begin();
 	FILE *fp;
 	copyover_decoded_state state;
 	const copyover_header &header = state.header;
@@ -1327,12 +1329,15 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 			goto copyover_recover_fail;
 		}
 		memset(d, 0, sizeof(struct descriptor_data));
+		consumable_descriptor_lifetime_hooks::created(d, dead_desc_pool,
+			consumable_descriptor_lifetime_hooks::origin::copyover);
 
 		d->descriptor = desc_entry.fd;
 
 		if (transport_world_active() &&
 		    !transport_restore_descriptor(d, desc_entry.player_name))
 		{
+			consumable_descriptor_lifetime_hooks::invalidated(d);
 			mm_release(dead_desc_pool, d);
 			goto copyover_recover_fail;
 		}
@@ -1346,6 +1351,7 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 			logit(LOG_STATUS,
 			      "copyover: fd=%d is NOT a valid socket for %s host=%s! errno=%d",
 			      d->descriptor, desc_entry.player_name, desc_entry.host, errno);
+			consumable_descriptor_lifetime_hooks::invalidated(d);
 			close(d->descriptor);
 			mm_release(dead_desc_pool, d);
 			continue;
@@ -1440,6 +1446,7 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 				      desc_entry.player_name);
 				if (transport_world_active())
 					goto copyover_recover_fail;
+				consumable_descriptor_lifetime_hooks::invalidated(d);
 				close(desc_entry.fd);
 				mm_release(dead_desc_pool, d);
 				used_descs--;
@@ -1648,6 +1655,7 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 	return success;
 
 copyover_recover_fail:
+	consumable_descriptor_lifetime_hooks::recovery_failed(consumable_recovery_before);
 	if (mother_desc)
 		*mother_desc = -1;
 	if (mother_desc_ssl)

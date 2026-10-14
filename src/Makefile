@@ -274,6 +274,8 @@ OBJS =  $(SHIP_OBJS) \
 				combat/chaos_config.o \
 				net/command_latency.o \
 				 net/comm.o \
+				 net/consumable_descriptor_lifetime.o \
+				 net/consumable_prepared_output_queue.o \
 				 persistence/copyover.o \
 				 persistence/copyover_codec.o \
 				 core/common.o \

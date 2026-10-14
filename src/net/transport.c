@@ -1,4 +1,5 @@
 /* Persistent client transport; the child alone authenticates and mutates the world. */
+#include "net/consumable_descriptor_lifetime.h"
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "core/utils.h"
@@ -40,7 +41,31 @@ extern unsigned long long ne_event_tick;
 
 namespace
 {
+namespace descriptor_creator_receiver
+{
+bool consume_world_frame(const duris_transport::message &m);
+}
+}
+namespace consumable_transport_receiver = descriptor_creator_receiver;
+
+namespace duris_consumable_detail
+{
+// The genuine internal open-frame receiver is the only capability consumer.
+// No forwarding function or externally callable raw registration is defined.
+class transport_descriptor_creator_access final
+{
+    private:
+	friend bool
+	consumable_transport_receiver::consume_world_frame(const duris_transport::message &m);
+	transport_descriptor_creator_access() = delete;
+	static constexpr auto install = &consumable_descriptor_lifetime_hooks::created;
+	static constexpr auto source = consumable_descriptor_lifetime_hooks::origin::transport_open;
+};
+}
+namespace
+{
 using namespace duris_transport;
+using descriptor_creator_receiver::consume_world_frame;
 using steady = std::chrono::steady_clock;
 channel ipc_link;
 bool frontend = false;
@@ -363,6 +388,8 @@ void send_world_state(P_desc d)
 	}
 }
 
+namespace descriptor_creator_receiver
+{
 bool consume_world_frame(const message &m)
 {
 	if (m.kind == type::snapshot && !welcome_received)
@@ -421,6 +448,8 @@ bool consume_world_frame(const message &m)
 		if (!d)
 			return false;
 		memset(d, 0, sizeof(*d));
+		duris_consumable_detail::transport_descriptor_creator_access::install(d, dead_desc_pool,
+			duris_consumable_detail::transport_descriptor_creator_access::source);
 		d->descriptor = m.detail;
 		d->transport_session = m.session;
 		d->term_type = TERM_ANSI;
@@ -505,6 +534,8 @@ bool consume_world_frame(const message &m)
 	}
 	return true;
 }
+
+} // descriptor_creator_receiver
 
 bool consume_world(const message &m)
 {

@@ -1,3 +1,4 @@
+#include "net/consumable_descriptor_lifetime.h"
 #include "item/held_retirement_recovery.h"
 #include "item/held_retirement_transport.h"
 #include "economy/native_mobile_birth_recovery.h"
@@ -3852,6 +3853,7 @@ void close_sockets(int s)
 
 void close_socket(struct descriptor_data *d)
 {
+	consumable_descriptor_lifetime_hooks::invalidated(d);
 	struct descriptor_data *tmp;
 	snoop_by_data *snoop_by_ptr, *next;
 	int is_morphed = d->character ? IS_MORPH(d->character) : 0;
@@ -4248,6 +4250,8 @@ int new_descriptor(int s, int conn_type)
 #endif
 	newd = (struct descriptor_data *)mm_get(dead_desc_pool);
 	bzero(newd, sizeof(struct descriptor_data));
+	consumable_descriptor_lifetime_hooks::created(newd, dead_desc_pool,
+		consumable_descriptor_lifetime_hooks::origin::socket);
 
 	/*
 	 * find info

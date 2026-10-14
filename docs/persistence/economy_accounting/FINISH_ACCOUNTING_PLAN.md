@@ -1,5 +1,24 @@
 # Accounting completion plan: parallel delivery
 
+## Active priority: 24-hour MySQL code-first marathon
+
+The human approved this sprint on 2026-10-13, from 20:22 MDT that day through
+20:22 MDT on 2026-10-14, using the same eleven accounting sessions. First complete
+one authentic existing operation through retained ownership, coupled MySQL effects
+and receipt, Save/worker completion, native publication, acknowledgement and restart;
+then reuse that connected path across the required core gameplay. Delegate bounded
+shared-code sections while retaining one integration publisher and one heavy-job queue.
+
+Defer new flatfile qualification, the full suite, the second SQL-engine release matrix,
+SpacetimeDB expansion and optional refactors to the follow-on queue. Preserve running
+owned jobs through safe completion and cleanup. Required checkpoint checks remain an
+actual MySQL-linked build and fresh boot/admission, nonempty core player journeys,
+independent durable read-back, replay/uncertain-operation controls, reconnect and restart.
+Source, writer, lifecycle and currentness proof and original runtime guards still apply.
+At the deadline report the actually validated candidate and exact blocked routes; keep
+admission closed if its proof is incomplete. Resume remaining core correctness and then
+deferred backend/full qualification afterward. R1–R8 remain the full release contract.
+
 Deliver one executable combined candidate, then finish the supported gameplay,
 architecture and independent release gates in bounded parallel lanes. This plan
 was prepared on 2026-10-11 and approved for execution on 2026-10-12 from cleanup source
@@ -381,3 +400,15 @@ order, failure behavior, effect order and 256-byte truncation; both affected
 production builds pass. This dependency extraction grants no item creation,
 source, publication or ACK authority to prepared values. Accounting admission remains closed; the full gameplay, persistence, lifecycle
 and R1-R8 release gates remain open.
+
+The original descriptor creation, first close and copyover cleanup now retain a
+private lifetime control with an incarnation that survives MM slot reuse. A
+separate prepared legacy plaintext queue checks the original recipient, protocol
+and queue preimage before its once nonallocating transfer. The original socket creator/close, MM reuse, private loan/transfer and creator
+access regressions pass, along with original queue-value/byte/resource controls
+and both affected production builds. Transport/copyover bodies retain their
+complete source-inverse checks; their runtime and real-character restoration
+remain unqualified. Unsupported transport profiles remain unavailable.
+This inactive dependency slice grants no economic publication or durable success
+authority. Accounting admission remains CLOSED; full gameplay, persistence,
+lifecycle, schema65, independent activation and R1-R8 gates remain open.

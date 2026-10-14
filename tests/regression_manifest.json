@@ -8858,6 +8858,36 @@
       "seconds": 2.2738344770041294,
       "timeout_seconds": 1800,
       "purpose": "Canonical complete original Gith wrapper differential: 6144 class/fallback/query/effect cases, 48 formatter length/truncation/percent-as-data cases and invalid-choice strong outputs. Controlled native inputs; no accounting activation authority."
+    },
+    "test_consumable_descriptor_lifetime.py": {
+      "profile": "native",
+      "mode": "script",
+      "minimum_cases": 1,
+      "cpu": 2,
+      "memory_mb": 8192,
+      "seconds": 6.931878037983552,
+      "timeout_seconds": 1800,
+      "purpose": "Actual original socket descriptor creator/close bodies, genuine MM reuse, private incarnation/loan and plaintext queue-transfer controls under controlled charless native inputs. Complete transport receiver and copyover bodies are source-inverse checks; their runtime, real character and economic publication remain unqualified."
+    },
+    "test_consumable_prepared_output_queue.py": {
+      "profile": "native",
+      "mode": "script",
+      "minimum_cases": 1,
+      "cpu": 2,
+      "memory_mb": 8192,
+      "seconds": 2.623320951999631,
+      "timeout_seconds": 1800,
+      "purpose": "Actual queue value preparation, proposed byte/state copies and storage accounting compared with original write_to_q bytes, including allocation refusal and strong outputs. Descriptor loan and private recipient transfer are exercised separately by the lifetime fixture."
+    },
+    "test_consumable_descriptor_creator_boundary.py": {
+      "profile": "native",
+      "mode": "script",
+      "minimum_cases": 1,
+      "cpu": 2,
+      "memory_mb": 8192,
+      "seconds": 4.776782056025695,
+      "timeout_seconds": 1800,
+      "purpose": "Genuine native positive private creator and unrelated translation-unit negative compilation, global symbol and extern-link access controls; no public raw creator export."
     }
   }
 }
