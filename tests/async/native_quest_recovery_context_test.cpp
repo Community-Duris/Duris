@@ -1269,6 +1269,29 @@ void bounded_transport_refusals()
 							    &encoded, budget::reserve,
 							    &encode_budget, 0) == result::ok);
 	assert(encoded == wire && encode_budget.calls);
+	// The original callback's first refusal retains its resource category.
+	// Stale errno supplies no classification, and neither output is published.
+	budget first_encode{ 0, 1 }, first_decode{ 0, 1 };
+	encoded = sentinel;
+	errno = ENOMEM;
+	assert(native_quest_recovery_context_encode_bounded(
+		       original.command, original.value, &encoded, budget::reserve, &first_encode,
+		       0) == result::allocation_failure);
+	assert(encoded == sentinel && first_encode.calls == 1);
+	errno = ENOBUFS;
+	assert(native_quest_recovery_context_decode_bounded(original.command, wire, &decoded,
+							    budget::reserve, &first_decode,
+							    0) == result::allocation_failure);
+	assert(equal(decoded, original.value) && first_decode.calls == 1);
+	// A different command remains semantically invalid despite stale resource errno.
+	auto stale_command = original.command;
+	stale_command.operation_id = id(25);
+	budget stale_decode;
+	errno = ENOBUFS;
+	assert(native_quest_recovery_context_decode_bounded(stale_command, wire, &decoded,
+							    budget::reserve, &stale_decode,
+							    0) == result::invalid_value);
+	assert(equal(decoded, original.value) && stale_decode.calls);
 	// Stale resource errno cannot reclassify semantic failures in either API.
 	auto malformed = original.value;
 	malformed.give_hooks.front() = 3;

@@ -1234,8 +1234,10 @@ struct recovery_codec_scope
 	template <class F, class R> R invoke_codec(F &&body, R failure, size_t frames)
 	{
 		size_t value = 0;
-		return peak(native_quest_recovery_codec_entry_inline_bytes(), frames) &&
-				       prefix(&value, frames) ?
+		// The wrapper probe is already retained in the checked owned prefix.
+		return peak(native_quest_recovery_codec_entry_inline_bytes() -
+				    sizeof(recovery_reserve_probe),
+			    frames) && prefix(&value, frames) ?
 			       body(value) :
 			       failure;
 	}
@@ -2254,13 +2256,12 @@ namespace
 {
 // Reader/spans/results are lexical source, not watched physical inline.
 constexpr size_t native_entry_encode =
-	sizeof(recovery_reserve_probe) + sizeof(recovery_codec_scope) +
-	sizeof(item_transfer_payload) + 3 * sizeof(std::vector<uint8_t>) +
-	4 * sizeof(recovery_codec_live);
+	sizeof(recovery_codec_scope) + sizeof(item_transfer_payload) +
+	3 * sizeof(std::vector<uint8_t>) + 4 * sizeof(recovery_codec_live);
 constexpr size_t native_entry_decode =
-	sizeof(recovery_reserve_probe) + sizeof(recovery_codec_scope) +
-	sizeof(item_transfer_payload) + sizeof(std::vector<uint8_t>) +
-	sizeof(native_quest_recovery_context) + 3 * sizeof(recovery_codec_live);
+	sizeof(recovery_codec_scope) + sizeof(item_transfer_payload) +
+	sizeof(std::vector<uint8_t>) + sizeof(native_quest_recovery_context) +
+	3 * sizeof(recovery_codec_live);
 constexpr size_t native_entry_latest =
 	sizeof(recovery_codec_scope) + sizeof(critical_command) + sizeof(item_transfer_payload) +
 	2 * sizeof(native_quest_recovery_context) + 4 * sizeof(recovery_codec_live);
@@ -2278,7 +2279,8 @@ constexpr size_t native_entry_max = native_entry_a > native_entry_b ? native_ent
 }
 size_t native_quest_recovery_codec_entry_inline_bytes() noexcept
 {
-	return native_entry_max;
+	// Prospective public entry includes its actual resident wrapper probe.
+	return sizeof(recovery_reserve_probe) + native_entry_max;
 }
 
 static player_snapshot_codec_result native_quest_recovery_context_encode_bounded_original(

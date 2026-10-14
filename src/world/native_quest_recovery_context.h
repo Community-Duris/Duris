@@ -119,7 +119,7 @@ size_t native_quest_recovery_codec_source_frame_bytes() noexcept;
 // prospective inline into the later child census, which owns actual objects.
 constexpr size_t native_quest_recovery_codec_source_profile_query_frames() noexcept
 {
-	return sizeof(void *) + 17 * sizeof(size_t) + sizeof(bool);
+	return sizeof(void *) + 19 * sizeof(size_t) + sizeof(bool);
 }
 constexpr size_t native_quest_recovery_codec_entry_inline_query_frames() noexcept
 {
