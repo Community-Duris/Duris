@@ -105,6 +105,8 @@ PRELUDE = r'''
 #include "core/utils.h"
 #include "account/account.h"
 #include "economy/currency_transaction.h"
+#include "economy/economic_gameplay_authority.h"
+#include "economy/coin_physical_publication.h"
 #include "economy/account_bank_balances.h"
 #include "sql/sql_player.h"
 #include "item/item_ownership_runtime.h"
@@ -191,6 +193,7 @@ P_char find_character_by_runtime_id(uint64_t runtime_id)
 P_desc descriptor_list = NULL;
 static room_data test_rooms[2] = {};
 P_room world = test_rooms;
+extern const int top_of_world = 1;
 static critical_command submitted_command = {};
 static bool coordinator_fenced = false;
 static bool item_pending = false;
@@ -284,7 +287,7 @@ int get_pending_transaction_cmd_from_q(struct txt_q *queue, char *dest, bool ite
 				       bool currency_pending);
 '''
 
-COIN_PILES = r'''
+COIN_PILES = (r'''
 static std::vector<P_obj> live_items;
 static index_data coin_prototypes[2] = {};
 P_index obj_index = coin_prototypes;
@@ -317,7 +320,16 @@ void obj_to_obj(P_obj item, P_obj container)
     item->next_content = container->contains;
     container->contains = item;
 }
-void extract_obj(P_obj item, bool)
+// Normal placement from the maintained coin physical-publication fixture.
+// This component seam does not exercise the production room handler.
+void obj_to_room(P_obj object, int room)
+{
+    assert(object && room >= 0 && room <= top_of_world);
+    object->loc_p = LOC_ROOM;
+    object->loc.room = room;
+    world[room].contents = object;
+}
+void extract_obj(P_obj item, int)
 {
     if (OBJ_INSIDE(item)) {
         P_obj *at = &item->loc.inside->contains;
@@ -333,24 +345,10 @@ void extract_obj(P_obj item, bool)
     free(item->short_description);
     delete item;
 }
-player_snapshot_capture_result player_item_snapshot_tree_capture(P_obj item,
-    std::vector<player_item_snapshot> *items, size_t *)
-{
-    player_item_snapshot snapshot = {};
-    snapshot.object_uid = item->obj_uid;
-    snapshot.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
-    snapshot.equipment_slot = -1;
-    snapshot.vnum = OBJ_VNUM(item);
-    snapshot.type = item->type;
-    snapshot.name = "coins";
-    snapshot.string_mask = 1;
-    std::copy(std::begin(item->value), std::end(item->value), snapshot.values.begin());
-    items->push_back(snapshot);
-    return player_snapshot_capture_result::ok;
-}
 bool locker_owner_for_container(P_char, P_obj, item_owner_identity *) { return false; }
 void finish_coin_put_publication(P_char, P_obj, const coin_debit_context &) { ++put_announcements; }
-''' + extract(SRC / "handler.c", "void add_coins(") + r'''
+''' + extract(SRC / "db.c", "int real_room(const int virt)")
+    + extract(SRC / "handler.c", "void add_coins(") + r'''
 P_obj create_money(int copper, int silver, int gold, int platinum)
 {
     P_obj item = new obj_data{};
@@ -379,10 +377,10 @@ bool player_load_item_graph_materialize_detached(const std::vector<player_item_s
     "bool coin_put_destination_available(", "bool coin_put_destination_custody(",
     "static bool prepare_coin_pile(", "static bool publish_coin_pile(",
     "bool coin_put_custody_completion(", "static bool submit_coin_put(",
-])
+]))
 
 COIN_GET = (ACTOBJ[ACTOBJ.index("struct synchronous_get_item"):ACTOBJ.index("struct drop_movement_context")]
-            + ACTOBJ[ACTOBJ.index("struct coin_pickup_context"):ACTOBJ.index("static bool coin_get_completion(")]
+            + ACTOBJ[ACTOBJ.index("struct coin_pickup_context"):ACTOBJ.index("static bool coin_get_completion_impl(")]
             + r'''
 static std::unordered_map<uint32_t, bulk_get_state> bulk_gets;
 static bulk_get_state *corpse_bulk_get(P_char, uint64_t) { return NULL; }
@@ -432,7 +430,9 @@ void finish_bulk_get(P_char, uint32_t pid)
             + extract(SRC / "actobj.c", "static bool bulk_get_source_available(")
             + extract(SRC / "actobj.c", "static bool bulk_get_corpse_source_available(")
             + extract(SRC / "actobj.c", "static bool finish_bulk_get_after_commit(")
+            + extract(SRC / "actobj.c", "static bool coin_get_completion_impl(")
             + extract(SRC / "actobj.c", "static bool coin_get_completion(")
+            + extract(SRC / "actobj.c", "static bool coin_get_notification(")
             + ACTOBJ[ACTOBJ.index("struct coin_admission_context"):
                      ACTOBJ.index("static void coin_admission_completion(")]
             + r'''
@@ -1656,6 +1656,9 @@ def main(flatfile: bool = False) -> int:
                 rel("economic_accounting_plan.c"), rel("economic_source_event.c"), rel("economic_accounting_types.c"),
                 rel("coin_transfer_command.c"), rel("item_transfer_command.c"), rel("quest_mobile_native_reference.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
                 rel("coin_transfer_accounting.c"), rel("item_transfer_accounting.c"),
+                rel("coin_physical_publication.c"), rel("player_snapshot_capture.c"),
+                rel("shop_trade_recovery_manifest.c"), rel("native_quest_cost.c"),
+                rel("native_quest_coin_give.c"), rel("lockpick_retirement_continuation.c"),
                 rel("economic_accounting_item_reference.c"),
                 rel("player_snapshot_codec.c"), rel("item_ownership_runtime.c"),
                 "-Wl,--gc-sections", "-lcrypto", "-o", str(binary),
