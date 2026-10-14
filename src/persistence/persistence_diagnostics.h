@@ -21,6 +21,9 @@ struct persistence_custody_witness
 	int32_t expected_vnum = 0, observed_vnum = 0;
 	uint16_t expected_slot = 0, observed_slot = 0;
 	bool expected_present = false, observed_present = false;
+	uint8_t observed_owner_type = 0, observed_state = 0;
+	uint64_t observed_owner_id = 0, observed_owner_context_id = 0, observed_owner_revision = 0;
+	uint32_t expected_count = 0, observed_count = 0;
 };
 
 enum class persistence_trace_stage : uint8_t
@@ -43,6 +46,10 @@ enum class persistence_trace_stage : uint8_t
 	save_replay_result,
 	save_replay_fence,
 	command_checkpoint,
+	corpse_raise_discard_enter,
+	corpse_raise_discard_result,
+	corpse_raise_transfer_enter,
+	corpse_raise_transfer_result,
 };
 
 inline const char *persistence_trace_stage_name(persistence_trace_stage stage)
@@ -85,6 +92,14 @@ inline const char *persistence_trace_stage_name(persistence_trace_stage stage)
 		return "save_replay_fence";
 	case persistence_trace_stage::command_checkpoint:
 		return "command_checkpoint";
+	case persistence_trace_stage::corpse_raise_discard_enter:
+		return "corpse_raise_discard_enter";
+	case persistence_trace_stage::corpse_raise_discard_result:
+		return "corpse_raise_discard_result";
+	case persistence_trace_stage::corpse_raise_transfer_enter:
+		return "corpse_raise_transfer_enter";
+	case persistence_trace_stage::corpse_raise_transfer_result:
+		return "corpse_raise_transfer_result";
 	}
 	return "unknown";
 }

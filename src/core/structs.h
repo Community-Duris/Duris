@@ -26,6 +26,7 @@
 #endif
 
 #include "core/defines.h"
+#include "core/corpse_money_load_origin.h"
 #include "world/epic_bonus_state.h"
 #include "world/quest_mobile_native_binding.h"
 #include "persistence/gameplay_read_state.h"
@@ -522,6 +523,7 @@ struct obj_data
 
 	unsigned char runtime_flags; /* runtime state, not saved to db   */
 	int db_item_id; /* db id for incremental saves      */
+	corpse_money_load_origin corpse_money_origin; /* runtime-only loader observation */
 
 	unsigned long bitvector; /* To set chars bits                */
 	unsigned long bitvector2; /* 2nd 32 bits                      */

@@ -1,4 +1,5 @@
 #include "persistence/corpse_lifecycle_transaction.h"
+#include "persistence/corpse_raise_diagnostics.h"
 
 #include "item/item_transfer_command.h"
 #include "redis/redis_report_cache.h"
@@ -38,6 +39,55 @@ enum class submit_outcome
 	deferred,
 	failed,
 };
+
+submit_outcome submit(uint64_t key, corpse_state *state);
+
+class corpse_raise_command_evidence final
+{
+	friend submit_outcome submit(uint64_t, corpse_state *);
+	friend const corpse_raise_command_observation
+		* ::corpse_raise_diagnostic_command_observe() noexcept;
+	corpse_raise_command_observation observation_;
+
+	void capture(uint64_t key, const critical_command &command) noexcept
+	{
+		if (!corpse_raise_diagnostics_enabled() || observation_.sequence == UINT64_MAX)
+			return;
+		if (observation_.sequence)
+			++observation_.overwritten;
+		++observation_.sequence;
+		observation_.corpse_key = key;
+		observation_.operation = command.operation_id;
+		observation_.schema_version = command.schema_version;
+		observation_.command_type = static_cast<uint16_t>(command.type);
+		observation_.payload_version = command.payload_version;
+		observation_.encoded_size = 0;
+		observation_.status = corpse_raise_command_capture_status::codec_refused;
+		observation_.codec_result = critical_command_codec_result::invalid;
+		try
+		{
+			std::vector<uint8_t> encoded;
+			observation_.codec_result = critical_command_encode(command, &encoded);
+			if (observation_.codec_result != critical_command_codec_result::ok)
+				return;
+			if (encoded.size() > observation_.encoded.size())
+			{
+				observation_.status = corpse_raise_command_capture_status::oversize;
+				return;
+			}
+			std::copy(encoded.begin(), encoded.end(), observation_.encoded.begin());
+			observation_.encoded_size = encoded.size();
+			observation_.status = corpse_raise_command_capture_status::encoded;
+		}
+		catch (...)
+		{
+			// A failed optional capture cannot change the original command path.
+			observation_.status = corpse_raise_command_capture_status::exception;
+		}
+	}
+};
+
+corpse_raise_command_evidence raise_command_evidence;
 
 std::unordered_map<uint64_t, corpse_state> states;
 std::unordered_map<std::string, uint64_t> operations;
@@ -303,6 +353,8 @@ submit_outcome submit(uint64_t key, corpse_state *state)
 		++health.submission_failures;
 		return submit_outcome::failed;
 	}
+	if (payload.action == corpse_lifecycle_action::raise_follower)
+		raise_command_evidence.capture(key, command);
 	const auto submitted = critical_command_coordinator_submit(std::move(command));
 	if (!critical_submit_result_keeps_operation(submitted))
 	{
@@ -325,6 +377,11 @@ submit_outcome submit(uint64_t key, corpse_state *state)
 	return submit_outcome::submitted;
 }
 } // namespace
+
+const corpse_raise_command_observation *corpse_raise_diagnostic_command_observe() noexcept
+{
+	return corpse_raise_diagnostics_enabled() ? &raise_command_evidence.observation_ : nullptr;
+}
 
 bool corpse_lifecycle_transaction_stage(const corpse_lifecycle_payload &payload)
 {

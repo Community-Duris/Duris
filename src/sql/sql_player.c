@@ -8496,6 +8496,7 @@ bool sql_load_all_corpses(void)
 	P_obj obj_map[MAX_CORPSE_ITEMS];
 	int id_map[MAX_CORPSE_ITEMS];
 	int container_map[MAX_CORPSE_ITEMS];
+	bool uidless_money_row[MAX_CORPSE_ITEMS];
 	int num_objs = 0;
 	int last_item_id = -1;
 	// true only when last_item_id names the object now at obj_map[num_objs - 1];
@@ -8504,6 +8505,26 @@ bool sql_load_all_corpses(void)
 	bool last_item_stored = false;
 	int loaded = 0;
 	MYSQL_ROW row;
+	auto observe_uidless_money = [&]()
+	{
+		for (int i = 0; i < num_objs; ++i)
+		{
+			P_obj obj = obj_map[i];
+			if (!uidless_money_row[i] || obj->contains || !obj->obj_uid ||
+			    OBJ_VNUM(obj) != VOBJ_COINS || obj->type != ITEM_MONEY)
+				continue;
+			P_obj ancestor = obj;
+			int depth = 0;
+			while (ancestor != cur_corpse && depth++ <= num_objs &&
+			       OBJ_INSIDE(ancestor) && ancestor->loc.inside)
+				ancestor = ancestor->loc.inside;
+			if (ancestor != cur_corpse)
+				continue;
+			obj->corpse_money_origin.object_ = obj;
+			obj->corpse_money_origin.item_uid_ = obj->obj_uid;
+			obj->corpse_money_origin.corpse_owner_id_ = cur_corpse_owner_id;
+		}
+	};
 
 	// one query gets everything: corpses + items + affects
 	result = db_query(
@@ -8608,6 +8629,7 @@ bool sql_load_all_corpses(void)
 					o->loc_p = LOC_INSIDE;
 					o->loc.inside = cur_corpse;
 				}
+				observe_uidless_money();
 				if (!corpse_lifecycle_transaction_hydrate(
 					    cur_owner_pid, cur_save_id, cur_corpse_revision))
 				{
@@ -8816,6 +8838,11 @@ bool sql_load_all_corpses(void)
 			last_item_stored = false;
 			continue;
 		}
+		// Retain the original row/constructor observation until native ancestry
+		// is linked; only a genuine leaf in this corpse receives the private fact.
+		uidless_money_row[num_objs] =
+			!saved_uid && OBJ_VNUM(obj) == VOBJ_COINS && obj->type == ITEM_MONEY &&
+			IS_SET(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
 		REMOVE_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
 
 		int aff_loc = atoi(row[CORPSE_COL_ITEM_AFFECT_LOCATION]);
@@ -8899,6 +8926,7 @@ bool sql_load_all_corpses(void)
 			o->loc_p = LOC_INSIDE;
 			o->loc.inside = cur_corpse;
 		}
+		observe_uidless_money();
 		if (!corpse_lifecycle_transaction_hydrate(cur_owner_pid, cur_save_id,
 							  cur_corpse_revision))
 		{

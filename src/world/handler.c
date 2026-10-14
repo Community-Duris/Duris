@@ -22,6 +22,7 @@
 #include "cmd/interp.h"
 #include "core/utils.h"
 #include "world/handler.h"
+#include "world/corpse_raise_custody.h"
 #include "economy/zone_reset_item_command.h"
 extern void event_balance_affects(P_char, P_char, P_obj, void *);
 #include "economy/shop_trade_destination_weight.h"
@@ -33,6 +34,8 @@ extern void event_balance_affects(P_char, P_char, P_obj, void *);
 #include "account/account.h"
 #include "combat/arena.h"
 #include "persistence/corpse_lifecycle_transaction.h"
+#include "persistence/corpse_raise_diagnostics.h"
+#include "persistence/persistence_diagnostics.h"
 #include "economy/currency_transaction.h"
 #include "economy/economic_gameplay_authority.h"
 #include "economy/collector_catalog_cache.h"
@@ -3732,6 +3735,195 @@ bool obj_is_in_container(P_obj obj, P_obj container)
 
 namespace
 {
+persistence_trace_event corpse_raise_trace(const corpse_lifecycle_payload &payload,
+					   persistence_trace_stage stage)
+{
+	persistence_trace_event event;
+	event.stage = stage;
+	event.command_type = static_cast<uint16_t>(critical_command_type::corpse_lifecycle);
+	event.source_site = static_cast<uint16_t>(critical_source_site::command);
+	event.pid = static_cast<int32_t>(payload.destination_player_pid);
+	event.request_id = item_corpse_owner_id(payload.owner_pid, payload.save_id);
+	event.keys[0] = { critical_entity_type::corpse, event.request_id };
+	event.keys[1] = { critical_entity_type::player, payload.destination_player_pid };
+	event.key_count = 2;
+	if (const auto *body = corpse_raise_diagnostic_command_observe();
+	    body && body->corpse_key == event.request_id)
+		event.operation = body->operation;
+	return event;
+}
+
+void trace_corpse_raise_item(const corpse_lifecycle_payload &payload, P_obj item, uint64_t root_uid,
+			     uint64_t parent_uid, bool expected_present, bool observed_present,
+			     const item_ownership_runtime_entry &runtime,
+			     uint32_t source_line) noexcept
+{
+	if (!corpse_raise_diagnostics_enabled())
+		return;
+	auto event = corpse_raise_trace(payload, persistence_trace_stage::command_checkpoint);
+	event.diagnosis = static_cast<uint32_t>(corpse_raise_diagnostic_kind::native_item);
+	event.witness.item_uid = item->obj_uid;
+	event.witness.source_line = source_line;
+	event.witness.expected_present = expected_present;
+	event.witness.observed_present = observed_present;
+	event.witness.expected_root = root_uid;
+	event.witness.expected_parent = parent_uid;
+	event.witness.expected_vnum = OBJ_VNUM(item);
+	if (observed_present)
+	{
+		event.witness.observed_root = runtime.root_item_uid;
+		event.witness.observed_parent = runtime.parent_item_uid;
+		event.witness.observed_vnum = runtime.vnum;
+		event.witness.observed_item_revision = runtime.item_revision;
+		event.witness.observed_owner_type = static_cast<uint8_t>(runtime.owner.type);
+		event.witness.observed_owner_id = runtime.owner.id;
+		event.witness.observed_owner_context_id = runtime.owner.context_id;
+		event.witness.observed_owner_revision = runtime.owner_revision;
+		event.witness.observed_state = static_cast<uint8_t>(runtime.state);
+	}
+	persistence_trace_record(event);
+}
+}
+
+bool persistence_collect_corpse_raise_discarded(P_obj corpse,
+						const corpse_lifecycle_payload &payload,
+						const corpse_lifecycle_result &result,
+						std::vector<uint64_t> *output) noexcept
+{
+	if (!nevent_is_game_thread() || !corpse || !output || !corpse->obj_uid ||
+	    corpse->type != ITEM_CORPSE || !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE) ||
+	    corpse->value[CORPSE_PID] <= 0 || corpse->value[CORPSE_SAVEID] <= 0 ||
+	    payload.action != corpse_lifecycle_action::raise_follower ||
+	    result.action != payload.action || result.owner_pid != payload.owner_pid ||
+	    result.save_id != payload.save_id ||
+	    static_cast<uint32_t>(corpse->value[CORPSE_PID]) != payload.owner_pid ||
+	    static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]) != payload.save_id)
+		return false;
+	const item_owner_identity owner = {
+		item_owner_type::corpse, item_corpse_owner_id(payload.owner_pid, payload.save_id), 0
+	};
+	struct native_item
+	{
+		P_obj object, parent;
+		uint64_t root_uid;
+	};
+	try
+	{
+		std::vector<native_item> native;
+		std::vector<uint64_t> discarded;
+		std::unordered_map<uint64_t, P_obj> selected;
+		selected.emplace(corpse->obj_uid, corpse);
+		auto append_children = [&](P_obj parent, uint64_t root_uid)
+		{
+			for (P_obj child = parent->contains; child; child = child->next_content)
+			{
+				if (native.size() == ITEM_TRANSFER_MAX_ITEMS)
+					return false;
+				native.push_back(
+					{ child, parent, root_uid ? root_uid : child->obj_uid });
+			}
+			return true;
+		};
+		if (!append_children(corpse, 0))
+			return false;
+		uint32_t durable_count = 0;
+		auto wallet = payload.money;
+		for (int32_t value : wallet)
+			if (value < 0)
+				return false;
+		for (size_t index = 0; index < native.size(); ++index)
+		{
+			const auto node = native[index];
+			P_obj item = node.object;
+			if (!item->obj_uid || item->R_num < 0 || item->R_num > top_of_objt ||
+			    !OBJ_INSIDE(item) || item->loc.inside != node.parent ||
+			    !selected.emplace(item->obj_uid, item).second)
+				return false;
+			const bool money = OBJ_VNUM(item) == VOBJ_COINS;
+			const bool transient = IS_SET(item->extra_flags, ITEM_TRANSIENT);
+			if (money)
+			{
+				if (item->type != ITEM_MONEY || item->contains)
+					return false;
+				for (size_t coin = 0; coin < wallet.size(); ++coin)
+				{
+					if (item->value[coin] < 0 ||
+					    item->value[coin] > INT32_MAX - wallet[coin])
+						return false;
+					wallet[coin] += item->value[coin];
+				}
+			}
+			item_ownership_runtime_entry runtime = {};
+			const bool tracked = item_ownership_runtime_lookup(item->obj_uid, &runtime);
+			if (item->corpse_money_origin.present())
+			{
+				if (!money || tracked ||
+				    !item->corpse_money_origin.matches(item, item->obj_uid,
+								       owner.id))
+					return false;
+			}
+			else
+			{
+				const uint64_t parent_uid =
+					node.parent == corpse ? 0 : node.parent->obj_uid;
+				if (!tracked || !item_owner_identity_equal(runtime.owner, owner) ||
+				    runtime.state != item_custody_state::active ||
+				    runtime.vnum != OBJ_VNUM(item) ||
+				    runtime.root_item_uid != node.root_uid ||
+				    runtime.parent_item_uid != parent_uid)
+					return false;
+				if (money || transient)
+					discarded.push_back(item->obj_uid);
+				else
+					++durable_count;
+			}
+			if ((!money && !transient && node.parent != corpse &&
+			     IS_SET(node.parent->extra_flags, ITEM_TRANSIENT)) ||
+			    !append_children(item, node.root_uid))
+				return false;
+		}
+		if (durable_count != result.item_count ||
+		    discarded.size() != result.discarded_item_count || wallet != result.wallet)
+			return false;
+		// Authenticate each selected native binding against the actual object
+		// list. A copied origin, missing object, duplicate UID or cycle refuses.
+		P_obj slow = object_list, fast = object_list;
+		while (fast && fast->next)
+		{
+			slow = slow->next;
+			fast = fast->next->next;
+			if (slow == fast)
+				return false;
+		}
+		size_t found = 0;
+		for (P_obj object = object_list; object; object = object->next)
+		{
+			const auto binding = selected.find(object->obj_uid);
+			if (binding != selected.end())
+			{
+				if (binding->second != object)
+					return false;
+				++found;
+			}
+			if (object != corpse && object->type == ITEM_CORPSE &&
+			    IS_SET(object->value[CORPSE_FLAGS], PC_CORPSE) &&
+			    object->value[CORPSE_PID] == corpse->value[CORPSE_PID] &&
+			    object->value[CORPSE_SAVEID] == corpse->value[CORPSE_SAVEID])
+				return false;
+		}
+		if (found != selected.size())
+			return false;
+		*output = std::move(discarded);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+namespace
+{
 constexpr int CORPSE_RELEASE_RETRY_DELAY = 5 * WAIT_SEC;
 
 struct corpse_unmaking_context
@@ -4383,6 +4575,193 @@ void recover_committed_corpse_raise(uint64_t key, P_obj corpse, P_char follower,
 	}
 }
 
+void trace_corpse_raise_owner(const corpse_lifecycle_payload &payload,
+			      const item_owner_identity &owner, persistence_trace_stage phase,
+			      uint32_t source_line)
+{
+	uint64_t revision = 0;
+	auto event = corpse_raise_trace(payload, persistence_trace_stage::command_checkpoint);
+	event.attempt = static_cast<uint32_t>(phase);
+	event.diagnosis = static_cast<uint32_t>(corpse_raise_diagnostic_kind::owner_clock);
+	event.witness.source_line = source_line;
+	event.witness.observed_present =
+		item_ownership_runtime_peek_owner_revision(owner, &revision);
+	event.witness.observed_owner_type = static_cast<uint8_t>(owner.type);
+	event.witness.observed_owner_id = owner.id;
+	event.witness.observed_owner_context_id = owner.context_id;
+	event.witness.observed_owner_revision = revision;
+	persistence_trace_record(event);
+	std::vector<item_ownership_runtime_entry> items;
+	if (!item_ownership_runtime_snapshot_owner(owner, ITEM_TRANSFER_MAX_ITEMS + 1, &items))
+	{
+		event.diagnosis =
+			static_cast<uint32_t>(corpse_raise_diagnostic_kind::owner_cache_item);
+		event.outcome = 0;
+		event.witness.observed_present = false;
+		persistence_trace_record(event);
+		return;
+	}
+	for (const auto &item : items)
+	{
+		event.diagnosis =
+			static_cast<uint32_t>(corpse_raise_diagnostic_kind::owner_cache_item);
+		event.outcome = 1;
+		event.witness.item_uid = item.item_uid;
+		event.witness.observed_present = true;
+		event.witness.observed_root = item.root_item_uid;
+		event.witness.observed_parent = item.parent_item_uid;
+		event.witness.observed_item_revision = item.item_revision;
+		event.witness.observed_owner_revision = item.owner_revision;
+		event.witness.observed_vnum = item.vnum;
+		event.witness.observed_state = static_cast<uint8_t>(item.state);
+		persistence_trace_record(event);
+	}
+}
+
+void trace_corpse_raise_phase(const corpse_lifecycle_payload &payload,
+			      const corpse_lifecycle_result &result, persistence_trace_stage phase,
+			      size_t selected_count, bool applied, uint32_t source_line) noexcept
+{
+	if (!corpse_raise_diagnostics_enabled())
+		return;
+	auto event = corpse_raise_trace(payload, phase);
+	event.outcome = applied;
+	event.revision = result.corpse_owner_revision;
+	event.witness.source_line = source_line;
+	event.witness.expected_count =
+		phase == persistence_trace_stage::corpse_raise_discard_enter ||
+				phase == persistence_trace_stage::corpse_raise_discard_result ?
+			result.discarded_item_count :
+			result.item_count;
+	event.witness.observed_count = static_cast<uint32_t>(selected_count);
+	persistence_trace_record(event);
+	try
+	{
+		const item_owner_identity source = {
+			item_owner_type::corpse,
+			item_corpse_owner_id(payload.owner_pid, payload.save_id), 0
+		};
+		const item_owner_identity player = { item_owner_type::player,
+						     payload.destination_player_pid, 0 };
+		const item_owner_identity destination =
+			payload.pet_uid ?
+				item_owner_identity{ item_owner_type::pet, payload.pet_uid,
+						     payload.destination_player_pid } :
+				player;
+		trace_corpse_raise_owner(payload, source, phase, source_line);
+		trace_corpse_raise_owner(payload, destination, phase, source_line);
+		if (payload.pet_uid)
+			trace_corpse_raise_owner(payload, player, phase, source_line);
+		trace_corpse_raise_owner(payload, { item_owner_type::destruction, 0, 0 }, phase,
+					 source_line);
+	}
+	catch (...)
+	{
+		// Observation failure does not replace the original native outcome.
+		auto failure =
+			corpse_raise_trace(payload, persistence_trace_stage::command_checkpoint);
+		failure.diagnosis =
+			static_cast<uint32_t>(corpse_raise_diagnostic_kind::observation_exception);
+		failure.attempt = static_cast<uint32_t>(phase);
+		failure.witness.source_line = source_line;
+		persistence_trace_record(failure);
+	}
+}
+
+void trace_corpse_raise_selection(P_obj corpse, P_char caster, P_char follower,
+				  const corpse_raise_context &context,
+				  const corpse_lifecycle_payload &payload,
+				  const corpse_lifecycle_result &result, bool valid,
+				  size_t selected_count) noexcept
+{
+	if (!corpse_raise_diagnostics_enabled())
+		return;
+	auto event = corpse_raise_trace(payload, persistence_trace_stage::command_checkpoint);
+	event.diagnosis = static_cast<uint32_t>(corpse_raise_diagnostic_kind::source_selection);
+	event.outcome = valid;
+	event.witness.source_line = __LINE__;
+	event.witness.expected_count = result.discarded_item_count;
+	event.witness.observed_count = static_cast<uint32_t>(selected_count);
+	persistence_trace_record(event);
+	for (const bool is_caster : { true, false })
+	{
+		P_char actor = is_caster ? caster : follower;
+		event.diagnosis = static_cast<uint32_t>(corpse_raise_diagnostic_kind::native_actor);
+		event.outcome = is_caster ? 1 : 2;
+		// These runtime identities are diagnostic liveness observations only.
+		event.request_id = actor ? actor->runtime_id : 0;
+		event.revision = is_caster ? context.caster_runtime_id :
+					     context.follower_runtime_id;
+		event.pid = actor && IS_PC(actor) && actor->only.pc ? GET_PID(actor) : 0;
+		event.witness.observed_present = actor != nullptr;
+		event.witness.expected_vnum = is_caster ? payload.room_vnum : NOWHERE;
+		event.witness.observed_vnum = actor && actor->in_room > NOWHERE &&
+							      actor->in_room <= top_of_world ?
+						      world[actor->in_room].number :
+						      NOWHERE;
+		persistence_trace_record(event);
+	}
+	if (!valid)
+		return;
+	try
+	{
+		struct node
+		{
+			P_obj object, parent;
+			uint64_t root_uid;
+		};
+		std::vector<node> native;
+		auto append_children = [&](P_obj parent, uint64_t root_uid)
+		{
+			for (P_obj item = parent->contains; item; item = item->next_content)
+			{
+				if (native.size() == ITEM_TRANSFER_MAX_ITEMS)
+					return false;
+				native.push_back(
+					{ item, parent, root_uid ? root_uid : item->obj_uid });
+			}
+			return true;
+		};
+		if (!append_children(corpse, 0))
+			return;
+		for (size_t index = 0; index < native.size(); ++index)
+		{
+			const auto item = native[index];
+			item_ownership_runtime_entry runtime = {};
+			const bool found =
+				item_ownership_runtime_lookup(item.object->obj_uid, &runtime);
+			trace_corpse_raise_item(
+				payload, item.object, item.root_uid,
+				item.parent == corpse ? 0 : item.parent->obj_uid,
+				!item.object->corpse_money_origin.matches(
+					item.object, item.object->obj_uid,
+					item_corpse_owner_id(payload.owner_pid, payload.save_id)),
+				found, runtime, __LINE__);
+			if (!append_children(item.object, item.root_uid))
+				return;
+		}
+		// The untouched original collector supplies a direct counterexample
+		// observation on the SAME validated native forest. It does not apply.
+		std::vector<uint64_t> legacy;
+		collect_corpse_discarded_uids(corpse, false, &legacy);
+		event = corpse_raise_trace(payload, persistence_trace_stage::command_checkpoint);
+		event.diagnosis =
+			static_cast<uint32_t>(corpse_raise_diagnostic_kind::legacy_discard_count);
+		event.outcome = 1;
+		event.witness.source_line = __LINE__;
+		event.witness.expected_count = result.discarded_item_count;
+		event.witness.observed_count = static_cast<uint32_t>(legacy.size());
+		persistence_trace_record(event);
+	}
+	catch (...)
+	{
+		event = corpse_raise_trace(payload, persistence_trace_stage::command_checkpoint);
+		event.diagnosis =
+			static_cast<uint32_t>(corpse_raise_diagnostic_kind::legacy_discard_count);
+		persistence_trace_record(event);
+	}
+}
+
 void publish_corpse_raise(bool committed, const corpse_lifecycle_result &result,
 			  unsigned int error_code, const corpse_lifecycle_payload &payload)
 {
@@ -4417,18 +4796,43 @@ void publish_corpse_raise(bool committed, const corpse_lifecycle_result &result,
 							  &discarded_uids, &root_runtime) &&
 				 durable_uids.size() == result.item_count &&
 				 discarded_uids.size() == result.discarded_item_count :
-			 validate_corpse_release_items(corpse, result));
+			 persistence_collect_corpse_raise_discarded(corpse, payload, result,
+								    &discarded_uids));
 	const bool source_valid = source_items_valid && corpse_release_room(corpse, &corpse_room) &&
 				  world[corpse_room].number == payload.room_vnum;
+	if (!world_raise)
+		trace_corpse_raise_selection(corpse, caster, follower, context, payload, result,
+					     source_items_valid, discarded_uids.size());
+	const auto apply_discarded = [&]()
+	{
+		trace_corpse_raise_phase(payload, result,
+					 persistence_trace_stage::corpse_raise_discard_enter,
+					 discarded_uids.size(), false, __LINE__);
+		const bool applied = item_ownership_runtime_apply_corpse_discarded(
+			payload.owner_pid, payload.save_id, discarded_uids, result);
+		trace_corpse_raise_phase(payload, result,
+					 persistence_trace_stage::corpse_raise_discard_result,
+					 discarded_uids.size(), applied, __LINE__);
+		return applied;
+	};
+	const auto apply_raise = [&]()
+	{
+		trace_corpse_raise_phase(payload, result,
+					 persistence_trace_stage::corpse_raise_transfer_enter,
+					 result.item_count, false, __LINE__);
+		const bool applied = item_ownership_runtime_apply_corpse_raise(
+			payload.owner_pid, payload.save_id, payload.destination_player_pid,
+			payload.pet_uid, result);
+		trace_corpse_raise_phase(payload, result,
+					 persistence_trace_stage::corpse_raise_transfer_result,
+					 result.item_count, applied, __LINE__);
+		return applied;
+	};
 	const bool runtime_applied =
-		world_raise ?
-			item_ownership_runtime_apply_world_corpse_raise(
-				key, payload.room_vnum, payload.destination_player_pid,
-				payload.pet_uid, durable_uids, discarded_uids, result) :
-			apply_corpse_discarded_runtime(corpse, result, false) &&
-				item_ownership_runtime_apply_corpse_raise(
-					payload.owner_pid, payload.save_id,
-					payload.destination_player_pid, payload.pet_uid, result);
+		world_raise ? item_ownership_runtime_apply_world_corpse_raise(
+				      key, payload.room_vnum, payload.destination_player_pid,
+				      payload.pet_uid, durable_uids, discarded_uids, result) :
+			      source_items_valid && apply_discarded() && apply_raise();
 	if (!runtime_applied)
 	{
 		recover_committed_corpse_raise(key, corpse, follower, false, true,
