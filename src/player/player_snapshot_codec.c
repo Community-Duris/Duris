@@ -36,6 +36,12 @@ struct encoder
 
 	void boolean(bool value) { number<uint8_t>(value ? 1 : 0); }
 
+	void reserve_bytes(size_t count) { bytes.reserve(count); }
+	template <typename Iterator> void insert_data(Iterator first, Iterator last)
+	{
+		bytes.insert(bytes.end(), first, last);
+	}
+
 	void string(const std::string &value, size_t maximum = PLAYER_SNAPSHOT_MAX_STRING_BYTES)
 	{
 		if (value.size() > maximum)
@@ -142,14 +148,15 @@ struct decoder
 	}
 };
 
-void encode_index_rows(encoder &out, const std::vector<player_index_value_snapshot> &rows)
+template <typename Encoder>
+void encode_index_rows(Encoder &out, const std::vector<player_index_value_snapshot> &rows)
 {
 	out.vector(rows,
 		   [&](const auto &row)
 		   {
-			   out.number<int32_t>(row.index);
-			   out.number<int64_t>(row.value);
-			   out.number<uint64_t>(row.auxiliary);
+			   out.template number<int32_t>(row.index);
+			   out.template number<int64_t>(row.value);
+			   out.template number<uint64_t>(row.auxiliary);
 		   });
 }
 
@@ -162,47 +169,48 @@ bool decode_index_rows(decoder &in, std::vector<player_index_value_snapshot> &ro
 			 });
 }
 
-void encode_items(encoder &out, const std::vector<player_item_snapshot> &items)
+template <typename Encoder>
+void encode_items(Encoder &out, const std::vector<player_item_snapshot> &items)
 {
 	out.vector(items,
 		   [&](const player_item_snapshot &row)
 		   {
-			   out.number<int32_t>(row.parent_index);
-			   out.number<int16_t>(row.equipment_slot);
-			   out.number<uint64_t>(row.object_uid);
-			   out.number<int64_t>(row.generated_key);
-			   out.number<int32_t>(row.vnum);
-			   out.number<int8_t>(row.type);
-			   out.number<uint8_t>(row.string_mask);
+			   out.template number<int32_t>(row.parent_index);
+			   out.template number<int16_t>(row.equipment_slot);
+			   out.template number<uint64_t>(row.object_uid);
+			   out.template number<int64_t>(row.generated_key);
+			   out.template number<int32_t>(row.vnum);
+			   out.template number<int8_t>(row.type);
+			   out.template number<uint8_t>(row.string_mask);
 			   out.string(row.name);
 			   out.string(row.short_description);
 			   out.string(row.description);
 			   out.string(row.action_description);
 			   for (int32_t value : row.values)
-				   out.number<int32_t>(value);
+				   out.template number<int32_t>(value);
 			   for (int64_t timer : row.timers)
-				   out.number<int64_t>(timer);
-			   out.number<uint32_t>(row.wear_flags);
-			   out.number<uint32_t>(row.extra_flags);
-			   out.number<uint32_t>(row.anti_flags);
-			   out.number<uint32_t>(row.anti2_flags);
-			   out.number<uint32_t>(row.extra2_flags);
-			   out.number<int32_t>(row.weight);
-			   out.number<int8_t>(row.material);
-			   out.number<int32_t>(row.cost);
-			   out.number<int16_t>(row.condition);
-			   out.number<int16_t>(row.craftsmanship);
+				   out.template number<int64_t>(timer);
+			   out.template number<uint32_t>(row.wear_flags);
+			   out.template number<uint32_t>(row.extra_flags);
+			   out.template number<uint32_t>(row.anti_flags);
+			   out.template number<uint32_t>(row.anti2_flags);
+			   out.template number<uint32_t>(row.extra2_flags);
+			   out.template number<int32_t>(row.weight);
+			   out.template number<int8_t>(row.material);
+			   out.template number<int32_t>(row.cost);
+			   out.template number<int16_t>(row.condition);
+			   out.template number<int16_t>(row.craftsmanship);
 			   for (uint64_t bitvector : row.bitvectors)
-				   out.number<uint64_t>(bitvector);
+				   out.template number<uint64_t>(bitvector);
 			   for (const auto &affect : row.affects)
 				   for (int16_t value : affect)
-					   out.number<int16_t>(value);
+					   out.template number<int16_t>(value);
 			   out.vector(row.dynamic_affects,
 				      [&](const auto &affect)
 				      {
-					      out.number<int16_t>(affect.type);
-					      out.number<int16_t>(affect.data);
-					      out.number<uint64_t>(affect.extra2);
+					      out.template number<int16_t>(affect.type);
+					      out.template number<int16_t>(affect.data);
+					      out.template number<uint64_t>(affect.extra2);
 				      });
 			   out.vector(row.extra_descriptions,
 				      [&](const auto &description)
@@ -210,9 +218,9 @@ void encode_items(encoder &out, const std::vector<player_item_snapshot> &items)
 					      out.string(description.keyword);
 					      out.string(description.description);
 					      out.boolean(description.spellbook);
-					      out.vector(description.spell_ids,
-							 [&](int32_t skill_id)
-							 { out.number<int32_t>(skill_id); });
+					      out.vector(
+						      description.spell_ids, [&](int32_t skill_id)
+						      { out.template number<int32_t>(skill_id); });
 				      });
 		   });
 }
@@ -478,35 +486,36 @@ bool valid_craft_receipts(const player_snapshot &snapshot)
 	return true;
 }
 
-void encode_death(encoder &out, const player_death_snapshot &death)
+template <typename Encoder> void encode_death(Encoder &out, const player_death_snapshot &death)
 {
 	for (uint8_t byte : death.operation_id.bytes)
-		out.number<uint8_t>(byte);
-	out.number<int32_t>(death.corpse_room_vnum);
-	out.number<uint64_t>(death.wallet_revision);
+		out.template number<uint8_t>(byte);
+	out.template number<int32_t>(death.corpse_room_vnum);
+	out.template number<uint64_t>(death.wallet_revision);
 	for (int32_t amount : death.wallet_before)
-		out.number<int32_t>(amount);
-	out.number<uint64_t>(death.wallet_pile_uid);
+		out.template number<int32_t>(amount);
+	out.template number<uint64_t>(death.wallet_pile_uid);
 	encode_items(out, death.corpse);
 	out.vector(death.custody,
 		   [&](const auto &row)
 		   {
-			   out.number<uint64_t>(row.item.item_uid);
-			   out.number<uint64_t>(row.item.root_item_uid);
-			   out.number<uint64_t>(row.item.parent_item_uid);
-			   out.number<uint64_t>(row.item.expected_item_revision);
-			   out.number<int32_t>(row.item.vnum);
-			   out.number<uint8_t>(static_cast<uint8_t>(row.item.expected_state));
-			   out.number<uint8_t>(static_cast<uint8_t>(row.owner.type));
-			   out.number<uint64_t>(row.owner.id);
-			   out.number<uint64_t>(row.owner.context_id);
-			   out.number<uint64_t>(row.owner_revision);
+			   out.template number<uint64_t>(row.item.item_uid);
+			   out.template number<uint64_t>(row.item.root_item_uid);
+			   out.template number<uint64_t>(row.item.parent_item_uid);
+			   out.template number<uint64_t>(row.item.expected_item_revision);
+			   out.template number<int32_t>(row.item.vnum);
+			   out.template number<uint8_t>(
+				   static_cast<uint8_t>(row.item.expected_state));
+			   out.template number<uint8_t>(static_cast<uint8_t>(row.owner.type));
+			   out.template number<uint64_t>(row.owner.id);
+			   out.template number<uint64_t>(row.owner.context_id);
+			   out.template number<uint64_t>(row.owner_revision);
 		   });
 	out.vector(death.unresolved_operations,
 		   [&](const auto &id)
 		   {
 			   for (uint8_t byte : id.bytes)
-				   out.number<uint8_t>(byte);
+				   out.template number<uint8_t>(byte);
 		   });
 }
 
@@ -623,7 +632,8 @@ player_snapshot_codec_result validate_evidence(const player_death_conflict_evide
 	return player_snapshot_codec_result::ok;
 }
 
-void encode_evidence(encoder &out, const player_death_conflict_evidence &evidence)
+template <typename Encoder>
+void encode_evidence(Encoder &out, const player_death_conflict_evidence &evidence)
 {
 	// Fixed table order is part of version 10; these are observations, not inventory.
 	for (const auto *table : { &evidence.player_items, &evidence.player_item_affects,
@@ -1576,6 +1586,183 @@ player_item_snapshot_extract_forest(const std::vector<player_item_snapshot> &ite
 	return player_snapshot_codec_result::ok;
 }
 
+namespace
+{
+struct snapshot_unbounded_encode_validation
+{
+	bool death(const player_snapshot &snapshot) { return valid_death(snapshot); }
+	player_snapshot_codec_result evidence(const player_death_conflict_evidence &value)
+	{
+		return validate_evidence(value);
+	}
+	player_snapshot_codec_result finish(encoder &out, std::vector<uint8_t> *encoded_out)
+	{
+		player_snapshot validated = {};
+		const auto result =
+			player_snapshot_decode(out.bytes.data(), out.bytes.size(), &validated);
+		if (result != player_snapshot_codec_result::ok)
+			return result;
+		*encoded_out = std::move(out.bytes);
+		return player_snapshot_codec_result::ok;
+	}
+};
+
+// One original complete wire traversal for both APIs. Bounded ownership is
+// supplied by the concrete writer/validator, never by a shortened snapshot.
+template <typename Encoder, typename Validation>
+player_snapshot_codec_result snapshot_encode_payload(const player_snapshot &snapshot, Encoder &out,
+						     Validation &validation,
+						     std::vector<uint8_t> *encoded_out)
+{
+	if (!validation.death(snapshot))
+		return player_snapshot_codec_result::invalid_value;
+	if (snapshot.death && snapshot.death->conflict_evidence)
+	{
+		const auto valid = validation.evidence(*snapshot.death->conflict_evidence);
+		if (valid != player_snapshot_codec_result::ok)
+			return valid;
+	}
+	out.reserve_bytes(snapshot.encoded_size_bound);
+	const bool ward_fields = std::any_of(snapshot.affects.begin(), snapshot.affects.end(),
+					     [](const auto &af)
+					     { return af.ward_source_type != 0; });
+	out.template number<uint32_t>(snapshot.schema_version +
+				      (ward_fields ? PLAYER_SNAPSHOT_WARD_WIRE_OFFSET : 0));
+	out.template number<int32_t>(snapshot.pid);
+	out.template number<player_revision_t>(snapshot.revision);
+	out.template number<player_component_mask_t>(snapshot.components);
+	out.template number<int32_t>(snapshot.save_intent);
+	out.template number<int32_t>(snapshot.room_vnum);
+	out.template number<uint64_t>(snapshot.encoded_size_bound);
+	out.vector(snapshot.status_integers,
+		   [&](const auto &row)
+		   {
+			   out.template number<uint16_t>(static_cast<uint16_t>(row.field));
+			   out.template number<int64_t>(row.signed_value);
+			   out.template number<uint64_t>(row.unsigned_value);
+			   out.boolean(row.is_unsigned);
+		   });
+	out.vector(snapshot.status_strings,
+		   [&](const auto &row)
+		   {
+			   out.template number<uint8_t>(static_cast<uint8_t>(row.field));
+			   out.string(row.value);
+		   });
+	for (int32_t value : snapshot.conditions)
+		out.template number<int32_t>(value);
+	for (int32_t value : snapshot.quest_values)
+		out.template number<int32_t>(value);
+	encode_index_rows(out, snapshot.languages);
+	encode_index_rows(out, snapshot.introductions);
+	encode_index_rows(out, snapshot.timers);
+	encode_index_rows(out, snapshot.undead_slots);
+	encode_index_rows(out, snapshot.forged_items);
+	out.vector(snapshot.granted_commands,
+		   [&](int32_t command) { out.template number<int32_t>(command); });
+	out.vector(snapshot.skills,
+		   [&](const auto &row)
+		   {
+			   out.template number<int32_t>(row.skill_id);
+			   out.template number<uint8_t>(row.learned);
+			   out.template number<uint8_t>(row.taught);
+		   });
+	out.vector(snapshot.affects,
+		   [&](const auto &row)
+		   {
+			   out.template number<int16_t>(row.type);
+			   out.template number<int32_t>(row.duration);
+			   out.template number<uint32_t>(row.flags);
+			   out.template number<int32_t>(row.modifier);
+			   out.template number<uint8_t>(row.location);
+			   out.template number<uint16_t>(row.level);
+			   for (uint64_t bitvector : row.bitvectors)
+				   out.template number<uint64_t>(bitvector);
+			   if (ward_fields)
+			   {
+				   out.template number<uint64_t>(row.ward_source_uid);
+				   out.template number<int32_t>(row.ward_full_duration);
+				   out.template number<int64_t>(row.ward_capacity);
+				   out.template number<int64_t>(row.ward_capacity_max);
+				   out.template number<int32_t>(row.ward_refresh_remaining);
+				   out.template number<uint8_t>(row.ward_source_type);
+				   out.template number<uint8_t>(row.ward_source_worn);
+				   out.template number<uint8_t>(row.ward_active);
+			   }
+			   out.string(row.wear_off_character);
+			   out.string(row.wear_off_room);
+		   });
+	encode_items(out, snapshot.items);
+	out.vector(snapshot.pets,
+		   [&](const auto &pet)
+		   {
+			   out.template number<uint64_t>(pet.pet_uid);
+			   out.template number<int32_t>(pet.mob_vnum);
+			   out.template number<int32_t>(pet.order);
+			   out.template number<int32_t>(pet.hit);
+			   out.template number<int32_t>(pet.max_hit);
+			   out.template number<int32_t>(pet.mana);
+			   out.template number<int32_t>(pet.max_mana);
+			   out.template number<int32_t>(pet.vitality);
+			   out.template number<int32_t>(pet.max_vitality);
+			   out.template number<int32_t>(pet.charm_duration);
+			   out.template number<int32_t>(pet.room_vnum);
+			   encode_items(out, pet.items);
+			   out.string(pet.restore_state, PET_RESTORE_STATE_MAX_BYTES);
+			   out.template number<uint32_t>(static_cast<uint32_t>(pet.hold_reason));
+		   });
+	out.vector(snapshot.shapes,
+		   [&](const auto &row)
+		   {
+			   out.template number<int32_t>(row.mob_vnum);
+			   out.template number<int32_t>(row.times_researched);
+			   out.template number<int64_t>(row.last_researched);
+			   out.template number<int64_t>(row.last_shapechanged);
+		   });
+	out.vector(snapshot.trophies,
+		   [&](const auto &row)
+		   {
+			   out.template number<int32_t>(row.zone_number);
+			   out.template number<int32_t>(row.experience);
+		   });
+	out.boolean(snapshot.recipes_are_external);
+	out.string(snapshot.output_preferences, OUTPUT_PREFERENCE_MAX_BYTES);
+	if (player_snapshot_has_quest_receipt_schema(snapshot.schema_version))
+		out.vector(snapshot.quest_xp_receipts,
+			   [&](const auto &receipt)
+			   {
+				   out.insert_data(receipt.offering_operation.bytes.begin(),
+						   receipt.offering_operation.bytes.end());
+				   out.template number<uint32_t>(receipt.reward_index);
+				   out.template number<uint32_t>(receipt.amount);
+			   });
+	if (player_snapshot_has_spell_receipt_schema(snapshot.schema_version))
+		out.vector(snapshot.spell_effect_receipts,
+			   [&](const auto &receipt)
+			   {
+				   for (uint8_t byte : receipt.operation_id.bytes)
+					   out.template number<uint8_t>(byte);
+				   out.template number<uint32_t>(receipt.effect_id);
+			   });
+	if (player_snapshot_has_craft_receipt_schema(snapshot.schema_version))
+		out.vector(snapshot.craft_receipts,
+			   [&](const auto &receipt)
+			   {
+				   for (uint8_t byte : receipt.operation_id.bytes)
+					   out.template number<uint8_t>(byte);
+				   out.template number<uint32_t>(receipt.discipline);
+				   out.template number<uint32_t>(receipt.experience);
+			   });
+	if (snapshot.death)
+	{
+		encode_death(out, *snapshot.death);
+		if (snapshot.death->conflict_evidence)
+			encode_evidence(out, *snapshot.death->conflict_evidence);
+	}
+	if (!out.valid || out.bytes.size() > PLAYER_SNAPSHOT_MAX_BYTES)
+		return player_snapshot_codec_result::limit_exceeded;
+	return validation.finish(out, encoded_out);
+}
+} // namespace
 player_snapshot_codec_result player_snapshot_encode(const player_snapshot &snapshot,
 						    std::vector<uint8_t> *encoded_out)
 {
@@ -1589,166 +1776,13 @@ player_snapshot_codec_result player_snapshot_encode(const player_snapshot &snaps
 	try
 	{
 		encoder out;
-		if (!valid_death(snapshot))
-			return player_snapshot_codec_result::invalid_value;
-		if (snapshot.death && snapshot.death->conflict_evidence)
-		{
-			const auto valid = validate_evidence(*snapshot.death->conflict_evidence);
-			if (valid != player_snapshot_codec_result::ok)
-				return valid;
-		}
-		out.bytes.reserve(snapshot.encoded_size_bound);
-		const bool ward_fields =
-			std::any_of(snapshot.affects.begin(), snapshot.affects.end(),
-				    [](const auto &af) { return af.ward_source_type != 0; });
-		out.number<uint32_t>(snapshot.schema_version +
-				     (ward_fields ? PLAYER_SNAPSHOT_WARD_WIRE_OFFSET : 0));
-		out.number<int32_t>(snapshot.pid);
-		out.number<player_revision_t>(snapshot.revision);
-		out.number<player_component_mask_t>(snapshot.components);
-		out.number<int32_t>(snapshot.save_intent);
-		out.number<int32_t>(snapshot.room_vnum);
-		out.number<uint64_t>(snapshot.encoded_size_bound);
-		out.vector(snapshot.status_integers,
-			   [&](const auto &row)
-			   {
-				   out.number<uint16_t>(static_cast<uint16_t>(row.field));
-				   out.number<int64_t>(row.signed_value);
-				   out.number<uint64_t>(row.unsigned_value);
-				   out.boolean(row.is_unsigned);
-			   });
-		out.vector(snapshot.status_strings,
-			   [&](const auto &row)
-			   {
-				   out.number<uint8_t>(static_cast<uint8_t>(row.field));
-				   out.string(row.value);
-			   });
-		for (int32_t value : snapshot.conditions)
-			out.number<int32_t>(value);
-		for (int32_t value : snapshot.quest_values)
-			out.number<int32_t>(value);
-		encode_index_rows(out, snapshot.languages);
-		encode_index_rows(out, snapshot.introductions);
-		encode_index_rows(out, snapshot.timers);
-		encode_index_rows(out, snapshot.undead_slots);
-		encode_index_rows(out, snapshot.forged_items);
-		out.vector(snapshot.granted_commands,
-			   [&](int32_t command) { out.number<int32_t>(command); });
-		out.vector(snapshot.skills,
-			   [&](const auto &row)
-			   {
-				   out.number<int32_t>(row.skill_id);
-				   out.number<uint8_t>(row.learned);
-				   out.number<uint8_t>(row.taught);
-			   });
-		out.vector(snapshot.affects,
-			   [&](const auto &row)
-			   {
-				   out.number<int16_t>(row.type);
-				   out.number<int32_t>(row.duration);
-				   out.number<uint32_t>(row.flags);
-				   out.number<int32_t>(row.modifier);
-				   out.number<uint8_t>(row.location);
-				   out.number<uint16_t>(row.level);
-				   for (uint64_t bitvector : row.bitvectors)
-					   out.number<uint64_t>(bitvector);
-				   if (ward_fields)
-				   {
-					   out.number<uint64_t>(row.ward_source_uid);
-					   out.number<int32_t>(row.ward_full_duration);
-					   out.number<int64_t>(row.ward_capacity);
-					   out.number<int64_t>(row.ward_capacity_max);
-					   out.number<int32_t>(row.ward_refresh_remaining);
-					   out.number<uint8_t>(row.ward_source_type);
-					   out.number<uint8_t>(row.ward_source_worn);
-					   out.number<uint8_t>(row.ward_active);
-				   }
-				   out.string(row.wear_off_character);
-				   out.string(row.wear_off_room);
-			   });
-		encode_items(out, snapshot.items);
-		out.vector(snapshot.pets,
-			   [&](const auto &pet)
-			   {
-				   out.number<uint64_t>(pet.pet_uid);
-				   out.number<int32_t>(pet.mob_vnum);
-				   out.number<int32_t>(pet.order);
-				   out.number<int32_t>(pet.hit);
-				   out.number<int32_t>(pet.max_hit);
-				   out.number<int32_t>(pet.mana);
-				   out.number<int32_t>(pet.max_mana);
-				   out.number<int32_t>(pet.vitality);
-				   out.number<int32_t>(pet.max_vitality);
-				   out.number<int32_t>(pet.charm_duration);
-				   out.number<int32_t>(pet.room_vnum);
-				   encode_items(out, pet.items);
-				   out.string(pet.restore_state, PET_RESTORE_STATE_MAX_BYTES);
-				   out.number<uint32_t>(static_cast<uint32_t>(pet.hold_reason));
-			   });
-		out.vector(snapshot.shapes,
-			   [&](const auto &row)
-			   {
-				   out.number<int32_t>(row.mob_vnum);
-				   out.number<int32_t>(row.times_researched);
-				   out.number<int64_t>(row.last_researched);
-				   out.number<int64_t>(row.last_shapechanged);
-			   });
-		out.vector(snapshot.trophies,
-			   [&](const auto &row)
-			   {
-				   out.number<int32_t>(row.zone_number);
-				   out.number<int32_t>(row.experience);
-			   });
-		out.boolean(snapshot.recipes_are_external);
-		out.string(snapshot.output_preferences, OUTPUT_PREFERENCE_MAX_BYTES);
-		if (player_snapshot_has_quest_receipt_schema(snapshot.schema_version))
-			out.vector(snapshot.quest_xp_receipts,
-				   [&](const auto &receipt)
-				   {
-					   out.bytes.insert(
-						   out.bytes.end(),
-						   receipt.offering_operation.bytes.begin(),
-						   receipt.offering_operation.bytes.end());
-					   out.number<uint32_t>(receipt.reward_index);
-					   out.number<uint32_t>(receipt.amount);
-				   });
-		if (player_snapshot_has_spell_receipt_schema(snapshot.schema_version))
-			out.vector(snapshot.spell_effect_receipts,
-				   [&](const auto &receipt)
-				   {
-					   for (uint8_t byte : receipt.operation_id.bytes)
-						   out.number<uint8_t>(byte);
-					   out.number<uint32_t>(receipt.effect_id);
-				   });
-		if (player_snapshot_has_craft_receipt_schema(snapshot.schema_version))
-			out.vector(snapshot.craft_receipts,
-				   [&](const auto &receipt)
-				   {
-					   for (uint8_t byte : receipt.operation_id.bytes)
-						   out.number<uint8_t>(byte);
-					   out.number<uint32_t>(receipt.discipline);
-					   out.number<uint32_t>(receipt.experience);
-				   });
-		if (snapshot.death)
-		{
-			encode_death(out, *snapshot.death);
-			if (snapshot.death->conflict_evidence)
-				encode_evidence(out, *snapshot.death->conflict_evidence);
-		}
-		if (!out.valid || out.bytes.size() > PLAYER_SNAPSHOT_MAX_BYTES)
-			return player_snapshot_codec_result::limit_exceeded;
-		player_snapshot validated = {};
-		const player_snapshot_codec_result validation =
-			player_snapshot_decode(out.bytes.data(), out.bytes.size(), &validated);
-		if (validation != player_snapshot_codec_result::ok)
-			return validation;
-		*encoded_out = std::move(out.bytes);
+		snapshot_unbounded_encode_validation validation;
+		return snapshot_encode_payload(snapshot, out, validation, encoded_out);
 	}
 	catch (const std::bad_alloc &)
 	{
 		return player_snapshot_codec_result::allocation_failure;
 	}
-	return player_snapshot_codec_result::ok;
 }
 
 player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size_t encoded_size,
@@ -4521,4 +4555,473 @@ bool player_item_snapshot_list_decode_bounded_initial_inline_bytes(size_t *out) 
 	// public frame and bounded decoder; it already prospectively owns them.
 	*out = 0;
 	return true;
+}
+
+namespace
+{
+struct snapshot_encode_budget_bridge
+{
+	item_list_reserve_fn reserve;
+	void *context;
+	encoder *writer = nullptr;
+
+	static bool relay(size_t request, void *opaque) noexcept
+	{
+		auto &bridge = *static_cast<snapshot_encode_budget_bridge *>(opaque);
+		// The original encoded buffer is simultaneously live with all validation
+		// and hash/depth workspace storage owned by the bounded decoder pattern.
+		constexpr size_t own = 2 * sizeof(void *) + sizeof(size_t) + sizeof(bool) +
+				       sizeof(void *) + sizeof(size_t);
+		return bridge.writer && item_list_add(request, bridge.writer->bytes.capacity()) &&
+		       item_list_add(request, own) && bridge.reserve &&
+		       bridge.reserve(request, bridge.context);
+	}
+};
+
+struct snapshot_bounded_encoder
+{
+	encoder raw;
+	snapshot_bounded_workspace &owner;
+	bool refused = false;
+	bool &valid;
+	std::vector<uint8_t> &bytes;
+
+	explicit snapshot_bounded_encoder(snapshot_bounded_workspace &work) noexcept
+		: owner(work)
+		, valid(raw.valid)
+		, bytes(raw.bytes)
+	{
+	}
+
+	bool peak(size_t request) noexcept
+	{
+		if (refused || !owner.peak(request))
+		{
+			refused = true;
+			return false;
+		}
+		return true;
+	}
+	bool insertion(size_t count) noexcept
+	{
+		// GCC13 vector::_M_check_len for the actual push/range insert. Old
+		// storage remains in the bridge charge while the new block is acquired.
+		size_t request = item_list_vector_frames;
+		if (count > raw.bytes.max_size() - raw.bytes.size())
+		{
+			refused = true;
+			errno = ENOBUFS;
+			return false;
+		}
+		if (count > raw.bytes.capacity() - raw.bytes.size())
+		{
+			size_t next = raw.bytes.size();
+			if (!item_list_add(next, std::max(raw.bytes.size(), count)) ||
+			    next > raw.bytes.max_size())
+				next = raw.bytes.max_size();
+			if (!item_list_add(request, next))
+			{
+				refused = true;
+				errno = ENOBUFS;
+				return false;
+			}
+		}
+		return peak(request);
+	}
+	void reserve_bytes(size_t count)
+	{
+		constexpr size_t own = sizeof(snapshot_bounded_frame) + 2 * sizeof(void *) +
+				       2 * sizeof(size_t) + sizeof(bool);
+		if (!peak(own))
+			return;
+		snapshot_bounded_frame frame(owner, own);
+		size_t request = item_list_vector_frames;
+		if (count > raw.bytes.capacity() && !item_list_add(request, count))
+		{
+			refused = true;
+			errno = ENOBUFS;
+			return;
+		}
+		if (peak(request))
+			raw.reserve_bytes(count);
+	}
+	template <typename T> void number(T value)
+	{
+		using unsigned_type = std::make_unsigned_t<T>;
+		constexpr size_t own = sizeof(snapshot_bounded_frame) + sizeof(void *) + sizeof(T) +
+				       sizeof(unsigned_type) + sizeof(size_t) +
+				       // The unchanged raw uint8 encoder's this/value/bits/index.
+				       sizeof(void *) + 2 * sizeof(uint8_t) + sizeof(size_t);
+		if (!peak(own))
+			return;
+		snapshot_bounded_frame frame(owner, own);
+		unsigned_type bits = static_cast<unsigned_type>(value);
+		for (size_t index = 0; index < sizeof(T); ++index)
+		{
+			if (!insertion(1))
+				return;
+			raw.number<uint8_t>(static_cast<uint8_t>(bits & 0xff));
+			bits >>= 8;
+		}
+	}
+	void boolean(bool value)
+	{
+		constexpr size_t own =
+			sizeof(snapshot_bounded_frame) + sizeof(void *) + sizeof(bool);
+		if (!peak(own))
+			return;
+		snapshot_bounded_frame frame(owner, own);
+		number<uint8_t>(value ? 1 : 0);
+	}
+	template <typename Iterator> void insert_data(Iterator first, Iterator last)
+	{
+		constexpr size_t own = sizeof(snapshot_bounded_frame) + sizeof(void *) +
+				       2 * sizeof(Iterator) + sizeof(size_t) +
+				       sizeof(std::ptrdiff_t);
+		if (!peak(own))
+			return;
+		snapshot_bounded_frame frame(owner, own);
+		const auto difference = last - first;
+		if (difference < 0)
+		{
+			refused = true;
+			errno = ENOBUFS;
+			return;
+		}
+		const size_t count = static_cast<size_t>(difference);
+		if (insertion(count))
+			raw.insert_data(first, last);
+	}
+	void string(const std::string &value, size_t maximum = PLAYER_SNAPSHOT_MAX_STRING_BYTES)
+	{
+		constexpr size_t own = sizeof(snapshot_bounded_frame) + 2 * sizeof(void *) +
+				       sizeof(size_t) + sizeof(bool);
+		if (!peak(own))
+			return;
+		snapshot_bounded_frame frame(owner, own);
+		if (value.size() > maximum)
+		{
+			valid = false;
+			return;
+		}
+		number<uint32_t>(value.size());
+		insert_data(value.begin(), value.end());
+	}
+	template <typename T, typename Write> void vector(const std::vector<T> &values, Write write)
+	{
+		// Actual callback object and const row iteration remain live through all
+		// nested item/description/spell-id and pet/evidence writes.
+		constexpr size_t own = sizeof(snapshot_bounded_frame) + 2 * sizeof(void *) +
+				       sizeof(Write) +
+				       2 * sizeof(typename std::vector<T>::const_iterator) +
+				       sizeof(const T *) + sizeof(bool);
+		if (!peak(own))
+			return;
+		snapshot_bounded_frame frame(owner, own);
+		if (values.size() > PLAYER_SNAPSHOT_MAX_ROWS)
+		{
+			valid = false;
+			return;
+		}
+		number<uint32_t>(values.size());
+		for (const T &value : values)
+		{
+			if (refused)
+				return;
+			write(value);
+		}
+	}
+};
+
+struct snapshot_bounded_encode_validation
+{
+	snapshot_bounded_workspace &owner;
+	player_snapshot validated{};
+
+	bool death(const player_snapshot &snapshot)
+	{
+		return snapshot_bounded_valid_death(owner, snapshot);
+	}
+	player_snapshot_codec_result evidence(const player_death_conflict_evidence &value)
+	{
+		// Same allocation-free original evidence validator and its source
+		// scopes already used by the complete bounded evidence decoder.
+		if (!owner.peak(2 * sizeof(size_t) + 5 * sizeof(void *) + 2 * sizeof(void *) +
+				9 * sizeof(void *) + 9 * sizeof(void *) + 4 * sizeof(size_t) +
+				3 * sizeof(bool)))
+			return player_snapshot_codec_result::allocation_failure;
+		return validate_evidence(value);
+	}
+	player_snapshot_codec_result finish(snapshot_bounded_encoder &out,
+					    std::vector<uint8_t> *encoded_out)
+	{
+		if (out.refused)
+			return player_snapshot_codec_result::allocation_failure;
+		// Retain this complete encoder workspace and every live frame across
+		// the real full decoder; the bridge also retains the original bytes.
+		size_t outer = owner.outer, heap = 0;
+		if (!player_snapshot_current_heap_bytes(owner.snapshot, &heap) ||
+		    !item_list_add(outer, sizeof(owner)) || !item_list_add(outer, heap) ||
+		    !item_list_vector_heap(owner.depths, outer) ||
+		    !owner.set_heap(owner.captured, outer) ||
+		    !owner.set_heap(owner.observed, outer) ||
+		    !owner.set_heap(owner.operations, outer) ||
+		    !item_list_string_heap(owner.operation, outer))
+			return player_snapshot_codec_result::allocation_failure;
+		for (auto *frame = owner.frames; frame; frame = frame->previous)
+			if (!item_list_add(outer, frame->bytes))
+				return player_snapshot_codec_result::allocation_failure;
+		const auto result = player_snapshot_decode_bounded(out.raw.bytes.data(),
+								   out.raw.bytes.size(), &validated,
+								   owner.reserve, owner.context,
+								   outer);
+		if (result != player_snapshot_codec_result::ok)
+			return result;
+		// Both prior output and complete validation snapshot stay in the
+		// original caller/this object ownership through the final move tail.
+		*encoded_out = std::move(out.raw.bytes);
+		return player_snapshot_codec_result::ok;
+	}
+};
+
+struct snapshot_bounded_encode_entry
+{
+	snapshot_encode_budget_bridge bridge;
+	snapshot_bounded_workspace work;
+	snapshot_bounded_encoder writer;
+	snapshot_bounded_encode_validation validation;
+
+	snapshot_bounded_encode_entry(item_list_reserve_fn reserve, void *context, size_t outer)
+		: bridge{ reserve, context }
+		, work{ { nullptr, 0 },
+			{},
+			{},
+			{},
+			{},
+			{},
+			{},
+			{},
+			{},
+			{},
+			snapshot_encode_budget_bridge::relay,
+			&bridge,
+			outer + sizeof(*this) - sizeof(snapshot_bounded_workspace) }
+		, writer(work)
+		, validation{ work }
+	{
+		bridge.writer = &writer.raw;
+	}
+};
+
+// Source retained across the actual complete shared traversal. Per-write
+// callback objects, number/iterator scopes and allocations are self-admitted
+// by the concrete writer; this supplements their caller/visitor lifetimes.
+constexpr size_t snapshot_encode_any_of_source_frames =
+	// any_of/find_if/__find_if's actual first/last/predicate/result carriers;
+	// random-access __find_if additionally retains its trip_count and tag.
+	3 * (4 * sizeof(void *)) + sizeof(std::ptrdiff_t) +
+	sizeof(std::random_access_iterator_tag) +
+	// __pred_iter/_Iter_pred construction, operator() this/iterator/result,
+	// the empty ward predicate and its af-reference/bool result.
+	4 * sizeof(void *) + 2 * sizeof(bool) + sizeof(char) + 2 * sizeof(void *) + sizeof(bool) +
+	// begin/end and iterator base/subtraction/comparison/increment interfaces.
+	2 * (2 * sizeof(void *)) + 6 * (2 * sizeof(void *)) + sizeof(std::ptrdiff_t) + sizeof(bool);
+constexpr size_t snapshot_encode_walk_source_frames =
+	// Whole payload's four references/output, ward flag and validator result.
+	4 * sizeof(void *) + sizeof(bool) + sizeof(player_snapshot_codec_result) +
+	snapshot_encode_any_of_source_frames +
+	// Ten reference-row visitors: generated operator() this and row/pet/id.
+	// Concrete captured closures and writer range iterators are self-admitted
+	// by vector(); these are the original visitor's additional parameters.
+	10 * (2 * sizeof(void *)) + sizeof(void *) + sizeof(int32_t) +
+	// Main fixed conditions/quest arrays, affect bitvectors and the two
+	// receipt-id loops: actual range reference, begin/end and scalar value.
+	2 * (3 * sizeof(void *) + sizeof(int32_t)) + 3 * sizeof(void *) + sizeof(uint64_t) +
+	2 * (3 * sizeof(void *) + sizeof(uint8_t)) +
+	// encode_index_rows out/rows and its operator() this/row parameters.
+	4 * sizeof(void *) +
+	// encode_items out/items and row visitor; values/timers/bitvectors plus
+	// fixed affect outer/inner ranges; dynamic/description/spell-id visitors.
+	4 * sizeof(void *) + 3 * (3 * sizeof(void *)) + sizeof(int32_t) + sizeof(int64_t) +
+	sizeof(uint64_t) + 4 * sizeof(void *) + 3 * sizeof(void *) + sizeof(int16_t) +
+	5 * sizeof(void *) + sizeof(int32_t) +
+	// encode_death out/death, operation-id/wallet ranges, custody and
+	// unresolved-operation visitors with the nested byte range.
+	2 * sizeof(void *) + 2 * (3 * sizeof(void *)) + sizeof(uint8_t) + sizeof(int32_t) +
+	4 * sizeof(void *) + 3 * sizeof(void *) + sizeof(uint8_t) +
+	// encode_evidence's out/evidence references, five pointer initializer,
+	// range begin/end/table variable; columns/rows visitor parameters and
+	// actual row-cell range. The initializer owns its backing array too.
+	2 * sizeof(void *) +
+	sizeof(std::initializer_list<
+		decltype(&std::declval<const player_death_conflict_evidence &>().player_items)>) +
+	5 * sizeof(void *) + 3 * sizeof(void *) + 4 * sizeof(void *) + 4 * sizeof(void *) +
+	// Original allocation-free metadata and receipt predicates. Bounded
+	// relationship/death validators independently retain their real frames.
+	10 * sizeof(void *) + 7 * sizeof(size_t) + sizeof(player_component_mask_t) +
+	5 * sizeof(bool) +
+	// Whole validation finish: arguments, source-heap/current-query and frame
+	// cursor, decoded result, then exact vector move/destruction source graph:
+	4 * sizeof(void *) + 2 * sizeof(size_t) + sizeof(void *) +
+	sizeof(player_snapshot_codec_result) + item_list_move_frames + item_list_nontrivial_frames +
+	// The real CURRENT observer bridge is live at every reservation call.
+	snapshot_clone_observation_frames;
+constexpr size_t snapshot_encode_main_source_frames =
+	6 * sizeof(void *) + 3 * sizeof(size_t) + 3 * sizeof(bool) +
+	sizeof(snapshot_bounded_frame) + sizeof(player_snapshot_codec_result);
+constexpr size_t snapshot_encode_construction_frames = item_list_nontrivial_frames +
+						       17 * item_list_move_frames +
+						       3 * snapshot_clone_string_move_frames;
+bool snapshot_encode_source_policy() noexcept
+{
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE == 13 && defined(_GLIBCXX_USE_CXX11_ABI) && \
+	_GLIBCXX_USE_CXX11_ABI && !defined(_GLIBCXX_DEBUG) && !defined(_GLIBCXX_PARALLEL) &&  \
+	!defined(_GLIBCXX_ASSERTIONS) && __cplusplus == 202002L &&                            \
+	!defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__) &&                    \
+	(!defined(_GLIBCXX_SANITIZE_VECTOR) || _GLIBCXX_SANITIZE_VECTOR == 0)
+	return sizeof(void *) == 8 && sizeof(size_t) == 8 && sizeof(std::string) == 32 &&
+	       sizeof(std::vector<uint8_t>) == 24;
+#else
+	return false;
+#endif
+}
+} // namespace
+
+bool player_snapshot_encode_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !snapshot_encode_source_policy())
+		return false;
+	*output = snapshot_encode_construction_frames + snapshot_encode_walk_source_frames +
+		  snapshot_encode_main_source_frames;
+	return true;
+}
+
+bool player_snapshot_encode_source_supplement_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !snapshot_encode_source_policy())
+		return false;
+	// This new bounded entry retains its own SOURCE throughout the traversal.
+	*output = 0;
+	return true;
+}
+
+bool player_snapshot_encode_initial_inline_bytes(size_t *output) noexcept
+{
+	if (!output || !snapshot_encode_source_policy())
+		return false;
+	*output = sizeof(snapshot_bounded_encode_entry);
+	return true;
+}
+
+bool player_snapshot_copy_source_frame_bytes(size_t *output) noexcept
+{
+	if (!output || !snapshot_encode_source_policy())
+		return false;
+	// Actual GNU13 vector copy constructor uses source.size(), selected
+	// allocator, _Vector_base/_impl/_data/create_storage and uninitialized_copy.
+	// Nested row copies own their actual ctor parameters, not a second object.
+	constexpr size_t vector_copy =
+		2 * sizeof(void *) + 3 * sizeof(std::allocator<int32_t>) + 2 * sizeof(void *) +
+		sizeof(size_t) + 4 * sizeof(void *) + sizeof(void *) + sizeof(void *) +
+		sizeof(size_t) + 8 * (sizeof(void *) + sizeof(size_t)) + item_list_vector_frames;
+	constexpr size_t nontrivial_copy =
+		// __do_uninit_copy's first/last/result/cur/return, _Construct location/
+		// source, forward/addressof/construct_at and placement parameters.
+		5 * sizeof(void *) + 2 * sizeof(void *) + 4 * sizeof(void *) + sizeof(size_t);
+	constexpr size_t optional_copy =
+		// optional/base/base_impl/payload/payload_base copy receivers/source;
+		// payload_base additionally has engaged; default _Storage receiver.
+		5 * (2 * sizeof(void *)) + sizeof(bool) + sizeof(void *) +
+		// _M_get and _M_construct/_Construct/forward/construct_at/placement;
+		// payload destructor/reset/destroy and contained destructor dispatch.
+		3 * sizeof(void *) + 4 * (2 * sizeof(void *)) + sizeof(size_t) +
+		5 * sizeof(void *) + sizeof(bool);
+	constexpr size_t source =
+		// Generated full snapshot ctor/move/destructor this/source and scalar
+		// array copy interfaces. All seventeen outer vector member types.
+		5 * sizeof(void *) +
+		17 * (vector_copy + item_list_move_frames + item_list_allocator_frames) +
+		// STATUS string, AFFECT's two wear strings, output preference and
+		// PET restore string: five concrete copy/move/destruction paths.
+		5 * (snapshot_clone_string_constructor_frames + snapshot_clone_string_move_frames) +
+		// Three nontrivial snapshot row types (string, affect, pet), each
+		// real copy/move/destructor receiver/source and uninitialized copy.
+		3 * (5 * sizeof(void *) + nontrivial_copy) +
+		// The real pet item vector and death corpse/custody/unresolved vectors.
+		4 * (vector_copy + item_list_move_frames + item_list_allocator_frames) +
+		// Optional death and conflict evidence, their aggregate ctor/move/
+		// destructor, and five table column/row/cell vectors with optional
+		// cell strings. Complete even when this caller's death is disengaged.
+		2 * (optional_copy + 5 * sizeof(void *)) +
+		15 * (vector_copy + item_list_move_frames + item_list_allocator_frames) +
+		// Each evidence table's aggregate member lifetime, string columns,
+		// nontrivial outer rows and optional-string cells use actual copy
+		// loops/constructors independently of the inventory row library graph.
+		5 * (5 * sizeof(void *) + 3 * nontrivial_copy +
+		     snapshot_clone_string_constructor_frames + snapshot_clone_string_move_frames) +
+		5 * (optional_copy + snapshot_clone_string_constructor_frames +
+		     snapshot_clone_string_move_frames);
+	const size_t item_copy = player_item_snapshot_copy_frame_bytes();
+	if (item_copy == SIZE_MAX || item_copy > (SIZE_MAX - source) / 3)
+		return false;
+	// Genuine three row paths: inventory, pet inventory and death corpse.
+	*output = source + 3 * item_copy;
+	return true;
+}
+
+player_snapshot_codec_result
+player_snapshot_encode_bounded(const player_snapshot &snapshot, std::vector<uint8_t> *encoded_out,
+			       bool (*reserve)(size_t, void *) noexcept, void *context,
+			       size_t outer_live) noexcept
+{
+	if (!encoded_out || !valid_metadata(snapshot))
+		return player_snapshot_codec_result::invalid_value;
+	if (!snapshot_encode_source_policy())
+	{
+		errno = ENOTSUP;
+		return player_snapshot_codec_result::limit_exceeded;
+	}
+	size_t initial = outer_live;
+	if (!reserve || !item_list_add(initial, sizeof(snapshot_bounded_encode_entry)) ||
+	    !item_list_add(initial, snapshot_encode_construction_frames) ||
+	    !item_list_add(initial, snapshot_encode_walk_source_frames) ||
+	    !item_list_add(initial, snapshot_encode_main_source_frames) ||
+	    !reserve(initial, context))
+	{
+		errno = ENOBUFS;
+		return player_snapshot_codec_result::allocation_failure;
+	}
+	try
+	{
+		snapshot_bounded_encode_entry entry(reserve, context, outer_live);
+		snapshot_bounded_frame frame(entry.work,
+					     snapshot_encode_walk_source_frames +
+						     snapshot_encode_main_source_frames);
+		if (!snapshot_bounded_relationships(entry.work, snapshot.items))
+			return entry.work.raw.result ==
+					       player_snapshot_codec_result::allocation_failure ?
+				       entry.work.raw.result :
+				       player_snapshot_codec_result::invalid_value;
+		for (const auto &pet : snapshot.pets)
+			if (!snapshot_bounded_relationships(entry.work, pet.items))
+				return entry.work.raw.result == player_snapshot_codec_result::
+									allocation_failure ?
+					       entry.work.raw.result :
+					       player_snapshot_codec_result::invalid_value;
+		if (!valid_quest_xp_receipts(snapshot) || !valid_spell_effect_receipts(snapshot) ||
+		    !valid_craft_receipts(snapshot))
+			return player_snapshot_codec_result::invalid_value;
+		const auto result = snapshot_encode_payload(snapshot, entry.writer,
+							    entry.validation, encoded_out);
+		return entry.writer.refused ||
+				       entry.work.raw.result ==
+					       player_snapshot_codec_result::allocation_failure ?
+			       player_snapshot_codec_result::allocation_failure :
+			       result;
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return player_snapshot_codec_result::allocation_failure;
+	}
 }

@@ -20,6 +20,22 @@ enum class player_snapshot_codec_result : uint8_t
 
 player_snapshot_codec_result player_snapshot_encode(const player_snapshot &snapshot,
 						    std::vector<uint8_t> *encoded_out);
+// Actual complete original wire encoder with prospective owned storage. Caller
+// retains input/prior output inline and all nested CURRENT in outer_live.
+// Strong output; value/bounds validation grants no operation/Source authority.
+player_snapshot_codec_result player_snapshot_encode_bounded(const player_snapshot &,
+							    std::vector<uint8_t> *,
+							    bool (*)(size_t, void *) noexcept,
+							    void *, size_t) noexcept;
+bool player_snapshot_encode_source_frame_bytes(size_t *) noexcept;
+// Transient full SOURCE and prospective INITIAL queries are separate. The new
+// entry owns its SOURCE internally; its retained caller supplement is zero.
+bool player_snapshot_encode_source_supplement_frame_bytes(size_t *) noexcept;
+bool player_snapshot_encode_initial_inline_bytes(size_t *) noexcept;
+constexpr size_t player_snapshot_encode_source_query_frame_bytes() noexcept
+{
+	return sizeof(size_t *) + 2 * sizeof(bool);
+}
 player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size_t encoded_size,
 						    player_snapshot *snapshot_out);
 player_snapshot_codec_result
