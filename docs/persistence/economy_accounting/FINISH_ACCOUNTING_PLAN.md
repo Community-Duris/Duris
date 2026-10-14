@@ -27,8 +27,12 @@ missing or stale SQL/cache owner/revision alone cannot reject a valid operation.
 Preserve genuine duplicate UID, wrong holder/master, malformed forest, tombstone,
 escrow/auction/collector, conflicting replay and pending/uncertain guards.
 
-Use the approved eleven owners with exclusive function leases and one owned
-heavy-job queue. Through October 17, execute the off batch and repair actual
+Use the approved 13 project chats: the eleven existing owners plus Test
+Infrastructure and Integration Preparation. Test Infrastructure repairs genuine
+test dependencies, runners and cleanup; Integration Preparation assembles exact
+accepted patches and build inputs. Keep exclusive function leases, one integrator
+with sole publication and ABI authority, and one owned heavy-job queue. Through
+October 17, execute the off batch and repair actual
 regressions while RAM implementation continues. Freeze and stabilize the off
 candidate on October 18 for the October 19 target. Complete core RAM/MySQL coupling
 and fault/recovery paths on October 20–25, then independently verify and stabilize

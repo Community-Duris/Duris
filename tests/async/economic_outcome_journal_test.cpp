@@ -165,6 +165,45 @@ static bool verify(uint64_t, void *) noexcept
 int main(int argc, char **argv)
 {
 	assert(argc == 2);
+	// Owned storage is separate from wire size and gameplay admission. Clearing
+	// a vector retains capacity; nested live effect buffers remain owned too.
+	economic_outcome_record retained_storage;
+	size_t storage = 0;
+	assert(economic_outcome_record_storage_bytes(retained_storage, &storage));
+	assert(storage == sizeof(retained_storage));
+	assert(!economic_outcome_record_storage_bytes(retained_storage, nullptr));
+	retained_storage.accounting.children.reserve(7);
+	retained_storage.accounting.children.resize(2);
+	assert(economic_outcome_record_storage_bytes(retained_storage, &storage));
+	const size_t with_children = storage;
+	retained_storage.accounting.children.clear();
+	assert(economic_outcome_record_storage_bytes(retained_storage, &storage));
+	assert(storage == with_children);
+	retained_storage.command.payload.reserve(19);
+	retained_storage.command.payload.resize(3);
+	retained_storage.command.payload.clear();
+	assert(economic_outcome_record_storage_bytes(retained_storage, &storage));
+	const size_t with_command = storage;
+	assert(with_command == with_children + retained_storage.command.payload.capacity());
+	retained_storage.effects.resize(1);
+	assert(economic_outcome_record_storage_bytes(retained_storage, &storage));
+	const size_t with_effect = storage;
+	assert(with_effect == with_command + retained_storage.effects.capacity() *
+						     sizeof(economic_outcome_effect));
+	retained_storage.effects[0].before.reserve(31);
+	retained_storage.effects[0].after.reserve(47);
+	retained_storage.effects[0].before.resize(1);
+	retained_storage.effects[0].after.resize(1);
+	retained_storage.effects[0].before.clear();
+	retained_storage.effects[0].after.clear();
+	assert(economic_outcome_record_storage_bytes(retained_storage, &storage));
+	assert(storage == with_effect + retained_storage.effects[0].before.capacity() +
+				  retained_storage.effects[0].after.capacity());
+	// Clearing the effect destroys its child vectors, but retains outer slots.
+	retained_storage.effects.clear();
+	assert(economic_outcome_record_storage_bytes(retained_storage, &storage));
+	assert(storage == with_effect);
+
 	// Structural wire support never grants legacy SQL execution. The real RC
 	// owner must bind its complete item/status/timer result before shared commit.
 	auto rc = value(90).command;

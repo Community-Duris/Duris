@@ -104,6 +104,13 @@ bool economic_outcome_decode(std::span<const uint8_t>, economic_outcome_record *
 economic_outcome_result economic_outcome_commit(economic_outcome_record &,
 						const economic_outcome_publication &) noexcept;
 
+// Readonly owned-storage observation: inline record plus actual retained vector
+// capacities, including cleared-but-retained storage and nested effect images.
+// No semantic/authority validation, allocation or source/library budget grant.
+// Allocator overhead, caller/helper frames and prospective copies are excluded.
+// False leaves output unchanged; caller retains the real record while observing.
+bool economic_outcome_record_storage_bytes(const economic_outcome_record &, size_t *) noexcept;
+
 // Journal APIs are internal composition seams, not SQL/gameplay permission.
 // An exact durable replay returns its original sequence; different bytes for
 // an existing operation ID conflict. Unknown append retains the attempted

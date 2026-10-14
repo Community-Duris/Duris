@@ -211,3 +211,49 @@ catch (...)
 {
 	return false;
 }
+
+namespace
+{
+bool outcome_storage_add(size_t *total, size_t bytes) noexcept
+{
+	if (bytes > SIZE_MAX - *total)
+		return false;
+	*total += bytes;
+	return true;
+}
+
+template <typename T>
+bool outcome_storage_vector(size_t *total, const std::vector<T> &values) noexcept
+{
+	return values.capacity() <= SIZE_MAX / sizeof(T) &&
+	       outcome_storage_add(total, values.capacity() * sizeof(T));
+}
+} // namespace
+
+bool economic_outcome_record_storage_bytes(const economic_outcome_record &record,
+					   size_t *output) noexcept
+{
+	if (!output)
+		return false;
+	size_t total = sizeof(record);
+	size_t command_heap = 0;
+	if (!critical_command_current_heap_bytes(record.command, &command_heap) ||
+	    !outcome_storage_add(&total, command_heap) ||
+	    !outcome_storage_vector(&total, record.accounting.accounts) ||
+	    !outcome_storage_vector(&total, record.accounting.postings) ||
+	    !outcome_storage_vector(&total, record.accounting.children) ||
+	    !outcome_storage_vector(&total, record.accounting.items_before) ||
+	    !outcome_storage_vector(&total, record.accounting.items_after) ||
+	    !outcome_storage_vector(&total, record.accounting.item_events) ||
+	    !outcome_storage_vector(&total, record.result) ||
+	    !outcome_storage_vector(&total, record.effects))
+		return false;
+	for (const auto &effect : record.effects)
+	{
+		if (!outcome_storage_vector(&total, effect.before) ||
+		    !outcome_storage_vector(&total, effect.after))
+			return false;
+	}
+	*output = total;
+	return true;
+}
