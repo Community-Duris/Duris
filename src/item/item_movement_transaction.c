@@ -19,6 +19,7 @@
 #include "classes/necromancy.h"
 #include "persistence/persistence_checkpoint.h"
 #include "persistence/persistence_mode.h"
+#include "persistence/economic_outcome_mode.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
 #include "player/inert_item_stage.h"
@@ -318,6 +319,30 @@ size_t native_quest_pending_count();
 bool native_quest_owner_busy(const item_owner_identity &);
 void native_quest_reset_for_tests();
 void native_quest_handle_completions(const critical_completion *, size_t);
+
+// Observe the real frozen startup choice. Inactive/requested/unready is not OFF.
+bool ordinary_sql_save_ordering() noexcept
+{
+	return !economic_outcome_accounting_requested() && !economic_gameplay_authority::active() &&
+	       persistence_mode_requires_mysql();
+}
+
+uint32_t owner_save_pid(const item_owner_identity &owner) noexcept
+{
+	if (owner.type == item_owner_type::player && !owner.context_id && owner.id &&
+	    owner.id <= INT32_MAX)
+		return static_cast<uint32_t>(owner.id);
+	if (owner.type == item_owner_type::pet && owner.id && owner.context_id &&
+	    owner.context_id <= INT32_MAX)
+		return static_cast<uint32_t>(owner.context_id);
+	return 0;
+}
+
+bool owner_sealed_save_pending(const item_owner_identity &owner)
+{
+	const auto pid = owner_save_pid(owner);
+	return pid && player_save_pipeline_sealed_save_pending(static_cast<int>(pid));
+}
 
 bool movement_conflicts(const item_owner_identity &from_owner, const item_owner_identity &to_owner)
 {
@@ -2623,6 +2648,11 @@ static bool submit_movement(P_char actor, P_obj root, P_obj target_container,
 	// candidate live after the mobile received it.
 	if (mobile_actor && !adopted)
 		return reject_with(reject, item_movement_reject::owner_mismatch);
+	if (!publication && reason != item_transfer_reason::craft && ordinary_sql_save_ordering() &&
+	    ((player_actor && player_save_pipeline_sealed_save_pending(GET_PID(actor))) ||
+	     owner_sealed_save_pending(from_owner) || owner_sealed_save_pending(to_owner) ||
+	     owner_sealed_save_pending(effective_from) || owner_sealed_save_pending(effective_to)))
+		return reject_with(reject, item_movement_reject::pending_conflict);
 	if (movement_conflicts(effective_from, effective_to) || coordinator_item_fenced(root) ||
 	    coordinator_item_fenced(target_container) || coin_movement_pending(root) ||
 	    coin_movement_pending(target_container))
@@ -3377,6 +3407,10 @@ bool item_movement_transaction_submit_batch(
 								     reject);
 		}
 	}
+	if (!publication && reason != item_transfer_reason::craft && ordinary_sql_save_ordering() &&
+	    (player_save_pipeline_sealed_save_pending(GET_PID(actor)) ||
+	     owner_sealed_save_pending(from_owner) || owner_sealed_save_pending(to_owner)))
+		return reject_with(reject, item_movement_reject::pending_conflict);
 	if (movement_conflicts(from_owner, to_owner) || coordinator_item_fenced(target_container) ||
 	    coin_movement_pending(target_container))
 		return reject_with(reject, item_movement_reject::pending_conflict);
@@ -4741,6 +4775,37 @@ bool item_movement_transaction_player_creation_busy(P_char actor)
 	return false;
 }
 
+namespace
+{
+// Retained publishers own their distinct AFTER Save boundaries. An ordinary
+// pending entry instead fences new full captures through its real native callback.
+bool ordinary_capture_owner(const pending_movement &entry) noexcept
+{
+	return !entry.publication && entry.payload.reason != item_transfer_reason::craft &&
+	       !entry.creation_batch && entry.completion != creation_grant_completion &&
+	       !entry.held_command && !entry.live_drop_command && !entry.restored_sql_drop;
+}
+
+} // namespace
+
+bool item_movement_transaction_player_custody_pending(P_char actor)
+{
+	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0 || !ordinary_sql_save_ordering())
+		return false;
+	const uint32_t pid = static_cast<uint32_t>(GET_PID(actor));
+	return std::any_of(pending.begin(), pending.end(),
+			   [pid](const auto &record)
+			   {
+				   const auto &entry = record.second;
+				   return ordinary_capture_owner(entry) &&
+					  (entry.actor_pid == pid ||
+					   owner_save_pid(entry.payload.from_owner) == pid ||
+					   owner_save_pid(entry.payload.to_owner) == pid ||
+					   (entry.adopting &&
+					    owner_save_pid(entry.requested_to_owner) == pid));
+			   });
+}
+
 bool item_movement_transaction_player_busy(P_char actor)
 {
 	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0)
@@ -4748,6 +4813,12 @@ bool item_movement_transaction_player_busy(P_char actor)
 	if (item_movement_transaction_player_creation_busy(actor))
 		return true;
 	const uint32_t pid = static_cast<uint32_t>(GET_PID(actor));
+	// Existing network input queues retain dependent commands until the real
+	// sealed Save reaches SQL durability and its original WAL/game-thread ACK.
+	if (ordinary_sql_save_ordering() &&
+	    (player_save_pipeline_sealed_save_pending(static_cast<int>(pid)) ||
+	     item_movement_transaction_player_custody_pending(actor)))
+		return true;
 	if (std::any_of(drop_preparations.begin(), drop_preparations.end(), [pid](const auto &entry)
 			{ return entry.active && entry.token.pid == static_cast<int32_t>(pid); }))
 		return true;

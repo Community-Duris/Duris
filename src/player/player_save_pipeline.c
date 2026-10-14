@@ -1604,8 +1604,9 @@ static player_save_pipeline_result checkpoint_dirty_with_quest_xp(
 		return player_save_pipeline_result::unavailable;
 	if (IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
 		return player_save_pipeline_result::unavailable;
-	// Pending grants must publish before capturing their recipient inventory.
-	if (item_movement_transaction_player_creation_busy(ch) ||
+	// Ordinary custody and pending grants must publish before a new full capture.
+	if (item_movement_transaction_player_custody_pending(ch) ||
+	    item_movement_transaction_player_creation_busy(ch) ||
 	    item_creation_grant_player_publication_pending(ch))
 		return player_save_pipeline_result::unavailable;
 	{

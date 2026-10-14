@@ -258,3 +258,153 @@ with tempfile.TemporaryDirectory(prefix="duris-grant-save-order-") as directory:
     subprocess.run([str(binary)], check=True)
 print("[PASS] deterministic save/grant ordering, inbound recipient, dirty progress, retained/worker/login/quarantine fences")
 print("[PASS] actual held and unheld literal leases seal their recipient without fencing unrelated PID grants")
+
+# Exercise the ordinary custody barrier using the actual retained-entry type,
+# production predicates and real revision state. Service boundaries are driven
+# explicitly; this focused test is not a SQL/native/publication certificate.
+ORDINARY_SUBMIT = function_body(MOVEMENT, "static bool submit_movement(")
+CUSTODY_PENDING = function_body(
+    MOVEMENT, "bool item_movement_transaction_player_custody_pending(")
+check("ordinary custody waits before minting an operation or submitting SQL",
+      ORDINARY_SUBMIT.index("owner_sealed_save_pending") <
+      ORDINARY_SUBMIT.index("critical_operation_id_generate"))
+BATCH_SUBMIT = function_body(MOVEMENT, "bool item_movement_transaction_submit_batch(")
+check("ordinary batch custody also waits before minting an operation",
+      BATCH_SUBMIT.index("owner_sealed_save_pending") <
+      BATCH_SUBMIT.index("critical_operation_id_generate"))
+check("new full capture waits before queueing the immutable snapshot",
+      CAPTURE.index("item_movement_transaction_player_custody_pending") <
+      CAPTURE.index("player_revision_queue("))
+check("capture-only observation never waits on its own Save state",
+      "sealed_save_pending" not in CUSTODY_PENDING and
+      "item_movement_transaction_player_busy" not in CUSTODY_PENDING)
+ordinary_harness = r'''
+#include "item/item_movement_state_internal.h"
+#include "economy/economic_gameplay_authority.h"
+#include "persistence/persistence_mode.h"
+#include "core/utils.h"
+#include <algorithm>
+#include <cassert>
+#include <mutex>
+#include <unordered_map>
+using item_movement_detail::pending_movement;
+std::unordered_map<std::string, pending_movement> pending;
+std::mutex pipeline_mutex;
+player_save_pipeline_health health{};
+bool stop_requested = false, accepting = true;
+int append_inflight_pid = 0, retained_pid = 0, worker_pid = 0;
+bool quarantined = false, requested_or_unconfigured = false;
+bool authority_active = false, mysql_selected = true;
+bool economic_outcome_accounting_requested() noexcept { return requested_or_unconfigured; }
+bool economic_gameplay_authority::active() { return authority_active; }
+bool persistence_mode_requires_mysql() { return mysql_selected; }
+bool player_save_journal_pid_quarantined(int) { return quarantined; }
+void *find_target_save_login_fence_locked(int) { return nullptr; }
+void *find_terminal_fence_locked(int) { return nullptr; }
+void *find_literal_inventory_locked(int) { return nullptr; }
+bool any_snapshot_is_retained_locked(int pid) { return retained_pid == pid; }
+bool player_save_worker_pid_pending(int pid) { return worker_pid == pid; }
+void creation_grant_completion(P_char, bool, const item_transfer_result &,
+                               unsigned int, const uint8_t *, size_t) {}
+bool retained_publication(const critical_operation_id &, P_char, bool,
+                          const item_transfer_result &, unsigned int,
+                          const uint8_t *, size_t) { return false; }
+''' + extract_function("player_save_pipeline.c", "bool player_save_pipeline_sealed_save_pending(") + '\n' + '\n'.join(
+    function_body(MOVEMENT, signature) for signature in (
+        "bool ordinary_sql_save_ordering(", "uint32_t owner_save_pid(",
+        "bool owner_sealed_save_pending(", "bool ordinary_capture_owner(",
+        "bool item_movement_transaction_player_custody_pending(")) + r'''
+int main() {
+    health.initialized = true;
+    auto pc = std::make_unique<pc_only_data>();
+    auto actor = std::make_unique<char_data>();
+    pc->pid = 41;
+    actor->only.pc = pc.get();
+    const item_owner_identity player{item_owner_type::player, 41, 0};
+    const item_owner_identity other{item_owner_type::player, 42, 0};
+    const item_owner_identity pet{item_owner_type::pet, 99, 41};
+    assert(player_revision_hydrate(41, 7));
+    player_revision_t revision = 0;
+    player_component_mask_t components = 0;
+    assert(player_revision_mark(41, PLAYER_COMPONENT_INVENTORY, &revision));
+    assert(!owner_sealed_save_pending(player)); // Dirty is not sealed.
+    assert(player_revision_queue(41, &revision, &components));
+    assert(owner_sealed_save_pending(player) && owner_sealed_save_pending(pet));
+    assert(!owner_sealed_save_pending(other));
+    retained_pid = 41;
+    assert(player_revision_begin_inflight(41, revision, components));
+    worker_pid = 41;
+    retained_pid = 0;
+    assert(owner_sealed_save_pending(player)); // SQL result alone is not ACK.
+    assert(player_revision_acknowledge(41, revision, components));
+    assert(owner_sealed_save_pending(player)); // Real worker/WAL boundary remains.
+    worker_pid = 0;
+    assert(!owner_sealed_save_pending(player));
+    assert(player_revision_mark(41, PLAYER_COMPONENT_STATUS, &revision));
+    auto &entry = pending.try_emplace("original-movement").first->second;
+    entry.actor_pid = 41;
+    entry.payload.from_owner = {item_owner_type::room, 77, 0};
+    entry.payload.to_owner = player;
+    entry.payload.reason = item_transfer_reason::player_get;
+    assert(item_movement_transaction_player_custody_pending(actor.get()));
+    assert(!owner_sealed_save_pending(player)); // No capture/self-wait cycle.
+    entry.completion_ready = true;
+    entry.registry_applied = true;
+    assert(item_movement_transaction_player_custody_pending(actor.get()));
+    entry.payload.reason = item_transfer_reason::trusted_steal;
+    entry.publication_failed = true;
+    assert(item_movement_transaction_player_custody_pending(actor.get()));
+    entry.actor_pid = 42;
+    entry.payload.from_owner = pet;
+    entry.payload.to_owner = other;
+    assert(item_movement_transaction_player_custody_pending(actor.get()));
+    entry.payload.from_owner = {item_owner_type::room, 77, 0};
+    entry.adopting = true;
+    entry.requested_to_owner = player;
+    assert(item_movement_transaction_player_custody_pending(actor.get()));
+    entry.publication = retained_publication;
+    assert(!item_movement_transaction_player_custody_pending(actor.get()));
+    entry.publication = nullptr;
+    entry.payload.reason = item_transfer_reason::craft;
+    assert(!item_movement_transaction_player_custody_pending(actor.get()));
+    entry.payload.reason = item_transfer_reason::player_get;
+    entry.completion = creation_grant_completion;
+    assert(!item_movement_transaction_player_custody_pending(actor.get()));
+    entry.completion = nullptr;
+    entry.creation_batch = true;
+    assert(!item_movement_transaction_player_custody_pending(actor.get()));
+    entry.creation_batch = false;
+    entry.restored_sql_drop = true;
+    assert(!item_movement_transaction_player_custody_pending(actor.get()));
+    entry.restored_sql_drop = false;
+    requested_or_unconfigured = true;
+    assert(!ordinary_sql_save_ordering()); // Never infer OFF from !active.
+    assert(!item_movement_transaction_player_custody_pending(actor.get()));
+    requested_or_unconfigured = false;
+    authority_active = true;
+    assert(!ordinary_sql_save_ordering());
+    authority_active = false;
+    mysql_selected = false;
+    assert(!ordinary_sql_save_ordering());
+    mysql_selected = true;
+    assert(item_movement_transaction_player_custody_pending(actor.get()));
+    pending.erase("original-movement"); // Actual terminal publication boundary.
+    assert(!item_movement_transaction_player_custody_pending(actor.get()));
+    assert(player_revision_queue(41, &revision, &components));
+    assert(components == PLAYER_COMPONENT_STATUS);
+    assert(player_revision_begin_inflight(41, revision, components));
+    assert(player_revision_acknowledge(41, revision, components));
+    assert(!owner_sealed_save_pending(player));
+    quarantined = true;
+    assert(owner_sealed_save_pending(player));
+}
+'''
+with tempfile.TemporaryDirectory(prefix="duris-ordinary-save-order-") as directory:
+    program = Path(directory) / "ordering.cpp"
+    binary = Path(directory) / "ordering"
+    program.write_text(ordinary_harness)
+    subprocess.run(["g++", *SANITIZER_FLAGS, "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
+                    "-Isrc", str(program), "src/player/player_revision_state.c",
+                    "-pthread", "-o", str(binary)], cwd=ROOT, check=True)
+    subprocess.run([str(binary)], check=True)
+print("[PASS] ordinary save-first and custody-first ordering, true ACK, no capture cycle, retained AFTER owners")

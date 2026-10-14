@@ -212,6 +212,9 @@ bool item_movement_transaction_restore_replayed_publication(
 	const critical_command &command, item_movement_publication_fn publication,
 	const void *context, size_t context_size);
 void item_movement_transaction_player_ready(P_char actor);
+// Ordinary OFF SQL custody only; excludes sealed Save state and retained
+// publishers that own legitimate AFTER captures. Read-only capture barrier.
+bool item_movement_transaction_player_custody_pending(P_char actor);
 bool item_movement_transaction_player_busy(P_char actor);
 // A creation commit can advance custody before its item is published live.
 // Ordinary snapshots must wait until every inbound creation has published.
