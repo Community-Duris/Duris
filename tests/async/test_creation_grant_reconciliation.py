@@ -132,7 +132,7 @@ print("[PASS] creation grant retry/reconciliation safety contracts")
 PIPELINE = (ROOT / "src/player/player_save_pipeline.c").read_text()
 CONFLICTS = function_body(MOVEMENT, "bool creation_grant_conflicts(")
 CAPTURE = function_body(PIPELINE, "static player_save_pipeline_result checkpoint_dirty_with_quest_xp(")
-LITERAL_STATE = PIPELINE[PIPELINE.index("struct literal_inventory_checkpoint"):
+LITERAL_STATE = PIPELINE[PIPELINE.index("enum class literal_checkpoint_profile"):
                          PIPELINE.index("bool literal_inventory_blob(")]
 SANITIZER_FLAGS = (["-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie"]
                    if os.environ.get("DURIS_TEST_SANITIZERS") == "1" else [])
@@ -142,6 +142,7 @@ check("capture waits before queueing or sealing an unpublished grant",
       CAPTURE.index("item_creation_grant_player_publication_pending") < CAPTURE.index("player_revision_queue("))
 harness = r'''
 #include "player/player_save_pipeline.h"
+#include "economy/economic_gameplay_authority.h"
 #include "item/item_ownership_runtime.h"
 #include <cassert>
 #include <deque>
@@ -172,7 +173,7 @@ bool item_ownership_runtime_lookup(uint64_t, item_ownership_runtime_entry *) { r
 item_owner_identity creation_grant_owner(const pending_creation_grant &request) {
     return {request.to_room ? item_owner_type::room : item_owner_type::player, request.recipient_pid, 0};
 }
-''' + LITERAL_STATE + extract_function("player_save_pipeline.c", "bool player_save_pipeline_sealed_save_pending(") + '\n' + CONFLICTS + '\n' + extract_function("item_movement_transaction.c", "bool item_creation_grant_player_publication_pending(") + r'''
+''' + LITERAL_STATE + extract_function("player_save_pipeline.c", "bool smith_profile(literal_checkpoint_profile p)") + '\n' + extract_function("player_save_pipeline.c", "bool player_save_pipeline_sealed_save_pending(") + '\n' + CONFLICTS + '\n' + extract_function("item_movement_transaction.c", "bool item_creation_grant_player_publication_pending(") + r'''
 int main() {
     char_data recipient{41}, other{42};
     pending_creation_grant grant{1001,41,false};
