@@ -383,6 +383,9 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence/persistence_checkpoint.o \
 				 persistence/persistence_observability.o \
 				 persistence/persistence_mode.o \
+				 persistence/economic_outcome.o \
+				 persistence/economic_outcome_journal.o \
+				 persistence/economic_outcome_mode.o \
 				 core/env_file.o \
 				 flatfile/flatfile_store.o \
 				 flatfile/flatfile_authority_transaction.o \

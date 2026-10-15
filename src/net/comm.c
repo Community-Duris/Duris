@@ -131,6 +131,7 @@
 #include "persistence/latency_trace.h"
 #include "persistence/persistence_queue.h"
 #include "persistence/persistence_mode.h"
+#include "persistence/economic_outcome_mode.h"
 #include "core/env_file.h"
 #include "persistence/locker_async.h"
 #include "persistence/maintenance_repository.h"
@@ -746,6 +747,12 @@ int main(int argc, char **argv)
 	if (!persistence_mode_configure(persistence_error, sizeof(persistence_error)))
 		fatal_boot_error("comm", "%s", persistence_error);
 	logit(LOG_STATUS, "Persistence mode: %s.", persistence_mode_name());
+#ifndef __NO_MYSQL__
+	if (!economic_outcome_mode_configure(getenv("ECONOMIC_OUTCOME_JOURNAL_DIR")))
+		fatal_boot_error("comm", "Invalid accounting mode or unresolved outcome namespace");
+	if (economic_outcome_accounting_requested())
+		fatal_boot_error("comm", "Requested RAM accounting recovery is not connected");
+#endif
 
 	if (!persistence_log_start(LOG_FILE, LOG_WIZ))
 		fatal_boot_error("comm", "Could not start persistence log worker");
@@ -754,6 +761,13 @@ int main(int argc, char **argv)
 	{
 		fatal_boot_error("comm", "MySQL initialization failed!");
 	}
+#ifndef __NO_MYSQL__
+	// Check the selected policy and commissioned stream before world hydration.
+	if (!economic_outcome_mode_validate_selected_policy())
+		fatal_boot_error(
+			"comm",
+			"OFF mode conflicts with selected or commissioned accounting state");
+#endif
 	// Resolve only an already selected, receipt-bearing native authority before
 	// item/world hydration and before choosing save replay ownership. This never
 	// installs a baseline or infers activation from configuration.
