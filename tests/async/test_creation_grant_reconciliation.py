@@ -6,7 +6,7 @@ import subprocess
 import tempfile
 import os
 from pathlib import Path
-from _paths import extract_function
+from _paths import extract_function, rel
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -283,6 +283,7 @@ ordinary_harness = r'''
 #include "item/item_movement_state_internal.h"
 #include "economy/economic_gameplay_authority.h"
 #include "persistence/persistence_mode.h"
+#include "core/prototypes.h"
 #include "core/utils.h"
 #include <algorithm>
 #include <cassert>
@@ -452,6 +453,7 @@ with tempfile.TemporaryDirectory(prefix="duris-ordinary-save-order-") as directo
     program.write_text(ordinary_harness)
     subprocess.run(["g++", *SANITIZER_FLAGS, "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
                     "-Isrc", str(program), "src/player/player_revision_state.c",
+                    rel("event_thread_owner.c"), rel("fatal_error.c"), rel("logging.c"),
                     "-pthread", "-o", str(binary)], cwd=ROOT, check=True)
     subprocess.run([str(binary)], check=True)
 print("[PASS] ordinary save-first and custody-first ordering, true ACK, no capture cycle, retained AFTER owners, creation reservations behind ordinary Saves")
