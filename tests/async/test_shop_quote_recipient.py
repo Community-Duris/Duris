@@ -157,7 +157,9 @@ int main()
         const std::string before = shared_refusal;
         assert(size == static_cast<int>(before.size()));
         char old_argument[MAX_INPUT_LENGTH];
-        std::snprintf(old_argument, sizeof(old_argument), "%s", shared_refusal);
+        assert(size >= 0 && static_cast<size_t>(size) < sizeof(old_argument));
+        std::memcpy(old_argument, shared_refusal, static_cast<size_t>(size) + 1);
+        assert(std::string(old_argument) == before);
         do_tell(nullptr, old_argument, 0);
         assert(!recipient_found);
         if (format == no_item_template)
