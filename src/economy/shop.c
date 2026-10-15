@@ -59,6 +59,17 @@ struct shop_data *shop_index;
 int number_of_shops = 0;
 const char *operator_str[] = { "[({", "])}", "|+", "&*", "^'" };
 
+// do_tell parses its first word as the recipient. Keep the configured quote
+// intact in a separate bounded argument, including when quote is Gbuf1.
+static void shop_tell_customer(P_char keeper, const char *customer_name, const char *quote)
+{
+	char argument[MAX_INPUT_LENGTH];
+	const int length = snprintf(argument, sizeof(argument), "%s %s", customer_name, quote);
+	if (length < 0 || static_cast<size_t>(length) >= sizeof(argument))
+		return;
+	do_tell(keeper, argument, 0);
+}
+
 struct produced_purchase_sequence
 {
 	uint32_t shop_id = 0;
@@ -570,7 +581,7 @@ static void shop_trade_completion(P_char ch, bool committed, const shop_trade_re
 					   shop_index[payload.shop_id].message_buy, GET_NAME(ch),
 					   coin_stringv(payload.price));
 			if (!batch)
-				do_tell(keeper, message, 0);
+				shop_tell_customer(keeper, GET_NAME(ch), message);
 			ADD_MONEY(keeper, payload.price);
 		}
 		if (!produced)
@@ -627,7 +638,7 @@ static void shop_trade_completion(P_char ch, bool committed, const shop_trade_re
 		checked_substitute(message, MAX_STRING_LENGTH,
 				   shop_index[payload.shop_id].message_sell, GET_NAME(ch),
 				   coin_stringv(payload.price));
-		do_tell(keeper, message, 0);
+		shop_tell_customer(keeper, GET_NAME(ch), message);
 		SUB_MONEY(keeper, payload.price, 0);
 	}
 	snprintf(message, MAX_STRING_LENGTH, "The shopkeeper gives you %s.\r\n",
@@ -708,7 +719,7 @@ static void shop_creation_grant_completion(P_char ch, uint64_t item_uid, bool co
 		checked_substitute(message, sizeof(message),
 				   shop_index[sequence.shop_id].message_buy, GET_NAME(ch),
 				   coin_stringv(sequence.price));
-		do_tell(keeper, message, 0);
+		shop_tell_customer(keeper, GET_NAME(ch), message);
 	}
 	if (!sequence.batch)
 	{
@@ -1255,7 +1266,7 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 		{
 			checked_substitute(Gbuf1, MAX_STRING_LENGTH,
 					   shop_index[shop_nr].no_such_item1, GET_NAME(ch));
-			do_tell(keeper, Gbuf1, 0);
+			shop_tell_customer(keeper, GET_NAME(ch), Gbuf1);
 			return;
 		}
 	}
@@ -1264,7 +1275,7 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 	{
 		checked_substitute(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].no_such_item1,
 				   GET_NAME(ch));
-		do_tell(keeper, Gbuf1, 0);
+		shop_tell_customer(keeper, GET_NAME(ch), Gbuf1);
 		if (shop_trade_route_invalid_cleanup(ch, keeper, temp1,
 						     static_cast<uint32_t>(shop_nr)))
 			return;
@@ -1549,7 +1560,7 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 	act("$n buys $p.", FALSE, ch, temp1, 0, TO_ROOM);
 	checked_substitute(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].message_buy, GET_NAME(ch),
 			   coin_stringv(sale));
-	do_tell(keeper, Gbuf1, 0);
+	shop_tell_customer(keeper, GET_NAME(ch), Gbuf1);
 	// SET_BIT(temp1->type, ITEM_TREASURE);
 	snprintf(Gbuf1, MAX_STRING_LENGTH, "You now have %s.\r\n", temp1->short_description);
 	send_to_char(Gbuf1, ch);
@@ -1664,7 +1675,7 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 	{
 		checked_substitute(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].missing_cash1,
 				   GET_NAME(ch));
-		do_tell(keeper, Gbuf1, 0);
+		shop_tell_customer(keeper, GET_NAME(ch), Gbuf1);
 		return;
 	}
 	if (IS_SET(temp1->extra_flags, ITEM_NODROP))
@@ -1717,7 +1728,7 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 		checked_substitute(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].message_sell,
 				   GET_NAME(ch), coin_stringv(sale));
 
-	do_tell(keeper, Gbuf1, 0);
+	shop_tell_customer(keeper, GET_NAME(ch), Gbuf1);
 
 	sql_shop_sell(ch, temp1, sale);
 
@@ -1891,7 +1902,7 @@ void shopping_peruse(char *arg, P_char ch, P_char keeper, int shop_nr)
 		{
 			checked_substitute(Gbuf1, MAX_STRING_LENGTH,
 					   shop_index[shop_nr].no_such_item1, GET_NAME(ch));
-			do_tell(keeper, Gbuf1, 0);
+			shop_tell_customer(keeper, GET_NAME(ch), Gbuf1);
 			return;
 		}
 	}
@@ -1899,7 +1910,7 @@ void shopping_peruse(char *arg, P_char ch, P_char keeper, int shop_nr)
 	{
 		checked_substitute(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].no_such_item1,
 				   GET_NAME(ch));
-		do_tell(keeper, Gbuf1, 0);
+		shop_tell_customer(keeper, GET_NAME(ch), Gbuf1);
 		if (shop_trade_route_invalid_cleanup(ch, keeper, temp1,
 						     static_cast<uint32_t>(shop_nr)))
 			return;
