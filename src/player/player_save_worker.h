@@ -233,6 +233,8 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 // player save/login fence uses this exact-PID query; aggregate health is not a
 // sufficient admission check for a recipient-only operation.
 bool player_save_worker_pid_pending(int pid);
+// Exact retained snapshot presence; not durability or ACK proof.
+bool player_save_worker_revision_pending(int pid, player_revision_t revision);
 // Process-local original request identity, not an authority or encoded revision.
 // Generations never reset; worker shutdown/reinitialization invalidates old tokens.
 struct player_save_deferred_identity

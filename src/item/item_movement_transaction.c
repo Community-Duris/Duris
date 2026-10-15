@@ -4020,7 +4020,7 @@ bool item_creation_grant_defer(P_char actor, item_creation_prepare_fn prepare,
 			       economic_source_kind source, uint64_t source_id)
 {
 	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0 || !prepare ||
-	    item_movement_transaction_player_busy(actor) ||
+	    item_creation_grant_reservation_busy(actor) ||
 	    creation_grants.size() >= ITEM_MOVEMENT_PENDING_MAX)
 		return false;
 	const uint32_t pid = static_cast<uint32_t>(GET_PID(actor));
@@ -4806,7 +4806,9 @@ bool item_movement_transaction_player_custody_pending(P_char actor)
 			   });
 }
 
-bool item_movement_transaction_player_busy(P_char actor)
+namespace
+{
+bool player_busy_impl(P_char actor, bool include_sealed_save)
 {
 	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0)
 		return false;
@@ -4816,7 +4818,9 @@ bool item_movement_transaction_player_busy(P_char actor)
 	// Existing network input queues retain dependent commands until the real
 	// sealed Save reaches SQL durability and its original WAL/game-thread ACK.
 	if (ordinary_sql_save_ordering() &&
-	    (player_save_pipeline_sealed_save_pending(static_cast<int>(pid)) ||
+	    ((include_sealed_save ?
+		      player_save_pipeline_sealed_save_pending(static_cast<int>(pid)) :
+		      player_save_pipeline_creation_reservation_blocked(static_cast<int>(pid))) ||
 	     item_movement_transaction_player_custody_pending(actor)))
 		return true;
 	if (std::any_of(drop_preparations.begin(), drop_preparations.end(), [pid](const auto &entry)
@@ -4828,6 +4832,19 @@ bool item_movement_transaction_player_busy(P_char actor)
 	return std::any_of(
 		pending.begin(), pending.end(), [pid, &owner](const auto &entry)
 		{ return entry.second.actor_pid == pid || owner_conflicts(entry.second, owner); });
+}
+} // namespace
+
+bool item_movement_transaction_player_busy(P_char actor)
+{
+	return player_busy_impl(actor, true);
+}
+
+// Reserving an unadmitted creation intent may wait behind a sealed ordinary Save.
+// Execution still waits in the original creation-grant conflict/pump guards.
+bool item_creation_grant_reservation_busy(P_char actor)
+{
+	return player_busy_impl(actor, false);
 }
 
 item_movement_health item_movement_transaction_health_copy(void)

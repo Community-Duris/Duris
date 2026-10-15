@@ -5434,6 +5434,43 @@ bool player_save_pipeline_sealed_save_pending(int pid)
 	return revision.overflowed || revision.queued_components || revision.inflight_components;
 }
 
+// Retain a bounded creation intent while ordinary snapshots finish, but never
+// treat recovery, terminal, load or literal-owner fences as mere Save latency.
+bool player_save_pipeline_creation_reservation_blocked(int pid)
+{
+	if (pid <= 0 || player_save_journal_pid_quarantined(pid))
+		return true;
+	player_revision_snapshot revision = {};
+	const bool have_revision = player_revision_snapshot_copy(pid, &revision);
+	bool queued_retained = false, inflight_retained = false;
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		if (!health.initialized || stop_requested || !accepting ||
+		    find_target_save_login_fence_locked(pid) || find_terminal_fence_locked(pid) ||
+		    find_literal_inventory_locked(pid))
+			return true;
+		const auto retained = [pid](player_revision_t expected)
+		{
+			return expected && (snapshot_is_retained_locked(pid, expected) ||
+					    (append_inflight_pid == pid &&
+					     append_inflight_revision == expected));
+		};
+		queued_retained = retained(revision.queued_revision);
+		inflight_retained = retained(revision.inflight_revision);
+	}
+	if (!have_revision)
+		return false;
+	if (revision.overflowed)
+		return true;
+	// A queued revision without its real DTO still needs ordinary recapture.
+	// Reserving a kit would block that recapture behind creation_grants.
+	if (revision.queued_components && !queued_retained &&
+	    !player_save_worker_revision_pending(pid, revision.queued_revision))
+		return true;
+	return revision.inflight_components && !inflight_retained &&
+	       !player_save_worker_revision_pending(pid, revision.inflight_revision);
+}
+
 bool player_save_pipeline_target_save_pending(int pid)
 {
 	if (pid <= 0)

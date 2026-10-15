@@ -1152,6 +1152,21 @@ bool player_save_worker_pid_pending(int pid)
 	       (found->second.active != nullptr || found->second.pending != nullptr);
 }
 
+// Presence of this exact retained worker snapshot is a liveness observation,
+// never an execution, durability or acknowledgement capability.
+bool player_save_worker_revision_pending(int pid, player_revision_t revision)
+{
+	if (pid <= 0 || !revision)
+		return false;
+	std::lock_guard<std::mutex> lock(worker_mutex);
+	const auto found = slots.find(pid);
+	if (found == slots.end())
+		return false;
+	const auto &slot = found->second;
+	return (slot.active && slot.active->snapshot.revision == revision) ||
+	       (slot.pending && slot.pending->snapshot.revision == revision);
+}
+
 bool player_save_worker_resume_deferred(int pid) noexcept
 {
 	if (pid <= 0)

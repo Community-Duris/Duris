@@ -682,7 +682,7 @@ static bool append_chaos_kit_item(P_char ch, P_obj bag, const chaos_kit_item *it
 static void load_chaos_new_character_kit(P_char ch)
 {
 	static const int bag_vnum = 96443;
-	if (!ch || IS_NPC(ch) || ch->carrying || item_movement_transaction_player_busy(ch))
+	if (!ch || IS_NPC(ch) || ch->carrying || item_creation_grant_reservation_busy(ch))
 		return;
 	const int class_id = flag2idx(ch->player.m_class);
 	if (class_id < 1 || class_id > CLASS_COUNT)
@@ -896,7 +896,7 @@ static P_obj materialize_legacy_newbie_item(P_char ch, const prepared_newbie_ite
 /** Reserve a PC kit now and prepare it in bounded slices on later game pulses. */
 void load_obj_to_newbies(P_char ch)
 {
-	if (!ch || item_movement_transaction_player_busy(ch) || (ch->carrying && IS_PC(ch)))
+	if (!ch || item_creation_grant_reservation_busy(ch) || (ch->carrying && IS_PC(ch)))
 		return;
 	if (IS_NPC(ch))
 	{

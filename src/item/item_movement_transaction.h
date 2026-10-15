@@ -216,6 +216,8 @@ void item_movement_transaction_player_ready(P_char actor);
 // publishers that own legitimate AFTER captures. Read-only capture barrier.
 bool item_movement_transaction_player_custody_pending(P_char actor);
 bool item_movement_transaction_player_busy(P_char actor);
+// Reservation-only readiness; this does not authorize creation publication.
+bool item_creation_grant_reservation_busy(P_char actor);
 // A creation commit can advance custody before its item is published live.
 // Ordinary snapshots must wait until every inbound creation has published.
 bool item_movement_transaction_player_creation_busy(P_char actor);

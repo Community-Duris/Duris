@@ -757,6 +757,8 @@ bool player_save_pipeline_target_save_pending(int pid);
 // Game-thread creation admission waits for sealed saves, while dirty components
 // remain eligible for capture after the grant is published.
 bool player_save_pipeline_sealed_save_pending(int pid);
+// Unadmitted creation reservation readiness, preserving non-transient fences.
+bool player_save_pipeline_creation_reservation_blocked(int pid);
 bool player_save_pipeline_acquire_target_save_login_fence(int pid,
 							  player_revision_t expected_revision);
 void player_save_pipeline_release_target_save_login_fence(int pid,

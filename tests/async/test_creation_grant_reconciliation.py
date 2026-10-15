@@ -293,27 +293,39 @@ std::mutex pipeline_mutex;
 player_save_pipeline_health health{};
 bool stop_requested = false, accepting = true;
 int append_inflight_pid = 0, retained_pid = 0, worker_pid = 0;
+player_revision_t append_inflight_revision = 0, retained_revision = 0, worker_revision = 0;
 bool quarantined = false, requested_or_unconfigured = false;
+bool creation_busy = false, native_busy = false, terminal_fenced = false;
 bool authority_active = false, mysql_selected = true;
 bool economic_outcome_accounting_requested() noexcept { return requested_or_unconfigured; }
 bool economic_gameplay_authority::active() { return authority_active; }
 bool persistence_mode_requires_mysql() { return mysql_selected; }
 bool player_save_journal_pid_quarantined(int) { return quarantined; }
 void *find_target_save_login_fence_locked(int) { return nullptr; }
-void *find_terminal_fence_locked(int) { return nullptr; }
+void *find_terminal_fence_locked(int) { return terminal_fenced ? &terminal_fenced : nullptr; }
 void *find_literal_inventory_locked(int) { return nullptr; }
 bool any_snapshot_is_retained_locked(int pid) { return retained_pid == pid; }
+bool snapshot_is_retained_locked(int pid, player_revision_t revision)
+{ return retained_pid == pid && retained_revision == revision; }
+bool player_save_worker_revision_pending(int pid, player_revision_t revision)
+{ return worker_pid == pid && worker_revision == revision; }
 bool player_save_worker_pid_pending(int pid) { return worker_pid == pid; }
 void creation_grant_completion(P_char, bool, const item_transfer_result &,
                                unsigned int, const uint8_t *, size_t) {}
 bool retained_publication(const critical_operation_id &, P_char, bool,
                           const item_transfer_result &, unsigned int,
                           const uint8_t *, size_t) { return false; }
-''' + extract_function("player_save_pipeline.c", "bool player_save_pipeline_sealed_save_pending(") + '\n' + '\n'.join(
+''' + function_body(MOVEMENT, "struct pending_drop_preparation") + ';\n' + r'''
+std::array<pending_drop_preparation, ITEM_MOVEMENT_PENDING_MAX> drop_preparations{};
+bool item_movement_transaction_player_creation_busy(P_char) { return creation_busy; }
+bool native_quest_owner_busy(const item_owner_identity &) { return native_busy; }
+''' + extract_function("player_save_pipeline.c", "bool player_save_pipeline_sealed_save_pending(") + '\n' + extract_function("player_save_pipeline.c", "bool player_save_pipeline_creation_reservation_blocked(") + '\n' + '\n'.join(
     function_body(MOVEMENT, signature) for signature in (
         "bool ordinary_sql_save_ordering(", "uint32_t owner_save_pid(",
         "bool owner_sealed_save_pending(", "bool ordinary_capture_owner(",
-        "bool item_movement_transaction_player_custody_pending(")) + r'''
+        "bool item_movement_transaction_player_custody_pending(", "bool owner_conflicts(",
+        "bool player_busy_impl(", "bool item_movement_transaction_player_busy(",
+        "bool item_creation_grant_reservation_busy(")) + r'''
 int main() {
     health.initialized = true;
     auto pc = std::make_unique<pc_only_data>();
@@ -329,11 +341,29 @@ int main() {
     assert(player_revision_mark(41, PLAYER_COMPONENT_INVENTORY, &revision));
     assert(!owner_sealed_save_pending(player)); // Dirty is not sealed.
     assert(player_revision_queue(41, &revision, &components));
+    assert(item_movement_transaction_player_busy(actor.get()));
+    assert(item_creation_grant_reservation_busy(actor.get())); // Orphan queue needs recapture.
+    retained_pid = 41; retained_revision = revision;
+    assert(!item_creation_grant_reservation_busy(actor.get()));
+    creation_busy = true;
+    assert(item_creation_grant_reservation_busy(actor.get()));
+    creation_busy = false;
+    native_busy = true;
+    assert(item_creation_grant_reservation_busy(actor.get()));
+    native_busy = false;
+    drop_preparations[0].active = true;
+    drop_preparations[0].token.pid = 41;
+    assert(item_creation_grant_reservation_busy(actor.get()));
+    drop_preparations[0].active = false;
+    terminal_fenced = true;
+    assert(item_creation_grant_reservation_busy(actor.get()));
+    terminal_fenced = false;
+    assert(!item_creation_grant_reservation_busy(actor.get()));
     assert(owner_sealed_save_pending(player) && owner_sealed_save_pending(pet));
     assert(!owner_sealed_save_pending(other));
     retained_pid = 41;
     assert(player_revision_begin_inflight(41, revision, components));
-    worker_pid = 41;
+    worker_pid = 41; worker_revision = revision;
     retained_pid = 0;
     assert(owner_sealed_save_pending(player)); // SQL result alone is not ACK.
     assert(player_revision_acknowledge(41, revision, components));
@@ -347,6 +377,7 @@ int main() {
     entry.payload.to_owner = player;
     entry.payload.reason = item_transfer_reason::player_get;
     assert(item_movement_transaction_player_custody_pending(actor.get()));
+    assert(item_creation_grant_reservation_busy(actor.get()));
     assert(!owner_sealed_save_pending(player)); // No capture/self-wait cycle.
     entry.completion_ready = true;
     entry.registry_applied = true;
@@ -392,11 +423,26 @@ int main() {
     assert(!item_movement_transaction_player_custody_pending(actor.get()));
     assert(player_revision_queue(41, &revision, &components));
     assert(components == PLAYER_COMPONENT_STATUS);
+    assert(item_creation_grant_reservation_busy(actor.get())); // No DTO for this queued revision.
+    retained_pid = 41; retained_revision = revision - 1;
+    assert(item_creation_grant_reservation_busy(actor.get())); // An older body is not enough.
+    retained_pid = 0;
+    append_inflight_pid = 41; append_inflight_revision = revision - 1;
+    assert(item_creation_grant_reservation_busy(actor.get()));
+    append_inflight_revision = revision;
+    assert(!item_creation_grant_reservation_busy(actor.get()));
+    append_inflight_pid = 0;
+    worker_pid = 41; worker_revision = revision - 1;
+    assert(item_creation_grant_reservation_busy(actor.get()));
+    worker_revision = revision;
+    assert(!item_creation_grant_reservation_busy(actor.get()));
     assert(player_revision_begin_inflight(41, revision, components));
     assert(player_revision_acknowledge(41, revision, components));
+    worker_pid = 0;
     assert(!owner_sealed_save_pending(player));
     quarantined = true;
     assert(owner_sealed_save_pending(player));
+    assert(item_creation_grant_reservation_busy(actor.get()));
 }
 '''
 with tempfile.TemporaryDirectory(prefix="duris-ordinary-save-order-") as directory:
@@ -407,4 +453,4 @@ with tempfile.TemporaryDirectory(prefix="duris-ordinary-save-order-") as directo
                     "-Isrc", str(program), "src/player/player_revision_state.c",
                     "-pthread", "-o", str(binary)], cwd=ROOT, check=True)
     subprocess.run([str(binary)], check=True)
-print("[PASS] ordinary save-first and custody-first ordering, true ACK, no capture cycle, retained AFTER owners")
+print("[PASS] ordinary save-first and custody-first ordering, true ACK, no capture cycle, retained AFTER owners, creation reservations behind ordinary Saves")

@@ -1,6 +1,6 @@
 # Accounting completion plan: parallel delivery
 
-## Active priority: October 19 accounting-off game; November 2 durable accounting
+## Active priority: October 19 accounting-off game; November 2 RAM accounting
 
 The human approved these separate targets on October 14, 2026. First freeze and
 verify the accounting-off MySQL production game through normal core gameplay,
@@ -44,12 +44,23 @@ and full restart. Map R1–R8 conservation, recovery and resource obligations to
 this RAM contract; retire superseded SQL-as-permission and second AFTER-save/ACK
 proofs. A reduced enabled route set requires explicit scope approval.
 
+The October 19 accounting-off and November 2 RAM targets are separate acceptance
+gates. Publish incremental off fixes after their own maintained build, affected
+journeys and independent review; unrelated private candidates and unfinished RAM
+work do not block that intake. The thirteen project chats above remain the
+current owner group; the four-owner roster below is historical.
+
 Preserve historical source/authorship, divergent packets and all original evidence.
 Defer flatfile/SpacetimeDB implementation, exhaustive suite and optional old
 bridge/matrix campaigns. No production or receiving-fork writes, deployment,
 migration/wipe or history cleanup is included. Publish required plan changes
 with coherent substantive implementation/tests, never as a communication commit.
 
+
+R1–R8 remain the full accounting release contract and map to the RAM authority
+design above. Flatfile, SpacetimeDB and exhaustive qualification stay in the
+follow-on queue. Preserve completed documentation and source-audit corrections;
+repeat checks only for changed inputs or unresolved findings.
 
 The supported MySQL schema64 profile is explicit in `migrations/migration_manifest.schema64.json`, the exact first 64 entries of the default immutable history. Backup and restore retain and validate that selector. New backup generations use version 2; the reader also preserves the original exact version 1 archive profile. Schema65 measurement and qualification remain separate and unclaimed.
 
@@ -139,7 +150,7 @@ accounting activation, full Source65, native recovery or publication ACK.
   intake sources, not permission for a wholesale merge. The sibling notebook is
   retained; this plan does not claim to update or verify that private overlay.
 
-## Four active owners, one integration writer
+## Historical four-owner starting layout
 
 Use one integrator and three bounded delivery owners. The integrator is the
 existing primary or an explicitly approved successor, never both. Reconcile
