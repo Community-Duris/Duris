@@ -642,6 +642,17 @@ bool load_one_mine(int map)
 {
 	if (economic_gameplay_authority::active())
 		return FALSE;
+	const int start_vnum = mining_config_region_value(map, "start", mine_data[map].start);
+	const int end_vnum = mining_config_region_value(map, "end", mine_data[map].end);
+	const int start = real_room(start_vnum);
+	const int end = real_room(end_vnum);
+	if (start < 0 || end < 0 || start > end || start > top_of_world || end > top_of_world)
+	{
+		logit(LOG_DEBUG,
+		      "mines: region %s unavailable: room range %d-%d resolves to %d-%d (top %d).",
+		      mine_data[map].name, start_vnum, end_vnum, start, end, top_of_world);
+		return FALSE;
+	}
 	P_obj mine = read_object(mine_data[map].type, VIRTUAL);
 
 	if (!mine)
@@ -649,9 +660,6 @@ bool load_one_mine(int map)
 		wizlog(56, "Error loading mine obj [%d]", VOBJ_MINE);
 		return FALSE;
 	}
-
-	int start = real_room(mining_config_region_value(map, "start", mine_data[map].start));
-	int end = real_room(mining_config_region_value(map, "end", mine_data[map].end));
 
 	int tries = 0;
 	int to_room = -1;
