@@ -610,13 +610,11 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
                                    "FROM item_current_owner WHERE "
                                    f"item_uid={UIDS[1]}") == \
                                    f"{UIDS[0]}:{UIDS[0]}:11:{corpse_owner}"
-                        assert sql("SELECT CONCAT(child.container_id,':',root.id) "
+                        assert sql("SELECT COUNT(*),COALESCE(SUM("
+                                   "child.container_id=root.id),0) "
                                    "FROM player_pet_items child JOIN "
                                    "player_pet_items root ON root.obj_uid="
-                                   f"{UIDS[0]} WHERE child.obj_uid={UIDS[1]}") == \
-                                   sql("SELECT CONCAT(id,':',id) FROM "
-                                       "player_pet_items WHERE "
-                                       f"obj_uid={UIDS[0]}")
+                                   f"{UIDS[0]} WHERE child.obj_uid={UIDS[1]}") == "1\t1"
                     assert sql("SELECT CONCAT(owner_type,':',state) FROM "
                                f"item_current_owner WHERE item_uid={UIDS[2]}") == "8:2"
                     assert sql("SELECT COUNT(*) FROM player_items WHERE "
@@ -724,12 +722,11 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
                                 "gives you a fixture backpack")
                         for uid in (UIDS[0], UIDS[1]):
                             custody(uid, 1, pid, "player_items")
-                        assert sql("SELECT CONCAT(child.container_id,':',root.id) "
+                        assert sql("SELECT COUNT(*),COALESCE(SUM("
+                                   "child.container_id=root.id),0) "
                                    "FROM player_items child JOIN player_items root "
                                    f"ON root.obj_uid={UIDS[0]} WHERE child.obj_uid="
-                                   f"{UIDS[1]}") == \
-                                   sql("SELECT CONCAT(id,':',id) FROM player_items "
-                                       f"WHERE obj_uid={UIDS[0]}")
+                                   f"{UIDS[1]}") == "1\t1"
                         if "--pet-give-stale-player" in sys.argv[2:]:
                             sql("UPDATE item_owner_revision SET revision=revision+1 "
                                 f"WHERE owner_type=1 AND owner_id={pid} "
