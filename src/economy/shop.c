@@ -1967,7 +1967,7 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 		{
 			checked_substitute(Gbuf1, MAX_STRING_LENGTH,
 					   shop_index[shop_nr].no_such_item1, GET_NAME(ch));
-			do_tell(keeper, Gbuf1, 0);
+			shop_tell_customer(keeper, GET_NAME(ch), Gbuf1);
 			return;
 		}
 	}
@@ -1976,7 +1976,7 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 	{
 		checked_substitute(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].no_such_item1,
 				   GET_NAME(ch));
-		do_tell(keeper, Gbuf1, 0);
+		shop_tell_customer(keeper, GET_NAME(ch), Gbuf1);
 		if (shop_trade_route_invalid_cleanup(ch, keeper, temp1,
 						     static_cast<uint32_t>(shop_nr)))
 			return;
@@ -2420,7 +2420,7 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 	{
 		checked_substitute(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].missing_cash1,
 				   GET_NAME(ch));
-		do_tell(keeper, Gbuf1, 0);
+		shop_tell_customer(keeper, GET_NAME(ch), Gbuf1);
 		return;
 	}
 	if (IS_SET(temp1->extra_flags, ITEM_NODROP))
@@ -2666,7 +2666,7 @@ void shopping_peruse(char *arg, P_char ch, P_char keeper, int shop_nr)
 		{
 			checked_substitute(Gbuf1, MAX_STRING_LENGTH,
 					   shop_index[shop_nr].no_such_item1, GET_NAME(ch));
-			do_tell(keeper, Gbuf1, 0);
+			shop_tell_customer(keeper, GET_NAME(ch), Gbuf1);
 			return;
 		}
 	}
@@ -2674,7 +2674,7 @@ void shopping_peruse(char *arg, P_char ch, P_char keeper, int shop_nr)
 	{
 		checked_substitute(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].no_such_item1,
 				   GET_NAME(ch));
-		do_tell(keeper, Gbuf1, 0);
+		shop_tell_customer(keeper, GET_NAME(ch), Gbuf1);
 		if (shop_trade_route_invalid_cleanup(ch, keeper, temp1,
 						     static_cast<uint32_t>(shop_nr)))
 			return;
