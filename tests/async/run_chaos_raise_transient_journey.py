@@ -2,6 +2,7 @@
 """Cast Greater Dracolich against a disposable persisted player corpse."""
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import struct
 import sys
@@ -20,6 +21,118 @@ NPC_GEAR_UIDS = (880000000007, 880000000008, 880000000009)
 NPC_TRANSIENT_UID = 880000000010
 NPC_MONEY_UID = 880000000011
 OWNER_PID, SAVE_ID, ROOM = 880001, 1004, 22800
+
+
+def add_outpost_boot_fixture(areas: Path) -> None:
+    """Supply only the world topology required by normal outpost startup."""
+    mobile_path = areas / "world.mob"
+    mobiles = mobile_path.read_text()
+    journey.require(mobiles.count("$~") == 1,
+                    "tiny-world mobile terminator changed")
+    journey.require("#97800\n" not in mobiles,
+                    "tiny-world already defines the outpost building mobile")
+    outpost_mobile = """#97800
+tower outpost _ignore_~
+&+yan outpost tower~
+&+yA small outpost tower stands here.
+~
+~
+41971786 0 0 0 268468224 1024 16777216 4096 0 S
+OG 0 0 0 7
+61 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 0
+"""
+    mobile_path.write_text(mobiles.replace("$~", outpost_mobile + "$~"))
+
+    # The normal full boot always loads these three outposts. Each needs a
+    # center, four cardinal neighbors, four diagonal neighbors, and a free
+    # interior room in the reserved 97800-97899 range. Keep the tiny fixture
+    # self-contained instead of making the test depend on full area data.
+    topology: dict[int, dict[int, int]] = {}
+    zone_tops: list[tuple[int, int, str]] = []
+
+    def room(vnum: int) -> dict[int, int]:
+        return topology.setdefault(vnum, {})
+
+    for center in (588184, 628856, 531100):
+        north, east, south, west = center - 400, center + 1, center + 400, center - 1
+        northwest, northeast = center - 401, center - 399
+        southwest, southeast = center + 399, center + 401
+        # Destinations must also be emitted, or renum_world removes the
+        # exits required by the original outpost wall generator.
+        for vnum in (center, north, east, south, west,
+                     northwest, northeast, southwest, southeast):
+            room(vnum)
+        room(center).update({0: north, 1: east, 2: south, 3: west})
+        room(north).update({1: northeast, 3: northwest})
+        room(south).update({1: southeast, 3: southwest})
+        zone_bottom = 97800 if center == 531100 else northwest
+        zone_tops.append((zone_bottom // 100, center + 401,
+                          f"Outpost support {center}"))
+
+    world_path = areas / "world.wld"
+    world = world_path.read_text()
+    journey.require(world.count("$~") == 1,
+                    "tiny-world room terminator changed")
+    journey.require(all(f"#{vnum}\n" not in world
+                        for vnum in (*range(97800, 97803), *topology)),
+                    "tiny-world already defines outpost support rooms")
+    room_records: list[str] = []
+
+    def room_record(vnum: int, exits: dict[int, int] | None = None) -> str:
+        lines = [f"#{vnum}", f"PET outpost fixture {vnum}~", "~", "1 0 2 0"]
+        for direction, destination in sorted((exits or {}).items()):
+            lines.extend((f"D{direction}", "~", "~", f"0 0 {destination}"))
+        lines.append("S")
+        return "\n".join(lines)
+
+    room_records.extend(room_record(vnum) for vnum in (97800, 97801, 97802))
+    room_records.extend(
+        room_record(vnum, exits) for vnum, exits in sorted(topology.items()))
+    world_path.write_text(world.replace("$~", "\n".join(room_records) + "\n$~"))
+
+    zone_path = areas / "world.zon"
+    zones = zone_path.read_text()
+    journey.require(zones.count("$~") == 1,
+                    "tiny-world zone terminator changed")
+    zone_records = []
+    for number, top, name in sorted(zone_tops, key=lambda zone: zone[1]):
+        zone_records.extend((f"#{number}", f"{name}~",
+                             "pet_outpost_support~", f"{top} 0 0 6 11 1", "S"))
+    zone_path.write_text(zones.replace("$~", "\n".join(zone_records) + "\n$~"))
+
+
+def make_full_world_fixture(game: Path) -> None:
+    """Give normal boot private full-loader paths backed by the tiny prototypes."""
+    areas = game / "areas"
+    journey.require(areas.is_symlink(), "shared areas fixture is not a symlink")
+    journey.require(areas.resolve() == (ROOT / "areas").resolve(),
+                    "shared areas fixture points outside the source areas tree")
+    areas.unlink()
+    areas.mkdir()
+
+    mini = game / "areas_mini"
+    for source_name, target_name in (
+        ("mini.mob", "world.mob"),
+        ("mini.obj", "world.obj"),
+        ("mini.wld", "world.wld"),
+        ("mini.zon", "world.zon"),
+        ("world.qst", "world.qst"),
+        ("world.shp", "world.shp"),
+        ("world.tab", "world.tab"),
+        ("world.weather", "world.weather"),
+    ):
+        source = mini / source_name
+        journey.require(source.is_file(),
+                        f"missing tiny-world prototype: {source_name}")
+        shutil.copyfile(source, areas / target_name)
+
+    add_outpost_boot_fixture(areas)
+
+    # load_justice_area() reads this optional file when the full-world restore
+    # branch runs. A bare terminator is a valid empty justice map.
+    (areas / "world.justice").write_text("$\n")
 
 
 def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
@@ -56,18 +169,19 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
                              journey.runtime_logs(game)[-4500:] +
                              schema.stderr[-1800:])
 
-    sql("CREATE DATABASE " + database, False)
+    sql("CREATE DATABASE " + database +
+        " CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci", False)
     try:
         sql((ROOT / "migrations/bootstrap_multithread_safe.sql").read_text())
         for args in (("adopt", "--kind", "fresh_bootstrap"), ("run",)):
             subprocess.run(["python3", "scripts/migration_runner.py", *args],
                            cwd=ROOT, env=env, check=True, capture_output=True)
-        sql((ROOT / "migrations/immutable/0028_pet_custody.sql").read_text())
         with tempfile.TemporaryDirectory(prefix="chaos-raise-") as temporary:
             game = Path(temporary)
             (game / "logs/log").mkdir(parents=True)
             (game / "Players").mkdir()
             journey.make_fixture(game)
+            make_full_world_fixture(game)
             journey.generate_certificate(game)
             for kind in ("players", "critical"):
                 (game / "journals" / kind).mkdir(parents=True, mode=0o700)
