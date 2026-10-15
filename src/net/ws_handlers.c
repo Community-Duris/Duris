@@ -1115,21 +1115,11 @@ void ws_send_full_game_state(struct descriptor_data *d)
 	if (!d || !d->character)
 		return;
 
-	/* trigger gmcp updates to send current state */
-	if (d->character->in_room >= 0 && d->ws_handshake_done)
-	{
-		gmcp_room_info(d->character);
-		gmcp_room_map(d->character);
-	}
-
 	/* Guard GMCP sends behind WS handshake to prevent leaking
 	 * frames into the login stream before handshake completes */
-	if (d->ws_handshake_done)
+	if (d->ws_handshake_done && d->character->in_room >= 0)
 	{
-		gmcp_char_vitals(d->character);
-		gmcp_char_status(d->character);
-		gmcp_char_affects(d->character);
-		gmcp_quest_status(d->character);
+		gmcp_send_initial_state(d->character);
 	}
 
 	/* send a "look" to show the room */

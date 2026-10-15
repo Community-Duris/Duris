@@ -1996,6 +1996,7 @@ static void run_recurring_persistence_phase(game_loop_pulse_context &ctx)
 	if (!(pulse % 2))
 	{
 		const uint64_t gmcp_begin_us = loop_monotonic_us();
+		gmcp_flush_initial_states();
 		gmcp_flush_dirty_rooms();
 		gmcp_flush_dirty_ship_contacts();
 		gmcp_flush_dirty_ship_info();
@@ -2151,16 +2152,11 @@ static void run_combat_phase(game_loop_pulse_context &ctx)
 										  ship->location);
 							if (n > 1)
 							{
-								// Render map and send via GMCP only (skip text by using websocket flag temporarily)
-								bool was_websocket =
-									t_ch->desc->websocket;
-								t_ch->desc->websocket =
-									1; // Force skip_text_output in display_map_room
+								/* MAP_AUTOMAP suppresses text for GMCP clients.
+								 * Preserve the actual transport while sending the map. */
 								display_map_room(t_ch,
 										 ship->location, n,
 										 MAP_AUTOMAP, 0);
-								t_ch->desc->websocket =
-									was_websocket;
 							}
 						}
 					}

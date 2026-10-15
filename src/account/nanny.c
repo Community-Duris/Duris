@@ -1978,9 +1978,7 @@ void enter_game(P_desc d)
 	 * leaking GMCP frames into the login stream. */
 	if (!d->websocket || d->ws_handshake_done)
 	{
-		gmcp_char_status(ch);
-		gmcp_char_vitals(ch);
-		gmcp_quest_status(ch);
+		gmcp_send_initial_state(ch);
 	}
 
 	redis_player_online(ch);

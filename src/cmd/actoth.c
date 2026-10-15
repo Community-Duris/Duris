@@ -3880,7 +3880,7 @@ void do_steal(P_char ch, char *argument, int /*cmd*/)
 
 		// roll is number(0,100) - ensure that percent is 1,101
 		percent = BOUNDED(1, percent, 101); // percent 101 is a critical hit and
-			// roll 0 is a crit miss
+		// roll 0 is a crit miss
 		if (!failed && (trusted || (roll && (GET_LEVEL(ch) > 40) && (roll < percent))))
 		{ /* success */
 			if (IS_PC(victim) &&
@@ -5999,6 +5999,8 @@ void do_toggle(P_char ch, char *arg, int /*cmd*/)
 		break;
 	case 64: /* gmcp */
 		result = gmcp_tog(PLR3_FLAGS(ch), arg);
+		if (result == 1)
+			gmcp_send_initial_state(send_ch);
 		break;
 	case 65: // jchat
 		result = plr_tog(PLR3_FLAGS(ch), PLR3_JESTROS, arg, 1);

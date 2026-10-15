@@ -600,7 +600,7 @@ int vamp(P_char ch, double fhits, double fcap)
 		send_to_char(buf, ch);
 	}
 
-	update_groupies(ch, true);
+	gmcp_char_vitals(ch);
 
 	return hits;
 }
@@ -6379,7 +6379,13 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 
 			/* Send GMCP updates for combat */
 			gmcp_char_vitals(victim); /* Update victim's vitals */
-			gmcp_combat_target(ch, GET_OPPONENT(ch)); /* Update with actual opponent */
+			if (victim != ch)
+			{
+				if (GET_OPPONENT(ch) && GET_OPPONENT(ch) != victim)
+					gmcp_combat_target(ch, GET_OPPONENT(ch));
+				else
+					gmcp_combat_update(ch, victim, (int)dam, "unknown", 0);
+			}
 		}
 
 		if (IS_PC(victim) && victim->desc &&
@@ -8469,6 +8475,8 @@ void set_fighting(P_char ch, P_char vict)
 		show_string(victim->desc, Gbuf);
 	}
 	GET_OPPONENT(ch) = victim;
+	gmcp_char_vitals(ch);
+	gmcp_combat_target(ch, victim);
 	ch->specials.next_fighting = combat_list;
 	combat_list = ch;
 	world_activity_promote_character(ch);
@@ -9398,6 +9406,7 @@ void stop_fighting(P_char ch)
 	gmcp_combat_end(ch);
 
 	update_pos(ch);
+	gmcp_char_vitals(ch);
 }
 
 void event_windstrom(P_char ch, P_char vict, char *args)
