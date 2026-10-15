@@ -135,6 +135,15 @@ def make_full_world_fixture(game: Path) -> None:
     (areas / "world.justice").write_text("$\n")
 
 
+def read_fixture_look(client):
+    deadline = time.monotonic() + 20
+    received_header = client.expect("The Regression Arena",
+                                    timeout=deadline - time.monotonic())
+    received_room = received_header[received_header.index("The Regression Arena"):]
+    return received_room + client.expect("Pos: standing >",
+                                         timeout=deadline - time.monotonic())
+
+
 def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
     host = os.environ.get("TEST_DB_HOST", "127.0.0.1")
     port = os.environ.get("TEST_DB_PORT", "3307")
@@ -509,7 +518,7 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
                 client = journey.reconnect_character(game_port, expected_room=None)
                 client.pending.clear()
                 client.send("look")
-                room = client.expect("Pos: standing >", timeout=20)
+                room = read_fixture_look(client)
                 assert "corpse of FixtureFallen" in room, room
                 client.send("stand")
                 client.expect("Pos: standing >", timeout=15)
@@ -627,7 +636,7 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
                                                  zip(wallet_before, expected_money))
                     client.pending.clear()
                     client.send("look")
-                    raised_room = client.expect("Pos: standing >", timeout=20)
+                    raised_room = read_fixture_look(client)
                     assert raised_room.lower().count("dracolich") == 1, raised_room
                     assert raised_room.count("(minion)") == 1, raised_room
                     equip_probe = "--equip-probe" in sys.argv[2:]
@@ -830,13 +839,13 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
                                                                  expected_room=None)
                             client.pending.clear()
                             client.send("look")
-                            active_room = client.expect("Pos: standing >", timeout=20)
+                            active_room = read_fixture_look(client)
                             assert active_room.lower().count("dracolich") == 1, active_room
                         client.pending.clear()
                         client.send("dismiss dracolich")
                         client.expect("Pos: standing >", timeout=20)
                         client.send("look")
-                        dismissed_room = client.expect("Pos: standing >", timeout=20)
+                        dismissed_room = read_fixture_look(client)
                         assert "dracolich" not in dismissed_room.lower(), dismissed_room
                         assert "fixture backpack" not in dismissed_room, dismissed_room
                         client.send("save")
@@ -859,7 +868,7 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
                                                              expected_room=None)
                         client.pending.clear()
                         client.send("look")
-                        restarted_room = client.expect("Pos: standing >", timeout=20)
+                        restarted_room = read_fixture_look(client)
                         assert "dracolich" not in restarted_room.lower(), restarted_room
                         assert "fixture backpack" not in restarted_room, restarted_room
                         assert sql("SELECT COUNT(*) FROM player_pet_items WHERE "
@@ -903,7 +912,7 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
                                                              expected_room=None)
                         client.pending.clear()
                         client.send("look")
-                        restored = client.expect("Pos: standing >", timeout=20)
+                        restored = read_fixture_look(client)
                         if expire_before_restart:
                             assert "dracolich" not in restored.lower(), restored
                             client.send("save")
