@@ -2813,8 +2813,9 @@ void do_refine(P_char ch, char *arg, int /*cmd*/)
 	for (t_obj = ch->carrying; t_obj; t_obj = nextobj)
 	{
 		nextobj = t_obj->next_content;
+		const int input_vnum = OBJ_VNUM(t_obj);
 
-		if ((OBJ_VNUM(t_obj) == vnum) && i > 0)
+		if ((input_vnum == vnum) && i > 0)
 		{
 			obj_from_char(t_obj);
 			extract_obj(t_obj, TRUE); // Not an arti, but 'in game.'
@@ -2823,12 +2824,12 @@ void do_refine(P_char ch, char *arg, int /*cmd*/)
 				ch);
 			i--;
 		}
-		if (o && (OBJ_VNUM(t_obj) > 193) && (OBJ_VNUM(t_obj) < 234))
+		if (o && (input_vnum > 193) && (input_vnum < 234))
 		{
 			o--;
+			orechance = input_vnum - 194;
 			obj_from_char(t_obj);
 			extract_obj(t_obj, TRUE); // Not an arti, but 'in game.'
-			orechance = (OBJ_VNUM(t_obj) - 194);
 		}
 	}
 
