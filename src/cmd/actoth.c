@@ -6403,18 +6403,31 @@ void do_split(P_char ch, char *argument, int /*cmd*/)
 			     ch);
 		return;
 	}
-	if (!economic_gameplay_authority::active() && gold < group_size)
+	bool paired_split = economic_gameplay_authority::active();
+#ifndef __NO_MYSQL__
+	// Ordinary SQL wallets use the same committed paired transfer as accounting.
+	paired_split = paired_split || (IS_PC(ch) && GET_PID(ch) > 0 && GET_LEVEL(ch) < MAXLVL);
+#endif
+	if (!paired_split && gold < group_size)
 	{ /*
 	   * Make sure enough for 1 coin/player
 	   */
 		send_to_char("There isn't enough money to go around!\r\n", ch);
 		return;
 	}
-	if (economic_gameplay_authority::active())
+	if (paired_split)
 	{
 		if (!IS_PC(ch) || GET_PID(ch) <= 0 || GET_LEVEL(ch) >= MAXLVL)
 		{
 			send_to_char("This split cannot use an accounted player wallet.\r\n", ch);
+			return;
+		}
+		// Admission is checked for every participant before the first paired debit.
+		if (currency_transaction_player_busy(ch))
+		{
+			send_to_char(
+				"The split is temporarily held by a pending coin transaction. Please try again.\r\n",
+				ch);
 			return;
 		}
 		uint64_t split_id = 0;
@@ -6435,9 +6448,18 @@ void do_split(P_char ch, char *argument, int /*cmd*/)
 					if (wallet && IS_PC(wallet) && GET_PID(wallet) > 0 &&
 					    GET_PID(wallet) != GET_PID(ch) &&
 					    seen_wallets.insert(GET_PID(wallet)).second)
+					{
+						if (currency_transaction_player_busy(wallet))
+						{
+							send_to_char(
+								"The split is temporarily held by a group member's pending coin transaction. Please try again.\r\n",
+								ch);
+							return;
+						}
 						state.recipients.push_back(
 							{ gl->ch->runtime_id,
 							  static_cast<uint32_t>(GET_PID(wallet)) });
+					}
 				}
 			if (gold < static_cast<long>(state.recipients.size() + 1))
 			{
@@ -6451,6 +6473,29 @@ void do_split(P_char ch, char *argument, int /*cmd*/)
 					"No eligible player wallet can receive this split.\r\n",
 					ch);
 				return;
+			}
+			// Exact endpoint construction captures current revisions and checks
+			// identity, fences, funds and capacity for every wallet. It admits no
+			// command and produces no debit, credit or success notice.
+			for (const auto &selected : state.recipients)
+			{
+				P_char recipient =
+					find_character_by_runtime_id(selected.runtime_id);
+				P_char wallet = recipient ? GET_PLYR(recipient) : nullptr;
+				coin_transfer_payload preview;
+				const int32_t amount = static_cast<int32_t>(state.share);
+				if (!wallet || !IS_PC(wallet) ||
+				    GET_PID(wallet) != static_cast<int>(selected.pid) ||
+				    !currency_transaction_coin_wallet_exact(ch, ctype, amount, true,
+									    &preview.source) ||
+				    !currency_transaction_coin_wallet_exact(
+					    wallet, ctype, amount, false, &preview.destination))
+				{
+					send_to_char(
+						"The split could not start; nothing changed.\r\n",
+						ch);
+					return;
+				}
 			}
 			split_id = next_money_split_id;
 			money_splits.emplace(split_id, std::move(state));
