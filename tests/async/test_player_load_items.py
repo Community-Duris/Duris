@@ -20,6 +20,7 @@ HARNESS = r'''
 #include "player/player_snapshot_codec.h"
 #include "player/player_load_pets.h"
 #include "player/pet_restore_runtime.h"
+#include "sql/item_extra_descr_codec.h"
 #include <ctime>
 #include "core/prototypes.h"
 #include "magic/spells.h"
@@ -688,6 +689,14 @@ int main()
         add_item(result, 1, 30, 100, PLAYER_SNAPSHOT_NO_PARENT, -1);
         add_item(result, 2, 31, 101, 0, -1);
         result.snapshot.items[1].dynamic_affects.push_back({17, 8, 32});
+        char trap_state[64];
+        assert(sql_encode_item_trap_state(6, 2, 0, 100, trap_state,
+                                          sizeof(trap_state)));
+        result.snapshot.items[1].extra_descriptions.push_back(
+            {SQL_ITEM_TRAP_STATE_KEYWORD, trap_state, false, {}});
+        for (size_t index = 0; index < PLAYER_LOAD_ITEM_DESCRIPTION_MAX; ++index)
+            result.snapshot.items[1].extra_descriptions.push_back(
+                {"detail" + std::to_string(index), "fixture", false, {}});
         const item_owner_identity corpse = {
             item_owner_type::corpse, (static_cast<uint64_t>(42) << 32) | 20, 0
         };
@@ -702,7 +711,20 @@ int main()
                roots[0]->loc_p == LOC_NOWHERE && roots[0]->contains &&
                roots[0]->contains->obj_uid == 31 && roots[0]->contains->affects &&
                roots[0]->contains->affects->type == 17 &&
-               roots[0]->contains->affects->extra2 == 32);
+               roots[0]->contains->affects->extra2 == 32 &&
+               roots[0]->contains->trap_eff == 6 &&
+               roots[0]->contains->trap_dam == 2 &&
+               roots[0]->contains->trap_charge == 0 &&
+               roots[0]->contains->trap_level == 100);
+        size_t description_count = 0;
+        for (auto *description = roots[0]->contains->ex_description;
+             description; description = description->next, ++description_count)
+        {
+            assert(std::string(description->keyword) ==
+                   "detail" + std::to_string(description_count));
+            assert(std::string(description->description) == "fixture");
+        }
+        assert(description_count == PLAYER_LOAD_ITEM_DESCRIPTION_MAX);
         item_ownership_runtime_entry entry = {};
         assert(item_ownership_runtime_lookup(31, &entry));
         assert(item_owner_identity_equal(entry.owner, corpse));
@@ -799,6 +821,7 @@ int main()
              {"SPELLBOOK", "[]", true, {1}},
              {"SPELLBOOK", "[1]", true, {1}},
              {"ordinary", "text", false, {1}},
+             {SQL_ITEM_TRAP_STATE_KEYWORD, "6,2,bad,100", false, {}},
              {"SPELLBOOK", "[1,1]", true, {}},
              {"SPELLBOOK", "[-1]", true, {}},
              {"SPELLBOOK", "[" + std::to_string(MAX_SKILLS) + "]", true, {}}}) {

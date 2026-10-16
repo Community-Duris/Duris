@@ -2377,6 +2377,52 @@ static int sql_batch_save_simple_items(int pid, int container_id, P_obj first_ob
 static bool sql_merge_duplicate_spellbook(struct extra_descr_data *existing,
 					  struct extra_descr_data *candidate);
 
+// Attach one stored extra description to obj. A second native spellbook row of the
+// same item is merged into the first (*loaded_spellbook) instead of attached.
+static void sql_add_item_extra_descr(P_obj obj, const char *keyword, const char *description,
+				     const char *table, int item_id,
+				     struct extra_descr_data **loaded_spellbook)
+{
+	int16_t trap_effect = 0, trap_damage = 0, trap_charges = 0, trap_level = 0;
+	const auto trap = sql_decode_item_trap_state(keyword, description, &trap_effect,
+						     &trap_damage, &trap_charges, &trap_level);
+	if (trap != sql_item_trap_state_decode_status::not_trap_state)
+	{
+		if (trap == sql_item_trap_state_decode_status::decoded)
+		{
+			obj->trap_eff = trap_effect;
+			obj->trap_dam = trap_damage;
+			obj->trap_charge = trap_charges;
+			obj->trap_level = trap_level;
+		}
+		else
+			persistence_alert(AVATAR, "item_extra_descr", table ? table : "unknown",
+					  "none", "none", "invalid_trap_state",
+					  "item_id=%d had invalid persisted trap state", item_id);
+		return;
+	}
+	struct extra_descr_data *ed;
+	CREATE(ed, extra_descr_data, 1, MEM_TAG_EXDESCD);
+
+	sql_load_item_extra_descr_values(keyword, description, ed, table, item_id);
+
+	if (sql_item_extra_descr_is_spellbook_marker(ed->keyword))
+	{
+		if (*loaded_spellbook && sql_merge_duplicate_spellbook(*loaded_spellbook, ed))
+		{
+			persistence_alert(
+				AVATAR, "item_extra_descr", table ? table : "unknown", "none",
+				"none", "duplicate_spellbook_rows",
+				"item_id=%d had duplicate native spellbook rows; merged their bitmaps",
+				item_id);
+			return;
+		}
+		*loaded_spellbook = ed;
+	}
+	ed->next = obj->ex_description;
+	obj->ex_description = ed;
+	obj->str_mask |= STRUNG_EDESC;
+}
 static bool sql_load_item_extra_descr_from_table(int item_id, P_obj obj, const char *table)
 {
 	char query[256];
@@ -2401,29 +2447,8 @@ static bool sql_load_item_extra_descr_from_table(int item_id, P_obj obj, const c
 		MYSQL_ROW row;
 		while ((row = mysql_fetch_row(result)))
 		{
-			struct extra_descr_data *ed;
-			CREATE(ed, extra_descr_data, 1, MEM_TAG_EXDESCD);
-
-			sql_load_item_extra_descr_values(row[0], row[1], ed, table, item_id);
-
-			if (sql_item_extra_descr_is_spellbook_marker(ed->keyword))
-			{
-				if (loaded_spellbook &&
-				    sql_merge_duplicate_spellbook(loaded_spellbook, ed))
-				{
-					persistence_alert(
-						AVATAR, "item_extra_descr",
-						table ? table : "unknown", "none", "none",
-						"duplicate_spellbook_rows",
-						"item_id=%d had duplicate native spellbook rows; merged their bitmaps",
-						item_id);
-					continue;
-				}
-				loaded_spellbook = ed;
-			}
-			ed->next = obj->ex_description;
-			obj->ex_description = ed;
-			obj->str_mask |= STRUNG_EDESC;
+			sql_add_item_extra_descr(obj, row[0], row[1], table, item_id,
+						 &loaded_spellbook);
 		}
 		mysql_free_result(result);
 	}
@@ -4686,30 +4711,12 @@ bool sql_load_player_items(P_char ch)
 			if (!obj)
 				continue;
 
-			struct extra_descr_data *ed;
-			CREATE(ed, extra_descr_data, 1, MEM_TAG_EXDESCD);
-
-			sql_load_item_extra_descr_values(row[1], row[2], ed, "player_item", db_id);
-
-			if (loaded_spellbooks && object_index >= 0 &&
-			    sql_item_extra_descr_is_spellbook_marker(ed->keyword))
-			{
-				if (loaded_spellbooks[object_index] &&
-				    sql_merge_duplicate_spellbook(loaded_spellbooks[object_index],
-								  ed))
-				{
-					persistence_alert(
-						AVATAR, "item_extra_descr", "player_item", "none",
-						"none", "duplicate_spellbook_rows",
-						"item_id=%d had duplicate native spellbook rows; merged their bitmaps",
-						db_id);
-					continue;
-				}
-				loaded_spellbooks[object_index] = ed;
-			}
-			ed->next = obj->ex_description;
-			obj->ex_description = ed;
-			obj->str_mask |= STRUNG_EDESC;
+			struct extra_descr_data *loaded_spellbook =
+				(loaded_spellbooks && object_index >= 0) ? loaded_spellbooks[object_index] : NULL;
+			sql_add_item_extra_descr(obj, row[1], row[2], "player_item", db_id,
+						 &loaded_spellbook);
+			if (loaded_spellbooks && object_index >= 0)
+				loaded_spellbooks[object_index] = loaded_spellbook;
 		}
 		mysql_free_result(result);
 	}

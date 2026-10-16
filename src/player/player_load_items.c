@@ -4,6 +4,7 @@
 #include "item/item_ownership_runtime.h"
 #include "item/encumbrance_policy.h"
 #include "player/player_snapshot_codec.h"
+#include "sql/item_extra_descr_codec.h"
 #include "core/prototypes.h"
 #include "magic/spells.h"
 #include "core/structs.h"
@@ -198,6 +199,7 @@ metadata_validation_outcome valid_item_metadata(const player_item_snapshot &item
 		     affect[1] > INT8_MAX))
 			return metadata_validation_outcome::invalid;
 	std::unordered_set<std::string> descriptions;
+	bool trap_state_seen = false;
 	try
 	{
 		descriptions.reserve(item.extra_descriptions.size());
@@ -205,9 +207,21 @@ metadata_validation_outcome valid_item_metadata(const player_item_snapshot &item
 		     item.extra_descriptions)
 		{
 			if (description.keyword.size() > PLAYER_SNAPSHOT_MAX_STRING_BYTES ||
-			    description.description.size() > PLAYER_SNAPSHOT_MAX_STRING_BYTES ||
-			    description.spellbook != (description.keyword == "SPELLBOOK"))
+			    description.description.size() > PLAYER_SNAPSHOT_MAX_STRING_BYTES)
 				return metadata_validation_outcome::invalid;
+			int16_t effect = 0, damage = 0, charges = 0, level = 0;
+			const auto trap = sql_decode_item_trap_state(
+				description.keyword.c_str(), description.description.c_str(),
+				&effect, &damage, &charges, &level);
+			if (trap == sql_item_trap_state_decode_status::invalid ||
+			    (trap == sql_item_trap_state_decode_status::decoded &&
+			     (trap_state_seen || description.spellbook ||
+			      !description.spell_ids.empty())) ||
+			    (trap == sql_item_trap_state_decode_status::not_trap_state &&
+			     description.spellbook != (description.keyword == "SPELLBOOK")))
+				return metadata_validation_outcome::invalid;
+			trap_state_seen = trap_state_seen ||
+					  trap == sql_item_trap_state_decode_status::decoded;
 			std::string key = description.keyword;
 			key.push_back('\0');
 			key += description.description;
@@ -290,6 +304,18 @@ void apply_extra_descriptions(P_obj object, const player_item_snapshot &item)
 	for (auto description = item.extra_descriptions.rbegin();
 	     description != item.extra_descriptions.rend(); ++description)
 	{
+		int16_t effect = 0, damage = 0, charges = 0, level = 0;
+		if (sql_decode_item_trap_state(description->keyword.c_str(),
+					       description->description.c_str(), &effect, &damage,
+					       &charges, &level) ==
+		    sql_item_trap_state_decode_status::decoded)
+		{
+			object->trap_eff = effect;
+			object->trap_dam = damage;
+			object->trap_charge = charges;
+			object->trap_level = level;
+			continue;
+		}
 		if (already_present(*description))
 			continue;
 		extra_descr_data *entry;

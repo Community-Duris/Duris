@@ -3,6 +3,7 @@
 #include "player/player_playtime.h"
 #include "player/player_snapshot_codec.h"
 #include "player/pet_restore_runtime.h"
+#include "sql/item_extra_descr_codec.h"
 #include "classes/necromancy.h"
 
 #include "core/prototypes.h"
@@ -415,6 +416,9 @@ capture_item_tree(const obj_data *object, int parent_index, int equipment_slot,
 	{
 		if (!description_seen.insert(description).second)
 			return player_snapshot_capture_result::object_cycle;
+		if (description->keyword &&
+		    !strcmp(description->keyword, SQL_ITEM_TRAP_STATE_KEYWORD))
+			continue;
 		if (!budget.add(sizeof(player_item_extra_description_snapshot), 1))
 			return player_snapshot_capture_result::limit_exceeded;
 		player_item_extra_description_snapshot extra = {};
@@ -441,6 +445,21 @@ capture_item_tree(const obj_data *object, int parent_index, int equipment_slot,
 			 !copy_string(description->description, extra.description, budget))
 			return player_snapshot_capture_result::limit_exceeded;
 		row.extra_descriptions.push_back(std::move(extra));
+	}
+	if (object->trap_eff || object->trap_dam || object->trap_charge || object->trap_level)
+	{
+		if (!budget.add(sizeof(player_item_extra_description_snapshot), 1))
+			return player_snapshot_capture_result::limit_exceeded;
+		std::array<char, 64> encoded = {};
+		if (!sql_encode_item_trap_state(object->trap_eff, object->trap_dam,
+						object->trap_charge, object->trap_level,
+						encoded.data(), encoded.size()))
+			return player_snapshot_capture_result::malformed_source;
+		player_item_extra_description_snapshot trap = {};
+		if (!copy_string(SQL_ITEM_TRAP_STATE_KEYWORD, trap.keyword, budget) ||
+		    !copy_string(encoded.data(), trap.description, budget))
+			return player_snapshot_capture_result::limit_exceeded;
+		row.extra_descriptions.push_back(std::move(trap));
 	}
 
 	const int row_index = static_cast<int>(target.size());
