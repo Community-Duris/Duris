@@ -1558,7 +1558,6 @@ P_ship load_npc_ship(int level, NPC_AI_Type type, int min_speed, int m_class, in
  */
 bool try_unload_npc_ship(P_ship ship)
 {
-	clear_ship_content(ship);
 	shipObjHash.erase(ship);
 	delete_ship(ship, true);
 	return TRUE;
