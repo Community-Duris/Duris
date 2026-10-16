@@ -15,6 +15,8 @@
 #include "world/db.h"
 #include "world/events.h"
 #include <errno.h>
+#include <climits>
+#include <cstddef>
 #include <ctype.h>
 #include <stdarg.h>
 #include <signal.h>
@@ -6764,16 +6766,16 @@ void do_setattr(P_char ch, char *arg, int /*cmd*/)
 	} attr_tuples[] = {
 		{ "age", OFFSET(player.time.birth), sa_ageCopy },
 		{ "sex", OFFSET(player.sex), sa_byteCopy },
-		{ "str", OFFSET(base_stats.Str), sa_byteCopy },
-		{ "dex", OFFSET(base_stats.Dex), sa_byteCopy },
-		{ "agi", OFFSET(base_stats.Agi), sa_byteCopy },
-		{ "con", OFFSET(base_stats.Con), sa_byteCopy },
-		{ "pow", OFFSET(base_stats.Pow), sa_byteCopy },
-		{ "int", OFFSET(base_stats.Int), sa_byteCopy },
-		{ "wis", OFFSET(base_stats.Wis), sa_byteCopy },
-		{ "cha", OFFSET(base_stats.Cha), sa_byteCopy },
-		{ "luck", OFFSET(base_stats.Luk), sa_byteCopy },
-		{ "Karma", OFFSET(base_stats.Kar), sa_byteCopy },
+		{ "str", OFFSET(base_stats.Str), sa_shortCopy },
+		{ "dex", OFFSET(base_stats.Dex), sa_shortCopy },
+		{ "agi", OFFSET(base_stats.Agi), sa_shortCopy },
+		{ "con", OFFSET(base_stats.Con), sa_shortCopy },
+		{ "pow", OFFSET(base_stats.Pow), sa_shortCopy },
+		{ "int", OFFSET(base_stats.Int), sa_shortCopy },
+		{ "wis", OFFSET(base_stats.Wis), sa_shortCopy },
+		{ "cha", OFFSET(base_stats.Cha), sa_shortCopy },
+		{ "luck", OFFSET(base_stats.Luk), sa_shortCopy },
+		{ "Karma", OFFSET(base_stats.Kar), sa_shortCopy },
 		{ "hit", OFFSET(points.max_hit), sa_shortCopy },
 		{ "hitroll", OFFSET(points.hitroll), sa_byteCopy },
 		{ "damroll", OFFSET(points.damroll), sa_byteCopy },
@@ -6861,8 +6863,6 @@ void do_setattr(P_char ch, char *arg, int /*cmd*/)
 		return;
 	}
 
-	value = atoi(value_str);
-
 	/* Handle the special cases ...  */
 
 	/* Find out which attributes to set  */
@@ -6885,6 +6885,24 @@ void do_setattr(P_char ch, char *arg, int /*cmd*/)
 		send_to_char("ship\n", ch);
 		return;
 	}
+	// Base stats occupy signed shorts; reject input before any narrowing conversion.
+	if (attr_tuples[i].attr_offset >= offsetof(char_data, base_stats) &&
+	    attr_tuples[i].attr_offset < offsetof(char_data, base_stats) + sizeof(stat_data))
+	{
+		char *end = nullptr;
+		errno = 0;
+		const long parsed = strtol(value_str, &end, 10);
+		if (errno == ERANGE || end == value_str || *end || parsed < SHRT_MIN ||
+		    parsed > SHRT_MAX)
+		{
+			send_to_char("Enter a whole number from -32768 to 32767.\r\n", ch);
+			return;
+		}
+		value = static_cast<int>(parsed);
+	}
+	else
+		value = atoi(value_str);
+
 	/* Now set attributes  */
 
 	(*(attr_tuples[i].attr_func))(victim, attr_tuples[i].attr_offset, value);
