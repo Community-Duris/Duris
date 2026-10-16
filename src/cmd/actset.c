@@ -16,6 +16,8 @@
 #include "cmd/interp.h"
 #include "core/utils.h"
 #include <ctype.h>
+#include <cerrno>
+#include <climits>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -153,6 +155,7 @@ static void ac_savthrCopy(void *, int, char *, int, int);
 static void ac_sbyteCopy(void *, int, char *, int, int);
 static void ac_sh_intCopy(void *, int, char *, int, int);
 static void ac_shortCopy(void *, int, char *, int, int);
+static void ac_ush_intCopy(void *, int, char *, int, int);
 static void ac_skillCopy(void *, int, char *, int, int);
 static void ac_tongueCopy(void *, int, char *, int, int);
 static void ac_ubyteCopy(void *, int, char *, int, int);
@@ -355,7 +358,7 @@ static void setbit_room(P_char ch, char *name, char *flag, char *val, int on_off
 #define OFFSET(Field) OFFSET_OF(P_room, Field)
 
 	/* Table */
-	SetBitTable table[] = { { "zone", OFFSET(zone), NULL, ac_shintCopy },
+	SetBitTable table[] = { { "zone", OFFSET(zone), NULL, ac_ush_intCopy },
 				{ "sect", OFFSET(sector_type), sector_types, ac_byteCopy,
 				  sizeof(char *) },
 				{ "flag", OFFSET(room_flags), (const char **)room_bits, ac_bitCopy,
@@ -471,8 +474,8 @@ static void setbit_char(P_char ch, char *name, char *flag, char *val, int on_off
 		{ "orighome", PLOFFSET(birthplace), NULL, ac_intCopy },
 		{ "origbp", PLOFFSET(orig_birthplace), NULL, ac_intCopy },
 		{ "age", 0, NULL, ac_ageCopy },
-		{ "weight", PLOFFSET(weight), NULL, ac_shortCopy },
-		{ "height", PLOFFSET(height), NULL, ac_shortCopy },
+		{ "weight", PLOFFSET(weight), NULL, ac_ush_intCopy },
+		{ "height", PLOFFSET(height), NULL, ac_ush_intCopy },
 		{ "size", PLOFFSET(size), size_types, ac_ubyteCopy, sizeof(char *) },
 		/* stat_data */
 		{ "str", ABOFFSET(Str), NULL, ac_shortCopy },
@@ -518,7 +521,7 @@ static void setbit_char(P_char ch, char *name, char *flag, char *val, int on_off
 		{ "pcact", SPOFFSET(act), player_bits, ac_bitCopy, sizeof(char *) },
 		{ "pcact2", SPOFFSET(act2), player2_bits, ac_bitCopy, sizeof(char *) },
 		{ "carryw", SPOFFSET(carry_weight), NULL, ac_intCopy },
-		{ "carryn", SPOFFSET(carry_items), NULL, ac_shortCopy },
+		{ "carryn", SPOFFSET(carry_items), NULL, ac_ush_intCopy },
 		{ "timer", SPOFFSET(timer), NULL, ac_shortCopy },
 		{ "wasin", SPOFFSET(was_in_room), NULL, ac_intCopy },
 		{ "savthr", 0, NULL, ac_savthrCopy },
@@ -578,7 +581,7 @@ static void setbit_char(P_char ch, char *name, char *flag, char *val, int on_off
 		{ "time_left_guild", PCOFFSET(time_left_guild), NULL, ac_longCopy },
 		{ "nb_left_guild", PCOFFSET(nb_left_guild), NULL, ac_sbyteCopy },
 		{ "echo", PCOFFSET(echo_toggle), NULL, ac_ubyteCopy },
-		{ "prompt", PCOFFSET(prompt), NULL, ac_shortCopy },
+		{ "prompt", PCOFFSET(prompt), NULL, ac_ush_intCopy },
 		{ "screensize", PCOFFSET(screen_length), NULL, ac_ubyteCopy },
 		{ "winvis", PCOFFSET(wiz_invis), NULL, ac_sbyteCopy },
 		{ "wimpy", PCOFFSET(wimpy), NULL, ac_shortCopy },
@@ -999,16 +1002,16 @@ static void setbit_dir(P_char ch, char *name, char *flag, char *value, int on_of
 		{ "neinfo", DIR(DIR_NORTHEAST, exit_info), exit_bits, ac_bitCopy, sizeof(char *) },
 		{ "swinfo", DIR(DIR_SOUTHWEST, exit_info), exit_bits, ac_bitCopy, sizeof(char *) },
 		{ "seinfo", DIR(DIR_SOUTHEAST, exit_info), exit_bits, ac_bitCopy, sizeof(char *) },
-		{ "nkey", DIR(DIR_NORTH, key), NULL, ac_shintCopy },
-		{ "ekey", DIR(DIR_EAST, key), NULL, ac_shintCopy },
-		{ "skey", DIR(DIR_SOUTH, key), NULL, ac_shintCopy },
-		{ "wkey", DIR(DIR_WEST, key), NULL, ac_shintCopy },
-		{ "ukey", DIR(UP, key), NULL, ac_shintCopy },
-		{ "dkey", DIR(DOWN, key), NULL, ac_shintCopy },
-		{ "nwkey", DIR(DIR_NORTHWEST, key), NULL, ac_shintCopy },
-		{ "nekey", DIR(DIR_NORTHEAST, key), NULL, ac_shintCopy },
-		{ "swkey", DIR(DIR_SOUTHWEST, key), NULL, ac_shintCopy },
-		{ "sekey", DIR(DIR_SOUTHEAST, key), NULL, ac_shintCopy },
+		{ "nkey", DIR(DIR_NORTH, key), NULL, ac_intCopy },
+		{ "ekey", DIR(DIR_EAST, key), NULL, ac_intCopy },
+		{ "skey", DIR(DIR_SOUTH, key), NULL, ac_intCopy },
+		{ "wkey", DIR(DIR_WEST, key), NULL, ac_intCopy },
+		{ "ukey", DIR(UP, key), NULL, ac_intCopy },
+		{ "dkey", DIR(DOWN, key), NULL, ac_intCopy },
+		{ "nwkey", DIR(DIR_NORTHWEST, key), NULL, ac_intCopy },
+		{ "nekey", DIR(DIR_NORTHEAST, key), NULL, ac_intCopy },
+		{ "swkey", DIR(DIR_SOUTHWEST, key), NULL, ac_intCopy },
+		{ "sekey", DIR(DIR_SOUTHEAST, key), NULL, ac_intCopy },
 		{ "nroom", DIR(DIR_NORTH, to_room), NULL, ac_intCopy },
 		{ "eroom", DIR(DIR_EAST, to_room), NULL, ac_intCopy },
 		{ "sroom", DIR(DIR_SOUTH, to_room), NULL, ac_intCopy },
@@ -1344,8 +1347,39 @@ static void setbit_parseTable(P_char ch, void *ptr, SetBitTable *table, int size
 	}
 	else
 	{
-		/* Otherwise, convert value to actual integer. */
-		if (is_number(value))
+		/* Validate each integer destination before narrowing. Effective gameplay
+		 * caps are applied separately by balance_affects(). */
+		if (entry->sb_func == ac_shortCopy || entry->sb_func == ac_sh_intCopy ||
+		    entry->sb_func == ac_ush_intCopy || entry->sb_func == ac_intCopy)
+		{
+			long minimum = INT_MIN;
+			long maximum = INT_MAX;
+			if (entry->sb_func == ac_shortCopy || entry->sb_func == ac_sh_intCopy)
+			{
+				minimum = SHRT_MIN;
+				maximum = SHRT_MAX;
+			}
+			else if (entry->sb_func == ac_ush_intCopy)
+			{
+				minimum = 0;
+				maximum = USHRT_MAX;
+			}
+			char *end = nullptr;
+			errno = 0;
+			const long parsed = strtol(value, &end, 10);
+			if (errno == ERANGE || end == value || *end || parsed < minimum ||
+			    parsed > maximum)
+			{
+				char message[96];
+				snprintf(message, sizeof(message),
+					 "Enter a whole number from %ld to %ld.\r\n", minimum,
+					 maximum);
+				send_to_char(message, ch);
+				return;
+			}
+			bit = static_cast<int>(parsed);
+		}
+		else if (is_number(value))
 		{
 			bit = atoi(value);
 		}
@@ -1560,6 +1594,7 @@ MAKE_COPY_FUNCTION(long)
 MAKE_COPY_FUNCTION(short)
 MAKE_COPY_FUNCTION(sbyte)
 MAKE_COPY_FUNCTION(sh_int)
+MAKE_COPY_FUNCTION(ush_int)
 MAKE_COPY_FUNCTION(ubyte)
 /* Specifical copy functions */
 /* For age, we set only the year using by finding the difference
