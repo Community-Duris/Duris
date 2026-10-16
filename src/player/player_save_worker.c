@@ -533,12 +533,3 @@ void player_save_worker_reset_for_tests(void)
 	stop_requested = false;
 	health = {};
 }
-
-bool player_save_worker_set_journal_hooks(player_save_journal_append_fn append,
-					  player_save_journal_ack_fn acknowledge, void *context)
-{
-	(void)context;
-	if (append && !acknowledge)
-		return false;
-	return true;
-}

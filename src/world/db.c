@@ -10,6 +10,7 @@
  */
 
 #include "core/prototypes.h"
+#include "player/player_save_pipeline.h"
 #include "world/world_singletons.h"
 #include "world/difficulty.h"
 #include "core/structs.h"
@@ -4265,6 +4266,8 @@ void free_char(P_char ch)
 
 	if (IS_PC(ch) && ch->only.pc)
 	{
+		// Covers extraction and temporary offline loads, after their last save.
+		player_save_pipeline_end_session(GET_PID(ch));
 		delete_knownShapes(ch);
 		delete ch->only.pc->held_pets;
 		ch->only.pc->held_pets = nullptr;

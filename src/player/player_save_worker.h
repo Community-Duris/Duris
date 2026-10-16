@@ -172,9 +172,15 @@ bool player_save_worker_init(player_save_apply_fn apply, void *context);
 using player_save_journal_append_fn = bool (*)(const player_snapshot &snapshot, void *context);
 using player_save_journal_ack_fn = bool (*)(int pid, player_revision_t revision, void *context);
 
-bool player_save_worker_set_journal_hooks(player_save_journal_append_fn append,
-					  player_save_journal_ack_fn acknowledge,
-					  void *context);
+inline bool player_save_worker_set_journal_hooks(player_save_journal_append_fn append,
+						 player_save_journal_ack_fn acknowledge,
+						 void *context)
+{
+	(void)context;
+	if (append && !acknowledge)
+		return false;
+	return true;
+}
 
 void player_save_worker_shutdown(void (*interrupt)(void) = nullptr);
 player_save_submit_result player_save_worker_submit(player_snapshot snapshot);

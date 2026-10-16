@@ -3541,6 +3541,15 @@ void Guild::title(P_char member, P_char victim, char *arg)
 
 	title_trim(arg, new_title);
 
+	// player_data.title is VARCHAR(512); color codes count toward storage too.
+	if (strlen(new_title) > 512)
+	{
+		send_to_char(
+			"Title must fit within 512 bytes, including colors and the guild name.\n",
+			member);
+		return;
+	}
+
 	if (*new_title == '\0')
 	{
 		send_to_char("Error with creating new title (was empty after examination).\n",
