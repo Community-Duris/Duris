@@ -41,6 +41,14 @@ int main(int argc, char **argv)
 			pet.hit = pet.max_hit = 1234;
 			pet.mana = pet.max_mana = 55;
 			pet.vitality = pet.max_vitality = 100;
+			// Expired stat bonuses may leave current resources above saved maxima.
+			// This must survive a real login, save and second restart with all gear.
+			if (i == 0)
+			{
+				pet.hit += 138;
+				pet.mana += 10;
+				pet.vitality += 10;
+			}
 			pet.charm_duration = i == 1 ? 5 : -1;
 			pet_restore_state state;
 			state.kind = summoned_pet_kind::undead_first;
@@ -66,7 +74,8 @@ int main(int argc, char **argv)
 				assert(pet_restore_state_encode(state, &pet.restore_state));
 			// Move existing authoritative leaf UIDs; never mint or copy custody.
 			auto item = std::find_if(snapshot.items.begin(), snapshot.items.end(),
-						 [](const auto &row) {
+						 [](const auto &row)
+						 {
 							 return row.parent_index ==
 									PLAYER_SNAPSHOT_NO_PARENT &&
 								row.type != ITEM_CONTAINER;

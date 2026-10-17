@@ -1013,13 +1013,51 @@ int main()
         player_load_result result = base_result();
         result.snapshot.room_vnum = 123;
         add_pet(result, 3001, 200);
-        result.snapshot.pets[0].hit = result.snapshot.pets[0].max_hit + 1;
+        // Reproduce saved HP above its maximum, plus the mana/vitality cases.
+        auto &saved = result.snapshot.pets[0];
+        saved.hit = 2664; saved.max_hit = 2526;
+        saved.mana = saved.max_mana + 1;
+        saved.vitality = saved.max_vitality + 1;
+        add_pet_item(result, 0, 3101, 20, 101, PLAYER_SNAPSHOT_NO_PARENT, 0);
         std::vector<P_char> pets;
         player_load_pet_materialize_metrics metrics = {};
-        assert(!player_load_pets_stage(&owner.character, result, &pets, &metrics));
-        result.snapshot.pets[0].hit = result.snapshot.pets[0].max_hit;
         assert(player_load_pets_stage(&owner.character, result, &pets, &metrics));
+        assert(pets.size() == 1 && pets[0] && !owner.pc.held_pets);
+        assert(GET_HIT(pets[0]) == 2526);
+        assert(GET_MANA(pets[0]) == saved.max_mana);
+        assert(GET_VITALITY(pets[0]) == saved.max_vitality);
+        assert(pets[0]->carrying && pets[0]->carrying->obj_uid == 20);
         player_load_pets_discard(&pets);
+    }
+    for (int malformed = 0; malformed < 8; ++malformed) {
+        reset_test_state();
+        test_character owner(42);
+        player_load_result result = base_result();
+        add_pet(result, 3001, 200);
+        auto &saved = result.snapshot.pets[0];
+        switch (malformed) {
+        case 0: saved.hit = -1; break;
+        case 1: saved.max_hit = 0; break;
+        case 2: saved.mana = -1; break;
+        case 3: saved.max_mana = -1; break;
+        case 4: saved.vitality = -1; break;
+        case 5: saved.max_vitality = -1; break;
+        case 6: saved.charm_duration = -2; break;
+        case 7: saved.hold_reason = pet_hold_reason::custody_pending;
+                saved.hit = -1; break;
+        }
+        add_pet_item(result, 0, 3101, 20, 101, PLAYER_SNAPSHOT_NO_PARENT, 0);
+        std::vector<P_char> pets;
+        player_load_pet_materialize_metrics metrics = {};
+        assert(player_load_pets_stage(&owner.character, result, &pets, &metrics));
+        assert(pets.size() == 1 && !pets[0]);
+        const auto &held = owner.pc.held_pets->pets[0];
+        assert(held.hold_reason == (malformed == 7 ? pet_hold_reason::custody_pending :
+                                                    pet_hold_reason::invalid_state));
+        assert(held.hit == saved.hit && held.max_hit == saved.max_hit);
+        assert(held.items[0].object_uid == 20);
+        player_load_pets_commit(&owner.character, &pets, result);
+        assert(pets.empty() && !owner.character.followers);
     }
     {
         reset_test_state();

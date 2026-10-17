@@ -13,21 +13,21 @@
 
 namespace
 {
-bool fail(player_load_pet_materialize_metrics *metrics, player_load_pet_materialize_outcome outcome)
-{
-	if (metrics)
-		metrics->outcome = outcome;
-	return false;
-}
+	bool fail(player_load_pet_materialize_metrics * metrics,
+		  player_load_pet_materialize_outcome outcome)
+	{
+		if (metrics)
+			metrics->outcome = outcome;
+		return false;
+	}
 
-bool valid_pet(const player_pet_snapshot &pet)
-{
-	return pet.mob_vnum > 0 && pet.order >= 0 &&
-	       pet.order < static_cast<int32_t>(PLAYER_LOAD_PET_MAX) && pet.max_hit > 0 &&
-	       pet.hit >= 0 && pet.hit <= pet.max_hit && pet.max_mana >= 0 && pet.mana >= 0 &&
-	       pet.mana <= pet.max_mana && pet.max_vitality >= 0 && pet.vitality >= 0 &&
-	       pet.vitality <= pet.max_vitality && pet.charm_duration >= -1;
-}
+	bool valid_pet(const player_pet_snapshot &pet)
+	{
+		return pet.mob_vnum > 0 && pet.order >= 0 &&
+		       pet.order < static_cast<int32_t>(PLAYER_LOAD_PET_MAX) && pet.max_hit > 0 &&
+		       pet.hit >= 0 && pet.max_mana >= 0 && pet.mana >= 0 &&
+		       pet.max_vitality >= 0 && pet.vitality >= 0 && pet.charm_duration >= -1;
+	}
 }
 
 void player_load_pets_discard(std::vector<P_char> *pets)
@@ -60,7 +60,7 @@ bool player_load_pets_stage(P_char owner, const player_load_result &result,
 	{
 		pets->reserve(metrics->pet_count);
 	}
-	catch (const std::bad_alloc &)
+	catch(const std::bad_alloc &)
 	{
 		return fail(metrics, player_load_pet_materialize_outcome::allocation_failure);
 	}
@@ -73,7 +73,7 @@ bool player_load_pets_stage(P_char owner, const player_load_result &result,
 		database_ids.reserve(metrics->pet_count);
 		orders.reserve(metrics->pet_count);
 	}
-	catch (const std::bad_alloc &)
+	catch(const std::bad_alloc &)
 	{
 		return fail(metrics, player_load_pet_materialize_outcome::allocation_failure);
 	}
@@ -87,13 +87,13 @@ bool player_load_pets_stage(P_char owner, const player_load_result &result,
 			unique = database_ids.insert(identity.database_id).second &&
 				 orders.insert(snapshot.order).second;
 		}
-		catch (const std::bad_alloc &)
+		catch(const std::bad_alloc &)
 		{
 			player_load_pets_discard(pets);
 			return fail(metrics,
 				    player_load_pet_materialize_outcome::allocation_failure);
 		}
-		if (!identity.database_id || !valid_pet(snapshot) || !unique ||
+		if (!identity.database_id || !unique ||
 		    snapshot.items.size() != identity.item_identities.size() ||
 		    snapshot.items.size() > PLAYER_LOAD_ITEM_MAX - metrics->item_count)
 		{
@@ -104,6 +104,10 @@ bool player_load_pets_stage(P_char owner, const player_load_result &result,
 		pet_restore_state state;
 		const bool has_state = !snapshot.restore_state.empty();
 		pet_hold_reason reason = snapshot.hold_reason;
+		// A malformed pet must not lock its owner out. Retain it and its equipment
+		// through the existing recovery path instead of rejecting the character.
+		if (reason == pet_hold_reason::none && !valid_pet(snapshot))
+			reason = pet_hold_reason::invalid_state;
 		if (reason == pet_hold_reason::none && has_state &&
 		    !pet_restore_state_decode(snapshot.restore_state, &state))
 			reason = pet_hold_reason::invalid_state;
@@ -140,7 +144,7 @@ bool player_load_pets_stage(P_char owner, const player_load_result &result,
 					nullptr); // retain snapshot/identity index correspondence
 				metrics->item_count += snapshot.items.size();
 			}
-			catch (const std::bad_alloc &)
+			catch(const std::bad_alloc &)
 			{
 				player_load_pets_discard(pets);
 				return fail(
@@ -165,7 +169,7 @@ bool player_load_pets_stage(P_char owner, const player_load_result &result,
 		{
 			pets->push_back(pet);
 		}
-		catch (const std::bad_alloc &)
+		catch(const std::bad_alloc &)
 		{
 			extract_char(pet);
 			player_load_pets_discard(pets);
@@ -204,6 +208,8 @@ bool player_load_pets_stage(P_char owner, const player_load_result &result,
 			GET_MAX_MANA(pet) = snapshot.max_mana;
 			GET_MAX_VITALITY(pet) = snapshot.max_vitality;
 		}
+		// Current resources can exceed their maxima after a temporary bonus ends.
+		// Accept that saved state and clamp against the restored pet's maxima.
 		GET_HIT(pet) = std::min(snapshot.hit, GET_MAX_HIT(pet));
 		GET_MANA(pet) = std::min<int>(snapshot.mana, GET_MAX_MANA(pet));
 		GET_VITALITY(pet) = std::min<int>(snapshot.vitality, GET_MAX_VITALITY(pet));
