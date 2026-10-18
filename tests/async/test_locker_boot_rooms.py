@@ -25,8 +25,12 @@ assert "world[realNum].funct = storage_locker;" in lockers
 print("[PASS] a locker room is taken while it has the locker proc, set when it is allocated")
 
 materialize = (SRC / "player/player_load_materialize.c").read_text()
-redirect = materialize[materialize.index("if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER))"):]
+redirect = materialize[materialize.index("if (locker_room != NOWHERE && IS_ROOM(locker_room, ROOM_LOCKER))"):]
 redirect = redirect[:redirect.index("GET_COPPER(ch)")]
 assert "location=locker outcome=redirected" in redirect
-assert "GET_BIRTHPLACE(ch)" in redirect and "ch->in_room = exit_room;" in redirect
+# It comes back outside: the load leaves it in no room and enter_game() starts from
+# was_in_room.
+assert "GET_BIRTHPLACE(ch)" in redirect
+assert "ch->specials.was_in_room = world[exit_room].number;" in redirect
+assert "ch->in_room" not in redirect
 print("[PASS] a character loaded into a locker room is moved out of it")

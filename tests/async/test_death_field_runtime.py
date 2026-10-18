@@ -39,6 +39,7 @@ PRELUDE = r'''
 void telemetry_runtime_game_combat_cast_attempt(P_char, int) {}
 void telemetry_runtime_game_combat_cast_complete(P_char) {}
 void telemetry_runtime_game_combat_cast_abort(P_char) {}
+unsigned long long ne_event_tick; // the scheduler's tick, which the cast helpers read
 /* fight.c and sparser.c are lifted without the production training-dummy
  * translation unit. Keep this harness focused on death-field behavior by
  * providing the ordinary-world predicate stubs it needs. */

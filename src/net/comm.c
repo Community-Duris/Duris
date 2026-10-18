@@ -3809,16 +3809,15 @@ int new_descriptor(int s, int conn_type)
 		setsockopt(desc, IPPROTO_TCP, TCP_NODELAY, &ws_opt, sizeof(ws_opt));
 	}
 
+	/* Never linked as CON_PLAYING (0): code that walks descriptor_list takes a playing
+	 * descriptor to have a character.  A WebSocket waits for its HTTP handshake in
+	 * CON_GET_TERM, and greet() moves a telnet client on. */
+	STATE(newd) = conn_type == 1 ? CON_SSLNEGO : CON_GET_TERM;
 	descriptor_list = newd;
 
-	if (conn_type == 1) // ssl - always use CON_SSLNEGO, let game loop handle greet
-	{
+	if (conn_type == 1) // ssl - let game loop handle greet
 		ssl_negotiate(sslses); // do first round immediately
-		STATE(newd) = CON_SSLNEGO;
-	}
-	else if (conn_type == 2)
-		STATE(newd) = CON_GET_TERM; /* WebSocket waits for HTTP handshake */
-	else
+	else if (conn_type == 0)
 	{
 		/* Terminal discovery is optional metadata.  Start it before the
 		 * greeting so responsive clients can answer immediately, but never
@@ -3843,8 +3842,7 @@ static void greet(P_desc newd)
 			"feel this is in error, please e-mail multiplay@durismud.com\r\n");
 		banlog(56, "Reject Connect from %s, banned site.", newd->host);
 		logit(LOG_STATUS, "Rejected Connect from %s, banned site.", newd->host);
-		STATE(newd) = CON_EXIT;
-		// flush_queues(newd);
+		STATE(newd) = CON_FLUSH; /* closed once the message is sent */
 		return;
 	}
 

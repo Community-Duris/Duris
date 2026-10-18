@@ -1332,7 +1332,8 @@ bool char_to_room(P_char ch, int room, int dir)
 		for (d = descriptor_list; d; d = d->next)
 		{
 			who = d->character;
-			if (!who || !who->desc)
+			// A character at the account menu after a rent or a quit is in no room.
+			if (!who || !who->desc || who->in_room < 0 || who->in_room > top_of_world)
 				continue;
 
 			// Determine observer's effective map room

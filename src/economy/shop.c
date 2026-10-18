@@ -1944,7 +1944,7 @@ void shopping_peruse(char *arg, P_char ch, P_char keeper, int shop_nr)
 
 void shopping_list(char * /*arg*/, P_char ch, P_char keeper, int shop_nr)
 {
-	P_obj obj1;
+	P_obj obj1, next_obj;
 	int found_obj, temp;
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
 	char Gbuf3[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
@@ -2021,8 +2021,9 @@ void shopping_list(char * /*arg*/, P_char ch, P_char keeper, int shop_nr)
 	found_obj = FALSE;
 	if (keeper->carrying)
 	{
-		for (obj1 = keeper->carrying; obj1; obj1 = obj1->next_content)
+		for (obj1 = keeper->carrying; obj1; obj1 = next_obj)
 		{
+			next_obj = obj1->next_content;
 			if (IS_ARTIFACT(obj1) || isname("encrust", obj1->name))
 			{
 				if (shop_trade_route_invalid_cleanup(

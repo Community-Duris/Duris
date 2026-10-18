@@ -172,7 +172,8 @@ static void ac_timerCopy(void *, int, char *, int, int);
 
 void do_setbit(P_char ch, char *arg, int cmd)
 {
-	int type, on_off;
+	// setbit_parse() leaves on_off alone when it is not given as a number.
+	int type, on_off = 0;
 	char name[MAX_INPUT_LENGTH];
 	char flag[MAX_INPUT_LENGTH];
 	char value[MAX_INPUT_LENGTH];
@@ -639,7 +640,7 @@ static void setbit_char(P_char ch, char *name, char *flag, char *val, int on_off
 					send_to_char(
 						"You can't setbit someone's level above 62.  Changing value to 62.\r\n",
 						ch);
-					snprintf(val, MAX_STRING_LENGTH, "62");
+					snprintf(val, MAX_INPUT_LENGTH, "62");
 				}
 			}
 			if (SAME_STRING(flag, "winvis") && (atoi(val) >= MIN(60, GET_LEVEL(ch))))
@@ -1185,7 +1186,7 @@ static void setbit_dir(P_char ch, char *name, char *flag, char *value, int on_of
 				return;
 			}
 		}
-		snprintf(value, MAX_STRING_LENGTH, "%d", room_number);
+		snprintf(value, MAX_INPUT_LENGTH, "%d", room_number);
 	}
 
 	setbit_parseTable(ch, (void *)where, table, ARRAY_SIZE(table), flag, value, on_off,
@@ -1679,13 +1680,17 @@ static void ac_tongueCopy(void *where, int /*offset*/, char * /*value*/, int bit
  */
 static void ac_savthrCopy(void *where, int /*offset*/, char *value, int /*bit*/, int /*on_off*/)
 {
-	sh_int sav_thr[5];
 	P_char ch = (P_char)where;
+	int sav_thr[5];
 
-	sscanf(value, "%hd %hd %hd %hd %hd", sav_thr, sav_thr + 1, sav_thr + 2, sav_thr + 3,
+	// A saving throw is a byte: five shorts copied over the five ran on into the
+	// conditions after them. A value that is not given keeps what the character has.
+	for (int i = 0; i < 5; i++)
+		sav_thr[i] = ch->specials.apply_saving_throw[i];
+	sscanf(value, "%d %d %d %d %d", sav_thr, sav_thr + 1, sav_thr + 2, sav_thr + 3,
 	       sav_thr + 4);
-
-	bcopy((char *)&sav_thr, (char *)ch->specials.apply_saving_throw, sizeof(sav_thr));
+	for (int i = 0; i < 5; i++)
+		ch->specials.apply_saving_throw[i] = (::byte)BOUNDED(-128, sav_thr[i], 127);
 }
 
 /*

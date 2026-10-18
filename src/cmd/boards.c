@@ -31,13 +31,13 @@ TO ADD A NEW BOARD, simply follow our easy 3-step program:
 #include "cmd/boards.h"
 #include "core/safe_format.h"
 #include <ctype.h>
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
 #include <sys/time.h>
 #include <unistd.h>
 
-extern P_room world;
 extern P_desc descriptor_list;
 extern P_index obj_index;
 
@@ -49,7 +49,7 @@ void Board_load_board(int board_type);
 void Board_reset_board(int board_num);
 void Board_write_message(int board_type, struct char_data *ch, char *arg);
 
-#define NUM_OF_BOARDS 44
+#define NUM_OF_BOARDS 46
 
 /* vnum, read lvl, write lvl, remove lvl, filename, 0 */
 struct board_info_type board_info[NUM_OF_BOARDS] = {
@@ -96,7 +96,9 @@ struct board_info_type board_info[NUM_OF_BOARDS] = {
 	{ 88, AVATAR, AVATAR, AVATAR, "lib/boards/reimbursement", 0 },
 	{ 91, AVATAR, AVATAR, AVATAR, "lib/boards/meeting", 0 },
 	{ 29, AVATAR, AVATAR, AVATAR, "lib/boards/code", 0 },
-	{ 1204, AVATAR, AVATAR, AVATAR, "lib/boards/gellzboard", 0 }
+	{ 1204, AVATAR, AVATAR, AVATAR, "lib/boards/gellzboard", 0 },
+	{ 42, AVATAR, AVATAR, AVATAR, "lib/boards/ideas", 0 },
+	{ 55197, AVATAR, AVATAR, AVATAR, "lib/boards/winterhaven", 0 }
 };
 
 char *msg_storage[INDEX_SIZE];
@@ -117,17 +119,12 @@ int find_slot(void)
 	return -1;
 }
 
-/* search the room ch is standing in to find which board he's looking at */
-int find_board(struct char_data *ch)
+/* the board_info[] row of a board object, or -1 */
+int find_board(P_obj obj)
 {
-	P_obj obj;
-	int i;
-
-	for (obj = world[ch->in_room].contents; obj; obj = obj->next_content)
-		for (i = 0; i < NUM_OF_BOARDS; i++)
-			if (obj_index[BOARD_RNUM(i)].virtual_number ==
-			    obj_index[obj->R_num].virtual_number)
-				return i;
+	for (int i = 0; i < NUM_OF_BOARDS; i++)
+		if (BOARD_RNUM(i) == obj->R_num)
+			return i;
 	return -1;
 }
 
@@ -166,21 +163,14 @@ void initialize_boards(void)
 		exit(1);
 }
 
-int board([[maybe_unused]] P_obj obj, P_char ch, int cmd, char *argument)
+int board(P_obj obj, P_char ch, int cmd, char *argument)
 {
 	int board_type;
-	static bool loaded = FALSE;
 
 	/* check for periodic event calls  */
 	if (cmd == CMD_SET_PERIODIC)
 	{
 		return FALSE;
-	}
-
-	if (!loaded)
-	{
-		initialize_boards();
-		loaded = TRUE;
 	}
 
 	if (!ch || !ch->desc)
@@ -194,7 +184,13 @@ int board([[maybe_unused]] P_obj obj, P_char ch, int cmd, char *argument)
 		return FALSE;
 	}
 
-	if ((board_type = find_board(ch)) == -1)
+	/* special() also calls this for boards ch carries; only one in the room answers */
+	if (!OBJ_IN_ROOM(obj, ch->in_room))
+	{
+		return FALSE;
+	}
+
+	if ((board_type = find_board(obj)) == -1)
 	{
 		logit(LOG_BOARD, "  degenerate board!  (what the hell...)");
 		return FALSE;
@@ -240,21 +236,18 @@ void Board_write_message(int board_type, struct char_data *ch, char *arg)
 		send_to_char("The board is full.\r\n", ch);
 		return;
 	}
-	if ((NEW_MSG_INDEX(board_type).slot_num = find_slot()) == -1)
-	{
-		send_to_char("The board is malfunctioning - sorry.\r\n", ch);
-		logit(LOG_BOARD, " Board: failed to find empty slot on write.");
-		return;
-	}
 	/* skip blanks */
 	arg = skip_spaces(arg);
-
-	/* JE 27 Oct 95 - Truncate headline at 70 chars if it's longer than that */
-	arg[71] = '\0';
 
 	if (!*arg)
 	{
 		send_to_char("We must have a headline!\r\n", ch);
+		return;
+	}
+	if ((NEW_MSG_INDEX(board_type).slot_num = find_slot()) == -1)
+	{
+		send_to_char("The board is malfunctioning - sorry.\r\n", ch);
+		logit(LOG_BOARD, " Board: failed to find empty slot on write.");
 		return;
 	}
 
@@ -262,7 +255,8 @@ void Board_write_message(int board_type, struct char_data *ch, char *arg)
 	tmstr = (char *)asctime(localtime(&ct));
 	*(tmstr + strlen(tmstr) - 9) = '\0'; /* kill seconds and year */
 
-	snprintf(buf, MAX_INPUT_LENGTH, "[%s (%s)] %s", tmstr, GET_NAME(ch), arg);
+	/* JE 27 Oct 95 - Truncate headline at 70 chars if it's longer than that */
+	snprintf(buf, MAX_INPUT_LENGTH, "[%s (%s)] %.70s", tmstr, GET_NAME(ch), arg);
 	len = strlen(buf) + 1;
 
 	CREATE(NEW_MSG_INDEX(board_type).heading, char, len, MEM_TAG_STRING);
@@ -471,21 +465,25 @@ void Board_save_board(int board_type)
 	FILE *fl;
 	int i;
 	char *tmp1 = 0, *tmp2 = 0;
+	char temporary[sizeof(FILENAME(board_type)) + sizeof(".tmp")];
+	bool written;
 
 	if (!num_of_msgs[board_type])
 	{
-		fprintf(stderr, "number of messages is 0! NOT saving!\r\n");
+		fprintf(stderr, "number of messages is 0! NOT saving!\n");
 		unlink(FILENAME(board_type));
 		return;
 	}
-	if (!(fl = fopen(FILENAME(board_type), "wb")))
+	/* a save cut short must leave the old file: write a copy, then rename it over */
+	snprintf(temporary, sizeof(temporary), "%s.tmp", FILENAME(board_type));
+	if (!(fl = fopen(temporary, "wb")))
 	{
-		fprintf(stderr, "ERROR! Could not open board file!");
+		logit(LOG_BOARD, " Board not saved, %s: %s", temporary, strerror(errno));
 		return;
 	}
-	fwrite(&(num_of_msgs[board_type]), sizeof(int), 1, fl);
+	written = fwrite(&(num_of_msgs[board_type]), sizeof(int), 1, fl) == 1;
 
-	for (i = 0; i < num_of_msgs[board_type]; i++)
+	for (i = 0; written && i < num_of_msgs[board_type]; i++)
 	{
 		if ((tmp1 = MSG_HEADING(board_type, i)))
 			msg_index[board_type][i].heading_len = strlen(tmp1) + 1;
@@ -498,73 +496,79 @@ void Board_save_board(int board_type)
 		else
 			msg_index[board_type][i].message_len = strlen(tmp2) + 1;
 
-		fwrite(&(msg_index[board_type][i]), sizeof(struct board_msginfo), 1, fl);
-		if (tmp1)
-			fwrite(tmp1, sizeof(char), (unsigned)msg_index[board_type][i].heading_len,
-			       fl);
-		if (tmp2)
-			fwrite(tmp2, sizeof(char), (unsigned)msg_index[board_type][i].message_len,
-			       fl);
+		const size_t len1 = msg_index[board_type][i].heading_len;
+		const size_t len2 = msg_index[board_type][i].message_len;
+		written = fwrite(&(msg_index[board_type][i]), sizeof(struct board_msginfo), 1, fl);
+		written = written && (!len1 || fwrite(tmp1, sizeof(char), len1, fl) == len1);
+		written = written && (!len2 || fwrite(tmp2, sizeof(char), len2, fl) == len2);
 	}
 
-	fclose(fl);
+	written = written && fflush(fl) == 0 && fsync(fileno(fl)) == 0;
+	if (fclose(fl) != 0 || !written || rename(temporary, FILENAME(board_type)) != 0)
+	{
+		logit(LOG_BOARD, " Board not saved, %s: %s", FILENAME(board_type), strerror(errno));
+		unlink(temporary);
+	}
+}
+
+/* read a board file's messages; false when it is cut short or corrupt */
+static bool Board_read_messages(int board_type, FILE *fl)
+{
+	int i, len1, len2;
+
+	if (fread(&(num_of_msgs[board_type]), sizeof(int), 1, fl) != 1 ||
+	    num_of_msgs[board_type] < 1 || num_of_msgs[board_type] > MAX_BOARD_MESSAGES)
+		return false;
+	for (i = 0; i < num_of_msgs[board_type]; i++)
+	{
+		const bool whole = fread(&(msg_index[board_type][i]), sizeof(struct board_msginfo),
+					 1, fl) == 1;
+
+		/* the file's heading pointer and slot number were the saving process's */
+		MSG_HEADING(board_type, i) = NULL;
+		MSG_SLOTNUM(board_type, i) = -1;
+		len1 = msg_index[board_type][i].heading_len;
+		len2 = msg_index[board_type][i].message_len;
+		if (!whole || len1 < 1 || len2 < 0)
+			return false;
+
+		CREATE(MSG_HEADING(board_type, i), char, len1, MEM_TAG_STRING);
+		if (fread(MSG_HEADING(board_type, i), sizeof(char), len1, fl) != (size_t)len1)
+			return false;
+
+		/* every message needs a slot of its own, one with no body too */
+		if ((MSG_SLOTNUM(board_type, i) = find_slot()) == -1)
+		{
+			logit(LOG_BOARD, " Out of slots booting board!");
+			return false;
+		}
+		if (len2)
+		{
+			CREATE(msg_storage[MSG_SLOTNUM(board_type, i)], char, len2, MEM_TAG_STRING);
+			if (fread(msg_storage[MSG_SLOTNUM(board_type, i)], sizeof(char), len2,
+				  fl) != (size_t)len2)
+				return false;
+		}
+	}
+	return true;
 }
 
 void Board_load_board(int board_type)
 {
 	FILE *fl;
-	int i, len1 = 0, len2 = 0;
-	char *tmp1 = NULL, *tmp2 = NULL;
+	bool whole;
 
 	if (!(fl = fopen(FILENAME(board_type), "rb")))
 	{
 		return;
 	}
-	REQUIRED_FREAD(&(num_of_msgs[board_type]), sizeof(int), 1, fl);
-	if (num_of_msgs[board_type] < 1 || num_of_msgs[board_type] > MAX_BOARD_MESSAGES)
-	{
-		logit(LOG_BOARD, " Board file corrupt.  Resetting.");
-		Board_reset_board(board_type);
-		return;
-	}
-	for (i = 0; i < num_of_msgs[board_type]; i++)
-	{
-		REQUIRED_FREAD(&(msg_index[board_type][i]), sizeof(struct board_msginfo), 1, fl);
-		if (!(len1 = msg_index[board_type][i].heading_len))
-		{
-			logit(LOG_BOARD, " Board file corrupt!  Resetting.");
-			Board_reset_board(board_type);
-			return;
-		}
-		CREATE(tmp1, char, len1, MEM_TAG_STRING);
-		if (!tmp1)
-		{
-			logit(LOG_BOARD, " Error - malloc failed for board header");
-			exit(1);
-		}
-		REQUIRED_FREAD(tmp1, sizeof(char), (unsigned)len1, fl);
-		MSG_HEADING(board_type, i) = tmp1;
-
-		if ((len2 = msg_index[board_type][i].message_len))
-		{
-			if ((MSG_SLOTNUM(board_type, i) = find_slot()) == -1)
-			{
-				logit(LOG_BOARD, " Out of slots booting board!  Resetting...");
-				Board_reset_board(board_type);
-				return;
-			}
-			CREATE(tmp2, char, len2, MEM_TAG_STRING);
-			if (!tmp2)
-			{
-				logit(LOG_BOARD, " malloc failed for board text");
-				exit(1);
-			}
-			REQUIRED_FREAD(tmp2, sizeof(char), (unsigned)len2, fl);
-			msg_storage[MSG_SLOTNUM(board_type, i)] = tmp2;
-		}
-	}
-
+	whole = Board_read_messages(board_type, fl);
 	fclose(fl);
+	if (!whole)
+	{
+		logit(LOG_BOARD, " Board file %s corrupt.  Resetting.", FILENAME(board_type));
+		Board_reset_board(board_type);
+	}
 }
 
 void Board_reset_board(int board_type)
@@ -575,9 +579,13 @@ void Board_reset_board(int board_type)
 	{
 		if (MSG_HEADING(board_type, i))
 			FREE(MSG_HEADING(board_type, i));
-		if (msg_storage[MSG_SLOTNUM(board_type, i)])
-			FREE(msg_storage[MSG_SLOTNUM(board_type, i)]);
-		msg_storage_taken[MSG_SLOTNUM(board_type, i)] = 0;
+		/* slot -1: a message that never got one */
+		if (MSG_SLOTNUM(board_type, i) >= 0)
+		{
+			if (msg_storage[MSG_SLOTNUM(board_type, i)])
+				FREE(msg_storage[MSG_SLOTNUM(board_type, i)]);
+			msg_storage_taken[MSG_SLOTNUM(board_type, i)] = 0;
+		}
 		memset((char *)&(msg_index[board_type][i]), 0, sizeof(struct board_msginfo));
 		msg_index[board_type][i].slot_num = -1;
 	}

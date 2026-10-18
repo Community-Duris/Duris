@@ -94,7 +94,10 @@ void material_restrictions(P_obj obj)
 
 void convertObj(P_obj obj)
 {
-	int i, val0, val1, val2, type;
+	int i, type;
+	// The values are widened: a product of one (a container holding 124,515,151 pounds at
+	// 25 a pound) passes what an int holds. The cost is bounded below.
+	long val0, val1, val2;
 	long weight = 0, cost = 0;
 	char buf2[MAX_STRING_LENGTH];
 

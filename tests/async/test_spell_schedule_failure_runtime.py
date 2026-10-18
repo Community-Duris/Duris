@@ -59,6 +59,7 @@ PRELUDE = r'''
 void telemetry_runtime_game_combat_cast_attempt(P_char, int) {}
 void telemetry_runtime_game_combat_cast_complete(P_char) {}
 void telemetry_runtime_game_combat_cast_abort(P_char) {}
+unsigned long long ne_event_tick; // the scheduler's tick, which the cast helper reads
 
 static nevent_schedule_status injected;
 static int message_count, frees, meditation_stops;
@@ -144,10 +145,12 @@ int main() {
             assert(disarmed[0] == event_spellcast);
             assert(disarmed[1] == event_abort_spell);
             assert(disarmed[2] == event_wait);
-            // A fresh cast can be scheduled after rejection.
+            // A fresh cast can be scheduled after rejection. Its payload is a new,
+            // zeroed one in production: a rejected payload dies with its cast.
             ch.nevents = nullptr;
             injected = nevent_schedule_status::scheduled;
             payload.arg = strdup("retry");
+            payload.due_tick = 0;
             ch.specials.affected_by2 = AFF2_CASTING;
             assert(schedule_spellcast(&ch, nullptr, 4, &payload));
             assert(copied_cast.arg == payload.arg && copied_cast.timeleft == 8);

@@ -1243,7 +1243,7 @@ void event_embrace_death(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*d
 	float hp_state = ((float)GET_HIT(ch)) / GET_MAX_HIT(ch);
 	struct affected_type *afp;
 
-	if ((afp = get_spell_from_char(ch, TAG_EMBRACE_DEATH)))
+	if (!(afp = get_spell_from_char(ch, TAG_EMBRACE_DEATH)))
 		return;
 
 	if (hp_state > .75)
@@ -3349,7 +3349,7 @@ void do_breathe(P_char ch, char *arg, int /*cmd*/)
 	}
 	else
 	{
-		if (arg || *arg)
+		if (arg && *arg)
 		{
 			one_argument(arg, buf);
 			dir = search_block(buf, dirs, FALSE);

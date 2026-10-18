@@ -805,9 +805,8 @@ int notch_achievement(P_char ch, int achievement)
 	{
 		return ++(paf->modifier);
 	}
-	else
-	{
-		(apply_achievement(ch, achievement))->modifier = 1;
-		return 1;
-	}
+	paf = apply_achievement(ch, achievement);
+	if (paf)
+		paf->modifier = 1;
+	return 1;
 }

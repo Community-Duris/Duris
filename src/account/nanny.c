@@ -1251,13 +1251,10 @@ static int resolve_entry_room(P_char ch, int rent_type, time_t now)
 	int room = NOWHERE;
 	if ((rent_type == RENT_QUIT && GET_LEVEL(ch) < 2) || rent_type == RENT_DEATH)
 		room = real_room(GET_BIRTHPLACE(ch));
-	else if (rent_type == RENT_CRASH)
-		room = real_room(ch->specials.was_in_room);
 	else
 	{
+		// The load leaves the character in no room and its saved room in was_in_room.
 		room = real_room(ch->specials.was_in_room);
-		if (room == NOWHERE)
-			room = ch->in_room;
 	}
 
 	if (ch->only.pc->pc_timer[PC_TIMER_HEAVEN] > now)
