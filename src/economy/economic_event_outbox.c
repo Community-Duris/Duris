@@ -6,21 +6,24 @@
 #include "core/prototypes.h"
 #include "core/utils.h"
 
+#include <atomic>
 #include <chrono>
 #include <cstdio>
 #include <cstring>
 #include <deque>
 #include <mutex>
+#include <sstream>
 #include <string>
 
 namespace
 {
 constexpr size_t OUTBOX_CAPACITY = 16384;
+constexpr size_t OUTBOX_FLUSH_BATCH_SIZE = 256;
 std::mutex outbox_mutex;
 std::deque<EconomicEvent> outbox_queue;
 uint64_t next_event_id = 1;
 EconomicOutboxHealth outbox_health = {};
-bool table_initialized = false;
+std::atomic<bool> table_initialized{ false };
 
 uint64_t current_time_usec(void)
 {
@@ -42,11 +45,12 @@ player_save_apply_result write_economy_events_to_db(const std::vector<EconomicEv
 	if (!connection)
 		return { player_save_apply_outcome::retryable_failure, 0, ETIMEDOUT };
 
-	if (!table_initialized)
+	if (!table_initialized.load(std::memory_order_acquire))
 	{
 		const char *create_sql =
 			"CREATE TABLE IF NOT EXISTS economy_events ("
-			"event_id BIGINT UNSIGNED NOT NULL PRIMARY KEY, "
+			"id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, "
+			"event_id BIGINT UNSIGNED NOT NULL, "
 			"timestamp_usec BIGINT UNSIGNED NOT NULL, "
 			"actor_pid INT UNSIGNED NOT NULL, "
 			"action_type SMALLINT UNSIGNED NOT NULL, "
@@ -65,35 +69,34 @@ player_save_apply_result write_economy_events_to_db(const std::vector<EconomicEv
 				return { player_save_apply_outcome::retryable_failure, 0, err };
 			return { player_save_apply_outcome::terminal_failure, 0, err };
 		}
-		table_initialized = true;
+		table_initialized.store(true, std::memory_order_release);
 	}
 
-	for (const auto &event : events)
+	std::ostringstream sql;
+	sql << "INSERT INTO economy_events "
+	       "(event_id, timestamp_usec, actor_pid, action_type, copper_delta, target_id, context_vnum, reason) VALUES ";
+	for (size_t index = 0; index < events.size(); ++index)
 	{
+		const auto &event = events[index];
 		char safe_reason[65] = {};
 		mysql_real_escape_string(connection, safe_reason, event.reason, strlen(event.reason));
-		char sql[512];
-		snprintf(sql, sizeof(sql),
-			 "INSERT INTO economy_events (event_id, timestamp_usec, actor_pid, action_type, copper_delta, target_id, context_vnum, reason) "
-			 "VALUES (%llu, %llu, %u, %u, %lld, %u, %u, '%s') "
-			 "ON DUPLICATE KEY UPDATE timestamp_usec = VALUES(timestamp_usec)",
-			 static_cast<unsigned long long>(event.event_id),
-			 static_cast<unsigned long long>(event.timestamp_usec),
-			 event.actor_pid,
-			 static_cast<unsigned int>(event.action),
-			 static_cast<long long>(event.copper_delta),
-			 event.target_id,
-			 event.context_vnum,
-			 safe_reason);
+		if (index > 0)
+			sql << ',';
+		sql << '(' << event.event_id << ',' << event.timestamp_usec << ','
+		    << event.actor_pid << ',' << static_cast<unsigned int>(event.action) << ','
+		    << event.copper_delta << ',' << event.target_id << ','
+		    << event.context_vnum << ",'" << safe_reason << "')";
+	}
+	sql << " ON DUPLICATE KEY UPDATE timestamp_usec = VALUES(timestamp_usec)";
 
-		if (mysql_query(connection, sql) != 0)
-		{
-			unsigned int err = mysql_errno(connection);
-			sql_pool_release(connection);
-			if (err == 2006 || err == 2013)
-				return { player_save_apply_outcome::retryable_failure, 0, err };
-			return { player_save_apply_outcome::terminal_failure, 0, err };
-		}
+	const std::string query_str = sql.str();
+	if (mysql_query(connection, query_str.c_str()) != 0)
+	{
+		unsigned int err = mysql_errno(connection);
+		sql_pool_release(connection);
+		if (err == 2006 || err == 2013)
+			return { player_save_apply_outcome::retryable_failure, 0, err };
+		return { player_save_apply_outcome::terminal_failure, 0, err };
 	}
 
 	sql_pool_release(connection);
@@ -184,21 +187,24 @@ EconomicOutboxHealth economic_event_outbox_health(void)
 
 void economic_event_flush_outbox(void)
 {
-	std::vector<EconomicEvent> batch;
-	batch.reserve(256);
-	const size_t drained = economic_event_drain(&batch, 256);
-	if (!drained)
-		return;
-
 	static uint64_t next_owner_id = 1;
-	const uint64_t owner = next_owner_id++;
-	const size_t bytes = batch.size() * sizeof(EconomicEvent);
+	for (;;)
+	{
+		std::vector<EconomicEvent> batch;
+		batch.reserve(OUTBOX_FLUSH_BATCH_SIZE);
+		const size_t drained = economic_event_drain(&batch, OUTBOX_FLUSH_BATCH_SIZE);
+		if (!drained)
+			break;
 
-	persistence_writer_submit(
-		persistence_job_kind::economy, owner, bytes,
-		[events = std::move(batch)]() -> player_save_apply_result {
-			return write_economy_events_to_db(events);
-		});
+		const uint64_t owner = next_owner_id++;
+		const size_t bytes = batch.size() * sizeof(EconomicEvent);
+
+		persistence_writer_submit(
+			persistence_job_kind::economy, owner, bytes,
+			[events = std::move(batch)]() -> player_save_apply_result {
+				return write_economy_events_to_db(events);
+			});
+	}
 }
 
 void economic_event_outbox_reset_for_tests(void)
@@ -207,5 +213,5 @@ void economic_event_outbox_reset_for_tests(void)
 	outbox_queue.clear();
 	next_event_id = 1;
 	outbox_health = {};
-	table_initialized = false;
+	table_initialized.store(false, std::memory_order_release);
 }

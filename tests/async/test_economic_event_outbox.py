@@ -70,6 +70,16 @@ class EconomicEventOutboxTests(unittest.TestCase):
         self.assertIn("economy,", worker_h)
         self.assertIn('case persistence_job_kind::economy:\n\t\treturn "economy";', worker_c)
 
+        # Verify SQL apply_status persists RAM wallet coins (copper, silver, gold, platinum)
+        repo_c = (SRC / "player/player_snapshot_repository.c").read_text()
+        apply_status = repo_c[
+            repo_c.index("query_result apply_status(") : repo_c.index(
+                "template <typename Row, typename Append>"
+            )
+        ]
+        for field in ("copper", "silver", "gold", "platinum"):
+            self.assertNotIn(f"row.field == player_status_field::{field}", apply_status)
+
     def test_open_world_classification_fallback_contract(self):
         """Verify UNCLASSIFIED_INFLOW and UNCLASSIFIED_OUTFLOW exist for novel/unmapped mechanics."""
         outbox_h = (SRC / "economy/economic_event_outbox.h").read_text()
@@ -80,6 +90,8 @@ class EconomicEventOutboxTests(unittest.TestCase):
         self.assertIn("action == EconomicAction::UNKNOWN", outbox_c)
         self.assertIn("action = EconomicAction::UNCLASSIFIED_INFLOW", outbox_c)
         self.assertIn("action = EconomicAction::UNCLASSIFIED_OUTFLOW", outbox_c)
+        self.assertIn("std::atomic<bool> table_initialized", outbox_c)
+        self.assertIn("id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY", outbox_c)
 
 
 if __name__ == "__main__":

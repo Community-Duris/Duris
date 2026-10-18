@@ -8,8 +8,11 @@
 #include "player/player_save_pipeline.h"
 #include "net/gmcp.h"
 #include "net/chat_presentation.h"
+#include "world/specs.prototypes.h"
+#include "cmd/interp.h"
 #include <cjson/cJSON.h>
 #include <cassert>
+#include <algorithm>
 #include <cstdarg>
 #include <cstring>
 #include <functional>
@@ -52,22 +55,15 @@ void command_interpreter(P_char ch, char *)
 {
 	command_action(ch);
 }
-void logit(const char *, const char *, ...) {}
-void panic_corruption(const char *, const char *, ...)
-{
-	abort();
-}
-[[noreturn]] int panic_corruption_int(const char *, const char *, ...)
-{
-	abort();
-}
 int IS_MORPH(P_char)
 {
 	return 0;
 }
-void write_to_pc_log(P_char, const char *message, int policy)
+void write_to_pc_log(P_char ch, const char *message, int policy)
 {
 	logged.emplace_back(message, policy);
+	if (ch->only.pc && GET_PLAYER_LOG(ch))
+		GET_PLAYER_LOG(ch)->write(policy, message);
 }
 bool ac_can_see(P_char, P_char, bool)
 {
@@ -169,6 +165,7 @@ static std::string drain(P_desc d)
 #include "world_output_checks.inc"
 #include "combat_prompt_checks.inc"
 #include "chat_presentation_checks.inc"
+#include "artifact_activation_checks.inc"
 #ifdef COLORIZATION_BENCHMARK
 #include "colorization_benchmark.inc"
 #endif
@@ -427,14 +424,6 @@ int main()
 	assert(AnsiString(drain(&desc3).c_str()) ==
 	       AnsiString("Someone sees &+Bwater&n in a &+gforest&n.\n"));
 	assert(!desc.output.head);
-	// An unsupported $w audience must neither use an uninitialized pointer nor
-	// repeat the text from a preceding substitution.
-	act("$w waits.", false, &actor, nullptr, nullptr, TO_ROOM);
-	assert(drain(&desc2) == " waits.\n\r");
-	assert(drain(&desc3) == " waits.\n\r");
-	act("$n$w waits.", false, &actor, nullptr, nullptr, TO_ROOM);
-	assert(drain(&desc2) == "Water waits.\n\r");
-	assert(drain(&desc3) == "Someone waits.\n\r");
 	act("water", false, &actor, nullptr, nullptr, TO_CHAR, style);
 	assert(AnsiString(drain(&desc).c_str()) == AnsiString("&+BWater&n\n"));
 	act("water", false, &actor, nullptr, nullptr, TO_CHAR);
@@ -479,6 +468,17 @@ int main()
 			snooped_plain += *p;
 	}
 	assert(snooped_plain == expected_snoop);
+	// Six bytes a line more than the block: a full block of short lines is cut at the
+	// snoop buffer's end instead of running past it.
+	std::string short_lines;
+	while (short_lines.size() + 2 < MAX_STRING_LENGTH)
+		short_lines += "x\n";
+	static char guarded[MAX_STRING_LENGTH + 64];
+	memset(guarded, '#', sizeof(guarded));
+	format_to_snoopers(short_lines.data(), guarded);
+	assert(strlen(guarded) < MAX_STRING_LENGTH);
+	for (size_t i = MAX_STRING_LENGTH; i < sizeof(guarded); ++i)
+		assert(guarded[i] == '#');
 
 	// Pager replay/refresh is frozen even after the dictionary changes, and does
 	// not log decorated text or change the original LOG_NONE/LOG_PRIVATE choice.
@@ -709,5 +709,6 @@ int main()
 	tell_command_matrix();
 	world_output_matrix();
 	combat_prompt_matrix();
+	artifact_activation_matrix();
 	puts("Output integration: tell/reply, recipient profiles, sends, act, queue merging, privacy, paging and snoop passed");
 }

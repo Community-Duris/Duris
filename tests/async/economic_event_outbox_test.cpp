@@ -144,6 +144,19 @@ static void test_outbox_flush_submits_to_writer()
 	assert(health.queue_depth == 0);
 	assert(health.total_drained == 2);
 
+	// Verify >256 events drain completely across multiple batches in a single flush
+	submitted_jobs.clear();
+	for (size_t i = 0; i < 600; ++i)
+	{
+		economic_event_record(505, EconomicAction::WALLET_ADD, 10, 0, 0, "multi_batch");
+	}
+	economic_event_flush_outbox();
+	assert(submitted_jobs.size() == 3); // 256 + 256 + 88
+	assert(last_submitted_bytes == 88 * sizeof(EconomicEvent));
+	health = economic_event_outbox_health();
+	assert(health.queue_depth == 0);
+	assert(health.total_drained == 602);
+
 	printf("test_outbox_flush_submits_to_writer passed\n");
 }
 
