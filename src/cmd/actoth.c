@@ -2248,6 +2248,18 @@ struct persistence_deferred_save_snapshot persistence_deferred_save_snapshot_cop
 	return snapshot;
 }
 
+/* Find the loaded ship owned by this player character.  get_ship_from_char() gives
+ * the room `ch` stands in, which may be someone else's ship or an NPC ship
+ * that write_ship() always refuses.
+ */
+static P_ship owned_player_ship(P_char ch)
+{
+	if (!IS_PC(ch))
+		return NULL;
+	P_ship ship = get_ship_from_owner(GET_NAME(ch));
+	return ship && !IS_NPC_SHIP(ship) && SHIP_LOADED(ship) ? ship : NULL;
+}
+
 /** Request an ordinary checkpoint or compatibility save and report admission or save failure. */
 bool do_save_silent(P_char ch, int type)
 {
@@ -2276,8 +2288,7 @@ bool do_save_silent(P_char ch, int type)
 		const int room_vnum = ch->in_room == NOWHERE ? NOWHERE : world[ch->in_room].number;
 		const player_save_pipeline_result queued = player_save_pipeline_request(
 			ch, PLAYER_CHECKPOINT_COMPONENT_ALL, type, room_vnum);
-		extern P_ship get_ship_from_char(P_char ch);
-		P_ship ship = get_ship_from_char(ch);
+		P_ship ship = owned_player_ship(ch);
 		if (ship)
 			queue_ship_save(ship, "player checkpoint");
 		return queued == player_save_pipeline_result::queued ||
@@ -2324,17 +2335,10 @@ bool do_save_silent(P_char ch, int type)
 		}
 	}
 
-	/* Also save player's ship if they have one */
-	{
-		extern P_ship get_ship_from_char(P_char ch);
-		P_ship ship = get_ship_from_char(ch);
-		if (ship)
-		{
-			extern int write_ship(P_ship ship);
-			if (!write_ship(ship))
-				return false;
-		}
-	}
+	/* Also save the character's own ship, if they have one */
+	P_ship ship = owned_player_ship(ch);
+	if (ship && !write_ship(ship))
+		return false;
 
 	return true;
 }

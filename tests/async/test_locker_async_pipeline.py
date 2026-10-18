@@ -73,10 +73,10 @@ def main():
                 and "locker_async_prepare_snapshot" in files["lockers"])
     ok &= check("inflight coalesce rebuild flag",
                 "rebuild_objects" in files["async_c"])
-    ok &= check("terminal extract requires durable_ok",
+    ok &= check("terminal extract requires durable_ok and no pending rebuild",
                 "terminal_not_durable" in files["async_c"] and
                 "refusing extract of locker char" in files["async_c"] and
-                "if (durable_ok && chLocker)" in files["async_c"])
+                "if (durable_ok && chLocker && !s->rebuild_objects)" in files["async_c"])
     ok &= check("ambiguity prefers non-descriptor locker char",
                 "name lookup ambiguous" in files["async_c"] and
                 "!ch->desc" in files["async_c"])

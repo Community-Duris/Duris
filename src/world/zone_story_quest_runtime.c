@@ -63,6 +63,18 @@ bool load_persisted_state(std::string *error)
 	return tracker.deserialize_state(encoded, error);
 }
 
+// True when no zone-story state has ever been stored.
+bool persisted_state_absent(std::string *error)
+{
+	std::string encoded;
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return flatfile_zone_story_quest_state_load(persistence_mode_flatfile_root(),
+							    content_revision(), &encoded, error) ==
+		       flatfile_zone_story_quest_result::not_found;
+	return sql_zone_story_quest_state_load(content_revision(), &encoded, error) ==
+	       sql_zone_story_quest_state_result::not_found;
+}
+
 bool save_persisted_state(std::string *error)
 {
 	const std::string encoded = tracker.serialize_state(error);
@@ -207,8 +219,14 @@ bool remember_character(P_char player, std::string *error)
 
 bool erase_character(uint32_t pid, std::string *error)
 {
-	if (!ready() || !pid)
+	if (!pid)
 		return fail(error, "zone-story character identity is unavailable");
+	// With the catalog disabled at boot nothing is tracked. A character has nothing to
+	// erase unless an earlier boot stored state, which only the catalog can rewrite.
+	if (!ready())
+		return persisted_state_absent(error) ||
+		       fail(error, "zone-story catalog is disabled and stored state needs "
+				   "reconciliation");
 	const std::string before = tracker.serialize_state(error);
 	if (!tracker.erase_character_all_seasons(pid, current_season_id()))
 		return fail(error, "zone-story character identity is invalid");

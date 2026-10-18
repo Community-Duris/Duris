@@ -226,7 +226,8 @@ assert "if (!accepting)" in mark_body
 assert "fence->revision = revision" in mark_body
 assert "fence->journaled = false" in mark_body
 drain = section(PIPELINE, "bool player_save_pipeline_drain", "player_save_pipeline_health")
-assert "pending_append.empty() && !append_inflight" in drain
+assert "pending_append.empty() && !append_inflight && durable_ready.empty()" in drain
+assert "persistence_writer_wait_idle(0)" in drain
 assert "std::chrono::steady_clock::now()" in drain
 assert "++health.drain_failures" in drain
 print("[PASS] terminal fences, exact durability outcomes, retry tracking, and bounded drain are wired")

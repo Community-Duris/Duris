@@ -1448,8 +1448,10 @@ NPCShipSetup *find_ship_setup(int level, int m_class, int speed)
 	int i = 0, ii = 0;
 	while (true)
 	{
+		/* "Any hull" never means the zone ship: it is placed only by name. */
 		if ((npcShipSetup[i].level == level || level == -1) &&
-		    (npcShipSetup[i].m_class == m_class || m_class == -1) &&
+		    (npcShipSetup[i].m_class == m_class ||
+		     (m_class == -1 && npcShipSetup[i].m_class != SH_ZONE_SHIP)) &&
 		    (SHIPTYPE_SPEED(npcShipSetup[i].m_class) >= speed || speed == -1))
 		{
 			if (ii == num)

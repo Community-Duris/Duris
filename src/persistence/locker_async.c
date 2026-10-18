@@ -950,7 +950,9 @@ static void apply_result(struct locker_async_result *r)
 
 	if (s->terminal)
 	{
-		if (durable_ok && chLocker)
+		/* A save that landed while a newer one waits (the user left during an
+		 * in-stay save) is not the one holding what the locker character carries. */
+		if (durable_ok && chLocker && !s->rebuild_objects)
 		{
 			chLocker->specials.timer = 0;
 			extract_char(chLocker);

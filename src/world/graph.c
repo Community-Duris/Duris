@@ -999,21 +999,21 @@ int how_close(int src, int target, int max_steps)
 			      src, target);
 			return BFS_ERROR;
 		}
-		if (queue_head->room == target)
-		{
-			int distance = queue_head->step_no;
-
-			curr_dir = queue_head->dir;
-			bfs_clear_queue();
-			return distance;
-		}
-		else if (queue_head->step_no > max_steps)
+		if (queue_head->step_no > max_steps)
 		{
 			bfs_clear_queue();
 			logit(LOG_DEBUG,
 			      "graph.c: how_close(): Hit dim distance limit going from room %d to %d",
 			      src, target);
 			return BFS_NO_PATH;
+		}
+		else if (queue_head->room == target)
+		{
+			int distance = queue_head->step_no;
+
+			curr_dir = queue_head->dir;
+			bfs_clear_queue();
+			return distance;
 		}
 		else
 		{

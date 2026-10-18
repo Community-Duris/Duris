@@ -93,6 +93,7 @@ struct durable_scheduler_state_v2
 
 durable_scheduler_state durable_state = {};
 bool durable_state_dirty = false;
+bool persist_failing = false;
 
 uint64_t state_checksum(const durable_scheduler_state &state)
 {
@@ -136,6 +137,15 @@ bool write_all(int descriptor, const void *raw, size_t size)
 	return true;
 }
 
+bool persist_failed()
+{
+	if (!persist_failing)
+		logit(LOG_STATUS, "Maintenance scheduler state not written to %s: %s",
+		      state_path.c_str(), strerror(errno));
+	persist_failing = true;
+	return false;
+}
+
 bool persist_state(const durable_scheduler_state &state)
 {
 	if (state_path.empty())
@@ -146,15 +156,33 @@ bool persist_state(const durable_scheduler_state &state)
 	const int descriptor = open(temporary.c_str(),
 				    O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC | O_NOFOLLOW, 0600);
 	if (descriptor < 0)
-		return false;
+		return persist_failed();
 	const bool written = write_all(descriptor, &stored, sizeof(stored));
 	const bool synced = written && fsync(descriptor) == 0;
 	const bool closed = close(descriptor) == 0;
 	if (!synced || !closed || rename(temporary.c_str(), state_path.c_str()) != 0)
 	{
+		const int error = errno;
 		unlink(temporary.c_str());
-		return false;
+		errno = error;
+		return persist_failed();
 	}
+	const size_t slash = state_path.rfind('/');
+	const std::string parent =
+		slash == std::string::npos ? "." : state_path.substr(0, slash ? slash : 1);
+	const int directory = open(parent.c_str(), O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+	if (directory < 0)
+		return persist_failed();
+	const bool directory_synced = fsync(directory) == 0;
+	const int error = errno;
+	const bool directory_closed = close(directory) == 0;
+	if (!directory_synced || !directory_closed)
+	{
+		if (!directory_synced)
+			errno = error;
+		return persist_failed();
+	}
+	persist_failing = false;
 	return true;
 }
 
@@ -309,6 +337,11 @@ void worker_main()
 					lock.lock();
 					if (!stop_requested)
 						durable_state_dirty = true;
+					// Try again in a second, or with the next job: retried at
+					// once, a state file that cannot be written held a core.
+					work_available.wait_for(
+						lock, std::chrono::seconds(1),
+						[] { return stop_requested || !queue.empty(); });
 				}
 				continue;
 			}

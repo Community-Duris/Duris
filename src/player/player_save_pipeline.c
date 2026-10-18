@@ -392,6 +392,9 @@ void player_save_pipeline_shutdown(void)
 	}
 	if (dispatcher.joinable())
 		dispatcher.join();
+	player_save_pipeline_pulse();
+	persistence_writer_wait_idle(3000);
+	player_save_pipeline_pulse();
 	player_save_worker_shutdown();
 	player_save_journal_shutdown();
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
@@ -876,10 +879,16 @@ bool player_save_pipeline_drain(uint64_t timeout_msec)
 	while (std::chrono::steady_clock::now() < deadline)
 	{
 		player_save_pipeline_pulse();
+		bool pipeline_empty = false;
 		{
 			std::lock_guard<std::mutex> lock(pipeline_mutex);
-			if (pending_append.empty() && !append_inflight)
-				return true;
+			if (pending_append.empty() && !append_inflight && durable_ready.empty())
+				pipeline_empty = true;
+		}
+		if (pipeline_empty && persistence_writer_wait_idle(0))
+		{
+			player_save_pipeline_pulse();
+			return true;
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}

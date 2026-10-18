@@ -1909,13 +1909,17 @@ int ship_room_proc([[maybe_unused]] int room, P_char ch, int cmd, char *arg)
 			//      }
 		}
 
+		/* An outer-edge room is one missing an exit in some direction.  Find
+		 * the character's room slot by its vnum: rooms come first-free from
+		 * the pool, so the vnum's last digit says nothing about the slot. */
 		i = world[ch->in_room].number;
-		j = i - ((int)(i / 10) * 10);
+		for (j = 0; j < ship->room_count && SHIP_ROOM_NUM(ship, j) != i; j++)
+			;
 		k = 0;
-		if (SHIP_ROOM_EXIT(ship, j, DIR_NORTH) == -1 ||
-		    SHIP_ROOM_EXIT(ship, j, DIR_SOUTH) == -1 ||
-		    SHIP_ROOM_EXIT(ship, j, DIR_EAST) == -1 ||
-		    SHIP_ROOM_EXIT(ship, j, DIR_WEST) == -1)
+		if (j < ship->room_count && (SHIP_ROOM_EXIT(ship, j, DIR_NORTH) == -1 ||
+					     SHIP_ROOM_EXIT(ship, j, DIR_SOUTH) == -1 ||
+					     SHIP_ROOM_EXIT(ship, j, DIR_EAST) == -1 ||
+					     SHIP_ROOM_EXIT(ship, j, DIR_WEST) == -1))
 		{
 			k = 1;
 		}
@@ -2761,6 +2765,9 @@ void ship_activity()
 						}
 						else
 						{
+							/* The crash chance grows with the speed the ship
+							 * hits the coast at, so keep it before stopping. */
+							const int impact_speed = ship->speed;
 							ship->setspeed = 0;
 							ship->speed = 0;
 							ship->x = 50.500;
@@ -2772,7 +2779,7 @@ void ship_activity()
 							int crash_chance =
 								(ship->timer[T_BSTATION] == 0) ?
 									0 :
-									(int)((float)(ship->speed +
+									(int)((float)(impact_speed +
 										      50) /
 									      ((1.0 +
 										ship->crew.sail_mod_applied *

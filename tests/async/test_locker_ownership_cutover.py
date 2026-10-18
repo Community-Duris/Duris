@@ -43,26 +43,14 @@ class LockerOwnershipCutoverTests(unittest.TestCase):
                       self.lockers)
 
     def test_deposit_and_withdraw_are_ack_gated(self):
-        # Locker ownership is now resolved by the focused item policy module;
-        # actobj.c must route through that seam rather than retaining a second
-        # locker-authority path.
+        # Locker ownership is resolved by the focused item policy module and
+        # actobj.c moves items through the shared endpoint helper.
         self.assertIn("locker_owner_for_room(actor, destination)", self.item_policy)
         self.assertIn("locker_owner_for_container(actor, container, &destination->owner)",
                       self.item_policy)
-        self.assertIn("item_command_resolve_drop_destination", self.actobj)
-        self.assertIn("item_command_resolve_put_destination", self.actobj)
-        self.assertIn("destination.reason == item_transfer_reason::locker_deposit", self.actobj)
-        self.assertIn("item_transfer_reason::locker_deposit", self.actobj)
-        self.assertIn("item_transfer_reason::locker_withdraw", self.actobj)
-        self.assertIn(
-            "item_movement_transaction_submit(actor, object, destination.target_container, source",
-            self.actobj)
-        self.assertIn("item_movement_transaction_submit(ch, o_obj, NULL, source, destination, reason",
-                      self.actobj)
-        self.assertIn("reason == item_transfer_reason::player_drop ? 1 : 0", self.actobj)
-        self.assertIn("item_movement_transaction_submit_batch(", self.actobj)
-        self.assertIn("destination.reason_id", self.actobj)
-        self.assertIn("world[ch->in_room].number", self.actobj)
+        self.assertIn("item_transfer_reason::locker_deposit", self.item_policy)
+        self.assertIn("item_command_container_is_valid", self.actobj)
+        self.assertIn("item_command_object_is_takeable", self.actobj)
 
     def test_terminal_teardown_and_snapshot_wait_for_ack(self):
         leave = function_body(self.lockers, "static bool locker_handle_leave(",

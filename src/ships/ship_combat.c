@@ -600,6 +600,7 @@ bool sink_ship(P_ship ship, P_ship attacker)
 	if (attacker)
 	{
 		int frag_gain = 0;
+		int frag_loss = 0; // the sunk ship loses the whole, however many share it
 		int salvage = 0;
 		int bounty = 0;
 
@@ -622,7 +623,7 @@ bool sink_ship(P_ship ship, P_ship attacker)
 		{
 			if (gainer->race != gain_race)
 			{
-				frag_gain = calc_frag_gain(ship);
+				frag_gain = frag_loss = calc_frag_gain(ship);
 			}
 
 			if (gainer->race != gain_race || !IS_NPC_SHIP(ship))
@@ -686,7 +687,7 @@ bool sink_ship(P_ship ship, P_ship attacker)
 			}
 		}
 
-		ship_loss_on_sink(ship, attacker, frag_gain);
+		ship_loss_on_sink(ship, attacker, frag_loss);
 		queue_ship_save(ship, "sink resolution");
 
 		if (attacker->target == ship)
@@ -699,6 +700,22 @@ bool sink_ship(P_ship ship, P_ship attacker)
 		}
 	}
 	return true;
+}
+
+/*
+ * The chance, in percent, that a volley fired at weaponsight() chance
+ * `hit_chance` actually hits.  volley_hit_event() hits when
+ * 2d50 >= 100 - hit_chance, which is not a flat hit_chance%: two dice favour
+ * the middle, so low chances hit less often and high ones more often.  This
+ * is what players are shown.
+ */
+int volley_hit_percent(int hit_chance)
+{
+	int hits = 0;
+	for (int first = 1; first <= 50; first++)
+		for (int second = 1; second <= 50; second++)
+			hits += first + second >= 100 - hit_chance;
+	return (hits * 100 + 1250) / 2500;
 }
 
 /*
@@ -1468,7 +1485,7 @@ int try_ram_ship(P_ship ship, P_ship target, float tbearing)
 		}
 		if (has_eq_ram(target) && tarc == SIDE_FORE)
 		{
-			int counter_eram_dam = eq_ram_damage(ship);
+			int counter_eram_dam = eq_ram_damage(target);
 			counter_eram_dam = number(counter_eram_dam * 0.6, counter_eram_dam * 1.0);
 			damage_hull(NULL, ship, counter_eram_dam, sarc, 30);
 			target_eram = true;
@@ -1806,7 +1823,7 @@ int fire_weapon(P_ship ship, int w_num, int t_contact, int hit_chance, P_char ch
 	act_to_all_in_ship_f(ship,
 			     "Your ship fires &+W%s&N at &+W[%s]&N:%s! Chance to hit: &+W%d%%&N",
 			     ship->slot[w_num].get_description(), target->id, target->name,
-			     hit_chance);
+			     volley_hit_percent(hit_chance));
 	act_to_all_in_ship_f(target, "&+W[%s]&N:%s&N fires %s at your ship!", SHIP_ID(ship),
 			     ship->name, ship->slot[w_num].get_description());
 	act_to_outside(ship, DEFAULT_RANGE, "%s&N fires %s at %s!", ship->name,
