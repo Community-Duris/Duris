@@ -4515,28 +4515,21 @@ void do_area(P_char ch, char *argument, int /*cmd*/)
 		zone_id = world[ch->in_room].zone;
 		zone = &zone_table[zone_id];
 
-		if (IS_TRUSTED(ch))
-		{
-			snprintf(buf, MAX_STRING_LENGTH, "&+LZone Name: %s %d\r\n",
-				 pad_ansi(zone->name, 30).c_str(), zone_id);
-		}
-		else
-		{
-			snprintf(buf, MAX_STRING_LENGTH, "&+LZone Name: %s\r\n",
-				 pad_ansi(zone->name, 30).c_str());
-		}
-
-		snprintf(buf2, MAX_STRING_LENGTH, "&+LAverage &+rmob&+L level in zone: &n%d\r\n ",
-			 zone->avg_mob_level);
-		strcat(buf, buf2);
-		if ((zone->avg_mob_level - GET_LEVEL(ch)) > 15)
-		{
-			snprintf(
-				buf2, MAX_STRING_LENGTH,
-				"&-L&+RWarning&-L, some mobs in this zone may be very hazardous for you! Travel with care!&n\r\n");
-			strcat(buf, buf2);
-		}
-		send_to_char(buf, ch);
+		std::string details = IS_TRUSTED(ch) ? " " + std::to_string(zone_id) : "";
+		details += "\r\n&+LAverage &+rmob&+L level in zone: &n";
+		details += zone->avg_mob_level >= 0  ? std::to_string(zone->avg_mob_level) :
+			   zone->avg_mob_level == -1 ? "not applicable" :
+						       "unknown";
+		details += "\r\n ";
+		if (zone->avg_mob_level >= 0 && (zone->avg_mob_level - GET_LEVEL(ch)) > 15)
+			details +=
+				"&-L&+RWarning&-L, some mobs in this zone may be very hazardous for you! Travel with care!&n\r\n";
+		// Reserve the complete suffix so a long name cannot hide the danger warning.
+		std::string response = "&+LZone Name: ";
+		response.append(pad_ansi(zone->name, 30), 0,
+				MAX_STRING_LENGTH - 1 - response.size() - details.size());
+		response += details;
+		send_to_char(response.c_str(), ch);
 		return;
 	}
 	// Immortal arguments:

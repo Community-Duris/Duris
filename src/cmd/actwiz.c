@@ -522,9 +522,7 @@ void do_read_player(P_char ch, char *arg, int /*cmd*/)
 	vict->next = character_list;
 	character_list = vict;
 
-	/* saving info for teleport return command */
-	vict->specials.was_in_room = vict->in_room;
-
+	// The load left vict in no room, its saved room in was_in_room.
 	char_to_room(vict, ch->in_room, -2);
 	update_ingame_racewar(GET_RACEWAR(vict));
 

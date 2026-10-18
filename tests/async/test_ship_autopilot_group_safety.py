@@ -68,6 +68,9 @@ int number(int low, int) { return low; }
 const char *get_arc_name(int) { return "fore"; }
 char *ShipSlot::get_description() { return desc; }
 void stun_all_in_ship(P_ship, int) {}
+// No owner aboard, so Ship Damage Control never changes the damage here.
+P_char captain_is_aboard(P_ship) { return nullptr; }
+int epic_ship_damage_control(P_char, int dam) { return dam; }
 void act_to_outside_ships(P_ship, P_ship, int, const char *, ...) {}
 void act_to_all_in_ship(P_ship ship, const char *message)
 {

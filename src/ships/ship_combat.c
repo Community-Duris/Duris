@@ -101,9 +101,8 @@ extern char buf[MAX_STRING_LENGTH];
  *
  * Returns `dam` unchanged for a dead character, damage below 2, or no skill.
  *
- * NOTE FOR MAINTAINERS: currently dormant.  Both call sites, in damage_sail()
- * and damage_hull(), are commented out; the skill is defined but not wired
- * into ship damage.
+ * damage_sail() and damage_hull() apply it for the ship's owner while they
+ * are aboard.  Damage a character deals (ch_damage_hull()) is not reduced.
  */
 int epic_ship_damage_control(P_char ch, int dam)
 {
@@ -905,22 +904,21 @@ void volley_hit_event(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *dat
  * Apply `dam` to `target`'s mainsail and announce it to all three audiences:
  * the attacker's crew, the target's crew, and nearby ships.
  *
- * `attacker` may be NULL for damage with no ship behind it.  Damage is
- * floored at 1.  Always returns TRUE.
+ * `attacker` may be NULL for damage with no ship behind it.  The owner's
+ * Ship Damage Control skill reduces the damage while they are aboard, and it
+ * is floored at 1.  Always returns TRUE.
  *
  * Note the sail is reduced without clamping here; update_ship_status() is
  * what floors it at zero and recomputes the resulting speed.
  */
 int damage_sail(P_ship attacker, P_ship target, int dam)
 {
-	/*P_char captain = captain_is_aboard(target);
-
-	// debug("Sail damage is: %d.", dam);
+	P_char captain = captain_is_aboard(target);
 
 	if (captain)
 	{
-	    dam = epic_ship_damage_control(captain, dam);
-	}*/
+		dam = epic_ship_damage_control(captain, dam);
+	}
 
 	if (dam < 1)
 		dam = 1;
@@ -958,18 +956,19 @@ int damage_sail(P_ship attacker, P_ship target, int dam)
  * deflected inside the wreckage into another arc that still has structure,
  * and hits on a hollowed-out arc are certain to wreck a weapon.
  *
- * `attacker` may be NULL.  Damage is floored at 1.  Always returns TRUE.
- * Call update_ship_status() afterwards -- it is what notices the ship has
- * been holed badly enough to sink.
+ * `attacker` may be NULL.  The owner's Ship Damage Control skill reduces
+ * the damage while they are aboard, and it is floored at 1.  Always returns
+ * TRUE.  Call update_ship_status() afterwards -- it is what notices the ship
+ * has been holed badly enough to sink.
  */
 int damage_hull(P_ship attacker, P_ship target, int dam, int arc, int armor_pierce)
 {
-	/*P_char captain = captain_is_aboard(target);
+	P_char captain = captain_is_aboard(target);
 
 	if (captain)
 	{
-	    dam = epic_ship_damage_control(captain, dam);
-	}*/
+		dam = epic_ship_damage_control(captain, dam);
+	}
 
 	if (dam < 1)
 		dam = 1;

@@ -1281,7 +1281,7 @@ static int resolve_entry_room(P_char ch, int rent_type, time_t now)
 		room = GET_HOME(ch) ? real_room(GET_HOME(ch)) : real_room(GET_BIRTHPLACE(ch));
 		if (room == NOWHERE)
 			room = IS_TRUSTED(ch) ? real_room0(1200) :
-						   real_room(GET_ORIG_BIRTHPLACE(ch));
+						real_room(GET_ORIG_BIRTHPLACE(ch));
 		if (room == NOWHERE)
 			room = real_room0(11);
 	}
@@ -1292,13 +1292,14 @@ static int resolve_entry_room(P_char ch, int rent_type, time_t now)
 
 	// A ship or closed zone can send the candidate back through a missing
 	// birthplace. Validate it before indexing world or zone_table.
-	if (room >= 0 && room <= top_of_world &&
-	    (zone_table[world[room].zone].flags & ZONE_CLOSED))
+	if (room >= 0 && room <= top_of_world && (zone_table[world[room].zone].flags & ZONE_CLOSED))
 		room = real_room(GET_BIRTHPLACE(ch));
 	if (room > top_of_world)
 		room = real_room(11);
 	if (room < 0)
 		room = real_room(1197);
+	if (room < 0 || room > top_of_world)
+		room = real_room0(11);
 
 	room = check_gh_home(ch, room);
 	return room >= 0 && room <= top_of_world ? room : real_room0(11);

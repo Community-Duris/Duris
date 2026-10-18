@@ -558,6 +558,8 @@ struct spellcast_datatype
 	int timeleft;
 	int spell;
 	unsigned char flags;
+	// The tick the scheduled segment is due at; zero until the first one is scheduled.
+	unsigned long long due_tick;
 };
 
 struct scribing_data_type

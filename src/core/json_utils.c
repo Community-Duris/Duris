@@ -1272,12 +1272,12 @@ char *json_build_ship_info(struct ShipData *ship, struct char_data *ch)
 	cJSON_AddNumberToObject(root, "class", ship->m_class);
 	cJSON_AddNumberToObject(root, "frags", ship->frags);
 
-	cJSON_AddStringToObject(root, "status", get_ship_status(ship));
+	cJSON_AddStringToObject(root, "status", strip_ansi(get_ship_status(ship)).c_str());
 
 	cJSON_AddNumberToObject(root, "maxSpeed", ship->get_maxspeed(ch));
 	cJSON_AddNumberToObject(root, "contactRange", 35 + ship->crew.get_contact_range_mod());
 	cJSON_AddNumberToObject(root, "sail", ship->mainsail);
-	cJSON_AddNumberToObject(root, "maxSail", MAXSAIL);
+	cJSON_AddNumberToObject(root, "maxSail", SHIP_MAX_SAIL(ship));
 
 	/* crew */
 	cJSON_AddNumberToObject(root, "crewStamina", (int)ship->crew.stamina);
@@ -1314,7 +1314,7 @@ char *json_build_ship_info(struct ShipData *ship, struct char_data *ch)
 	cJSON_AddItemToObject(root, "skillMods", skillMods);
 
 	/* people */
-	cJSON_AddNumberToObject(root, "people", ship->people);
+	cJSON_AddNumberToObject(root, "people", num_people_in_ship(ship));
 	cJSON_AddNumberToObject(root, "maxPeople", ship->get_capacity());
 
 	/* armor - each arc is [current, max] */

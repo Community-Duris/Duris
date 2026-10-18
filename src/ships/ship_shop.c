@@ -188,6 +188,8 @@ void ship_hull_purchase_committed(P_char ch, bool committed, const epic_command_
 		name_ship(context.name, ship);
 		if (!load_ship(ship, context.room))
 		{
+			shipObjHash.erase(ship);
+			delete_ship(ship, true);
 			send_to_char(
 				"The shipyard could not load your ship; your epics are being refunded.\n",
 				ch);
@@ -2894,6 +2896,8 @@ int buy_hull(P_char ch, P_ship ship, int owned, char *arg1, char *arg2)
 		if (!load_ship(ship, ch->in_room))
 		{
 			logit(LOG_FILE, "Error in load_ship(): %d\n", shiperror);
+			shipObjHash.erase(ship);
+			delete_ship(ship, true);
 			send_to_char_f(ch, "&=LrError loading ship (%d), please notify a god.&n\n",
 				       shiperror);
 			return TRUE;

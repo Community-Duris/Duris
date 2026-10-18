@@ -4713,7 +4713,9 @@ bool sql_load_player_items(P_char ch)
 				continue;
 
 			struct extra_descr_data *loaded_spellbook =
-				(loaded_spellbooks && object_index >= 0) ? loaded_spellbooks[object_index] : NULL;
+				(loaded_spellbooks && object_index >= 0) ?
+					loaded_spellbooks[object_index] :
+					NULL;
 			sql_add_item_extra_descr(obj, row[1], row[2], "player_item", db_id,
 						 &loaded_spellbook);
 			if (loaded_spellbooks && object_index >= 0)
@@ -10935,6 +10937,10 @@ bool sql_save_ship(P_ship ship)
 		own_transaction = true;
 	}
 
+	/* Only a row this call inserted is undone by a rollback.  An existing
+	 * ship keeps its id when its update fails, or its next save would take
+	 * the insert path and collide with UNIQUE(owner_name). */
+	bool inserted = false;
 	if (ship->db_id == -1)
 	{
 		char initQuery[1024];
@@ -10988,6 +10994,7 @@ bool sql_save_ship(P_ship ship)
 		}
 
 		ship->db_id = atoi(row[0]);
+		inserted = true;
 
 		mysql_free_result(result);
 	}
@@ -11013,7 +11020,8 @@ bool sql_save_ship(P_ship ship)
 		free(batch);
 		if (own_transaction)
 			sql_rollback();
-		ship->db_id = -1;
+		if (inserted)
+			ship->db_id = -1;
 		return false;
 	}
 
@@ -11025,7 +11033,8 @@ bool sql_save_ship(P_ship ship)
 		sql_clear_results();
 		if (own_transaction)
 			sql_rollback();
-		ship->db_id = -1;
+		if (inserted)
+			ship->db_id = -1;
 		return false;
 	}
 	result = mysql_store_result(DB);
@@ -11041,6 +11050,8 @@ bool sql_save_ship(P_ship ship)
 		logit(LOG_DEBUG, "sql_save_ship: failed to commit for ship %d", ship->db_id);
 		if (sql_in_transaction())
 			sql_rollback();
+		if (inserted)
+			ship->db_id = -1;
 		return false;
 	}
 
@@ -11225,23 +11236,21 @@ bool sql_load_all_ships()
 		return false;
 
 	// collect owner names first to avoid nested queries
-	char owner_names[512][64];
-	int num_ships = 0;
+	std::vector<std::string> owner_names;
 
 	MYSQL_ROW row;
-	while ((row = mysql_fetch_row(result)) && num_ships < 512)
+	while ((row = mysql_fetch_row(result)))
 	{
 		if (!row[0])
 			continue;
-		strlcpy(owner_names[num_ships], row[0], sizeof owner_names[num_ships]);
-		num_ships++;
+		owner_names.emplace_back(row[0]);
 	}
 	mysql_free_result(result);
 
 	// now load each ship
-	for (int i = 0; i < num_ships; i++)
+	for (const std::string &owner_name : owner_names)
 	{
-		P_ship ship = sql_load_ship(owner_names[i]);
+		P_ship ship = sql_load_ship(owner_name.c_str());
 		if (!ship)
 		{
 			logit(LOG_FILE, "sql_load_all_ships: component=rows outcome=failure");
@@ -11251,7 +11260,11 @@ bool sql_load_all_ships()
 		name_ship(ship->name, ship);
 		if (!load_ship(ship, real_room0(ship->anchor)))
 		{
+			/* Usually the ship-room pool is full.  The row is kept for a
+			 * later boot, but an unplaced ship must not stay registered. */
 			logit(LOG_FILE, "sql_load_all_ships: component=ship outcome=failure");
+			shipObjHash.erase(ship);
+			delete_ship(ship, true);
 			continue;
 		}
 

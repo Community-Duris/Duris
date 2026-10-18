@@ -37,6 +37,7 @@ room_data world[10] = {};
 zone_data zone_table[2] = {};
 int top_of_world = 9;
 int forced_gh_room = -2;
+bool allow_1197 = true;
 int real_room(int vnum)
 {
     switch (vnum) {
@@ -45,14 +46,17 @@ int real_room(int vnum)
     case 200: return 3;
     case 300: return 4;
     case 400: return 5;
-    case 1197: return 8;
+    case 1197: return allow_1197 ? 8 : NOWHERE;
     case 1200: return 7;
     default: return NOWHERE;
     }
 }
 int real_room0(int vnum) { return real_room(vnum); }
 int check_gh_home(P_char, int room)
-{ return forced_gh_room == -2 ? room : forced_gh_room; }
+{
+    assert(room >= 0 && room <= top_of_world);
+    return forced_gh_room == -2 ? room : forced_gh_room;
+}
 #define GET_LEVEL(ch) ((ch)->level)
 #define GET_BIRTHPLACE(ch) ((ch)->birthplace)
 #define GET_HOME(ch) ((ch)->home)
@@ -84,6 +88,9 @@ int main()
     ch.birthplace = 999;
     world[4].ship = true;
     assert(resolve_entry_room(&ch, RENT_CRASH, 10) == 8);
+    allow_1197 = false;
+    assert(resolve_entry_room(&ch, RENT_CRASH, 10) == 1);
+    allow_1197 = true;
     ch.birthplace = 100;
     ch.specials.was_in_room = 200;
     world[3].zone = 1;

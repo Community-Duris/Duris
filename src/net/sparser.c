@@ -72,6 +72,7 @@ extern const struct class_names class_names_table[];
 extern const struct race_names race_names_table[];
 int top_save, starting_save;
 extern struct spell_target_data common_target_data;
+extern unsigned long long ne_event_tick;
 
 extern bool divine_blessing_check(P_char, P_char, int);
 extern int devotion_skill_check(P_char);
@@ -1240,9 +1241,18 @@ void StopCasting(P_char ch)
 	clear_links(ch, LNK_CAST_WORLD);
 }
 
+// Each segment is due at the tick the one before it was due plus its own length, so a
+// callback that ran late shortens the next segment instead of pushing the cast back: the
+// cast finishes at its cast time plus the lateness of its last segment, never sooner. A
+// segment is never shorter than one pulse, so lateness beyond it carries forward.
 // The scheduler copies the outer payload only; its string remains ours on rejection.
-static bool schedule_spellcast(P_char ch, P_char victim, int delay, spellcast_datatype *data)
+static bool schedule_spellcast(P_char ch, P_char victim, int segment, spellcast_datatype *data)
 {
+	int delay = 1;
+
+	data->due_tick = (data->due_tick ? data->due_tick : ne_event_tick) + segment;
+	if (data->due_tick > ne_event_tick)
+		delay = (int)(data->due_tick - ne_event_tick);
 	if (add_event(event_spellcast, delay, ch, victim, 0, 0, data, sizeof(*data)))
 		return true;
 
@@ -3161,8 +3171,10 @@ void update_racial_shrug_data()
 
 	for (i = 0; i <= LAST_RACE; i++)
 	{
-		snprintf(buf, 128, "innate.shrug.%s", race_names_table[i].no_spaces);
-		racial_shrug_data[i] = get_property(buf, 0);
+		// Player and monster vampires share other race settings, but not shrug.
+		snprintf(buf, 128, "innate.shrug.%s",
+			 i == RACE_PVAMPIRE ? "PVampire" : race_names_table[i].no_spaces);
+		racial_shrug_data[i] = get_property(buf, i == RACE_PVAMPIRE ? 40 : 0);
 	}
 }
 
