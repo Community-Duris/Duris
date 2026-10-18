@@ -16,7 +16,7 @@ CHECKPOINT = (SRC / "persistence_checkpoint.c").read_text()
 EVENTS = (SRC / "new_events.c").read_text()
 COMM = (SRC / "comm.c").read_text()
 NANNY = (SRC / "nanny.c").read_text()
-WORKER = (SRC / "player_save_worker.c").read_text()
+WORKER = (SRC / "player_save_worker.c").read_text() + (SRC / "player_save_worker.h").read_text()
 SQL_PLAYER = (SRC / "sql_player.c").read_text()
 
 
