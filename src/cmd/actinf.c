@@ -62,6 +62,7 @@ using namespace std;
 #include "player/player_load_pipeline.h"
 #include "player/player_death_restitution_adapter.h"
 #include "persistence/maintenance_scheduler.h"
+#include "world/epic_task_catalog.h"
 #include "world/world_recovery_pipeline.h"
 #include "redis/redis_cache_store.h"
 #include "redis/redis_command_observability.h"
@@ -4297,6 +4298,21 @@ static void show_world_persistence(P_char ch)
 				   world_recovery.publish_operations.calls ? "ready" :
 									     "empty",
 				   0, 0, &world_recovery.publish_operations);
+
+	size_t pending_tasks = 0, pending_reads_unavailable = 0;
+	for (P_char player = character_list; player; player = player->next)
+		if (!IS_NPC(player) && affected_by_spell(player, TAG_EPIC_TASK_PENDING))
+		{
+			++pending_tasks;
+			if (player->only.pc->gameplay_reads.status != gameplay_read_status::ready)
+				++pending_reads_unavailable;
+		}
+	snprintf(line, sizeof(line),
+		 "epic_tasks catalog_ready=%d zones=%zu last_refresh=%s pending=%zu "
+		 "pending_reads_unavailable=%zu\n",
+		 epic_task_catalog_ready(), epic_task_catalog_size(),
+		 epic_task_catalog_last_refresh(), pending_tasks, pending_reads_unavailable);
+	send_to_char(line, ch);
 
 	snprintf(line, sizeof(line),
 		 "maintenance state=%s queued=%llu inflight=%llu completions=%llu "

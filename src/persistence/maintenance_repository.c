@@ -74,6 +74,7 @@ bool query_values(MYSQL *connection, const maintenance_request &request, const s
 		if (result->value_count >= request.row_budget ||
 		    result->value_count >= result->values.size() || !parse_positive(row[0], &value))
 		{
+			result->error_code = EINVAL;
 			mysql_free_result(rows);
 			return false;
 		}
@@ -923,12 +924,19 @@ maintenance_result execute_auction(MYSQL *connection, const maintenance_request 
 maintenance_result execute_catalog(MYSQL *connection, const maintenance_request &request)
 {
 	maintenance_result result = failure(request, maintenance_outcome::permanent_failure, 0);
-	const std::string sql = "SELECT number FROM zones WHERE task_zone=1 AND number>" +
-				std::to_string(request.cursor) + " ORDER BY number LIMIT " +
-				limit_sql(request);
+	// Group before paging so a duplicate straddling the cursor boundary cannot be
+	// silently skipped. Include nonpositive/NULL IDs on page one so they fail validation.
+	std::string sql = "SELECT IF(COUNT(*)=1,number,NULL) FROM zones WHERE task_zone=1";
+	if (request.cursor)
+		sql += " AND number>" + std::to_string(request.cursor);
+	sql += " GROUP BY number ORDER BY number LIMIT " + limit_sql(request);
 	if (!query_values(connection, request, sql, &result))
-		return failure(request, maintenance_outcome::retryable_failure,
-			       mysql_errno(connection));
+		return failure(request,
+			       result.error_code ? maintenance_outcome::permanent_failure :
+						   maintenance_outcome::retryable_failure,
+			       result.error_code       ? result.error_code :
+			       mysql_errno(connection) ? mysql_errno(connection) :
+							 ETIMEDOUT);
 	return result;
 }
 

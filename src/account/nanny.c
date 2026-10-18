@@ -4572,6 +4572,8 @@ void init_char(P_char ch)
 	ch->only.pc->epic_revision = 0;
 	ch->only.pc->frag_revision = 0;
 	ch->only.pc->numb_deaths = 0;
+	// A new character has no durable history; make it usable on the first login.
+	gameplay_read_state_publish(&ch->only.pc->gameplay_reads, nullptr, 0, nullptr, 0);
 
 	/* Initialize bank balances (spare1-spare4 map to copper/silver/gold/platinum) */
 	ch->only.pc->spare1 = 0; /* GET_BALANCE_COPPER */

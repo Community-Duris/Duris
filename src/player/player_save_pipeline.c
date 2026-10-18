@@ -13,6 +13,7 @@
 #include "player/player_save_worker.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_repository.h"
+#include "item/item_movement_transaction.h"
 #include "core/structs.h"
 #include "core/utils.h"
 
@@ -445,6 +446,11 @@ player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int
 	if (!ch || IS_NPC(ch) || GET_PID(ch) <= 0)
 		return player_save_pipeline_result::invalid;
 	if (IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+		return player_save_pipeline_result::unavailable;
+	// Grant admission and capture run on the game thread. Once admitted, a
+	// grant owns this boundary until its result reaches the live graph.
+	// Leave dirty components intact so the next checkpoint includes that graph.
+	if (item_creation_grant_player_publication_pending(ch))
 		return player_save_pipeline_result::unavailable;
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
@@ -977,6 +983,25 @@ void player_save_pipeline_release_target_save_login_fence(int pid,
 	if (target_save_login_fence *fence = find_target_save_login_fence_locked(pid))
 		if (fence->expected_revision == expected_revision)
 			*fence = {};
+}
+
+bool player_save_pipeline_sealed_save_pending(int pid)
+{
+	if (pid <= 0)
+		return true;
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		if (!health.initialized || stop_requested || !accepting ||
+		    find_target_save_login_fence_locked(pid) || find_terminal_fence_locked(pid) ||
+		    append_inflight_pid == pid || any_snapshot_is_retained_locked(pid))
+			return true;
+	}
+	if (player_save_worker_pid_pending(pid))
+		return true;
+	player_revision_snapshot revision = {};
+	if (!player_revision_snapshot_copy(pid, &revision))
+		return false;
+	return revision.overflowed || revision.queued_components || revision.inflight_components;
 }
 
 bool player_save_pipeline_target_save_login_fenced(int pid)

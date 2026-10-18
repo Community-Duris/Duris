@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Runtime and source contracts for the bounded maintenance scheduler."""
 
-from _paths import SRC, rel
+from _paths import HARNESS_STUBS, SRC, rel
 import subprocess
 import tempfile
 import shlex
@@ -84,6 +84,19 @@ maintenance_result execute(const maintenance_request &request, void *raw)
 bool auction_only(maintenance_request &request, void *)
 {
     return request.job_id == maintenance_job_id::auction_due_scan;
+}
+
+bool catalogue_only(maintenance_request &request, void *)
+{
+    return request.job_id == maintenance_job_id::epic_task_catalog;
+}
+
+maintenance_result catalogue_page(const maintenance_request &request, void *raw)
+{
+    auto &state = *static_cast<state_type *>(raw);
+    std::lock_guard<std::mutex> lock(state.mutex);
+    state.requests.push_back(request);
+    return {request.work_id, request.job_id, maintenance_outcome::more, 77, 1, 0, 0, 1, {77}};
 }
 
 template <typename Predicate> void wait_until(Predicate predicate)
@@ -214,6 +227,40 @@ int main(int argc, char **argv)
 	assert(maintenance_scheduler_health_copy(0).completions == 0);
 	maintenance_scheduler_shutdown();
 	maintenance_scheduler_reset_for_tests();
+
+    // A catalogue prefix lives only on the game thread, unlike durable job effects.
+    // Restart must discard both unacknowledged pages and acknowledged cursors.
+    for (bool acknowledge : {false, true}) {
+        const std::string path = std::string(argv[1]) + (acknowledge ? ".catalogue-ack" : ".catalogue-page");
+        state_type catalogue;
+        assert(maintenance_scheduler_set_state_path(path.c_str()));
+        assert(maintenance_scheduler_init(9, catalogue_page, &catalogue, catalogue_only));
+        const size_t id = static_cast<size_t>(maintenance_job_id::epic_task_catalog);
+        const auto due = maintenance_scheduler_health_copy(0).jobs[id].next_due_tick;
+        wait_until([&] {
+            if (maintenance_scheduler_health_copy(due).completions == 1) return true;
+            maintenance_scheduler_pulse(due, results, MAINTENANCE_COMPLETION_MAX);
+            return false;
+        });
+        if (acknowledge) {
+            maintenance_scheduler_quiesce();
+            maintenance_scheduler_pulse(due, results, MAINTENANCE_COMPLETION_MAX);
+        }
+        maintenance_scheduler_shutdown();
+        state_type fresh;
+        assert(maintenance_scheduler_init(9, catalogue_page, &fresh, catalogue_only));
+        auto restored = maintenance_scheduler_health_copy(0);
+        assert(restored.completions == 0 && restored.jobs[id].cursor == 0 && restored.jobs[id].work_id == 0);
+        wait_until([&] {
+            if (maintenance_scheduler_health_copy(due).completions == 1) return true;
+            maintenance_scheduler_pulse(restored.jobs[id].next_due_tick, results, MAINTENANCE_COMPLETION_MAX);
+            return false;
+        });
+        maintenance_scheduler_shutdown();
+        assert(fresh.requests.size() == 1 && fresh.requests[0].cursor == 0);
+        assert(fresh.requests[0].work_id != catalogue.requests[0].work_id);
+        maintenance_scheduler_reset_for_tests();
+    }
     return 0;
 }
 '''
@@ -227,7 +274,7 @@ with tempfile.TemporaryDirectory(prefix="duris-maintenance-scheduler-") as temp_
     subprocess.run(
         ["g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
          "-pthread", "-Isrc", *mysql_cflags, str(source), rel("maintenance_scheduler.c"),
-         rel("persistence_observability.c"), *mysql_libs, "-o", str(binary)],
+         rel("persistence_observability.c"), *mysql_libs, str(HARNESS_STUBS), "-o", str(binary)],
         cwd=ROOT, check=True,
     )
     state_file = Path(temp_dir) / "scheduler.state"

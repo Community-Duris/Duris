@@ -168,7 +168,6 @@ extern void checkpointing(void);
 long sentbytes = 0;
 long receivedbytes = 0;
 bool game_booted = FALSE;
-static std::vector<int32_t> maintenance_catalog_candidate;
 
 static bool hydrate_flatfile_system_item_owner(void)
 {
@@ -232,35 +231,7 @@ static void maintenance_handle_completions(const maintenance_result *results, si
 					ctf_delete_flag(criteria);
 				boon_notify_snapshot(id, racewar, pid, reason);
 			}
-		if (result.job_id != maintenance_job_id::epic_task_catalog)
-			continue;
-		if (result.outcome != maintenance_outcome::complete &&
-		    result.outcome != maintenance_outcome::more)
-		{
-			maintenance_catalog_candidate.clear();
-			continue;
-		}
-		bool valid = maintenance_catalog_candidate.size() + result.value_count <=
-			     EPIC_TASK_CATALOG_MAX;
-		for (size_t value = 0; valid && value < result.value_count; ++value)
-			if (result.values[value] <= 0 || result.values[value] > INT32_MAX)
-				valid = false;
-			else
-				maintenance_catalog_candidate.push_back(
-					static_cast<int32_t>(result.values[value]));
-		if (!valid)
-		{
-			maintenance_catalog_candidate.clear();
-			continue;
-		}
-		if (result.outcome == maintenance_outcome::complete)
-		{
-			if (!epic_task_catalog_publish(maintenance_catalog_candidate.data(),
-						       maintenance_catalog_candidate.size()))
-				logit(LOG_DEBUG,
-				      "maintenance job=epic_task_catalog outcome=publish_failed actor=redacted");
-			maintenance_catalog_candidate.clear();
-		}
+		epic_task_catalog_complete(result);
 	}
 }
 
@@ -784,9 +755,7 @@ int run_the_game(int port, int sslport)
 	{
 		fprintf(stderr, "-- Updating zone database.\r\n");
 		update_zone_db();
-		if (!epic_task_catalog_refresh())
-			logit(LOG_STATUS,
-			      "Epic task catalog unavailable; zone task selection uses safe fallback.");
+		epic_task_catalog_refresh();
 	}
 	else
 	{

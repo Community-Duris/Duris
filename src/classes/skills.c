@@ -5319,6 +5319,7 @@ void create_tags()
 				 "$n sighs and stares off into the sky.");
 
 	TAG_CREATE("total epics gained", TAG_EPICS_GAINED);
+	TAG_CREATE("pending epic task", TAG_EPIC_TASK_PENDING);
 
 	TAG_CREATE("regaining composure", TAG_BARDSONG_FAILURE);
 
