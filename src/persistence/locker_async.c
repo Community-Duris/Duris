@@ -1,57 +1,55 @@
 /*
- * locker_async.c -- main-thread snapshot, persistence writer apply.
+ * locker_async.c -- main-thread walk+snapshot, worker SQL apply.
  *
  * Design:
  *  - Per-locker dirty slots coalesce many save triggers into one generation.
  *  - At most LOCKER_ASYNC_SNAPSHOTS_PER_PULSE new snapshots start per pulse.
- *  - A snapshot captures what the locker character carries, with the locker's
- *    name and owner, while that player is object-command locked.
- *  - The persistence writer applies it in capture order with every other save:
- *    it finds or creates the locker's row and public chest, claims the items and
- *    replaces the rows. The game thread never queries the database for a locker
- *    save.
+ *  - At most LOCKER_ASYNC_MAX_INFLIGHT jobs are in the worker concurrently.
+ *  - Snapshot is an immutable multi-statement SQL blob built on the main thread
+ *    while that player is object-command locked.
+ *  - Worker never touches P_char/P_obj; only applies the sealed SQL blob.
  *  - Completion runs on the next main pulse (extract terminal locker char, unlock).
- *    A terminal save that fails is retried through the writer later; the locker
- *    character keeps the items until one lands.
  *
- * Private chests are saved by StorageLocker::LockerToPFile(), which queues each on
- * the writer as its own job.
+ * Note: private-chest rows are still written synchronously inside
+ * StorageLocker::LockerToPFile() today. This path asyncs the bulk public inventory
+ * carried by the locker character after LockerToPFile transitions.
  */
 
 #include "core/prototypes.h"
+#include "sql/sql_thread_init.h"
 #include "core/structs.h"
 #include "core/utils.h"
 #include "core/utility.h"
+#include "sql/sql.h"
+#include "sql/sql_pool.h"
+#include "sql/sql_player.h"
+#include "sql/item_extra_descr_codec.h"
 #include "item/storage_lockers.h"
 #include "persistence/locker_async.h"
-#include "player/player_save_worker.h"
-#include "player/player_snapshot_capture.h"
-#include "player/player_snapshot_repository.h"
-#include "flatfile/flatfile_player_repository.h"
-#include "persistence/persistence_mode.h"
-#include "sql/sql_pool.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
 
-#include <deque>
-#include <memory>
-#include <new>
-#include <string>
-#include <unordered_map>
+#include <mysql/mysql.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #include <time.h>
+#include <errno.h>
 #include <unistd.h>
 
+extern P_index obj_index;
 extern P_char character_list;
 extern P_room world;
+extern const int top_of_world;
 
+#define LOCKER_ASYNC_SLOTS 128
 #define LOCKER_ASYNC_NAME_LEN 128
-/* How long a failed terminal save waits before the writer tries it again. */
-#define LOCKER_ASYNC_RETRY_SECONDS 30
+#define LOCKER_ASYNC_JOBS 16
+#define LOCKER_ASYNC_RESULTS 32
+#define LOCKER_ASYNC_SCRIPT_INIT (64 * 1024)
 
 enum locker_async_state
 {
@@ -64,28 +62,31 @@ struct locker_async_slot
 {
 	enum locker_async_state state;
 	char locker_name[LOCKER_ASYNC_NAME_LEN];
+	int locker_id;
+	int owner_pid;
+	int owner_assoc_id;
 	int terminal;
 	int rebuild_objects; /* another dirty landed while inflight */
 	unsigned long gen;
 	time_t dirty_at;
-	time_t retry_at; /* a failed terminal save waits for this before the pulse starts it */
-	/* The user by pid and the locker character by name, found again when a snapshot
-	 * starts: either may be extracted before then (a user saved on the way out). */
 	int user_pid;
+	P_char chLocker;
+	P_char chUser;
 };
 
 struct locker_async_job
 {
+	int used;
 	char locker_name[LOCKER_ASYNC_NAME_LEN];
 	unsigned long gen;
 	int terminal;
 	int user_pid;
-	// What the public chest holds in memory, with the locker's name and owner.
-	std::shared_ptr<locker_snapshot> snapshot;
+	char *sql;
 };
 
 struct locker_async_result
 {
+	int used;
 	char locker_name[LOCKER_ASYNC_NAME_LEN];
 	unsigned long gen;
 	int ok;
@@ -93,61 +94,61 @@ struct locker_async_result
 	int user_pid;
 };
 
-/* A deque never moves its elements, so slot pointers stay valid as it grows. */
-static std::deque<struct locker_async_slot> g_slots;
+static struct locker_async_slot g_slots[LOCKER_ASYNC_SLOTS];
 static unsigned long g_gen_seq = 1;
 static int g_snapshots_started_this_pulse = 0;
-/* Each locker's writer key, stable for the life of the process. */
-static std::unordered_map<std::string, uint64_t> g_job_keys;
+static int g_inflight = 0;
 
 static pthread_mutex_t g_q_mu = PTHREAD_MUTEX_INITIALIZER;
-static std::deque<struct locker_async_result> g_results;
+static pthread_cond_t g_q_cv = PTHREAD_COND_INITIALIZER;
+static struct locker_async_job g_jobs[LOCKER_ASYNC_JOBS];
+static struct locker_async_result g_results[LOCKER_ASYNC_RESULTS];
+static int g_worker_running = 0;
+static int g_worker_created = 0;
+static int g_worker_stop = 0;
+static pthread_t g_worker_tid;
 static int g_inited = 0;
 
 static int locker_async_worker_available(void)
 {
-	return player_save_worker_health_copy().running;
+	int available;
+	pthread_mutex_lock(&g_q_mu);
+	available = g_worker_created && g_worker_running && !g_worker_stop;
+	pthread_mutex_unlock(&g_q_mu);
+	return available;
 }
 
 /* ---------------- slot helpers (main only) ---------------- */
 
 static struct locker_async_slot *slot_find(const char *name)
 {
+	int i;
 	if (!name || !*name)
 		return NULL;
-	for (struct locker_async_slot &slot : g_slots)
-		if (slot.state != LCHK_FREE && !str_cmp(slot.locker_name, name))
-			return &slot;
+	for (i = 0; i < LOCKER_ASYNC_SLOTS; i++)
+		if (g_slots[i].state != LCHK_FREE && !str_cmp(g_slots[i].locker_name, name))
+			return &g_slots[i];
 	return NULL;
 }
 
 static struct locker_async_slot *slot_alloc(const char *name)
 {
+	int i;
 	struct locker_async_slot *s = slot_find(name);
 	if (s)
 		return s;
-	for (struct locker_async_slot &slot : g_slots)
-		if (slot.state == LCHK_FREE)
-		{
-			s = &slot;
-			break;
-		}
-	if (!s)
+	for (i = 0; i < LOCKER_ASYNC_SLOTS; i++)
 	{
-		try
+		if (g_slots[i].state == LCHK_FREE)
 		{
-			g_slots.emplace_back();
+			memset(&g_slots[i], 0, sizeof(g_slots[i]));
+			snprintf(g_slots[i].locker_name, sizeof(g_slots[i].locker_name), "%s",
+				 name);
+			g_slots[i].state = LCHK_DIRTY;
+			return &g_slots[i];
 		}
-		catch (const std::bad_alloc &)
-		{
-			return NULL;
-		}
-		s = &g_slots.back();
 	}
-	memset(s, 0, sizeof(*s));
-	snprintf(s->locker_name, sizeof(s->locker_name), "%s", name);
-	s->state = LCHK_DIRTY;
-	return s;
+	return NULL;
 }
 
 static void slot_clear(struct locker_async_slot *s)
@@ -158,19 +159,9 @@ static void slot_clear(struct locker_async_slot *s)
 	s->state = LCHK_FREE;
 }
 
-/* A failed terminal save goes back to the writer later. The locker character keeps
- * the items until one lands; its user has left, so nothing stays object-locked. */
-static void slot_retry_later(struct locker_async_slot *s)
-{
-	s->state = LCHK_DIRTY;
-	s->gen = g_gen_seq++;
-	s->dirty_at = time(NULL);
-	s->retry_at = s->dirty_at + LOCKER_ASYNC_RETRY_SECONDS;
-	s->user_pid = 0;
-}
-
 int locker_async_player_obj_locked(P_char ch)
 {
+	int i;
 	int pid;
 
 	if (!ch || IS_NPC(ch))
@@ -179,10 +170,10 @@ int locker_async_player_obj_locked(P_char ch)
 	if (pid <= 0)
 		return 0;
 	/* Only lock while DIRTY (waiting for / during the main-thread snapshot
-	 * start). Once INFLIGHT the snapshot is sealed; unlock the player. */
-	for (const struct locker_async_slot &slot : g_slots)
+	 * start). Once INFLIGHT the SQL payload is sealed; unlock the player. */
+	for (i = 0; i < LOCKER_ASYNC_SLOTS; i++)
 	{
-		if (slot.state == LCHK_DIRTY && slot.user_pid == pid)
+		if (g_slots[i].state == LCHK_DIRTY && g_slots[i].user_pid == pid)
 			return 1;
 	}
 	return 0;
@@ -194,107 +185,631 @@ int locker_async_name_busy(const char *locker_name)
 	return (s && s->state != LCHK_FREE) ? 1 : 0;
 }
 
-/* ---------------- snapshot (main only) ---------------- */
+/* ---------------- job/result queue (shared) ---------------- */
 
-/* The owner, from the locker's name: guild.<id>.locker, account.<name>.locker or
- * <player>.locker. The writer looks a player up only to create a new locker's row. */
-static void locker_owner(P_char chLocker, locker_snapshot *snapshot)
+static int job_push(struct locker_async_job *src)
 {
-	const char *name = GET_NAME(chLocker);
-
-	snapshot->racewar = GET_RACEWAR(chLocker);
-	snapshot->race = GET_RACE(chLocker);
-	if (strncmp(name, "guild.", 6) == 0)
-		snapshot->owner_assoc_id = atoi(name + 6);
-	else if (strncmp(name, "account.", 8) != 0)
+	int i;
+	pthread_mutex_lock(&g_q_mu);
+	for (i = 0; i < LOCKER_ASYNC_JOBS; i++)
 	{
-		snapshot->owner_name = name;
-		const size_t dot = snapshot->owner_name.find(".locker");
-		if (dot != std::string::npos)
-			snapshot->owner_name.resize(dot);
+		if (!g_jobs[i].used)
+		{
+			g_jobs[i] = *src;
+			g_jobs[i].used = 1;
+			src->sql = NULL;
+			pthread_cond_signal(&g_q_cv);
+			pthread_mutex_unlock(&g_q_mu);
+			return 1;
+		}
+	}
+	pthread_mutex_unlock(&g_q_mu);
+	return 0;
+}
+
+static int job_pop(struct locker_async_job *dst)
+{
+	int i;
+	for (i = 0; i < LOCKER_ASYNC_JOBS; i++)
+	{
+		if (g_jobs[i].used)
+		{
+			*dst = g_jobs[i];
+			memset(&g_jobs[i], 0, sizeof(g_jobs[i]));
+			return 1;
+		}
+	}
+	return 0;
+}
+
+static void result_push_locked(const struct locker_async_result *r)
+{
+	int i;
+	for (i = 0; i < LOCKER_ASYNC_RESULTS; i++)
+	{
+		if (!g_results[i].used)
+		{
+			g_results[i] = *r;
+			g_results[i].used = 1;
+			return;
+		}
+	}
+	logit(LOG_FILE, "locker_async: result queue full for %s gen=%lu", r->locker_name, r->gen);
+}
+
+/* ---------------- growable SQL script builders (main only) ---------------- */
+
+struct la_buf
+{
+	char *data;
+	size_t len;
+	size_t cap;
+	int failed;
+};
+
+static int la_buf_init(struct la_buf *b, size_t cap)
+{
+	memset(b, 0, sizeof(*b));
+	b->data = (char *)malloc(cap);
+	if (!b->data)
+	{
+		b->failed = 1;
+		return 0;
+	}
+	b->cap = cap;
+	b->data[0] = '\0';
+	return 1;
+}
+
+static void la_buf_free(struct la_buf *b)
+{
+	if (b && b->data)
+		free(b->data);
+	if (b)
+		memset(b, 0, sizeof(*b));
+}
+
+static int la_buf_reserve(struct la_buf *b, size_t need)
+{
+	char *n;
+	size_t ncap;
+	if (b->failed)
+		return 0;
+	if (b->len + need + 1 <= b->cap)
+		return 1;
+	ncap = b->cap ? b->cap : LOCKER_ASYNC_SCRIPT_INIT;
+	while (b->len + need + 1 > ncap)
+		ncap *= 2;
+	n = (char *)realloc(b->data, ncap);
+	if (!n)
+	{
+		b->failed = 1;
+		return 0;
+	}
+	b->data = n;
+	b->cap = ncap;
+	return 1;
+}
+
+static int la_buf_puts(struct la_buf *b, const char *s)
+{
+	size_t n;
+	if (!s)
+		return 1;
+	n = strlen(s);
+	if (!la_buf_reserve(b, n))
+		return 0;
+	memcpy(b->data + b->len, s, n);
+	b->len += n;
+	b->data[b->len] = '\0';
+	return !b->failed;
+}
+
+static int la_buf_printf(struct la_buf *b, const char *fmt, ...)
+{
+	va_list ap;
+	int need;
+	if (b->failed)
+		return 0;
+	va_start(ap, fmt);
+	need = vsnprintf(NULL, 0, fmt, ap);
+	va_end(ap);
+	if (need < 0)
+	{
+		b->failed = 1;
+		return 0;
+	}
+	if (!la_buf_reserve(b, (size_t)need + 1))
+		return 0;
+	va_start(ap, fmt);
+	vsnprintf(b->data + b->len, b->cap - b->len, fmt, ap);
+	va_end(ap);
+	b->len += (size_t)need;
+	return 1;
+}
+
+static char *la_esc(const char *s)
+{
+	return sql_escape_string(s ? s : "");
+}
+
+static int g_tmp_id_seq;
+
+static int emit_item_sql(struct la_buf *b, P_obj obj, int locker_id, int chest_id, int parent_tmp)
+{
+	int tmp;
+	int vnum;
+	char *esc_name = NULL, *esc_short = NULL, *esc_desc = NULL, *esc_action = NULL;
+	char name_str[1024], short_str[1024], desc_str[2048], action_str[2048];
+	char wear_str[32], type_str[16], material_str[16];
+	char bv1_str[32], bv2_str[32], bv3_str[32], bv4_str[32], bv5_str[32];
+	char container_str[64], chest_id_str[32];
+	int i;
+	P_obj child;
+	struct extra_descr_data *ed;
+
+	if (!obj)
+		return 1;
+	if (obj->R_num < 0)
+		return 0;
+
+	vnum = obj_index[obj->R_num].virtual_number;
+	tmp = ++g_tmp_id_seq;
+
+	if (obj->str_mask & STRUNG_KEYS)
+		esc_name = la_esc(obj->name);
+	if (obj->str_mask & STRUNG_DESC2)
+		esc_short = la_esc(obj->short_description);
+	if (obj->str_mask & STRUNG_DESC1)
+		esc_desc = la_esc(obj->description);
+	if (obj->str_mask & STRUNG_DESC3)
+		esc_action = la_esc(obj->action_description);
+
+	if (esc_name)
+		snprintf(name_str, sizeof(name_str), "'%s'", esc_name);
+	else
+		strcpy(name_str, "NULL");
+	if (esc_short)
+		snprintf(short_str, sizeof(short_str), "'%s'", esc_short);
+	else
+		strcpy(short_str, "NULL");
+	if (esc_desc)
+		snprintf(desc_str, sizeof(desc_str), "'%s'", esc_desc);
+	else
+		strcpy(desc_str, "NULL");
+	if (esc_action)
+		snprintf(action_str, sizeof(action_str), "'%s'", esc_action);
+	else
+		strcpy(action_str, "NULL");
+
+	snprintf(wear_str, sizeof(wear_str), "%u", obj->wear_flags);
+	snprintf(type_str, sizeof(type_str), "%d", (int)obj->type);
+	snprintf(material_str, sizeof(material_str), "%d", (int)obj->material);
+	snprintf(bv1_str, sizeof(bv1_str), "%lu", (unsigned long)obj->bitvector);
+	snprintf(bv2_str, sizeof(bv2_str), "%lu", (unsigned long)obj->bitvector2);
+	snprintf(bv3_str, sizeof(bv3_str), "%lu", (unsigned long)obj->bitvector3);
+	snprintf(bv4_str, sizeof(bv4_str), "%lu", (unsigned long)obj->bitvector4);
+	snprintf(bv5_str, sizeof(bv5_str), "%lu", (unsigned long)obj->bitvector5);
+
+	if (parent_tmp > 0)
+		snprintf(container_str, sizeof(container_str), "@la_i%d", parent_tmp);
+	else
+		strcpy(container_str, "NULL");
+
+	if (chest_id > 0)
+		snprintf(chest_id_str, sizeof(chest_id_str), "%d", chest_id);
+	else
+		strcpy(chest_id_str, "NULL");
+
+	if (!la_buf_printf(b,
+			   "INSERT INTO locker_items ("
+			   "locker_id, chest_id, vnum, container_id, quantity, "
+			   "weight, cost, timer, extra_flags, wear_flags, item_type, "
+			   "value0, value1, value2, value3, value4, value5, value6, value7, "
+			   "name, short_descr, description, action_descr, "
+			   "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
+			   "item_material, obj_uid, item_condition"
+			   ") VALUES ("
+			   "%d, %s, %d, %s, 1, "
+			   "%d, %d, %ld, %lu, %s, %s, "
+			   "%d, %d, %d, %d, %d, %d, %d, %d, "
+			   "%s, %s, %s, %s, "
+			   "%s, %s, %s, %s, %s, "
+			   "%s, %lu, %d"
+			   ");\n"
+			   "SET @la_i%d = LAST_INSERT_ID();\n",
+			   locker_id, chest_id_str, vnum, container_str, obj->weight, obj->cost,
+			   (long)obj->timer[0], (unsigned long)obj->extra_flags, wear_str, type_str,
+			   obj->value[0], obj->value[1], obj->value[2], obj->value[3],
+			   obj->value[4], obj->value[5], obj->value[6], obj->value[7], name_str,
+			   short_str, desc_str, action_str, bv1_str, bv2_str, bv3_str, bv4_str,
+			   bv5_str, material_str, obj->obj_uid, obj->condition, tmp))
+	{
+		free(esc_name);
+		free(esc_short);
+		free(esc_desc);
+		free(esc_action);
+		return 0;
+	}
+
+	free(esc_name);
+	free(esc_short);
+	free(esc_desc);
+	free(esc_action);
+
+	for (i = 0; i < MAX_OBJ_AFFECT; i++)
+	{
+		int j;
+		int is_dup = 0;
+		if (obj->affected[i].location == 0 && obj->affected[i].modifier == 0)
+			continue;
+		for (j = 0; j < i; j++)
+		{
+			if (obj->affected[j].location == obj->affected[i].location &&
+			    obj->affected[j].modifier == obj->affected[i].modifier)
+			{
+				is_dup = 1;
+				break;
+			}
+		}
+		if (is_dup)
+			continue;
+		if (!la_buf_printf(b,
+				   "INSERT INTO locker_item_affects (item_id, location, modifier) "
+				   "VALUES (@la_i%d, %d, %d);\n",
+				   tmp, obj->affected[i].location, obj->affected[i].modifier))
+			return 0;
+	}
+
+	const size_t spellbook_bytes = (MAX_SKILLS + 1) / 8 + 1;
+	char spellbook_bits[(MAX_SKILLS + 1) / 8 + 1] = {};
+	static const char spellbook_marker[] = { 3, 1, 3, 0 };
+	for (ed = obj->ex_description; ed; ed = ed->next)
+	{
+		if (!sql_item_extra_descr_is_spellbook_marker(ed->keyword) || !ed->description)
+			continue;
+		for (size_t offset = 0; offset < spellbook_bytes; ++offset)
+			spellbook_bits[offset] = static_cast<char>(
+				static_cast<unsigned char>(spellbook_bits[offset]) |
+				static_cast<unsigned char>(ed->description[offset]));
+	}
+
+	bool spellbook_emitted = false;
+	for (ed = obj->ex_description; ed; ed = ed->next)
+	{
+		char *ek = NULL;
+		char *edesc = NULL;
+		int emitted;
+		const char *source_keyword = ed->keyword;
+		const char *source_description = ed->description;
+		if (sql_item_extra_descr_is_spellbook_marker(ed->keyword))
+		{
+			if (spellbook_emitted)
+				continue;
+			spellbook_emitted = true;
+			source_keyword = spellbook_marker;
+			source_description = spellbook_bits;
+		}
+		if (!sql_encode_item_extra_descr(source_keyword, source_description, &ek, &edesc))
+		{
+			free(ek);
+			free(edesc);
+			return 0;
+		}
+		if (edesc)
+			emitted = la_buf_printf(
+				b,
+				"INSERT INTO locker_item_extra_descr (item_id, keyword, description) "
+				"VALUES (@la_i%d, '%s', '%s');\n",
+				tmp, ek, edesc);
+		else
+			emitted = la_buf_printf(
+				b,
+				"INSERT INTO locker_item_extra_descr (item_id, keyword, description) "
+				"VALUES (@la_i%d, '%s', NULL);\n",
+				tmp, ek);
+		if (!emitted)
+		{
+			free(ek);
+			free(edesc);
+			return 0;
+		}
+		free(ek);
+		free(edesc);
+	}
+
+	for (child = obj->contains; child; child = child->next_content)
+	{
+		if (!emit_item_sql(b, child, locker_id, chest_id, tmp))
+			return 0;
+	}
+	return 1;
+}
+
+static void locker_owner_ids(P_char chLocker, int *owner_pid, int *owner_assoc_id)
+{
+	*owner_pid = 0;
+	*owner_assoc_id = 0;
+	if (!chLocker || !GET_NAME(chLocker))
+		return;
+	if (strncmp(GET_NAME(chLocker), "guild.", 6) == 0)
+	{
+		*owner_assoc_id = atoi(GET_NAME(chLocker) + 6);
+	}
+	else if (strncmp(GET_NAME(chLocker), "account.", 8) == 0)
+	{
+		*owner_pid = 0;
+	}
+	else
+	{
+		char pname[MAX_NAME_LENGTH + 1];
+		char *dot;
+		strlcpy(pname, GET_NAME(chLocker), sizeof(pname));
+		dot = strstr(pname, ".locker");
+		if (dot)
+			*dot = '\0';
+		*owner_pid = sql_get_player_pid(pname);
 	}
 }
 
-/* Each locker keeps one writer key, so a newer save can replace its queued one. Keys
- * stay below 2^32 and never match a private chest's (chest_id << 32 | locker_id). */
-static uint64_t locker_job_key(const char *name)
+/* Ensure the locker row + public chest exist; return locker_id and public_chest_id.
+ * Only metadata -- no item walk. Returns 0 on failure. */
+static int ensure_locker_ids(P_char chLocker, int owner_pid, int owner_assoc_id, int *out_locker_id,
+			     int *out_public_id)
 {
-	std::string key = name;
-	for (char &c : key)
-		c = LOWER(c);
-	const auto found = g_job_keys.find(key);
-	if (found != g_job_keys.end())
-		return found->second;
-	const uint64_t assigned = g_job_keys.size() + 1;
-	g_job_keys.emplace(std::move(key), assigned);
-	return assigned;
+	int locker_id;
+	int public_id;
+	char *esc_name;
+	char query[768];
+	char owner_pid_str[32], owner_assoc_str[32];
+
+	if (!chLocker || !GET_NAME(chLocker) || !out_locker_id || !out_public_id)
+		return 0;
+
+	locker_id = sql_get_locker_id_by_name(GET_NAME(chLocker));
+	if (locker_id <= 0)
+	{
+		esc_name = la_esc(GET_NAME(chLocker));
+		if (!esc_name)
+			return 0;
+		if (owner_pid > 0)
+			snprintf(owner_pid_str, sizeof(owner_pid_str), "%d", owner_pid);
+		else
+			strcpy(owner_pid_str, "NULL");
+		if (owner_assoc_id > 0)
+			snprintf(owner_assoc_str, sizeof(owner_assoc_str), "%d", owner_assoc_id);
+		else
+			strcpy(owner_assoc_str, "NULL");
+		snprintf(
+			query, sizeof(query),
+			"INSERT INTO lockers (locker_name, owner_pid, owner_assoc_id, racewar, race) "
+			"VALUES ('%s', %s, %s, %d, %d)",
+			esc_name, owner_pid_str, owner_assoc_str, GET_RACEWAR(chLocker),
+			GET_RACE(chLocker));
+		free(esc_name);
+		if (!qry("%s", query))
+			return 0;
+		locker_id = sql_get_locker_id_by_name(GET_NAME(chLocker));
+		if (locker_id <= 0)
+			return 0;
+	}
+
+	public_id = sql_get_or_create_public_chest(locker_id);
+	if (public_id <= 0)
+		return 0;
+
+	*out_locker_id = locker_id;
+	*out_public_id = public_id;
+	return 1;
 }
 
-const char *locker_async_job_name(unsigned long long key)
+/* Build sealed multi-statement SQL for chLocker->carrying public inventory. */
+static char *build_locker_snapshot_sql(struct locker_async_slot *s)
 {
-	for (const auto &entry : g_job_keys)
-		if (entry.second == key)
-			return entry.first.c_str();
+	struct la_buf b;
+	P_char chLocker = s->chLocker;
+	int owner_pid = s->owner_pid;
+	int owner_assoc_id = s->owner_assoc_id;
+	int locker_id = 0;
+	int public_id = 0;
+	P_obj obj;
+
+	if (!chLocker || !GET_NAME(chLocker))
+		return NULL;
+
+	if (!owner_pid && !owner_assoc_id)
+		locker_owner_ids(chLocker, &owner_pid, &owner_assoc_id);
+	s->owner_pid = owner_pid;
+	s->owner_assoc_id = owner_assoc_id;
+
+	/* Resolve ids on main (cheap). */
+	if (!ensure_locker_ids(chLocker, owner_pid, owner_assoc_id, &locker_id, &public_id))
+		return NULL;
+	s->locker_id = locker_id;
+
+	if (!la_buf_init(&b, LOCKER_ASYNC_SCRIPT_INIT))
+		return NULL;
+
+	g_tmp_id_seq = 0;
+
+	if (!la_buf_printf(
+		    &b,
+		    "START TRANSACTION;\n"
+		    "DELETE FROM locker_items WHERE locker_id=%d AND (chest_id IS NULL OR chest_id=%d);\n",
+		    locker_id, public_id))
+		goto fail;
+
+	for (obj = chLocker->carrying; obj; obj = obj->next_content)
+	{
+		if (!emit_item_sql(&b, obj, locker_id, public_id, 0))
+			goto fail;
+	}
+
+	if (!la_buf_puts(&b, "COMMIT;\n"))
+		goto fail;
+
+	if (b.failed)
+		goto fail;
+
+	{
+		char *out = b.data;
+		b.data = NULL;
+		la_buf_free(&b);
+		return out;
+	}
+
+fail:
+	la_buf_free(&b);
 	return NULL;
 }
 
-/* ---------------- writer ---------------- */
+/* ---------------- worker ---------------- */
 
-/* Flat-file writes the public chest into its locker catalog; MariaDB into its rows. */
-static player_save_apply_result write_locker(const locker_snapshot &snapshot)
+#ifndef __NO_MYSQL__
+static int repair_failed_connection(MYSQL **conn_io)
 {
-	const char *root = persistence_mode_flatfile_root();
-	if (!root)
-		return locker_snapshot_repository_apply_from_pool(snapshot);
-	flatfile_locker_save save;
-	save.locker_name = snapshot.locker_name;
-	save.owner_assoc_id = snapshot.owner_assoc_id;
-	save.racewar = static_cast<int8_t>(snapshot.racewar);
-	save.race = static_cast<int8_t>(snapshot.race);
-	save.items = snapshot.items;
-	for (player_item_snapshot &item : save.items)
-		item.equipment_slot = -1;
-	std::string error;
-	return flatfile_locker_snapshot_apply(root, save, &error);
+	MYSQL *conn;
+	MYSQL *replacement;
+
+	if (!conn_io || !*conn_io)
+		return 0;
+
+	conn = *conn_io;
+
+	/* A failed multi-statement may leave result packets pending.  Drain
+	 * before issuing ROLLBACK; otherwise the connection can remain out of
+	 * sync and cannot be safely reused. */
+	sql_clear_results_on(conn);
+	if (mysql_rollback(conn) != 0)
+		logit(LOG_FILE,
+		      "locker_async: rollback after failed snapshot failed error_code=%u "
+		      "sqlstate=%.5s",
+		      (unsigned int)mysql_errno(conn), mysql_sqlstate(conn));
+
+	/* The connection may still have an unknown server-side state (for
+	 * example, a dropped socket or a failed statement in a batch).  Discard
+	 * it rather than returning it to the shared worker pool. */
+	replacement = sql_pool_replace_connection(conn);
+	if (replacement)
+		*conn_io = replacement;
+	else
+		logit(LOG_FILE, "locker_async: failed to replace poisoned persistence connection");
+	return 0;
 }
 
-/* Runs on the persistence writer thread. A lost connection goes back to the
- * writer, which retries this job before any later save. */
-static player_save_apply_result locker_write_job(const struct locker_async_job &job)
+static int apply_sql_script(MYSQL **conn_io, const char *sql)
 {
-	const player_save_apply_result applied = write_locker(*job.snapshot);
-	if (applied.outcome == player_save_apply_outcome::retryable_failure ||
-	    applied.outcome == player_save_apply_outcome::ambiguous_commit)
-		return applied;
+	MYSQL *conn;
+	int status;
 
-	struct locker_async_result res;
-	memset(&res, 0, sizeof(res));
-	snprintf(res.locker_name, sizeof(res.locker_name), "%s", job.locker_name);
-	res.gen = job.gen;
-	res.ok = applied.outcome == player_save_apply_outcome::applied;
-	res.terminal = job.terminal;
-	res.user_pid = job.user_pid;
+	if (!conn_io || !*conn_io || !sql)
+		return 0;
+
+	conn = *conn_io;
+	while (*sql == ' ' || *sql == '\n' || *sql == '\r' || *sql == '	')
+		sql++;
+	if (!*sql)
+		return 1;
+	if (sql[0] == '/' && sql[1] == '*')
+		return 1;
+
+	/* Every persistence-pool connection is created with
+	 * CLIENT_MULTI_STATEMENTS. Do not retry a partially executed batch by
+	 * splitting it: that can duplicate successful statements and leaves the
+	 * transaction boundary ambiguous. */
+	uint64_t operation_id = 0;
+	if (!sql_observed_execute_at(conn, PERSISTENCE_QUERY_SITE,
+				     PERSISTENCE_QUERY_CONTEXT_LOCKER_WORKER, sql, strlen(sql),
+				     &operation_id))
+	{
+		return repair_failed_connection(conn_io);
+	}
+
+	do
+	{
+		MYSQL_RES *res = mysql_store_result(conn);
+		if (res)
+			mysql_free_result(res);
+		status = mysql_next_result(conn);
+		if (status > 0)
+		{
+			logit(LOG_FILE,
+			      "locker_async: multi result failed operation=%llu error_code=%u "
+			      "sqlstate=%.5s",
+			      (unsigned long long)operation_id, (unsigned int)mysql_errno(conn),
+			      mysql_sqlstate(conn));
+			return repair_failed_connection(conn_io);
+		}
+	} while (status == 0);
+	return 1;
+}
+#endif
+
+static void *locker_async_worker_main(void *arg)
+{
+	(void)arg;
+#ifndef __NO_MYSQL__
+	if (sql_worker_thread_init() != 0)
+	{
+		logit(LOG_FILE, "locker_async: mysql_thread_init failed");
+		pthread_mutex_lock(&g_q_mu);
+		g_worker_running = 0;
+		pthread_mutex_unlock(&g_q_mu);
+		return NULL;
+	}
+#endif
+
+	for (;;)
+	{
+		struct locker_async_job job;
+		struct locker_async_result res;
+
+		memset(&job, 0, sizeof(job));
+		pthread_mutex_lock(&g_q_mu);
+		while (!g_worker_stop && !job_pop(&job))
+			pthread_cond_wait(&g_q_cv, &g_q_mu);
+		if (g_worker_stop && !job.used)
+		{
+			pthread_mutex_unlock(&g_q_mu);
+			break;
+		}
+		pthread_mutex_unlock(&g_q_mu);
+
+		memset(&res, 0, sizeof(res));
+		snprintf(res.locker_name, sizeof(res.locker_name), "%s", job.locker_name);
+		res.gen = job.gen;
+		res.terminal = job.terminal;
+		res.user_pid = job.user_pid;
+		res.ok = 0;
+
+#ifndef __NO_MYSQL__
+		MYSQL *conn = NULL;
+		conn = sql_persistence_connection();
+		if (conn && job.sql)
+			res.ok = apply_sql_script(&conn, job.sql) ? 1 : 0;
+		else if (job.sql && job.sql[0] == '/' && job.sql[1] == '*')
+			res.ok = 1;
+		if (conn)
+			sql_persistence_release_connection(conn);
+#else
+		res.ok = 0;
+#endif
+
+		if (job.sql)
+			free(job.sql);
+
+		pthread_mutex_lock(&g_q_mu);
+		result_push_locked(&res);
+		pthread_mutex_unlock(&g_q_mu);
+	}
+
+#ifndef __NO_MYSQL__
+	mysql_thread_end();
+#endif
 	pthread_mutex_lock(&g_q_mu);
-	try
-	{
-		g_results.push_back(res);
-	}
-	catch (const std::bad_alloc &)
-	{
-		logit(LOG_FILE, "locker_async: result lost for %s gen=%lu", res.locker_name,
-		      res.gen);
-	}
+	g_worker_running = 0;
 	pthread_mutex_unlock(&g_q_mu);
-	return applied;
-}
-
-static int job_push(const struct locker_async_job &job, size_t bytes)
-{
-	const player_save_submit_result submitted = persistence_writer_submit(
-		persistence_job_kind::locker, locker_job_key(job.locker_name), bytes,
-		[job]() { return locker_write_job(job); });
-	return submitted == player_save_submit_result::accepted ||
-	       submitted == player_save_submit_result::replaced;
+	return NULL;
 }
 
 /* ---------------- mark dirty / pulse / completion ---------------- */
@@ -314,11 +829,13 @@ int locker_async_mark_dirty(P_char chLocker, P_char chUser, int terminal, const 
 	if (!s)
 	{
 		persistence_alert(AVATAR, "locker_async", name, "none", "none", "slots_full",
-				  "dirty table allocation failed; reason=%s",
-				  reason ? reason : "unknown");
+				  "dirty table full; reason=%s", reason ? reason : "unknown");
 		return 0;
 	}
 
+	s->chLocker = chLocker;
+	if (chUser)
+		s->chUser = chUser;
 	if (terminal)
 		s->terminal = 1;
 	if (chUser && !IS_NPC(chUser))
@@ -336,7 +853,6 @@ int locker_async_mark_dirty(P_char chLocker, P_char chUser, int terminal, const 
 		s->state = LCHK_DIRTY;
 		s->gen = g_gen_seq++;
 		s->dirty_at = time(NULL);
-		s->retry_at = 0;
 	}
 
 	logit(LOG_DEBUG, "locker_async: mark dirty name=%s terminal=%d gen=%lu reason=%s state=%d",
@@ -387,11 +903,13 @@ static void apply_result(struct locker_async_result *r)
 	struct locker_async_slot *s = slot_find(r->locker_name);
 	P_char chLocker;
 	P_char chUser;
+	int durable_ok;
 
 	if (!s)
 	{
 		logit(LOG_DEBUG, "locker_async: result for unknown slot %s gen=%lu ok=%d",
 		      r->locker_name, r->gen, r->ok);
+		g_inflight = (g_inflight > 0) ? g_inflight - 1 : 0;
 		return;
 	}
 
@@ -399,31 +917,60 @@ static void apply_result(struct locker_async_result *r)
 	{
 		logit(LOG_DEBUG, "locker_async: stale result name=%s res_gen=%lu slot_gen=%lu",
 		      s->locker_name, r->gen, s->gen);
+		g_inflight = (g_inflight > 0) ? g_inflight - 1 : 0;
 		if (s->rebuild_objects)
 			s->state = LCHK_DIRTY;
 		return;
 	}
 
+	g_inflight = (g_inflight > 0) ? g_inflight - 1 : 0;
 	chLocker = find_locker_char_by_name(s->locker_name);
 	chUser = find_char_by_pid(s->user_pid);
+	durable_ok = r->ok ? 1 : 0;
 
 	if (!r->ok)
+	{
 		persistence_alert(AVATAR, "locker_async", s->locker_name, "none", "none",
 				  "worker_failed",
-				  "locker save failed gen=%lu terminal=%d; the writer tries again",
+				  "async locker save failed gen=%lu terminal=%d; sync fallback",
 				  s->gen, s->terminal ? 1 : 0);
+		if (chLocker)
+		{
+			int owner_pid = s->owner_pid, owner_assoc = s->owner_assoc_id;
+			if (!owner_pid && !owner_assoc)
+				locker_owner_ids(chLocker, &owner_pid, &owner_assoc);
+			if (sql_save_locker(chLocker, owner_pid, owner_assoc))
+				durable_ok = 1;
+			else if (writeCharacter(chLocker, s->terminal ? 3 : 0, NOWHERE))
+				durable_ok = 1;
+			else
+				durable_ok = 0;
+		}
+		else
+		{
+			durable_ok = 0;
+		}
+	}
 
 	if (s->terminal)
 	{
-		/* A save that landed while a newer one waits (the user left during an
-		 * in-stay save) is not the one holding what the locker character carries. */
-		if (r->ok && chLocker && !s->rebuild_objects)
+		if (durable_ok && chLocker)
 		{
 			chLocker->specials.timer = 0;
 			extract_char(chLocker);
+			s->chLocker = NULL;
+		}
+		else if (!durable_ok)
+		{
+			/* Fail closed: keep locker char / re-entry fence until staff
+			 * can recover; never extract after both async + sync failed. */
+			persistence_alert(AVATAR, "locker_async", s->locker_name, "none", "none",
+					  "terminal_not_durable",
+					  "terminal save failed; refusing extract of locker char");
+			s->rebuild_objects = 1;
 		}
 	}
-	else if (chLocker && chUser)
+	else if (!s->terminal && chLocker && chUser)
 	{
 		locker_async_request_resort(chLocker, chUser);
 	}
@@ -434,16 +981,21 @@ static void apply_result(struct locker_async_result *r)
 		s->state = LCHK_DIRTY;
 		s->gen = g_gen_seq++;
 		s->dirty_at = time(NULL);
-		s->retry_at = 0;
+		if (chLocker)
+			s->chLocker = chLocker;
+		if (chUser)
+			s->chUser = chUser;
 	}
-	else if (r->ok || !s->terminal)
+	else if (durable_ok || !s->terminal)
 	{
-		/* A failed in-stay save is carried by the locker's next save. */
 		slot_clear(s);
 	}
 	else
 	{
-		slot_retry_later(s);
+		/* Keep terminal-not-durable slot as DIRTY/busy fence. */
+		s->state = LCHK_DIRTY;
+		s->gen = g_gen_seq++;
+		s->dirty_at = time(NULL);
 	}
 }
 
@@ -453,13 +1005,19 @@ static void drain_results(void)
 	{
 		struct locker_async_result r;
 		int found = 0;
+		int i;
 
+		memset(&r, 0, sizeof(r));
 		pthread_mutex_lock(&g_q_mu);
-		if (!g_results.empty())
+		for (i = 0; i < LOCKER_ASYNC_RESULTS; i++)
 		{
-			r = g_results.front();
-			g_results.pop_front();
-			found = 1;
+			if (g_results[i].used)
+			{
+				r = g_results[i];
+				memset(&g_results[i], 0, sizeof(g_results[i]));
+				found = 1;
+				break;
+			}
 		}
 		pthread_mutex_unlock(&g_q_mu);
 		if (!found)
@@ -468,20 +1026,42 @@ static void drain_results(void)
 	}
 }
 
+static int locker_sync_fallback_durable(struct locker_async_slot *s, P_char chLocker)
+{
+	int owner_pid;
+	int owner_assoc;
+
+	if (!s || !chLocker)
+		return 0;
+
+	owner_pid = s->owner_pid;
+	owner_assoc = s->owner_assoc_id;
+	if (!owner_pid && !owner_assoc)
+		locker_owner_ids(chLocker, &owner_pid, &owner_assoc);
+
+	if (sql_save_locker(chLocker, owner_pid, owner_assoc))
+		return 1;
+	if (writeCharacter(chLocker, s->terminal ? 3 : 0, NOWHERE))
+		return 1;
+	return 0;
+}
+
 static int start_one_snapshot(struct locker_async_slot *s)
 {
-	struct locker_async_job job = {};
-	size_t bytes = 0;
+	struct locker_async_job job;
+	char *sql;
 	P_char chLocker;
 	P_char chUser;
 
 	if (!s || s->state != LCHK_DIRTY)
 		return 0;
+	if (g_inflight >= LOCKER_ASYNC_MAX_INFLIGHT)
+		return 0;
 	if (g_snapshots_started_this_pulse >= LOCKER_ASYNC_SNAPSHOTS_PER_PULSE)
 		return 0;
 
-	chLocker = find_locker_char_by_name(s->locker_name);
-	chUser = find_char_by_pid(s->user_pid);
+	chLocker = s->chLocker ? s->chLocker : find_locker_char_by_name(s->locker_name);
+	chUser = s->chUser ? s->chUser : find_char_by_pid(s->user_pid);
 	if (!chLocker)
 	{
 		logit(LOG_FILE, "locker_async: dirty locker char missing for %s -- clearing",
@@ -489,6 +1069,8 @@ static int start_one_snapshot(struct locker_async_slot *s)
 		slot_clear(s);
 		return 0;
 	}
+	s->chLocker = chLocker;
+	s->chUser = chUser;
 
 	/* Always re-prepare live inventory onto the locker char before sealing.
 	 * Terminal leave already did LockerToPFile; a second call is mostly no-op.
@@ -505,35 +1087,72 @@ static int start_one_snapshot(struct locker_async_slot *s)
 		}
 	}
 
-	/* Player is obj-locked via user_pid while DIRTY. Capture the snapshot now. */
+	/* Player is obj-locked via user_pid while DIRTY. Build snapshot now. */
+	sql = build_locker_snapshot_sql(s);
+	if (!sql)
+	{
+		int durable_ok;
+
+		persistence_alert(
+			AVATAR, "locker_async", s->locker_name, "none", "none", "snapshot_failed",
+			"could not build snapshot; falling back to synchronous persistence");
+		durable_ok = locker_sync_fallback_durable(s, chLocker);
+		if (s->terminal && durable_ok)
+		{
+			chLocker->specials.timer = 0;
+			extract_char(chLocker);
+			s->chLocker = NULL;
+			slot_clear(s);
+		}
+		else if (s->terminal)
+		{
+			persistence_alert(
+				AVATAR, "locker_async", s->locker_name, "none", "none",
+				"terminal_not_durable",
+				"snapshot and synchronous fallbacks failed; refusing extract of locker char");
+			s->state = LCHK_DIRTY;
+			s->dirty_at = time(NULL);
+		}
+		else
+		{
+			if (chUser)
+				locker_async_restore_snapshot_view(chUser);
+			slot_clear(s);
+		}
+		return 0;
+	}
+
+	memset(&job, 0, sizeof(job));
 	snprintf(job.locker_name, sizeof(job.locker_name), "%s", s->locker_name);
 	job.gen = s->gen;
 	job.terminal = s->terminal;
 	job.user_pid = s->user_pid;
-	try
-	{
-		auto snapshot = std::make_shared<locker_snapshot>();
-		snapshot->locker_name = s->locker_name;
-		locker_owner(chLocker, snapshot.get());
-		if (player_item_snapshot_list_capture(chLocker, false, true, false,
-						      &snapshot->items,
-						      &bytes) == player_snapshot_capture_result::ok)
-			job.snapshot = std::move(snapshot);
-	}
-	catch (const std::bad_alloc &)
-	{
-		job.snapshot.reset();
-	}
+	job.sql = sql;
 
-	if (!job.snapshot || !job_push(job, sizeof(locker_snapshot) + bytes))
+	if (!job_push(&job))
 	{
+		int durable_ok;
+
+		free(sql);
 		persistence_alert(AVATAR, "locker_async", s->locker_name, "none", "none",
-				  job.snapshot ? "job_queue_full" : "snapshot_failed",
-				  "locker save not queued terminal=%d; %s", s->terminal ? 1 : 0,
-				  s->terminal ? "the writer tries again later" :
-						"the locker's next save carries it");
-		if (s->terminal)
-			slot_retry_later(s);
+				  "job_queue_full", "falling back to synchronous persistence");
+		durable_ok = locker_sync_fallback_durable(s, chLocker);
+		if (s->terminal && durable_ok)
+		{
+			chLocker->specials.timer = 0;
+			extract_char(chLocker);
+			s->chLocker = NULL;
+			slot_clear(s);
+		}
+		else if (s->terminal)
+		{
+			persistence_alert(
+				AVATAR, "locker_async", s->locker_name, "none", "none",
+				"terminal_not_durable",
+				"job queue and synchronous fallbacks failed; refusing extract of locker char");
+			s->state = LCHK_DIRTY;
+			s->dirty_at = time(NULL);
+		}
 		else
 		{
 			if (chUser)
@@ -544,6 +1163,7 @@ static int start_one_snapshot(struct locker_async_slot *s)
 	}
 
 	s->state = LCHK_INFLIGHT;
+	g_inflight++;
 	g_snapshots_started_this_pulse++;
 
 	/* Non-terminal mid-stay: restore chests/floor from the sealed snapshot
@@ -552,16 +1172,16 @@ static int start_one_snapshot(struct locker_async_slot *s)
 	if (!s->terminal && chUser)
 		locker_async_restore_snapshot_view(chUser);
 
-	logit(LOG_DEBUG, "locker_async: enqueued name=%s gen=%lu terminal=%d", s->locker_name,
-	      s->gen, s->terminal ? 1 : 0);
+	logit(LOG_DEBUG, "locker_async: enqueued name=%s gen=%lu terminal=%d inflight=%d",
+	      s->locker_name, s->gen, s->terminal ? 1 : 0, g_inflight);
 	return 1;
 }
 
 void locker_async_pulse(void)
 {
+	int i;
 	struct locker_async_slot *oldest_terminal = NULL;
 	struct locker_async_slot *oldest_any = NULL;
-	const time_t now = time(NULL);
 
 	if (!g_inited)
 		return;
@@ -569,10 +1189,10 @@ void locker_async_pulse(void)
 	g_snapshots_started_this_pulse = 0;
 	drain_results();
 
-	for (struct locker_async_slot &slot : g_slots)
+	for (i = 0; i < LOCKER_ASYNC_SLOTS; i++)
 	{
-		struct locker_async_slot *s = &slot;
-		if (s->state != LCHK_DIRTY || s->retry_at > now)
+		struct locker_async_slot *s = &g_slots[i];
+		if (s->state != LCHK_DIRTY)
 			continue;
 		if (s->terminal)
 		{
@@ -600,19 +1220,22 @@ int locker_async_drain(int wait_ms)
 	while (spins++ < max_spins)
 	{
 		int pending = 0;
+		int i;
 
-		/* A drain starts every dirty locker, retries included, without pacing. */
-		for (struct locker_async_slot &slot : g_slots)
+		/* While draining, allow one start per loop without breathing budget. */
+		g_snapshots_started_this_pulse = 0;
+		for (i = 0; i < LOCKER_ASYNC_SLOTS; i++)
 		{
-			if (slot.state == LCHK_DIRTY)
+			if (g_slots[i].state == LCHK_DIRTY &&
+			    g_inflight < LOCKER_ASYNC_MAX_INFLIGHT)
 			{
 				g_snapshots_started_this_pulse = 0;
-				start_one_snapshot(&slot);
+				start_one_snapshot(&g_slots[i]);
 			}
 		}
 		drain_results();
-		for (const struct locker_async_slot &slot : g_slots)
-			if (slot.state != LCHK_FREE)
+		for (i = 0; i < LOCKER_ASYNC_SLOTS; i++)
+			if (g_slots[i].state != LCHK_FREE)
 				pending = 1;
 		if (!pending)
 			return 1;
@@ -623,29 +1246,70 @@ int locker_async_drain(int wait_ms)
 
 void locker_async_init(void)
 {
+	int err;
 	if (g_inited)
 		return;
-	if (!sql_pool_is_active() && !persistence_mode_flatfile_root())
+	if (!sql_pool_is_active())
 	{
 		logit(LOG_STATUS,
-		      "locker_async: connection pool unavailable; async locker saves disabled");
+		      "locker_async: connection pool unavailable; async worker disabled");
 		persistence_alert(AVATAR, "locker_async", "worker", "none", "none",
-				  "pool_unavailable", "locker async saves disabled");
+				  "pool_unavailable", "locker async worker disabled");
 		return;
 	}
-	g_slots.clear();
+	memset(g_slots, 0, sizeof(g_slots));
+	memset(g_jobs, 0, sizeof(g_jobs));
+	memset(g_results, 0, sizeof(g_results));
 	pthread_mutex_lock(&g_q_mu);
-	g_results.clear();
+	g_worker_stop = 0;
+	g_worker_running = 1;
+	g_worker_created = 0;
+	pthread_mutex_unlock(&g_q_mu);
+	err = pthread_create(&g_worker_tid, NULL, locker_async_worker_main, NULL);
+	if (err != 0)
+	{
+		pthread_mutex_lock(&g_q_mu);
+		g_worker_running = 0;
+		pthread_mutex_unlock(&g_q_mu);
+		logit(LOG_FILE, "locker_async: pthread_create failed: %d", err);
+		persistence_alert(AVATAR, "locker_async", "worker", "none", "none", "start_failed",
+				  "locker async worker could not start");
+		return;
+	}
+	pthread_mutex_lock(&g_q_mu);
+	/* Creation succeeded, so join ownership persists even if the worker
+	 * exits and clears its separate running/health flag. */
+	g_worker_created = 1;
 	pthread_mutex_unlock(&g_q_mu);
 	g_inited = 1;
-	logit(LOG_STATUS, "Locker saves go through the persistence writer.");
+	logit(LOG_STATUS, "Started locker async persistence worker.");
 }
 
 void locker_async_shutdown(void)
 {
-	if (!g_inited)
+	int join_created;
+
+	pthread_mutex_lock(&g_q_mu);
+	join_created = g_worker_created;
+	pthread_mutex_unlock(&g_q_mu);
+	if (!g_inited && !join_created)
 		return;
+
 	if (locker_async_worker_available())
 		locker_async_drain(2000);
+
+	pthread_mutex_lock(&g_q_mu);
+	g_worker_stop = 1;
+	pthread_cond_broadcast(&g_q_cv);
+	pthread_mutex_unlock(&g_q_mu);
+
+	if (join_created)
+		pthread_join(g_worker_tid, NULL);
+
+	pthread_mutex_lock(&g_q_mu);
+	g_worker_created = 0;
+	g_worker_running = 0;
+	pthread_mutex_unlock(&g_q_mu);
 	g_inited = 0;
+	logit(LOG_STATUS, "Stopped locker async persistence worker.");
 }
