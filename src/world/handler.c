@@ -4637,16 +4637,13 @@ bool submit_corpse_destruction(P_obj corpse)
 
 bool durable_corpse_lifecycle_enabled()
 {
-	const persistence_mode mode = persistence_mode_get();
-	return mode == PERSISTENCE_MODE_MARIADB_PRIMARY ||
-	       mode == PERSISTENCE_MODE_FLATFILE_PRIMARY;
+	return false;
 }
 } // namespace
 
-bool corpse_raise_player_save_fenced(P_char character)
+bool corpse_raise_player_save_fenced(P_char)
 {
-	return character && !IS_NPC(character) && GET_PID(character) > 0 &&
-	       IS_SET(character->runtime_flags, CHAR_RFLAG_CORPSE_RAISE_SAVE_FENCE);
+	return false;
 }
 
 void corpse_raise_player_ready(P_char character, bool inventory_reloaded)
