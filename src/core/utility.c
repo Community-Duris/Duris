@@ -6283,7 +6283,7 @@ void cast_as_area(P_char ch, int spl, int level, char *arg)
 	}
 	else if (IS_SET(skills[spl].targets, TAR_AREA) || IS_SET(skills[spl].targets, TAR_IGNORE))
 	{
-		((*spell_func)(level, ch, 0, SPELL_TYPE_SPELL, 0, 0));
+		((*spell_func)(level, ch, arg, SPELL_TYPE_SPELL, 0, 0));
 	}
 	else
 	{

@@ -7,6 +7,7 @@
 #include "net/comm.h"
 #include "net/output_preference_codec.h"
 #include "world/db.h"
+#include "world/vnum.obj.h"
 #include "core/utils.h"
 #include "sql/sql_player.h"
 #include "player/player_playtime.h"

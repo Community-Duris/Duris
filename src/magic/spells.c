@@ -758,7 +758,7 @@ void cast_plane_shift(int /*level*/, P_char ch, char *arg, int type, P_char tar_
 		if ((plane_id < 0) || (plane_id > 8))
 		{
 			send_to_char(
-				"Negative, Ethereal, Astral, Air, Water, Fire, Earth and Prime are the only valid targets!\r\n",
+				"You may only travel to the Prime, Negative, Hell, Ethereal, Astral, Earth, Fire, Water or Air planes!\r\n",
 				ch);
 			return;
 		}

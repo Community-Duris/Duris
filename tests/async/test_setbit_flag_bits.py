@@ -47,11 +47,14 @@ static void setbit_printOutSubTable(P_char, const char **, int) {}
 static void setbit_syntax(P_char, int) {}
 static void ac_tongueCopy(void *, int, char *, int, int) {}
 static void ac_skillCopy(void *, int, char *, int, int) {}
-''' + source[source.index('#define MAKE_COPY_FUNCTION(Type)'):source.index('/* Macro to facilitate making of general copy functions */\n// special case')] + r'''
+''' + source[source.index('#define MAKE_COPY_FUNCTION(Type)'):source.index('/* General copy functions */')] + r'''
 MAKE_COPY_FUNCTION(short)
 MAKE_COPY_FUNCTION(sh_int)
 MAKE_COPY_FUNCTION(ush_int)
 MAKE_COPY_FUNCTION(int)
+MAKE_COPY_FUNCTION(sbyte)
+MAKE_COPY_FUNCTION(ubyte)
+MAKE_COPY_FUNCTION_BYTE(::byte)
 static int ac_strcasecmp(const char *, const char *);
 ''' + "\n".join(functions) + r'''
 int main()
@@ -186,6 +189,41 @@ int main()
         else
             assert(room.zone == 65535 && !sent.empty());
     }
+    // Typed production entries must change exactly their destination bytes.
+    SetBitTable byte_table[] = {
+''' + ',\n'.join(re.search(r'\{ "' + name + r'", OFFSET\([^)]+\),[^\n]+\}', source).group() for name in ('light', 'fall', 'speed_current')) + r'''
+    };
+    for (auto &entry : byte_table) {
+        room.justice_area = 37;
+        room.chance_fall = 11;
+        room.current_speed = 12;
+        room.current_direction = 2;
+        unsigned char expected[sizeof(room)];
+        memcpy(expected, &room, sizeof(room));
+        expected[entry.sb_offset] = 5;
+        char value[] = "5";
+        setbit_parseTable(nullptr, &room, &entry, 1,
+                          const_cast<char *>(entry.sb_flag), value, 0, SETBIT_ROOM);
+        assert(!memcmp(expected, &room, sizeof(room)));
+        for (const char *invalid : {"128", "-129", "-", "1x", "99999999999999999999999"}) {
+            char input[80];
+            snprintf(input, sizeof(input), "%s", invalid);
+            sent.clear();
+            setbit_parseTable(nullptr, &room, &entry, 1,
+                              const_cast<char *>(entry.sb_flag), input, 0, SETBIT_ROOM);
+            assert(!memcmp(expected, &room, sizeof(room)) && !sent.empty());
+        }
+    }
+#undef OFFSET
+#define OFFSET(Field) int(offsetof(zone_data, Field))
+    SetBitTable difficulty =
+''' + re.search(r'\{ "difficulty", OFFSET\(difficulty\),[^\n]+\}', source).group() + r''';
+    zone_data zone{};
+    zone.difficulty = -1;
+    char level[] = "5";
+    setbit_parseTable(nullptr, &zone, &difficulty, 1,
+                      const_cast<char *>(difficulty.sb_flag), level, 0, SETBIT_ZONE);
+    assert(zone.difficulty == 5);
 #undef DIR
 #define DIR(Direction, Field) int(offsetof(room_direction_data, Field))
     SetBitTable key_table[] = {
@@ -212,7 +250,48 @@ int main()
             assert(exit.key == -1 && !sent.empty());
         }
     }
-    puts("setbit validates short destinations, full-width exit keys and flag bounds");
+    SetBitTable character_byte_table[] = {
+''' + ',\n'.join(re.search(r'\{ "' + name + r'",[^\n]+\}', character_table).group() for name in ('level', 'hitrol')) + r'''
+    };
+    for (auto &entry : character_byte_table) {
+        const bool unsigned_field = entry.sb_func == ac_ubyteCopy;
+        auto write = [&](const char *value) {
+            char input[80];
+            snprintf(input, sizeof(input), "%s", value);
+            sent.clear();
+            setbit_parseTable(nullptr, &ch, &entry, 1,
+                              const_cast<char *>(entry.sb_flag), input, 0, SETBIT_CHAR);
+        };
+        const auto unsigned_values = {"0", "128", "255"};
+        const auto signed_values = {"-128", "0", "127"};
+        for (const char *value : unsigned_field ? unsigned_values : signed_values) {
+            unsigned char expected[sizeof(ch)];
+            memcpy(expected, &ch, sizeof(ch));
+            expected[entry.sb_offset] = static_cast<unsigned char>(std::atoi(value));
+            write(value);
+            assert(!memcmp(expected, &ch, sizeof(ch)) && sent.empty());
+        }
+        unsigned char before[sizeof(ch)];
+        memcpy(before, &ch, sizeof(ch));
+        for (const char *invalid : {"256", "-129", "-", "1x", "99999999999999999999999"}) {
+            write(invalid);
+            assert(!memcmp(before, &ch, sizeof(ch)) && !sent.empty());
+        }
+        write(unsigned_field ? "-1" : "128");
+        assert(!memcmp(before, &ch, sizeof(ch)) && !sent.empty());
+    }
+    // A numeric staff field must never overwrite the guild pointer.
+    SetBitTable guild_table[] = {
+        { "unused", 0, nullptr, ac_intCopy },
+''' + ',\n'.join(re.findall(r'\{ "ascnum",[^\n]+\}', character_table)) + r'''
+    };
+    ch.specials.guild = reinterpret_cast<P_Guild>(&ch);
+    const auto original_guild = ch.specials.guild;
+    char field_name[] = "ascnum", guild_number[] = "1";
+    setbit_parseTable(nullptr, &ch, guild_table, ARRAY_SIZE(guild_table),
+                      field_name, guild_number, 0, SETBIT_CHAR);
+    assert(ch.specials.guild == original_guild);
+    puts("setbit validates numeric destinations, preserves adjacent fields and bounds flags");
 }
 '''
 

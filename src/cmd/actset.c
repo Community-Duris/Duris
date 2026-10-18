@@ -363,9 +363,9 @@ static void setbit_room(P_char ch, char *name, char *flag, char *val, int on_off
 				  sizeof(char *) },
 				{ "flag", OFFSET(room_flags), (const char **)room_bits, ac_bitCopy,
 				  sizeof(flagDef) },
-				{ "light", OFFSET(light), NULL, ac_shortCopy },
-				{ "fall", OFFSET(chance_fall), NULL, ac_shortCopy },
-				{ "speed_current", OFFSET(current_speed), NULL, ac_shortCopy },
+				{ "light", OFFSET(light), NULL, ac_byteCopy },
+				{ "fall", OFFSET(chance_fall), NULL, ac_byteCopy },
+				{ "speed_current", OFFSET(current_speed), NULL, ac_byteCopy },
 				{ "direction_current", OFFSET(current_direction), dirs,
 				  ac_sbyteCopy, sizeof(char *) } };
 
@@ -412,7 +412,7 @@ static void setbit_zone(P_char ch, char *name, char *flag, char *val, int on_off
 #define OFFSET(Field) OFFSET_OF(struct zone_data *, Field)
 
 	/* Table */
-	SetBitTable table[] = { { "difficulty", OFFSET(difficulty), NULL, ac_shintCopy },
+	SetBitTable table[] = { { "difficulty", OFFSET(difficulty), NULL, ac_intCopy },
 				{ "age", OFFSET(age), NULL, ac_intCopy } };
 
 	/* Local Variables */
@@ -530,7 +530,6 @@ static void setbit_char(P_char ch, char *name, char *flag, char *val, int on_off
 		{ "thirst", SPOFFSET(conditions[2]), NULL, ac_sbyteCopy },
 		{ "zcord", SPOFFSET(z_cord), NULL, ac_sbyteCopy },
 		{ "align", SPOFFSET(alignment), NULL, ac_shintCopy },
-		{ "ascnum", SPOFFSET(guild), NULL, ac_shintCopy },
 		{ "aff", SPOFFSET(affected_by), (const char **)affected1_bits, ac_bitCopy,
 		  sizeof(flagDef) },
 		{ "aff2", SPOFFSET(affected_by2), (const char **)affected2_bits, ac_bitCopy,
@@ -1350,7 +1349,9 @@ static void setbit_parseTable(P_char ch, void *ptr, SetBitTable *table, int size
 		/* Validate each integer destination before narrowing. Effective gameplay
 		 * caps are applied separately by balance_affects(). */
 		if (entry->sb_func == ac_shortCopy || entry->sb_func == ac_sh_intCopy ||
-		    entry->sb_func == ac_ush_intCopy || entry->sb_func == ac_intCopy)
+		    entry->sb_func == ac_ush_intCopy || entry->sb_func == ac_byteCopy ||
+		    entry->sb_func == ac_sbyteCopy || entry->sb_func == ac_ubyteCopy ||
+		    entry->sb_func == ac_intCopy)
 		{
 			long minimum = INT_MIN;
 			long maximum = INT_MAX;
@@ -1363,6 +1364,16 @@ static void setbit_parseTable(P_char ch, void *ptr, SetBitTable *table, int size
 			{
 				minimum = 0;
 				maximum = USHRT_MAX;
+			}
+			else if (entry->sb_func == ac_byteCopy || entry->sb_func == ac_sbyteCopy)
+			{
+				minimum = SCHAR_MIN;
+				maximum = SCHAR_MAX;
+			}
+			else if (entry->sb_func == ac_ubyteCopy)
+			{
+				minimum = 0;
+				maximum = UCHAR_MAX;
 			}
 			char *end = nullptr;
 			errno = 0;

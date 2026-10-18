@@ -52,6 +52,7 @@ extern Skill skills[];
 extern P_room world;
 extern P_index mob_index;
 extern const char *dirs[];
+extern const char *planes_name[];
 // extern int rev_dir[];
 extern P_char character_list;
 extern struct time_info_data time_info;
@@ -2241,6 +2242,9 @@ void do_flurry(P_char ch, char * /*arg*/, int /*cmd*/)
 
 void do_plane_shift(P_char ch, char *arg, int /*cmd*/)
 {
+	char plane[MAX_INPUT_LENGTH];
+	int plane_id;
+
 	if (IS_FIGHTING(ch))
 	{
 		send_to_char("You're too busy fighting!\n", ch);
@@ -2258,6 +2262,17 @@ void do_plane_shift(P_char ch, char *arg, int /*cmd*/)
 	{
 		send_to_char("There is too much adrenaline pumping through your body to do that.\n",
 			     ch);
+		return;
+	}
+
+	// Reject a bad plane name before check_innate_time() spends the use.
+	one_argument(arg, plane);
+	plane_id = search_block(plane, planes_name, FALSE);
+	if (plane_id < 0 || plane_id > 8)
+	{
+		send_to_char(
+			"You may only travel to the Prime, Negative, Hell, Ethereal, Astral, Earth, Fire, Water or Air planes!\r\n",
+			ch);
 		return;
 	}
 
@@ -3415,11 +3430,45 @@ void do_innate(P_char ch, char *arg, int cmd)
 		return;
 	}
 
+	char *handler_args = innate_args;
+	char *rest = arg && cmd != CMD_SUMMON ? skip_spaces(arg) : NULL;
+
+	// Resolve an owned full name before abbreviations: "summon warg" must not
+	// select the earlier "summon horde" entry. Keep the arguments after that name.
 	for (i = 0; i <= LAST_INNATE; i++)
 	{
-		if (is_abbrev(innate_name, innates_data[i].name) && has_innate(ch, i))
+		const char *name = innates_data[i].name;
+		if (!rest || !strchr(name, ' ') || !has_innate(ch, i))
+			continue;
+
+		char *input = rest;
+		while (*name)
 		{
+			size_t len = strcspn(name, " ");
+			if (strn_cmp(input, name, len) ||
+			    (input[len] && !isspace((unsigned char)input[len])))
+				break;
+			input += len;
+			while (isspace((unsigned char)*input))
+				input++;
+			name += len;
+			if (*name)
+				name++;
+		}
+		if (!*name)
+		{
+			handler_args = input;
 			break;
+		}
+	}
+	if (i > LAST_INNATE)
+	{
+		for (i = 0; i <= LAST_INNATE; i++)
+		{
+			if (is_abbrev(innate_name, innates_data[i].name) && has_innate(ch, i))
+			{
+				break;
+			}
 		}
 	}
 
@@ -3427,7 +3476,7 @@ void do_innate(P_char ch, char *arg, int cmd)
 	{
 		if (innates_data[i].func)
 		{
-			(innates_data[i].func)(ch, innate_args, CMD_INNATE);
+			(innates_data[i].func)(ch, handler_args, CMD_INNATE);
 		}
 		else
 		{
