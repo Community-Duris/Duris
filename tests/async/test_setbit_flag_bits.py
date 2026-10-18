@@ -41,6 +41,7 @@ static std::string sent;
 void send_to_char(const char *message, P_char) { sent += message; }
 bool is_number(char *value) { return value[0] && value[strspn(value, "-0123456789")] == 0; }
 int checked_snprintf_at(const char *, int, char *, size_t, const char *, ...) { return 0; }
+int checked_snprintf(char *, size_t, const char *, ...) { return 0; }
 static void setbit_printOutTable(P_char, SetBitTable *, int) {}
 static void setbit_printOutSubTable(P_char, const char **, int) {}
 static void setbit_syntax(P_char, int) {}

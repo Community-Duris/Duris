@@ -37,6 +37,7 @@ FUNCTIONS = "\n\n".join(
 )
 
 HARNESS = r'''
+#include <functional>
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "core/utils.h"

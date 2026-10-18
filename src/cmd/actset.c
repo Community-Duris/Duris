@@ -1410,6 +1410,13 @@ static void setbit_parseTable(P_char ch, void *ptr, SetBitTable *table, int size
 			return;
 		}
 	}
+	// ac_bitCopy() sets one bit of a 32-bit field. A larger bit, such as a race
+	// above 32 in an item's race list, would land on another bit.
+	if (entry->sb_func == ac_bitCopy && (bit < 0 || bit > 31))
+	{
+		send_to_char("That field has no bit for that value.\r\n", ch);
+		return;
+	}
 	if ((entry->sb_func == ac_tongueCopy || entry->sb_func == ac_skillCopy) &&
 	    (on_off < 0 || on_off > 100))
 	{

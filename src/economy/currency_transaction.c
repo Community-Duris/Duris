@@ -1,10 +1,14 @@
 #include "economy/currency_transaction.h"
 #include "economy/currency_publication.h"
 
+#include "core/files.h"
 #include "net/gmcp.h"
+#include "player/player_save_pipeline.h"
 #include "core/prototypes.h"
 #include "sql/sql_player.h"
 #include "core/utils.h"
+
+extern P_room world;
 
 #include <algorithm>
 #include <array>
@@ -973,4 +977,12 @@ void currency_transaction_reset_for_tests(void)
 {
 	pending.clear();
 	health = {};
+}
+
+void currency_transaction_save_first(P_char character)
+{
+	if (!character || IS_NPC(character) || GET_PID(character) <= 0)
+		return;
+	const int room = character->in_room == NOWHERE ? NOWHERE : world[character->in_room].number;
+	player_save_pipeline_request(character, PLAYER_CHECKPOINT_COMPONENT_ALL, RENT_CRASH, room);
 }
