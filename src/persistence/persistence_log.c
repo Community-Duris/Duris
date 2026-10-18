@@ -152,8 +152,10 @@ bool persistence_log_submit(const char *record)
 		++rejected;
 		return false;
 	}
-	std::unique_lock<std::mutex> lock(worker->mutex, std::try_to_lock);
-	if (!lock.owns_lock() || worker->count == PERSISTENCE_LOG_CAPACITY)
+	// The worker holds the lock only to take one record or count one, never while it
+	// writes, so waiting for it costs nothing; skipping on contention dropped alerts.
+	std::unique_lock<std::mutex> lock(worker->mutex);
+	if (worker->count == PERSISTENCE_LOG_CAPACITY)
 	{
 		++rejected;
 		return false;

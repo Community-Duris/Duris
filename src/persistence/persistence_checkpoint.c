@@ -51,6 +51,8 @@ void flush_dirty_players(void)
 							     PLAYER_COMPONENT_STATUS);
 			player_save_pipeline_checkpoint_dirty(character, RENT_CRASH,
 							      room_vnum(character));
+			// A locker is checkpointed with the character inside it.
+			locker_post_save_hook(character);
 		}
 	economic_event_flush_outbox();
 }
@@ -112,6 +114,8 @@ void event_flush_dirty_players(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, 
 							     PLAYER_COMPONENT_STATUS);
 			player_save_pipeline_checkpoint_dirty(character, RENT_CRASH,
 							      room_vnum(character));
+			// A locker is checkpointed with the character inside it.
+			locker_post_save_hook(character);
 		}
 	}
 

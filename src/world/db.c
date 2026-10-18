@@ -1346,11 +1346,11 @@ void boot_world(int mini_mode)
 		}
 		if (world[room_nr].room_flags & ROOM_INN)
 			world[room_nr].funct = inn;
-		if ((room_nr >= 65201) && (room_nr <= 65300))
-		{
+		// The locker rooms (vnums 65201-65300) are flagged, so a character saved in
+		// one is moved out on login. Their proc is set only while a locker is in use:
+		// finding a free locker room looks for a room without it.
+		if (world[room_nr].number >= 65201 && world[room_nr].number <= 65300)
 			world[room_nr].room_flags |= ROOM_LOCKER;
-			world[room_nr].funct = storage_locker;
-		}
 
 		room_light(room_nr, REAL);
 		room_nr++;

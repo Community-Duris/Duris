@@ -11,6 +11,12 @@ header = (ROOT / 'src/core/prototypes.h').read_text()
 severity = re.search(r'enum class persistence_severity\s*\{.*?\};', header, re.S).group()
 reporter = utility[utility.index('void persistence_log_poll()'):
                    utility.index('unsigned long long persistence_next_item_uid(')]
+# A submit waits out the worker's brief hold on the queue instead of dropping the record:
+# a try-lock lost one of shutdown's unwritten-save alerts on a local run.
+submit_source = (ROOT / 'src/persistence/persistence_log.c').read_text()
+submit_source = submit_source[submit_source.index('bool persistence_log_submit('):]
+submit_source = submit_source[:submit_source.index('\n}\n')]
+assert 'try_to_lock' not in submit_source and 'try_lock' not in submit_source
 harness = r'''
 #include "persistence/persistence_log.h"
 #include <atomic>
@@ -185,8 +191,16 @@ int main(int argc, char **argv) {
     assert(after.accepted == after.completed);
     submit("after-drain"); assert(persistence_log_drain(3000));
     assert(occurrences(read(wiz), "after-drain") == 1);
+
+    // A burst within capacity loses nothing to racing the worker as it takes records:
+    // shutdown names each unwritten save in a burst like this.
+    before = persistence_log_snapshot();
+    for (int n = 0; n < 100; ++n) assert(persistence_log_submit("burst"));
+    assert(persistence_log_drain(3000));
+    assert(persistence_log_snapshot().rejected == before.rejected);
+    assert(occurrences(read(file), "burst") == 100);
     std::cout << "[PASS] real reporter/worker routing, rotation, open/write/close faults, bounded queue, "
-              << "alert delivery and drain timeout; 20000 blocked-sink reports in " << elapsed << " ms\n";
+              << "alert delivery, drain timeout and a lossless burst; 20000 blocked-sink reports in " << elapsed << " ms\n";
 }
 '''
 with tempfile.TemporaryDirectory(prefix='persistence-log-') as temp:

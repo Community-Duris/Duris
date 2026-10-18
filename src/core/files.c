@@ -1688,6 +1688,13 @@ int calculate_save_room(P_char ch, int type, int room)
 	return room;
 }
 
+void locker_post_save_hook(P_char ch)
+{
+	if (ch && ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
+	    world[ch->in_room].funct)
+		(*world[ch->in_room].funct)(ch->in_room, ch, (-81), NULL);
+}
+
 int writeCharacter(P_char ch, int type, int room)
 {
 	P_obj obj, obj2;
@@ -1748,6 +1755,7 @@ int writeCharacter(P_char ch, int type, int room)
 		room = calculate_save_room(ch, type, room);
 		const player_save_pipeline_result queued = player_save_pipeline_request(
 			ch, PLAYER_CHECKPOINT_COMPONENT_ALL, type, room);
+		locker_post_save_hook(ch);
 		return queued == player_save_pipeline_result::queued ||
 		       queued == player_save_pipeline_result::coalesced;
 	}
@@ -1869,9 +1877,7 @@ int writeCharacter(P_char ch, int type, int room)
 			}
 			all_affects(ch, TRUE);
 		}
-		if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
-		    world[ch->in_room].funct)
-			(*world[ch->in_room].funct)(ch->in_room, ch, (-81), NULL);
+		locker_post_save_hook(ch);
 		return 1;
 	}
 #endif
@@ -1996,9 +2002,7 @@ int writeCharacter(P_char ch, int type, int room)
 	all_affects(ch, TRUE);
 
 	// locker hook (post-save)
-	if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
-	    (world[ch->in_room].funct))
-		(*world[ch->in_room].funct)(ch->in_room, ch, (-81), NULL);
+	locker_post_save_hook(ch);
 
 	return result;
 }

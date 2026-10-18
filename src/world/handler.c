@@ -3718,8 +3718,12 @@ void collect_corpse_discarded_uids(P_obj container, bool preserve_coins,
 	for (P_obj item = container ? container->contains : nullptr; item;
 	     item = item->next_content)
 	{
+		// A legacy coin pile has no custody record: the wallet took its coins, and the
+		// transaction discarded nothing for it.
+		item_ownership_runtime_entry custody = {};
 		if ((IS_SET(item->extra_flags, ITEM_TRANSIENT) ||
-		     (!preserve_coins && OBJ_VNUM(item) == VOBJ_COINS)) &&
+		     (!preserve_coins && OBJ_VNUM(item) == VOBJ_COINS &&
+		      item_ownership_runtime_lookup(item->obj_uid, &custody))) &&
 		    item->obj_uid)
 			uids->push_back(item->obj_uid);
 		collect_corpse_discarded_uids(item, preserve_coins, uids);

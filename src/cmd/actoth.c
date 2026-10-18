@@ -2167,6 +2167,8 @@ static bool persistence_save_character_terminal_with_policy(P_char ch, int type,
 #endif
 	const player_save_terminal_result terminal =
 		player_save_pipeline_terminal(ch, type, room, timeout_msec, allow_journal_handoff);
+	// A character leaving from inside a locker takes the locker's save with them.
+	locker_post_save_hook(ch);
 	const bool saved =
 		terminal == player_save_terminal_result::database_acknowledged ||
 		(allow_journal_handoff && terminal == player_save_terminal_result::journal_durable);
