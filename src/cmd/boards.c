@@ -122,6 +122,8 @@ int find_slot(void)
 /* the board_info[] row of a board object, or -1 */
 int find_board(P_obj obj)
 {
+	if (!obj)
+		return -1;
 	for (int i = 0; i < NUM_OF_BOARDS; i++)
 		if (BOARD_RNUM(i) == obj->R_num)
 			return i;
@@ -529,12 +531,14 @@ static bool Board_read_messages(int board_type, FILE *fl)
 		MSG_SLOTNUM(board_type, i) = -1;
 		len1 = msg_index[board_type][i].heading_len;
 		len2 = msg_index[board_type][i].message_len;
-		if (!whole || len1 < 1 || len2 < 0)
+		if (!whole || len1 < 1 || len1 > MAX_INPUT_LENGTH || len2 < 0 ||
+		    len2 > MAX_MESSAGE_LENGTH)
 			return false;
 
 		CREATE(MSG_HEADING(board_type, i), char, len1, MEM_TAG_STRING);
 		if (fread(MSG_HEADING(board_type, i), sizeof(char), len1, fl) != (size_t)len1)
 			return false;
+		MSG_HEADING(board_type, i)[len1 - 1] = '\0';
 
 		/* every message needs a slot of its own, one with no body too */
 		if ((MSG_SLOTNUM(board_type, i) = find_slot()) == -1)
@@ -548,6 +552,7 @@ static bool Board_read_messages(int board_type, FILE *fl)
 			if (fread(msg_storage[MSG_SLOTNUM(board_type, i)], sizeof(char), len2,
 				  fl) != (size_t)len2)
 				return false;
+			msg_storage[MSG_SLOTNUM(board_type, i)][len2 - 1] = '\0';
 		}
 	}
 	return true;
