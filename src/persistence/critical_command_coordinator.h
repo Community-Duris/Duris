@@ -16,6 +16,7 @@
 #define CRITICAL_COMMAND_COORDINATOR_H
 
 #include "persistence/critical_command_completion.h"
+#include "persistence/critical_command_journal.h"
 
 #include <cstddef>
 #include <cstdint>

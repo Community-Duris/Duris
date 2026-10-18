@@ -336,6 +336,8 @@ const char *persistence_job_kind_name(persistence_job_kind kind)
 		return "sql";
 	case persistence_job_kind::artifact:
 		return "artifact";
+	case persistence_job_kind::economy:
+		return "economy";
 	}
 	return "unknown";
 }

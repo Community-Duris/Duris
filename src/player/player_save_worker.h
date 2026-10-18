@@ -67,6 +67,8 @@ enum class persistence_job_kind : uint8_t
 	sql,
 	// Complete flat-file artifact/soul captures, on the same ordered writer.
 	artifact,
+	// Batched economic audit events outbox persistence.
+	economy,
 };
 
 enum class player_save_apply_outcome : uint8_t

@@ -152,6 +152,7 @@ OBJS =  $(SHIP_OBJS) \
 				 guild/artifact_cache_codec.o \
 				 persistence/report_cache_codec.o \
 				 economy/donation_event.o \
+				 economy/economic_event_outbox.o \
 				 redis/redis_connection.o \
 				 redis/redis_command_observability.o \
 				 redis/redis_donation_runtime.o \

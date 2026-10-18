@@ -3,6 +3,7 @@
 #include "core/files.h"
 #include "player/player_save_pipeline.h"
 #include "player/player_save_worker.h"
+#include "economy/economic_event_outbox.h"
 #include "core/prototypes.h"
 #include "redis/redis_floor_runtime.h"
 #include "core/utils.h"
@@ -51,6 +52,7 @@ void flush_dirty_players(void)
 			player_save_pipeline_checkpoint_dirty(character, RENT_CRASH,
 							      room_vnum(character));
 		}
+	economic_event_flush_outbox();
 }
 
 int get_dirty_player_count(void)
@@ -123,4 +125,5 @@ void event_flush_dirty_players(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, 
 	cursor = 0;
 	if (redis_floor_runtime_enabled())
 		redis_flush_floor_drops();
+	economic_event_flush_outbox();
 }
