@@ -92,14 +92,35 @@ struct critical_coordinator_health
 };
 
 using critical_apply_fn = critical_apply_result (*)(const critical_command &command, void *context);
+using critical_log_submit_fn = critical_submit_result (*)(const critical_command &outcome);
+enum class critical_receipt_status : uint8_t
+{
+	missing,
+	found,
+	identity_conflict,
+	unavailable,
+};
+using critical_log_lookup_fn = critical_receipt_status (*)(const critical_command &request,
+							   critical_apply_result *receipt);
+using critical_log_reject_fn = bool (*)(const critical_command &, const critical_apply_result &);
 using critical_drain_observer_fn = void (*)(const critical_completion *completions, size_t count);
 
 // Commands run on the one persistence writer (player_save_worker.h), which must be
 // running.
 bool critical_command_coordinator_init(critical_apply_fn apply, void *context);
+// Preparation executes on the world thread. The log callback durably accepts
+// the prepared outcome and independently schedules its materialization.
+bool critical_command_coordinator_init_ram(critical_apply_fn prepare, void *context,
+					   critical_log_submit_fn append,
+					   critical_log_lookup_fn lookup,
+					   critical_log_reject_fn reject = nullptr);
 void critical_command_coordinator_shutdown(void);
 critical_submit_result critical_command_coordinator_submit(critical_command command);
 size_t critical_command_coordinator_pulse(critical_completion *completions, size_t capacity);
+// Publish each batch before preparing its successor. The time budget is checked
+// between durable appends; an individual fsync cannot be interrupted safely.
+size_t critical_command_coordinator_pump(critical_completion *completions, size_t capacity,
+					 critical_drain_observer_fn observer, uint64_t budget_usec);
 bool critical_command_coordinator_is_fenced(const critical_entity_key &key,
 					    critical_operation_id *operation_id);
 void critical_command_coordinator_quiesce(void);
@@ -127,15 +148,12 @@ critical_submit_result
 critical_command_coordinator_submit_for_publication(critical_command command);
 bool critical_command_coordinator_acknowledge_publication(const critical_operation_id &operation_id);
 
-inline critical_command_durability
-critical_command_coordinator_durability(const critical_operation_id &)
-{
-	return critical_command_durability::durable;
-}
+critical_command_durability critical_command_coordinator_durability(const critical_operation_id &);
 
 inline bool critical_command_coordinator_recover_uncertain(void)
 {
-	return true;
+	// Ambiguous durable admission requires ordered startup recovery.
+	return false;
 }
 
 bool critical_command_coordinator_get_completed(const critical_operation_id &operation_id,

@@ -1,5 +1,8 @@
 #include "economy/currency_command.h"
 
+#include <cerrno>
+#include <climits>
+
 #include <openssl/sha.h>
 
 #include <algorithm>
@@ -108,6 +111,45 @@ currency_vector decode_vector(const uint8_t *input)
 	return vector;
 }
 } // namespace
+
+unsigned int currency_command_prepare_outcome(const critical_command &command,
+					      const currency_command_result &current,
+					      currency_command_result *after)
+{
+	currency_command_payload payload{};
+	if (!after || !currency_command_decode_payload(command, &payload))
+		return EINVAL;
+	if (!currency_command_is_rebasable_reward(payload) &&
+	    ((command.expected_revisions[0].revision != UINT64_MAX &&
+	      command.expected_revisions[0].revision != current.wallet_revision) ||
+	     (command.expected_revisions[1].revision != UINT64_MAX &&
+	      command.expected_revisions[1].revision != current.bank_revision)))
+		return ESTALE;
+	if (current.wallet_revision == UINT64_MAX || current.bank_revision == UINT64_MAX)
+		return ERANGE;
+	auto candidate = current;
+	for (size_t index = 0; index < CURRENCY_DENOMINATION_COUNT; ++index)
+	{
+		const int64_t wallet = current.wallet.amount[index];
+		const int64_t bank = current.bank.amount[index];
+		const int64_t wallet_delta = payload.wallet_delta.amount[index];
+		const int64_t bank_delta = payload.bank_delta.amount[index];
+		if (wallet < 0 || bank < 0 || wallet > INT_MAX || bank > INT_MAX)
+			return ERANGE;
+		if ((wallet_delta < 0 && wallet < -wallet_delta) ||
+		    (bank_delta < 0 && bank < -bank_delta))
+			return ENOSPC;
+		if ((wallet_delta > 0 && wallet_delta > INT_MAX - wallet) ||
+		    (bank_delta > 0 && bank_delta > INT_MAX - bank))
+			return ERANGE;
+		candidate.wallet.amount[index] += wallet_delta;
+		candidate.bank.amount[index] += bank_delta;
+	}
+	++candidate.wallet_revision;
+	++candidate.bank_revision;
+	*after = candidate;
+	return 0;
+}
 
 bool currency_account_key(const char *account_name, uint8_t racewar, critical_entity_key *key)
 {

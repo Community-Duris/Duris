@@ -2,6 +2,7 @@
 
 #include "economy/auction_houses.h"
 #include "economy/currency_transaction.h"
+#include "economy/economic_state.h"
 #include "net/gmcp.h"
 #include "item/item_ownership_runtime.h"
 #include "core/prototypes.h"
@@ -29,6 +30,7 @@ struct pending_auction
 };
 
 std::unordered_map<std::string, pending_auction> pending;
+bool publication_failed = false;
 
 enum class outbox_publication_state : uint8_t
 {
@@ -62,14 +64,14 @@ bool publish(std::unordered_map<std::string, pending_auction>::iterator found, P
 	const bool committed = decoded &&
 			       (entry.completed.outcome == critical_apply_outcome::applied ||
 				entry.completed.outcome == critical_apply_outcome::already_applied);
-	if (committed && character && result.wallet_revision &&
+	if (!decoded && (entry.completed.outcome == critical_apply_outcome::applied ||
+			 entry.completed.outcome == critical_apply_outcome::already_applied))
+		return false;
+	if (committed && result.wallet_revision &&
 	    !currency_transaction_publish_balances(
 		    character, entry.payload.account_name.data(), entry.payload.racewar,
 		    result.wallet, result.bank, result.wallet_revision, result.bank_revision))
 	{
-		if (entry.completion)
-			entry.completion(character, false, {}, ERANGE, entry.payload);
-		pending.erase(found);
 		return false;
 	}
 	if (committed && result.item_count)
@@ -91,9 +93,6 @@ bool publish(std::unordered_map<std::string, pending_auction>::iterator found, P
 		    !item_ownership_runtime_hydrate_owner(
 			    source_owner, std::max(current_source_revision, source_revision)))
 		{
-			if (entry.completion)
-				entry.completion(character, false, {}, ESTALE, entry.payload);
-			pending.erase(found);
 			return false;
 		}
 		const item_owner_identity owner = {
@@ -112,16 +111,17 @@ bool publish(std::unordered_map<std::string, pending_auction>::iterator found, P
 				      entry.payload.items[index].vnum,
 				      item_custody_state::active }))
 			{
-				if (entry.completion)
-					entry.completion(character, false, {}, ESTALE,
-							 entry.payload);
-				pending.erase(found);
 				return false;
 			}
 	}
+	publication_failed = false;
 	if (entry.completion)
 		entry.completion(character, committed, decoded ? result : auction_command_result{},
 				 entry.completed.error_code, entry.payload);
+	if (publication_failed)
+		return false;
+	if (economic_state_active())
+		critical_command_coordinator_acknowledge_publication(entry.completed.operation_id);
 	pending.erase(found);
 	return committed;
 }
@@ -154,7 +154,9 @@ bool submit(P_char character, const auction_command_payload &payload,
 		return false;
 	}
 	const critical_submit_result submitted =
-		critical_command_coordinator_submit(std::move(command));
+		economic_state_active() ?
+			critical_command_coordinator_submit_for_publication(std::move(command)) :
+			critical_command_coordinator_submit(std::move(command));
 	if (!critical_submit_result_keeps_operation(submitted))
 	{
 		pending.erase(key);
@@ -178,6 +180,42 @@ bool auction_transaction_submit_background(const auction_command_payload &payloa
 		      critical_deadline_class::background);
 }
 
+critical_submit_result auction_transaction_submit_website(const critical_command &command)
+{
+	auction_command_payload payload{};
+	if (!economic_state_active() || command.source_site != critical_source_site::website ||
+	    !auction_command_decode_payload(command, &payload) ||
+	    payload.action != auction_action::bid)
+		return critical_submit_result::unavailable;
+	const auto key = operation_key(command.operation_id);
+	const bool inserted = !pending.contains(key);
+	if (inserted)
+	{
+		if (pending.size() >= AUCTION_PENDING_MAX)
+			return critical_submit_result::overloaded;
+		pending.emplace(key,
+				pending_auction{ payload.actor_pid, payload, nullptr, false, {} });
+	}
+	const auto submitted = critical_command_coordinator_submit_for_publication(command);
+	if (!critical_submit_result_keeps_operation(submitted))
+	{
+		// An identity conflict must not erase a previously accepted request.
+		if (inserted)
+			pending.erase(key);
+		return submitted;
+	}
+	critical_completion completion{};
+	if (submitted == critical_submit_result::attached &&
+	    critical_command_coordinator_get_completed(command.operation_id, &completion))
+	{
+		auto found = pending.find(key);
+		found->second.completed = completion;
+		found->second.completion_ready = true;
+		publish(found, find_player_by_pid(payload.actor_pid));
+	}
+	return submitted;
+}
+
 void auction_transaction_handle_completions(const critical_completion *completions, size_t count)
 {
 	if (count && !completions)
@@ -189,11 +227,19 @@ void auction_transaction_handle_completions(const critical_completion *completio
 			continue;
 		found->second.completed = completions[index];
 		found->second.completion_ready = true;
-		P_char character = found->second.actor_pid ?
-					   find_player_by_pid(found->second.actor_pid) :
+	}
+	// Retry retained publications on every pulse, including a pulse with no new
+	// storage completions. All involved entity fences remain held meanwhile.
+	for (auto found = pending.begin(); found != pending.end();)
+	{
+		auto current = found++;
+		if (!current->second.completion_ready)
+			continue;
+		P_char character = current->second.actor_pid ?
+					   find_player_by_pid(current->second.actor_pid) :
 					   nullptr;
-		if (!found->second.actor_pid || character)
-			publish(found, character);
+		if (!current->second.actor_pid || character || economic_state_active())
+			publish(current, character);
 	}
 }
 
@@ -290,4 +336,9 @@ void auction_transaction_reset_for_tests(void)
 	pending.clear();
 	std::lock_guard<std::mutex> lock(outbox_mutex);
 	outbox_publications.clear();
+}
+
+void auction_transaction_publication_failed()
+{
+	publication_failed = true;
 }

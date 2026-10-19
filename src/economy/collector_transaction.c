@@ -4,6 +4,7 @@
 #include "economy/collector_catalog_cache.h"
 #include "economy/collector_runtime.h"
 #include "economy/currency_transaction.h"
+#include "economy/economic_state.h"
 #include "item/item_ownership_runtime.h"
 #include "core/prototypes.h"
 #include "core/utils.h"
@@ -30,6 +31,8 @@ struct pending_collector
 	collector_completion_fn completion = nullptr;
 	bool completion_ready = false;
 	critical_completion completed = {};
+	bool custody_published = false;
+	bool item_detached = false;
 };
 
 struct completed_player_recovery
@@ -150,20 +153,24 @@ bool publish(std::unordered_map<std::string, pending_collector>::iterator found,
 		publication_error = EBADMSG;
 	}
 	P_obj collected_item = nullptr;
-	if (published && committed && submitted_payload.action == collector_action::collect &&
+	if (published && committed && !entry.item_detached &&
+	    submitted_payload.action == collector_action::collect &&
 	    !collector_collection_live_matches(submitted_payload, &collected_item))
 	{
 		published = false;
 		publication_error = ESTALE;
 	}
-	if (published && committed && publishes_authority(submitted_payload) &&
-	    !item_ownership_runtime_apply_collector(submitted_payload, result))
+	if (published && committed && !entry.custody_published &&
+	    publishes_authority(submitted_payload) &&
+	    !(entry.custody_published =
+		      item_ownership_runtime_apply_collector(submitted_payload, result)))
 	{
 		published = false;
 		publication_error = ESTALE;
 	}
-	if (published && committed && submitted_payload.action == collector_action::collect &&
-	    !collector_collection_detach_live(collected_item))
+	if (published && committed && !entry.item_detached &&
+	    submitted_payload.action == collector_action::collect &&
+	    !(entry.item_detached = collector_collection_detach_live(collected_item)))
 	{
 		published = false;
 		publication_error = ESTALE;
@@ -188,7 +195,12 @@ bool publish(std::unordered_map<std::string, pending_collector>::iterator found,
 		publication_error = ESTALE;
 	}
 
+	// The logged operation owns these entities until all live state is visible.
+	// A retry resumes after completed stages; it must never charge or detach twice.
+	if (durable_commit && !published && economic_state_active())
+		return false;
 	const auto completion = entry.completion;
+	const auto completed_id = entry.completed.operation_id;
 	std::unique_ptr<collector_command_payload> payload = std::move(entry.payload);
 	bool completion_deferred = false;
 	if (committed && decoded && submitted_payload.action == collector_action::purchase &&
@@ -217,6 +229,8 @@ bool publish(std::unordered_map<std::string, pending_collector>::iterator found,
 	if (completion && !completion_deferred)
 		completion(character, durable_commit, decoded ? result : collector_command_result{},
 			   publication_error, *payload);
+	if (economic_state_active())
+		critical_command_coordinator_acknowledge_publication(completed_id);
 	return committed && published;
 }
 
@@ -252,7 +266,9 @@ bool submit(P_char character, const critical_operation_id &operation_id,
 		return false;
 	}
 	const critical_submit_result submitted =
-		critical_command_coordinator_submit(std::move(command));
+		economic_state_active() ?
+			critical_command_coordinator_submit_for_publication(std::move(command)) :
+			critical_command_coordinator_submit(std::move(command));
 	if (!critical_submit_result_keeps_operation(submitted))
 	{
 		pending.erase(key);
@@ -320,14 +336,18 @@ void collector_transaction_handle_completions(const critical_completion *complet
 			continue;
 		found->second.completed = completions[index];
 		found->second.completion_ready = true;
-		P_char character = found->second.actor_pid ?
-					   find_player_by_pid(found->second.actor_pid) :
+	}
+	// Retry retained publications on every pulse, including a pulse with no new
+	// storage completions. All involved entity fences remain held meanwhile.
+	for (auto found = pending.begin(); found != pending.end();)
+	{
+		auto current = found++;
+		if (!current->second.completion_ready)
+			continue;
+		P_char character = current->second.actor_pid ?
+					   find_player_by_pid(current->second.actor_pid) :
 					   nullptr;
-		// Durable completion may race with a disconnect.  Publish the durable
-		// custody/catalog transition immediately even when the character is no
-		// longer live; the in-memory wallet and player-facing callback are guarded
-		// by `character` inside publish() and will be recovered by the next login.
-		publish(found, character);
+		publish(current, character);
 	}
 }
 

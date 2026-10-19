@@ -20,6 +20,7 @@ uint64_t applied_revision = 0;
 size_t applied_held_items = 0;
 uint64_t stale_snapshots = 0;
 uint64_t publication_failures = 0;
+bool ram_authority = false;
 bool ready = false;
 bool invalidated = false;
 
@@ -62,8 +63,18 @@ void publish_completed_generation()
 }
 }
 
+void collector_catalog_cache_use_ram(bool enabled)
+{
+	cache.shutdown();
+	ram_authority = enabled;
+	ready = enabled;
+	invalidated = false;
+}
+
 bool collector_catalog_cache_refresh(void)
 {
+	if (ram_authority)
+		return true;
 	const bool requested = cache.request(collector_catalog_source_load);
 	if (requested)
 		schedule_after(REFRESH_INTERVAL);
@@ -72,6 +83,8 @@ bool collector_catalog_cache_refresh(void)
 
 void collector_catalog_cache_invalidate(void)
 {
+	if (ram_authority)
+		return;
 	// A request started here necessarily reads after the authority commit that
 	// produced the completion. A busy cache may still be finishing an older
 	// snapshot; retain the latch so pulse starts a subsequent read.
@@ -86,6 +99,8 @@ void collector_catalog_cache_invalidate(void)
 
 void collector_catalog_cache_pulse(void)
 {
+	if (ram_authority)
+		return;
 	cache.poll();
 	publish_completed_generation();
 	if (invalidated && !cache.busy() && collector_catalog_cache_refresh())
@@ -99,6 +114,7 @@ void collector_catalog_cache_pulse(void)
 
 void collector_catalog_cache_shutdown(void)
 {
+	ram_authority = false;
 	cache.shutdown();
 	next_refresh = {};
 	applied_generation = cache.generation_value();

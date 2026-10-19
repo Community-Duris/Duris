@@ -10,6 +10,10 @@
 #include "classes/necromancy.h"
 #include "flatfile/flatfile_player_repository.h"
 #include "player/player_save_journal.h"
+#include "player/player_checkpoint_command.h"
+#include "player/player_checkpoint_ram.h"
+#include "persistence/persistence_mode.h"
+#include "persistence/operation_log.h"
 #include "player/player_save_worker.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_repository.h"
@@ -74,6 +78,7 @@ player_save_pipeline_health health = {};
 size_t retained_bytes = 0;
 bool stop_requested = false;
 bool accepting = false;
+bool unified_log = false;
 bool append_inflight = false;
 int append_inflight_pid = 0;
 /* One failed graph may be recaptured once.  Keep the PID armed until a later
@@ -83,6 +88,8 @@ std::set<int32_t> custody_recapture_armed;
 
 player_save_apply_fn selected_snapshot_apply()
 {
+	if (!persistence_mode_requires_mysql())
+		return flatfile_player_snapshot_apply_selected;
 #ifdef __NO_MYSQL__
 	return flatfile_player_snapshot_apply_selected;
 #else
@@ -291,6 +298,38 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
 	if (!health.initialized || stop_requested ||
 	    find_target_save_login_fence_locked(snapshot.pid))
 		return player_save_pipeline_result::unavailable;
+	if (unified_log)
+	{
+		critical_command command;
+		try
+		{
+			if (!player_checkpoint_command_build(snapshot, &command))
+				return player_save_pipeline_result::capture_failed;
+			player_checkpoint_ram_change change;
+			if (!player_checkpoint_ram_prepare(snapshot, command.accepted_at_usec,
+							   !persistence_mode_requires_mysql(),
+							   &change))
+				return player_save_pipeline_result::capture_failed;
+			const auto submitted = operation_log_submit_player(command, snapshot);
+			if (submitted != critical_submit_result::accepted)
+				return player_save_pipeline_result::unavailable;
+			if (!player_checkpoint_ram_publish(&change))
+			{
+				critical_command_coordinator_quiesce();
+				return player_save_pipeline_result::unavailable;
+			}
+		}
+		catch (const std::bad_alloc &)
+		{
+			return player_save_pipeline_result::overloaded;
+		}
+		if (auto *fence = find_terminal_fence_locked(snapshot.pid);
+		    fence && fence->revision == snapshot.revision)
+			fence->journaled = true;
+		++health.captured;
+		++health.dispatched;
+		return player_save_pipeline_result::queued;
+	}
 	for (player_snapshot &queued : pending_append)
 	{
 		if (queued.pid != snapshot.pid)
@@ -345,14 +384,17 @@ bool player_save_pipeline_init(const char *journal_directory)
 		if (health.initialized)
 			return false;
 	}
-	if (!player_save_journal_init(journal_directory, PLAYER_SAVE_JOURNAL_MAX_BYTES))
+	unified_log = operation_log_ready();
+	if (!unified_log &&
+	    !player_save_journal_init(journal_directory, PLAYER_SAVE_JOURNAL_MAX_BYTES))
 		return false;
 	if (!player_save_worker_init(selected_snapshot_apply(), nullptr))
 	{
 		player_save_journal_shutdown();
 		return false;
 	}
-	if (!player_save_worker_set_journal_hooks(nullptr, player_save_journal_worker_ack, nullptr))
+	if (!player_save_worker_set_journal_hooks(
+		    nullptr, unified_log ? nullptr : player_save_journal_worker_ack, nullptr))
 	{
 		player_save_worker_shutdown();
 		player_save_journal_shutdown();
@@ -366,6 +408,11 @@ bool player_save_pipeline_init(const char *journal_directory)
 		accepting = true;
 		append_inflight = false;
 		append_inflight_pid = 0;
+	}
+	if (unified_log)
+	{
+		health.replay_complete = true;
+		return true;
 	}
 	try
 	{
@@ -449,6 +496,10 @@ player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int
 	if (!ch || IS_NPC(ch) || GET_PID(ch) <= 0)
 		return player_save_pipeline_result::invalid;
 	if (IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+		return player_save_pipeline_result::unavailable;
+	if (unified_log &&
+	    critical_command_coordinator_is_fenced(
+		    { critical_entity_type::player, static_cast<uint64_t>(GET_PID(ch)) }, nullptr))
 		return player_save_pipeline_result::unavailable;
 	// Grant admission and capture run on the game thread. Once admitted, a
 	// grant owns this boundary until its result reaches the live graph.

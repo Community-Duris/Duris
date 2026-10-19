@@ -1,4 +1,11 @@
 #include "guild/artifact_guild_state.h"
+#include "player/artifact_restitution_ram.h"
+#include "economy/economic_state.h"
+#include "economy/economic_state_repository.h"
+#include "persistence/operation_log.h"
+#include "persistence/persistence_mode.h"
+#include "persistence/critical_command_coordinator.h"
+#include "player/player_save_worker.h"
 
 #include "guild/assocs.h"
 #include "world/db.h"
@@ -29,6 +36,14 @@ struct cached_artifact
 std::unordered_map<int32_t, cached_artifact> artifacts;
 std::unordered_map<uint32_t, uint64_t> guild_revisions;
 bool hydrated = false;
+
+void refresh_restored_artifact(int32_t vnum, cached_artifact *value)
+{
+	const auto current = artifact_restitution_ram_lookup(vnum);
+	if (current && current->domain.present)
+		*value = { current->domain.timer, current->bind_owner, current->bind_timer,
+			   current->revision };
+}
 
 #ifndef __NO_MYSQL__
 bool parse_i64(const char *text, int64_t *value)
@@ -225,6 +240,7 @@ artifact_guild_state_capture(P_char character, int epics, int epic_type,
 			auto state = artifacts.find(vnum);
 			if (state == artifacts.end())
 				return artifact_guild_capture_status::unavailable;
+			refresh_restored_artifact(vnum, &state->second);
 			const bool soul_check = epic_type == EPIC_PVP || epic_type == EPIC_SHIP_PVP;
 			if (soul_check && state->second.bind_owner_pid != -1 &&
 			    state->second.bind_owner_pid != GET_PID(character))
@@ -258,6 +274,8 @@ void artifact_guild_state_publish(const artifact_guild_result &result)
 		const auto &entry = result.artifacts[index];
 		artifacts[entry.vnum] = { entry.timer, entry.bind_owner_pid, entry.bind_timer,
 					  entry.revision };
+		artifact_restitution_ram_feed(entry.vnum, entry.timer, entry.bind_owner_pid,
+					      entry.bind_timer, entry.revision);
 	}
 	if (result.guild_id)
 	{
@@ -273,9 +291,108 @@ bool artifact_guild_state_ready(void)
 	return hydrated;
 }
 
+unsigned int artifact_guild_state_prepare(const artifact_guild_payload &payload,
+					  artifact_guild_result *result)
+{
+	if (!hydrated || !result)
+		return EAGAIN;
+	*result = {};
+	result->guild_id = payload.guild_id;
+	if (payload.guild_id)
+	{
+		const auto revision = guild_revisions.find(payload.guild_id);
+		Guild *guild = get_guild_from_id(static_cast<int>(payload.guild_id));
+		if (!guild || revision == guild_revisions.end())
+			return ENOENT;
+		if (revision->second != payload.expected_guild_revision)
+			return ESTALE;
+		auto add = [](uint64_t value, int64_t delta, uint64_t *next)
+		{
+			const uint64_t magnitude = delta < 0 ?
+							   static_cast<uint64_t>(-(delta + 1)) + 1 :
+							   static_cast<uint64_t>(delta);
+			if (delta < 0 ? magnitude > value : magnitude > UINT64_MAX - value)
+				return false;
+			*next = delta < 0 ? value - magnitude : value + magnitude;
+			return true;
+		};
+		if (revision->second == UINT64_MAX ||
+		    !add(guild->get_prestige(), payload.prestige_delta, &result->prestige) ||
+		    !add(guild->get_construction(), payload.construction_delta,
+			 &result->construction))
+			return ERANGE;
+		result->guild_revision = revision->second + 1;
+	}
+	result->artifact_count = payload.artifact_count;
+	for (size_t i = 0; i < payload.artifact_count; ++i)
+	{
+		const auto &entry = payload.artifacts[i];
+		const auto found = artifacts.find(entry.vnum);
+		if (found == artifacts.end())
+			return ENOENT;
+		refresh_restored_artifact(entry.vnum, &found->second);
+		// Match the projector's legacy-row preconditions before durable admission.
+		// An artifact whose old maintenance projection disagrees must be repaired,
+		// rather than acknowledging an outcome that cannot subsequently project.
+		const auto proof = artifact_restitution_ram_lookup(entry.vnum);
+		if (!proof || !proof->domain.present || !proof->god.present ||
+		    proof->domain.timer != proof->god.timer ||
+		    proof->bind_owner != (proof->bind_present ? proof->bind_row_owner : 0) ||
+		    proof->bind_timer != (proof->bind_present ? proof->bind_row_timer : 0))
+			return ESTALE;
+		const auto &current = found->second;
+		if (current.revision != entry.expected_revision ||
+		    current.timer != entry.expected_timer ||
+		    current.bind_timer != entry.expected_bind_timer ||
+		    current.bind_owner_pid != entry.expected_bind_owner_pid)
+			return ESTALE;
+		if (current.revision == UINT64_MAX)
+			return ERANGE;
+		result->artifacts[i] = { entry.vnum, entry.timer, entry.bind_owner_pid,
+					 entry.bind_timer, current.revision + 1 };
+	}
+	return 0;
+}
+
 void artifact_guild_state_reset_for_tests(void)
 {
 	artifacts.clear();
 	guild_revisions.clear();
 	hydrated = false;
+}
+
+#ifndef __NO_MYSQL__
+namespace
+{
+unsigned maintenance_depth = 0;
+}
+#endif
+artifact_maintenance_scope::artifact_maintenance_scope()
+{
+#ifndef __NO_MYSQL__
+	active_ = economic_state_active() && persistence_mode_requires_mysql();
+	if (active_ && !maintenance_depth &&
+	    (!persistence_writer_wait_idle(1000) || !operation_log_projection_caught_up()))
+	{
+		critical_command_coordinator_quiesce();
+		logit(LOG_ARTIFACT,
+		      "Artifact maintenance blocked by pending durable projection; economic admission fenced");
+		return;
+	}
+	if (active_)
+		++maintenance_depth;
+#endif
+	ready_ = true;
+}
+artifact_maintenance_scope::~artifact_maintenance_scope()
+{
+#ifndef __NO_MYSQL__
+	if (ready_ && active_ && !--maintenance_depth &&
+	    (!economic_state_repository_refresh_artifacts(DB) || !artifact_guild_state_hydrate()))
+	{
+		critical_command_coordinator_quiesce();
+		logit(LOG_ARTIFACT,
+		      "Artifact maintenance could not refresh RAM; economic admission fenced");
+	}
+#endif
 }

@@ -1,6 +1,7 @@
 #include "economy/auction_repository.h"
 
 #include "item/item_transfer_command.h"
+#include "item/item_transfer_repository.h"
 
 #include <algorithm>
 #include <array>
@@ -29,6 +30,7 @@ struct wallet_state
 	currency_vector bank;
 	uint64_t wallet_revision;
 	uint64_t bank_revision;
+	std::string name;
 };
 
 struct auction_state
@@ -117,9 +119,10 @@ bool lock_wallet(MYSQL *connection, const auction_command_payload &payload, wall
 	const std::string account =
 		escape(connection, payload.account_name.data(),
 		       strnlen(payload.account_name.data(), payload.account_name.size()));
-	std::string sql = "SELECT account_name,racewar,copper,silver,gold,platinum,wallet_revision "
-			  "FROM player_data WHERE pid=" +
-			  std::to_string(payload.actor_pid) + " FOR UPDATE";
+	std::string sql =
+		"SELECT account_name,racewar,copper,silver,gold,platinum,wallet_revision,name "
+		"FROM player_data WHERE pid=" +
+		std::to_string(payload.actor_pid) + " FOR UPDATE";
 	if (!execute(connection, sql))
 		return false;
 	MYSQL_RES *query = mysql_store_result(connection);
@@ -130,6 +133,8 @@ bool lock_wallet(MYSQL *connection, const auction_command_payload &payload, wall
 			       atoi(row[1]) == payload.racewar && parse_u64(row[2], &parsed[0]) &&
 			       parse_u64(row[3], &parsed[1]) && parse_u64(row[4], &parsed[2]) &&
 			       parse_u64(row[5], &parsed[3]) && parse_u64(row[6], &parsed[4]);
+	if (player_ok && row[7])
+		state->name = row[7];
 	if (query)
 		mysql_free_result(query);
 	if (!player_ok)
@@ -141,11 +146,15 @@ bool lock_wallet(MYSQL *connection, const auction_command_payload &payload, wall
 	for (size_t index = 0; index < state->wallet.amount.size(); ++index)
 		state->wallet.amount[index] = static_cast<int64_t>(parsed[index]);
 	state->wallet_revision = parsed[4];
-	if (state->wallet_revision != payload.expected_wallet_revision)
+	if (payload.expected_wallet_revision != UINT64_MAX &&
+	    state->wallet_revision != payload.expected_wallet_revision)
 	{
 		*result_code = ESTALE;
 		return true;
 	}
+	if (!execute(connection, "INSERT IGNORE INTO account_banks(account_name,racewar) VALUES('" +
+					 account + "'," + std::to_string(payload.racewar) + ")"))
+		return false;
 	sql = "SELECT id,bank_copper,bank_silver,bank_gold,bank_platinum,bank_revision "
 	      "FROM account_banks WHERE account_name='" +
 	      account + "' AND racewar=" + std::to_string(payload.racewar) + " FOR UPDATE";
@@ -168,7 +177,8 @@ bool lock_wallet(MYSQL *connection, const auction_command_payload &payload, wall
 	for (size_t index = 0; index < state->bank.amount.size(); ++index)
 		state->bank.amount[index] = static_cast<int64_t>(parsed[index + 1]);
 	state->bank_revision = parsed[5];
-	if (state->bank_revision != payload.expected_bank_revision)
+	if (payload.expected_bank_revision != UINT64_MAX &&
+	    state->bank_revision != payload.expected_bank_revision)
 		*result_code = ESTALE;
 	return true;
 }
@@ -460,6 +470,12 @@ bool insert_listing(MYSQL *connection, const critical_command &command,
 	const std::string info =
 		escape(connection, payload.object_info.data(),
 		       strnlen(payload.object_info.data(), payload.object_info.size()));
+	const uint8_t *legacy = nullptr, *runtime = nullptr;
+	size_t legacy_size = 0, runtime_size = 0;
+	if (!auction_blob_parts(payload, &legacy, &legacy_size, &runtime, &runtime_size))
+		return false;
+	const std::string display_blob =
+		escape(connection, reinterpret_cast<const char *>(legacy), legacy_size);
 	const std::string blob = escape(connection,
 					reinterpret_cast<const char *>(payload.object_blob.data()),
 					payload.object_blob_size);
@@ -472,12 +488,20 @@ bool insert_listing(MYSQL *connection, const critical_command &command,
 		"',CURRENT_TIMESTAMP(),FROM_UNIXTIME(" + std::to_string(payload.end_time) + ")," +
 		std::to_string(AUCTION_STATUS_OPEN) + "," + std::to_string(payload.start_price) +
 		"," + std::to_string(payload.buy_price) + ",'" + object_short + "'," +
-		std::to_string(payload.items[0].vnum) + ",'" + blob + "','" + keywords + "','" +
-		info + "'," + std::to_string(payload.item_count) + ",1," +
+		std::to_string(payload.items[0].vnum) + ",'" + display_blob + "','" + keywords +
+		"','" + info + "'," + std::to_string(payload.item_count) + ",1," +
 		std::to_string(AUCTION_CUSTODY_AUTHORITATIVE) + ",UNHEX('" + op + "'))";
+	if (command.schema_version == CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION)
+	{
+		const auto id = auction_command_listing_id(command.operation_id);
+		sql.insert(sql.find("auctions(") + 9, "id,");
+		sql.insert(sql.find("VALUES(") + 7, std::to_string(id) + ",");
+	}
 	if (!execute(connection, sql))
 		return false;
-	*auction_id = static_cast<uint32_t>(mysql_insert_id(connection));
+	*auction_id = command.schema_version == CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION ?
+			      auction_command_listing_id(command.operation_id) :
+			      static_cast<uint32_t>(mysql_insert_id(connection));
 	for (size_t index = 0; index < payload.item_count; ++index)
 	{
 		const auction_item_entry &item = payload.items[index];
@@ -488,6 +512,11 @@ bool insert_listing(MYSQL *connection, const critical_command &command,
 		      std::to_string(item.expected_item_revision + 1) + "," +
 		      std::to_string(item.vnum) + ",'" + blob + "')";
 		if (!execute(connection, sql))
+			return false;
+		if (command.schema_version == CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION &&
+		    !execute(connection, "DELETE FROM player_items WHERE pid=" +
+						 std::to_string(payload.actor_pid) +
+						 " AND obj_uid=" + std::to_string(item.item_uid)))
 			return false;
 	}
 	return true;
@@ -547,11 +576,23 @@ bool auction_repository_execute(MYSQL *connection, const critical_command &comma
 	result->action = payload.action;
 	*result_code = 0;
 	*mutation_applied = false;
+	const bool sealed = command.schema_version == CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION;
+	auction_command_result frozen{};
+	if (sealed && !auction_command_decode_result(command.outcome_payload.data(),
+						     command.outcome_payload.size(), &frozen))
+		return false;
+	const bool website = command.source_site == critical_source_site::website;
+	const uint64_t decision_time = sealed ? command.accepted_at_usec / 1000000 :
+						static_cast<uint64_t>(time(nullptr));
 	wallet_state wallet = {};
 	if (payload.actor_pid && !lock_wallet(connection, payload, &wallet, result_code))
 		return false;
 	if (*result_code)
 		return true;
+	if (website && payload.actor_pid)
+		std::copy_n(wallet.name.c_str(),
+			    std::min(wallet.name.size(), payload.actor_name.size() - 1),
+			    payload.actor_name.begin());
 	result->wallet = wallet.wallet;
 	result->bank = wallet.bank;
 	result->wallet_revision = wallet.wallet_revision;
@@ -600,6 +641,8 @@ bool auction_repository_execute(MYSQL *connection, const critical_command &comma
 		result->bank_revision = wallet.bank_revision;
 		result->auction_revision = 1;
 		result->event_type = auction_event_type::listed;
+		if (sealed)
+			result->end_time = payload.end_time;
 	}
 	else if (payload.action == auction_action::bid)
 	{
@@ -609,6 +652,7 @@ bool auction_repository_execute(MYSQL *connection, const critical_command &comma
 		if (*result_code)
 			return true;
 		if (auction.status != AUCTION_STATUS_OPEN ||
+		    (sealed && auction.end_time <= decision_time) ||
 		    auction.custody_state != AUCTION_CUSTODY_AUTHORITATIVE ||
 		    auction.seller_pid == payload.actor_pid ||
 		    (!auction.seller_account.empty() &&
@@ -648,6 +692,8 @@ bool auction_repository_execute(MYSQL *connection, const critical_command &comma
 				  ",auction_revision=" + std::to_string(auction.revision);
 		if (sold)
 			sql += ",status=" + std::to_string(AUCTION_STATUS_CLOSED);
+		else if (website && sealed)
+			sql += ",end_time=FROM_UNIXTIME(" + std::to_string(frozen.end_time) + ")";
 		else if (previous_bidder != payload.actor_pid && payload.bid_extension_seconds)
 			sql += ",end_time=DATE_ADD(end_time,INTERVAL " +
 			       std::to_string(payload.bid_extension_seconds) + " SECOND)";
@@ -664,7 +710,9 @@ bool auction_repository_execute(MYSQL *connection, const critical_command &comma
 		if (sold)
 		{
 			const int64_t proceeds =
-				bid - (bid * payload.closing_fee_basis_points / 10000);
+				website && sealed ?
+					frozen.seller_proceeds :
+					bid - (bid * payload.closing_fee_basis_points / 10000);
 			if (!stage_money(connection, auction.seller_pid, proceeds) ||
 			    !stage_items(connection, auction.id, payload.actor_pid))
 				return false;
@@ -674,6 +722,25 @@ bool auction_repository_execute(MYSQL *connection, const critical_command &comma
 		result->seller_pid = auction.seller_pid;
 		result->winner_pid = payload.actor_pid;
 		result->previous_bidder_pid = previous_bidder;
+		if (sealed)
+		{
+			result->refund = previous_bidder && previous_bidder != payload.actor_pid ?
+						 auction.cur_price :
+						 0;
+			result->seller_proceeds =
+				website && sealed ? frozen.seller_proceeds :
+				sold ? bid - (bid / 10000) * payload.closing_fee_basis_points -
+						((bid % 10000) * payload.closing_fee_basis_points) /
+							10000 :
+				       0;
+			result->end_time =
+				website && sealed ?
+					frozen.end_time :
+					auction.end_time +
+						(!sold && previous_bidder != payload.actor_pid ?
+							 payload.bid_extension_seconds :
+							 0);
+		}
 		result->final_price = bid;
 		result->wallet_value_delta = -to_pay;
 		result->wallet = wallet.wallet;
@@ -698,8 +765,7 @@ bool auction_repository_execute(MYSQL *connection, const critical_command &comma
 			*result_code = EALREADY;
 			return true;
 		}
-		if (payload.action == auction_action::finalize &&
-		    auction.end_time > static_cast<uint64_t>(time(nullptr)))
+		if (payload.action == auction_action::finalize && auction.end_time > decision_time)
 		{
 			*result_code = EAGAIN;
 			return true;
@@ -735,6 +801,23 @@ bool auction_repository_execute(MYSQL *connection, const critical_command &comma
 		}
 		result->auction_id = auction.id;
 		result->status = status;
+		if (sealed)
+		{
+			result->end_time = auction.end_time;
+			result->refund = auction.winner_pid &&
+							 payload.action == auction_action::remove ?
+						 auction.cur_price :
+						 0;
+			result->seller_proceeds =
+				auction.winner_pid && payload.action != auction_action::remove ?
+					auction.cur_price -
+						(auction.cur_price / 10000) *
+							payload.closing_fee_basis_points -
+						((auction.cur_price % 10000) *
+						 payload.closing_fee_basis_points) /
+							10000 :
+					0;
+		}
 		result->seller_pid = auction.seller_pid;
 		result->winner_pid = auction.winner_pid;
 		result->final_price = auction.cur_price;
@@ -753,7 +836,7 @@ bool auction_repository_execute(MYSQL *connection, const critical_command &comma
 		MYSQL_ROW row = query ? mysql_fetch_row(query) : nullptr;
 		uint64_t money = 0;
 		const bool found = row && parse_u64(row[0], &money) && money > 0 &&
-				   money <= INT_MAX;
+				   money <= UINT_MAX;
 		if (query)
 			mysql_free_result(query);
 		if (!found)
@@ -817,6 +900,13 @@ bool auction_repository_execute(MYSQL *connection, const critical_command &comma
 			return false;
 		if (*result_code)
 			return true;
+		if (sealed)
+		{
+			item_transfer_payload transfer{};
+			if (!auction_item_payload(payload, auction.id, &transfer) ||
+			    !item_transfer_repository_materialize(connection, transfer))
+				return false;
+		}
 		const std::string op = operation_hex(command.operation_id);
 		for (size_t index = 0; index < payload.item_count; ++index)
 			if (!execute(connection,
@@ -835,6 +925,8 @@ bool auction_repository_execute(MYSQL *connection, const critical_command &comma
 		result->winner_pid = payload.actor_pid;
 		result->auction_revision = auction.revision + 1;
 		result->event_type = auction_event_type::item_claimed;
+		if (sealed)
+			result->end_time = auction.end_time;
 		if (!execute(connection,
 			     "UPDATE auctions SET auction_revision=auction_revision+1 WHERE id=" +
 				     std::to_string(auction.id) +

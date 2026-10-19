@@ -36,6 +36,12 @@ bool collector_runtime_hint_candidates(uint64_t after_listing, size_t scan_limit
 void collector_runtime_publish_hint(const collector::record &entry, uint8_t state,
 				    uint64_t hint_revision);
 bool collector_runtime_snapshot(collector::catalog *catalog);
+bool collector_runtime_has_candidates(const std::vector<uint64_t> &uids);
+bool collector_runtime_deaths(std::vector<collector_death_snapshot> *deaths);
+// Allocate and validate a candidate before durable admission; publication only swaps.
+bool collector_runtime_stage(const collector::catalog &catalog,
+			     const std::vector<collector_death_snapshot> &deaths);
+void collector_runtime_commit_staged() noexcept;
 bool collector_runtime_available_for(uint32_t beneficiary, size_t limit,
 				     std::vector<collector::record> *entries);
 std::vector<uint64_t> collector_runtime_lease_due(uint64_t now, size_t limit, uint64_t lease_until);

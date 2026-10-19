@@ -1,4 +1,5 @@
 #include "persistence/corpse_lifecycle_transaction.h"
+#include "economy/economic_state.h"
 
 #include "item/item_transfer_command.h"
 #include "redis/redis_report_cache.h"
@@ -44,6 +45,7 @@ std::unordered_map<std::string, uint64_t> operations;
 corpse_lifecycle_transaction_health health = {};
 std::mutex outbox_mutex;
 std::unordered_map<uint64_t, bool> outbox_publications;
+bool publication_failed = false;
 
 std::string operation_key(const critical_operation_id &operation_id)
 {
@@ -303,7 +305,10 @@ submit_outcome submit(uint64_t key, corpse_state *state)
 		++health.submission_failures;
 		return submit_outcome::failed;
 	}
-	const auto submitted = critical_command_coordinator_submit(std::move(command));
+	const auto submitted =
+		economic_state_active() ?
+			critical_command_coordinator_submit_for_publication(std::move(command)) :
+			critical_command_coordinator_submit(std::move(command));
 	if (!critical_submit_result_keeps_operation(submitted))
 	{
 		operations.erase(operation);
@@ -696,13 +701,11 @@ void corpse_lifecycle_transaction_handle_completions(const critical_completion *
 		if (owner == operations.end())
 			continue;
 		auto found = states.find(owner->second);
-		operations.erase(owner);
 		if (found == states.end() || !found->second.pending ||
 		    !critical_operation_id_equal(found->second.operation_id,
 						 completions[index].operation_id))
 			continue;
 		corpse_state &state = found->second;
-		state.pending = false;
 		corpse_lifecycle_result result = {};
 		const bool decoded = corpse_lifecycle_command_decode_result(
 			completions[index].result_payload.data(), completions[index].result_size,
@@ -713,6 +716,23 @@ void corpse_lifecycle_transaction_handle_completions(const critical_completion *
 			 completions[index].outcome == critical_apply_outcome::already_applied) &&
 			result.owner_pid == state.owner_pid && result.save_id == state.save_id &&
 			result.action == state.inflight.action;
+		if (economic_state_active() && committed && state.release_completion)
+		{
+			publication_failed = false;
+			state.release_completion(true, result, 0, state.inflight);
+			if (publication_failed)
+			{
+				state.fenced = true;
+				critical_command_coordinator_quiesce();
+				continue;
+			}
+			state.release_completion = nullptr;
+		}
+		operations.erase(owner);
+		state.pending = false;
+		if (economic_state_active())
+			critical_command_coordinator_acknowledge_publication(
+				completions[index].operation_id);
 		const unsigned int error_code = decoded || completions[index].error_code ?
 							completions[index].error_code :
 							EBADMSG;
@@ -764,6 +784,11 @@ void corpse_lifecycle_transaction_handle_completions(const critical_completion *
 			queued_failure(false, {}, error_code, queued_failure_payload);
 	}
 	account_health();
+}
+
+void corpse_lifecycle_transaction_publication_failed()
+{
+	publication_failed = true;
 }
 
 critical_outbox_delivery_result

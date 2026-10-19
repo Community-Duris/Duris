@@ -34,6 +34,7 @@ DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0027_saved_item_recovery_handoff.sql",
     ROOT / "migrations" / "immutable" / "0030_telemetry_quarantine.sql",
     ROOT / "migrations" / "immutable" / "0031_player_item_runtime_state.sql",
+    ROOT / "migrations" / "immutable" / "0032_ram_authority.sql",
 )
 
 ROOT_FIELDS = {

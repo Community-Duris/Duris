@@ -71,6 +71,12 @@ bool currency_command_encode_result(const currency_command_result &result,
 				    std::array<uint8_t, CURRENCY_RESULT_PAYLOAD_BYTES> *encoded);
 bool currency_command_decode_result(const uint8_t *encoded, size_t size,
 				    currency_command_result *result);
+
+// Pure world-state decision. Does not read a repository or mutate its inputs.
+// Returns zero on success, otherwise an errno describing the rejected operation.
+unsigned int currency_command_prepare_outcome(const critical_command &command,
+					      const currency_command_result &current,
+					      currency_command_result *after);
 bool currency_command_build(critical_command *command, critical_operation_id operation_id,
 			    const currency_command_payload &payload,
 			    uint64_t expected_wallet_revision, uint64_t expected_bank_revision,

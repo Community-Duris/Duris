@@ -304,11 +304,22 @@ bool combat_outcome_repository_execute(MYSQL *connection, const critical_command
 	const std::string room =
 		escape(connection, payload.room_name.data(),
 		       strnlen(payload.room_name.data(), payload.room_name.size()));
-	if (!execute(connection, "INSERT INTO pkill_event(stamp,room_vnum,room_name) VALUES("
-				 "NOW()," +
+	const bool sealed = command.schema_version == CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION;
+	combat_outcome_result frozen{};
+	if (sealed &&
+	    (!combat_outcome_command_decode_result(command.outcome_payload.data(),
+						   command.outcome_payload.size(), &frozen) ||
+	     !frozen.event_id || frozen.event_id > UINT32_MAX))
+		return false;
+	const std::string event_columns = sealed ? "id,stamp,room_vnum,room_name" :
+						   "stamp,room_vnum,room_name";
+	const std::string event_values = sealed ? std::to_string(frozen.event_id) + "," : "";
+	if (!execute(connection, "INSERT INTO pkill_event(" + event_columns + ") VALUES(" +
+					 event_values + "FROM_UNIXTIME(" +
+					 std::to_string(command.accepted_at_usec / 1000000) + ")," +
 					 std::to_string(payload.room_vnum) + ",'" + room + "')"))
 		return false;
-	const uint64_t event_id = mysql_insert_id(connection);
+	const uint64_t event_id = sealed ? frozen.event_id : mysql_insert_id(connection);
 	if (!execute(connection,
 		     "INSERT INTO combat_outcome(operation_id,pkill_event_id,victim_pid,room_vnum,"
 		     "participant_count) VALUES(UNHEX('" +

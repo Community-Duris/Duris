@@ -1,3 +1,4 @@
+#include "guild/artifact_guild_state.h"
 
 /************************************************************************
  * sql.c - interface to MySQL database and functions for stats keeping  *
@@ -678,6 +679,9 @@ void send_mud_info(const char *name, P_char ch)
 
 void sql_update_bind_data(int vnum, int *owner_pid, int *timer)
 {
+	artifact_maintenance_scope maintenance;
+	if (!maintenance)
+		return;
 	if (!owner_pid || !timer)
 	{
 		logit(LOG_DEBUG, "sql_update_bind_data: invalid input pointer");
@@ -4391,6 +4395,9 @@ bool sql_get_bind_data(int vnum, int *owner_pid, int *timer)
 
 void sql_update_bind_data(int vnum, int *owner_pid, int *timer)
 {
+	artifact_maintenance_scope maintenance;
+	if (!maintenance)
+		return;
 	if (!qry("select * from artifact_bind where vnum = %d", vnum))
 	{
 		logit(LOG_DEBUG, "sql_update_bind_data(): failed to read from database");

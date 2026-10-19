@@ -7,6 +7,10 @@
 #include <mysql/mysql.h>
 #include <vector>
 
+// Metadata is projected in the enclosing operation transaction, without replacing contents.
+bool corpse_metadata_repository_execute(MYSQL *connection, const corpse_lifecycle_payload &payload,
+					corpse_lifecycle_result *result, unsigned int *result_code);
+
 // Executes one already-journaled disposal inside the caller's active critical
 // transaction. The repository never starts or commits independently.
 bool corpse_lifecycle_repository_execute(MYSQL *connection, const critical_command &command,

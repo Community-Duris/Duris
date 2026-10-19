@@ -57,7 +57,7 @@ buy_submit = buy.index("shop_trade_transaction_submit_with_publication(")
 # rename rather than on the ordering it is here to protect.
 if not buy_submit < buy.index("transact(ch, gem, keeper, sale)") < buy.index("writeShopKeeper("):
     raise SystemExit("flat buy does not submit before legacy money/shop mutation")
-flat_branch = buy.index("if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)",
+flat_branch = buy.index("if ((economic_state_active() ||",
                         buy.index("IS_CARRYING_N(ch)"))
 clone = buy.index("selected = read_object(temp1->R_num, REAL)", flat_branch)
 if not flat_branch < clone < buy_submit:

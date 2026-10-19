@@ -533,6 +533,20 @@ flatfile_identity_result flatfile_identity_lookup_pid(const std::string &root, i
 	return flatfile_identity_result::ok;
 }
 
+flatfile_identity_result flatfile_identity_list_all(const std::string &root,
+						    std::vector<flatfile_identity_record> *records,
+						    std::string *error)
+{
+	if (!records)
+		return flatfile_identity_result::invalid;
+	std::lock_guard<std::mutex> guard(identity_mutex);
+	identity_catalog catalog;
+	const auto result = load_catalog(root, &catalog, error);
+	if (result == flatfile_identity_result::ok)
+		*records = std::move(catalog.entries);
+	return result;
+}
+
 flatfile_identity_result
 flatfile_identity_list_account(const std::string &root, const std::string &account,
 			       std::vector<flatfile_identity_record> *records, std::string *error)

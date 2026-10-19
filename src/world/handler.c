@@ -9,6 +9,7 @@
  */
 
 #include "core/prototypes.h"
+#include "economy/economic_state.h"
 #include "item/objmisc.h"
 #include "telemetry/telemetry_runtime.h"
 #include "item/item_actions.h"
@@ -3889,6 +3890,7 @@ void publish_corpse_release(bool committed, const corpse_lifecycle_result &resul
 	    !item_ownership_runtime_apply_corpse_release(payload.owner_pid, payload.save_id,
 							 payload.room_vnum, result))
 	{
+		corpse_lifecycle_transaction_publication_failed();
 		persistence_alert(AVATAR, "corpse", "durable_release", "none", "none",
 				  "stale_live_topology", "save_id=%u room=%d", payload.save_id,
 				  payload.room_vnum);
@@ -4086,6 +4088,7 @@ void recover_committed_corpse_raise(uint64_t key, P_obj corpse, P_char follower,
 				    bool transfer_live_items, bool fence_save, bool pet_custody,
 				    const char *reason)
 {
+	corpse_lifecycle_transaction_publication_failed();
 	auto found = corpse_raises.find(key);
 	if (found == corpse_raises.end())
 		return;
@@ -4323,11 +4326,13 @@ void publish_corpse_resurrection(bool committed, const corpse_lifecycle_result &
 							      payload.destination_player_pid,
 							      payload.old_room_vnum, result))
 	{
+		corpse_lifecycle_transaction_publication_failed();
 		fail_corpse_resurrection(key, "claim_live_topology_stale");
 		return;
 	}
 	if (!publish_corpse_wallet(target, result))
 	{
+		corpse_lifecycle_transaction_publication_failed();
 		fail_corpse_resurrection(key, "claim_wallet_invalid");
 		return;
 	}
@@ -4487,6 +4492,7 @@ void publish_corpse_nested_release(bool committed, const corpse_lifecycle_result
 		    payload.target_parent_item_uid, payload.expected_target_parent_revision,
 		    result))
 	{
+		corpse_lifecycle_transaction_publication_failed();
 		persistence_alert(AVATAR, "corpse", "durable_nested_release", "none", "none",
 				  "stale_live_topology", "save_id=%u room=%d", payload.save_id,
 				  payload.room_vnum);
@@ -4494,6 +4500,7 @@ void publish_corpse_nested_release(bool committed, const corpse_lifecycle_result
 	}
 	if (payload.destination_player_pid && !publish_corpse_wallet(carrier, result))
 	{
+		corpse_lifecycle_transaction_publication_failed();
 		persistence_alert(AVATAR, "corpse", "durable_nested_release", "none", "none",
 				  "wallet_invalid", "save_id=%u", payload.save_id);
 		return;
@@ -4611,6 +4618,7 @@ void publish_corpse_destruction(bool committed, const corpse_lifecycle_result &r
 	    !item_ownership_runtime_apply_corpse_destruction(payload.owner_pid, payload.save_id,
 							     result))
 	{
+		corpse_lifecycle_transaction_publication_failed();
 		persistence_alert(AVATAR, "corpse", "durable_destroy", "none", "none",
 				  "stale_live_topology", "save_id=%u room=%d", payload.save_id,
 				  payload.room_vnum);
@@ -4646,13 +4654,14 @@ bool submit_corpse_destruction(P_obj corpse)
 
 bool durable_corpse_lifecycle_enabled()
 {
-	return false;
+	return economic_state_active();
 }
 } // namespace
 
-bool corpse_raise_player_save_fenced(P_char)
+bool corpse_raise_player_save_fenced(P_char character)
 {
-	return false;
+	return character && economic_state_active() &&
+	       IS_SET(character->runtime_flags, CHAR_RFLAG_CORPSE_RAISE_SAVE_FENCE);
 }
 
 void corpse_raise_player_ready(P_char character, bool inventory_reloaded)
