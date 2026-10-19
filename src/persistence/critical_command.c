@@ -48,6 +48,72 @@ int hex_value(char value)
 }
 } // namespace
 
+bool critical_operation_receipt_encode(const critical_operation_receipt &receipt,
+				       std::vector<uint8_t> *encoded)
+{
+	if (!encoded || critical_operation_id_is_zero(receipt.operation_id) ||
+	    receipt.outcome_payload.empty() ||
+	    receipt.outcome_payload.size() > CRITICAL_COMMAND_MAX_OUTCOME_BYTES)
+		return false;
+	try
+	{
+		std::vector<uint8_t> bytes{ 'D', 'O', 'R', '1' };
+		bytes.insert(bytes.end(), receipt.operation_id.bytes.begin(),
+			     receipt.operation_id.bytes.end());
+		bytes.insert(bytes.end(), receipt.request_digest.begin(),
+			     receipt.request_digest.end());
+		append_le<uint64_t>(bytes, receipt.outcome_revision);
+		append_le<uint16_t>(bytes, receipt.outcome_payload.size());
+		bytes.insert(bytes.end(), receipt.outcome_payload.begin(),
+			     receipt.outcome_payload.end());
+		std::array<uint8_t, SHA256_DIGEST_LENGTH> digest{};
+		SHA256(bytes.data(), bytes.size(), digest.data());
+		bytes.insert(bytes.end(), digest.begin(), digest.end());
+		*encoded = std::move(bytes);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+bool critical_operation_receipt_decode(const uint8_t *encoded, size_t size,
+				       critical_operation_receipt *receipt)
+{
+	constexpr size_t prefix = 4 + CRITICAL_COMMAND_ID_BYTES + SHA256_DIGEST_LENGTH + 8 + 2;
+	constexpr size_t overhead = prefix + SHA256_DIGEST_LENGTH;
+	if (!encoded || !receipt || size <= overhead || size > CRITICAL_RECEIPT_MAX_BYTES ||
+	    memcmp(encoded, "DOR1", 4))
+		return false;
+	critical_operation_receipt decoded{};
+	std::copy_n(encoded + 4, decoded.operation_id.bytes.size(),
+		    decoded.operation_id.bytes.begin());
+	std::copy_n(encoded + 4 + CRITICAL_COMMAND_ID_BYTES, decoded.request_digest.size(),
+		    decoded.request_digest.begin());
+	size_t cursor = prefix - 10;
+	uint16_t payload_size = 0;
+	if (critical_operation_id_is_zero(decoded.operation_id) ||
+	    !read_le(encoded, size, &cursor, &decoded.outcome_revision) ||
+	    !read_le(encoded, size, &cursor, &payload_size) || !payload_size ||
+	    size != overhead + payload_size)
+		return false;
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest{};
+	SHA256(encoded, prefix + payload_size, digest.data());
+	if (!std::equal(digest.begin(), digest.end(), encoded + prefix + payload_size))
+		return false;
+	try
+	{
+		decoded.outcome_payload.assign(encoded + prefix, encoded + prefix + payload_size);
+		*receipt = std::move(decoded);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
 bool critical_operation_id_generate(critical_operation_id *operation_id)
 {
 	if (!operation_id)
@@ -205,6 +271,17 @@ bool critical_command_valid(const critical_command &command)
 			return false;
 	}
 	return true;
+}
+
+bool critical_command_outcome_matches(const critical_command &command, uint64_t revision,
+				      unsigned int error_code, const uint8_t *payload, size_t size)
+{
+	return command.schema_version == CRITICAL_COMMAND_SCHEMA_VERSION ||
+	       (command.schema_version == CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION && !error_code &&
+		command.outcome_revision == revision && payload &&
+		size == command.outcome_payload.size() &&
+		std::equal(command.outcome_payload.begin(), command.outcome_payload.end(),
+			   payload));
 }
 
 bool critical_command_equal(const critical_command &left, const critical_command &right)

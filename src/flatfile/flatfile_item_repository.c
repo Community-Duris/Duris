@@ -2715,6 +2715,14 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 	{
 		return { critical_apply_outcome::retryable_failure, catalog.revision, ENOMEM };
 	}
+	const auto prepared_result = make_result(result_code ?
+							 critical_apply_outcome::terminal_failure :
+							 critical_apply_outcome::applied,
+						 result_code, result);
+	if (!critical_command_outcome_matches(
+		    command, prepared_result.durable_revision, prepared_result.error_code,
+		    prepared_result.result_payload.data(), prepared_result.result_size))
+		return { critical_apply_outcome::terminal_failure, 0, EILSEQ };
 	const auto committed =
 		flatfile_authority_transaction_commit(root, authority, images, &error);
 	if (committed != flatfile_authority_transaction_result::ok)
@@ -2820,7 +2828,8 @@ static critical_apply_result flatfile_coin_apply(const std::string &root,
 			 static_cast<unsigned int>(
 				 loaded == flatfile_item_repository_result::io_error ? EIO :
 										       EILSEQ) };
-	auto completion = [](const operation_state &operation, critical_apply_outcome outcome)
+	auto completion =
+		[&payload](const operation_state &operation, critical_apply_outcome outcome)
 	{
 		critical_apply_result result = { operation.result_code ?
 							 critical_apply_outcome::terminal_failure :
@@ -2828,6 +2837,21 @@ static critical_apply_result flatfile_coin_apply(const std::string &root,
 						 0, operation.result_code };
 		if (!operation.result_code)
 		{
+			coin_transfer_result decoded{};
+			if (!coin_transfer_command_decode_result(
+				    payload, operation.coin_result.data(),
+				    operation.coin_result.size(), &decoded))
+				return critical_apply_result{
+					critical_apply_outcome::terminal_failure, 0, EBADMSG
+				};
+			for (const auto &wallet : decoded.wallets)
+				result.durable_revision =
+					std::max({ result.durable_revision, wallet.wallet_revision,
+						   wallet.bank_revision });
+			for (const auto &pile : decoded.piles)
+				result.durable_revision = std::max(
+					{ result.durable_revision, pile.from_owner_revision,
+					  pile.to_owner_revision, pile.max_item_revision });
 			result.result_size = operation.coin_result.size();
 			std::copy(operation.coin_result.begin(), operation.coin_result.end(),
 				  result.result_payload.begin());
@@ -2968,6 +2992,11 @@ static critical_apply_result flatfile_coin_apply(const std::string &root,
 		images.push_back({ ownership_filename, {} });
 		if (!encode_catalog(candidate, catalog.revision + 1, &images.back().bytes))
 			return { critical_apply_outcome::terminal_failure, 0, ENOSPC };
+		const auto prepared_result = completion(operation, critical_apply_outcome::applied);
+		if (!critical_command_outcome_matches(
+			    command, prepared_result.durable_revision, prepared_result.error_code,
+			    prepared_result.result_payload.data(), prepared_result.result_size))
+			return { critical_apply_outcome::terminal_failure, 0, EILSEQ };
 		const auto committed =
 			flatfile_authority_transaction_commit(root, lock, images, &error);
 		if (committed != flatfile_authority_transaction_result::ok)

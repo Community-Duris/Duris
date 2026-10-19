@@ -16,7 +16,7 @@ with tempfile.TemporaryDirectory(prefix="duris-coordinator-uncertain-") as tempo
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-pthread", "-Isrc",
             "tests/async/ram_coordinator_test.cpp", rel("critical_command.c"),
             rel("critical_command_journal.c"), rel("critical_command_coordinator.c"),
-            "src/persistence/operation_log.c", "-lz", "-lcrypto",
+            "src/persistence/operation_log.c", "src/flatfile/flatfile_store.c", "-lz", "-lcrypto",
             "-Wl,--wrap=fsync", "-Wl,--wrap=ftruncate", "-o", str(binary),
         ],
         cwd=ROOT, check=True,

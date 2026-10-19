@@ -65,7 +65,7 @@ size_t completed_cache_bytes = 0;
 critical_apply_fn apply_callback = nullptr;
 void *apply_context = nullptr;
 critical_log_submit_fn log_submit = nullptr;
-critical_apply_fn service_apply_callback = nullptr;
+critical_log_lookup_fn log_lookup = nullptr;
 std::deque<std::string> awaiting_prepare;
 bool admission_uncertain = false;
 critical_drain_observer_fn drain_observer = nullptr;
@@ -202,7 +202,25 @@ struct writer_job
 
 // Runs on the persistence writer thread.
 player_save_apply_result execute(const writer_job &job)
+try
 {
+	{
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		// A database commit does not release custody: publication may still be
+		// waiting for the game thread. Keep this writer job at the queue head
+		// until every preceding owner has published its result.
+		if (health.initialized && job.generation == generation)
+		{
+			const auto identity = operation_key(job.command.operation_id);
+			for (const auto &key : job.command.keys)
+			{
+				const auto found = fences.find(entity_key(key));
+				if (found != fences.end() && found->second.front() != identity)
+					return { player_save_apply_outcome::retryable_failure, 0,
+						 EAGAIN };
+			}
+		}
+	}
 	const uint64_t started = now_usec();
 	critical_apply_result applied = {};
 	try
@@ -236,6 +254,7 @@ player_save_apply_result execute(const writer_job &job)
 					   .queued_at_usec = job.queued_at_usec,
 					   .started_at_usec = started,
 					   .completed_at_usec = now_usec(),
+					   .failure_stage = applied.failure_stage,
 					   .result_size = applied.result_size,
 					   .result_payload = applied.result_payload };
 	if (applied.outcome == critical_apply_outcome::terminal_failure)
@@ -279,6 +298,16 @@ player_save_apply_result execute(const writer_job &job)
 		(void)completion_delivery.try_enqueue(critical_completion_channel::execution,
 						      completion);
 	return { player_save_apply_outcome::applied, 0, 0 };
+}
+catch (const std::bad_alloc &)
+{
+	// The writer must retain the command if fence/receipt handling fails,
+	// including after the backend has committed its idempotent transaction.
+	return { player_save_apply_outcome::retryable_failure, 0, ENOMEM };
+}
+catch (...)
+{
+	return { player_save_apply_outcome::retryable_failure, 0, EIO };
 }
 
 // Reserve the operation and its fences. The caller queues it on the writer.
@@ -365,10 +394,8 @@ static void prepare_next()
 	std::string identity;
 	critical_command command;
 	critical_apply_fn prepare = nullptr;
-	critical_apply_fn service_apply = nullptr;
 	critical_log_submit_fn append = nullptr;
 	void *context = nullptr;
-	uint64_t job_generation = 0, job_owner = 0;
 	{
 		std::lock_guard<std::mutex> lock(coordinator_mutex);
 		if (!log_submit || admission_uncertain || awaiting_prepare.empty() ||
@@ -393,32 +420,11 @@ static void prepare_next()
 		prepare = apply_callback;
 		append = log_submit;
 		context = apply_context;
-		service_apply = service_apply_callback;
-		job_generation = generation;
-		job_owner = ++writer_sequence;
 	}
 	critical_apply_result result{};
 	try
 	{
 		result = prepare(command, context);
-		if (result.outcome == critical_apply_outcome::terminal_failure &&
-		    result.error_code == ENOTSUP && service_apply)
-		{
-			writer_job job{ command, service_apply, context, now_usec(),
-					job_generation };
-			const size_t bytes = sizeof(job) + command.payload.size();
-			// Offline service catalogs keep their existing atomic transactions.
-			// They share this writer and entity fences with logged RAM outcomes.
-			const auto submitted = persistence_writer_submit(
-				persistence_job_kind::critical, job_owner, bytes,
-				[job = std::move(job)] { return execute(job); });
-			if (submitted == player_save_submit_result::accepted)
-			{
-				std::lock_guard<std::mutex> lock(coordinator_mutex);
-				awaiting_prepare.pop_front();
-			}
-			return;
-		}
 		if (result.outcome == critical_apply_outcome::retryable_failure)
 			return;
 		if (result.outcome == critical_apply_outcome::applied)
@@ -498,13 +504,13 @@ bool critical_command_coordinator_init(critical_apply_fn apply, void *context)
 
 bool critical_command_coordinator_init_ram(critical_apply_fn prepare, void *context,
 					   critical_log_submit_fn append,
-					   critical_apply_fn service_apply)
+					   critical_log_lookup_fn lookup)
 {
-	if (!append || !critical_command_coordinator_init(prepare, context))
+	if (!append || !lookup || !critical_command_coordinator_init(prepare, context))
 		return false;
 	std::lock_guard<std::mutex> lock(coordinator_mutex);
 	log_submit = append;
-	service_apply_callback = service_apply;
+	log_lookup = lookup;
 	return true;
 }
 
@@ -521,7 +527,7 @@ void critical_command_coordinator_shutdown(void)
 	apply_callback = nullptr;
 	apply_context = nullptr;
 	log_submit = nullptr;
-	service_apply_callback = nullptr;
+	log_lookup = nullptr;
 	awaiting_prepare.clear();
 	admission_uncertain = false;
 	++generation;
@@ -547,7 +553,7 @@ static critical_submit_result submit_command(critical_command command,
 		auto completed = completed_cache.find(identity);
 		if (completed != completed_cache.end())
 		{
-			if (!supplied_acceptance_time)
+			if (log_submit || !supplied_acceptance_time)
 				command.accepted_at_usec =
 					completed->second.command.accepted_at_usec;
 			if (!critical_command_equal(completed->second.command, command))
@@ -558,13 +564,40 @@ static critical_submit_result submit_command(critical_command command,
 		auto found = operations.find(identity);
 		if (found != operations.end())
 		{
-			if (!supplied_acceptance_time)
+			if (found->second->retain_until_publication != retain_until_publication)
+				return critical_submit_result::identity_conflict;
+			if (log_submit || !supplied_acceptance_time)
 				command.accepted_at_usec = found->second->command.accepted_at_usec;
 			if (!critical_command_equal(found->second->command, command))
 				return critical_submit_result::identity_conflict;
 			++found->second->attachments;
 			++health.attached;
 			return critical_submit_result::attached;
+		}
+		if (log_lookup)
+		{
+			critical_apply_result receipt{};
+			const auto status = log_lookup(command, &receipt);
+			if (status == critical_receipt_status::identity_conflict)
+				return critical_submit_result::identity_conflict;
+			if (status == critical_receipt_status::unavailable)
+				return critical_submit_result::unavailable;
+			if (status == critical_receipt_status::found)
+			{
+				critical_completion completion{};
+				completion.operation_id = command.operation_id;
+				completion.type = command.type;
+				completion.outcome = critical_apply_outcome::already_applied;
+				completion.durable_revision = receipt.durable_revision;
+				completion.result_size = receipt.result_size;
+				completion.result_payload = receipt.result_payload;
+				remember_completed(identity, command, completion);
+				// A caller of attached must be able to retrieve the receipt.
+				if (!completed_cache.contains(identity))
+					return critical_submit_result::overloaded;
+				++health.attached;
+				return critical_submit_result::attached;
+			}
 		}
 		std::vector<uint8_t> encoded;
 		if (critical_command_encode(command, &encoded) != critical_command_codec_result::ok)

@@ -773,6 +773,16 @@ unsigned int item_ownership_runtime_prepare(const item_transfer_payload &payload
 	    !item_owner_identity_valid(payload.from_owner) ||
 	    !item_owner_identity_valid(payload.to_owner))
 		return EINVAL;
+	// These operations also mutate catalogs that this basic custody reducer
+	// does not own. Do not seal a partial outcome and discover the missing
+	// corpse/collector/crafting effects only after durable admission.
+	if (payload.corpse.present || payload.collector.present ||
+	    payload.reason == item_transfer_reason::craft ||
+	    payload.from_owner.type == item_owner_type::corpse ||
+	    payload.to_owner.type == item_owner_type::corpse ||
+	    payload.from_owner.type == item_owner_type::collector ||
+	    payload.to_owner.type == item_owner_type::collector)
+		return ENOTSUP;
 	uint64_t from = 0, to = 0;
 	item_ownership_runtime_peek_owner_revision(payload.from_owner, &from);
 	item_ownership_runtime_peek_owner_revision(payload.to_owner, &to);
@@ -848,21 +858,6 @@ unsigned int item_ownership_runtime_prepare(const item_transfer_payload &payload
 		    parent->second.item_revision != payload.expected_target_parent_revision ||
 		    parent->second.state != item_custody_state::active)
 			return ESTALE;
-	}
-	if (payload.reason == item_transfer_reason::craft)
-	{
-		std::vector<player_item_snapshot> outputs;
-		if (payload.item_blob_size &&
-		    player_item_snapshot_list_decode(payload.item_blob.data(),
-						     payload.item_blob_size,
-						     &outputs) != player_snapshot_codec_result::ok)
-			return EINVAL;
-		for (const auto &item : outputs)
-			if (entries.count(item.object_uid))
-				return EEXIST;
-		if (!outputs.empty())
-			candidate.max_item_revision =
-				std::max(candidate.max_item_revision, uint64_t(1));
 	}
 	*result = candidate;
 	return 0;

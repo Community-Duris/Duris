@@ -23,6 +23,19 @@ struct critical_operation_id
 	std::array<uint8_t, CRITICAL_COMMAND_ID_BYTES> bytes;
 };
 
+constexpr size_t CRITICAL_RECEIPT_MAX_BYTES = 94 + CRITICAL_COMMAND_MAX_OUTCOME_BYTES;
+struct critical_operation_receipt
+{
+	critical_operation_id operation_id{};
+	std::array<uint8_t, 32> request_digest{};
+	uint64_t outcome_revision = 0;
+	std::vector<uint8_t> outcome_payload;
+};
+bool critical_operation_receipt_encode(const critical_operation_receipt &receipt,
+				       std::vector<uint8_t> *encoded);
+bool critical_operation_receipt_decode(const uint8_t *encoded, size_t size,
+				       critical_operation_receipt *receipt);
+
 enum class critical_entity_type : uint8_t
 {
 	player = 1,
@@ -170,6 +183,10 @@ bool critical_entity_key_equal(const critical_entity_key &left, const critical_e
 bool critical_command_normalize(critical_command *command);
 bool critical_command_valid(const critical_command &command);
 bool critical_command_equal(const critical_command &left, const critical_command &right);
+// Schema 1 asks the repository to decide. Schema 2 must match the complete
+// frozen receipt before any backend commits its candidate state.
+bool critical_command_outcome_matches(const critical_command &command, uint64_t revision,
+				      unsigned int error_code, const uint8_t *payload, size_t size);
 const char *critical_failure_stage_name(critical_failure_stage stage);
 critical_command_codec_result critical_command_encode(const critical_command &command,
 						      std::vector<uint8_t> *encoded);

@@ -1289,6 +1289,12 @@ critical_apply_result flatfile_auction_repository_apply(const std::string &root,
 	{
 		return { critical_apply_outcome::retryable_failure, catalog.revision - 1, ENOMEM };
 	}
+	const auto prepared_result = make_result(catalog.operations.back(), catalog.revision,
+						 critical_apply_outcome::applied);
+	if (!critical_command_outcome_matches(
+		    command, prepared_result.durable_revision, prepared_result.error_code,
+		    prepared_result.result_payload.data(), prepared_result.result_size))
+		return { critical_apply_outcome::terminal_failure, catalog.revision - 1, EILSEQ };
 	const auto committed = flatfile_authority_transaction_commit(root, lock, images, &error);
 	if (committed != flatfile_authority_transaction_result::ok)
 		return { committed == flatfile_authority_transaction_result::io_error ?
@@ -1299,6 +1305,5 @@ critical_apply_result flatfile_auction_repository_apply(const std::string &root,
 				 committed == flatfile_authority_transaction_result::io_error ?
 					 EIO :
 					 EILSEQ) };
-	return make_result(catalog.operations.back(), catalog.revision,
-			   critical_apply_outcome::applied);
+	return prepared_result;
 }

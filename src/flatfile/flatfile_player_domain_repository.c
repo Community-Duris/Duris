@@ -1358,6 +1358,9 @@ critical_apply_result apply_epic_command(const std::string &root, const critical
 	std::array<uint8_t, EPIC_RESULT_PAYLOAD_BYTES> encoded_result = {};
 	if (!epic_command_encode_result(epic_result, &encoded_result))
 		return { critical_apply_outcome::terminal_failure, epic_result.revision, EBADMSG };
+	if (!critical_command_outcome_matches(command, epic_result.revision, result_code,
+					      encoded_result.data(), encoded_result.size()))
+		return { critical_apply_outcome::terminal_failure, epic_result.revision, EILSEQ };
 	domain_operation operation = {};
 	operation.operation_id = command.operation_id;
 	operation.command_digest = digest;
@@ -1533,6 +1536,10 @@ critical_apply_result apply_currency_command(const std::string &root,
 	std::array<uint8_t, CURRENCY_RESULT_PAYLOAD_BYTES> encoded_result = {};
 	if (!currency_command_encode_result(currency, &encoded_result))
 		return { critical_apply_outcome::terminal_failure, 0, EBADMSG };
+	if (!critical_command_outcome_matches(
+		    command, std::max(currency.wallet_revision, currency.bank_revision),
+		    result_code, encoded_result.data(), encoded_result.size()))
+		return { critical_apply_outcome::terminal_failure, 0, EILSEQ };
 	domain_operation operation = {};
 	operation.operation_id = command.operation_id;
 	operation.command_digest = digest;

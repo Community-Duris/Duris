@@ -16,9 +16,10 @@ with tempfile.TemporaryDirectory(prefix="operation-log-") as scratch:
         str(ROOT / "src/persistence/critical_command.c"),
         str(ROOT / "src/persistence/critical_command_journal.c"),
         str(ROOT / "src/persistence/operation_log.c"),
+        str(ROOT / "src/flatfile/flatfile_store.c"),
         str(ROOT / "src/player/player_checkpoint_command.c"),
         str(ROOT / "src/player/player_snapshot_codec.c"),
-        "-Wl,--wrap=fsync", "-lcrypto", "-lz", "-o", str(binary),
+        "-Wl,--wrap=fsync", "-Wl,--wrap=_Znwm", "-lcrypto", "-lz", "-o", str(binary),
     ], check=True)
     subprocess.run([str(binary), str(Path(scratch) / "journal")], check=True)
 print("operation log regression passed")

@@ -14,6 +14,10 @@ critical_submit_result operation_log_submit_player(const critical_command &outco
 						   const player_snapshot &snapshot);
 bool operation_log_ready();
 bool operation_log_projection_caught_up();
+// Consult durable identity before preparing an outcome, including after cache
+// eviction/restart. The request's acceptance timestamp is not its identity.
+critical_receipt_status operation_log_lookup(const critical_command &request,
+					     critical_apply_result *receipt);
 
 // A sealed outcome is a promise, not a request for the database to decide again.
 bool operation_log_result_matches(const critical_command &, const critical_apply_result &) noexcept;

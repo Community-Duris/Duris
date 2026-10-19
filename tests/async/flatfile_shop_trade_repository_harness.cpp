@@ -186,7 +186,28 @@ int main(int argc, char **argv)
 		"could not establish shop custody: " + error);
 
 	const shop_trade_payload payload = purchase(trade_items);
-	const critical_command purchase_command = command(payload, 1);
+	critical_command purchase_command = command(payload, 1);
+	const auto preview_root = root.string() + "-sealed-preview";
+	fs::copy(root, preview_root, fs::copy_options::recursive);
+	fs::permissions(preview_root, fs::perms::owner_all, fs::perm_options::replace);
+	const auto preview = flatfile_shop_trade_repository_apply(preview_root, purchase_command);
+	require(preview.outcome == critical_apply_outcome::applied && preview.result_size,
+		"could not prepare isolated sealed shop_trade result");
+	purchase_command.schema_version = CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION;
+	purchase_command.outcome_revision = preview.durable_revision;
+	purchase_command.outcome_payload.assign(preview.result_payload.begin(),
+						preview.result_payload.begin() +
+							preview.result_size);
+	auto divergent = purchase_command;
+	++divergent.outcome_revision;
+	require(flatfile_shop_trade_repository_apply(root.string(), divergent).error_code == EILSEQ,
+		"shop_trade committed a divergent sealed revision");
+	divergent = purchase_command;
+	++divergent.outcome_payload[0];
+	require(flatfile_shop_trade_repository_apply(root.string(), divergent).error_code == EILSEQ,
+		"shop_trade committed a divergent sealed result");
+	require(!fs::exists(domains / ".critical-authority-transaction"),
+		"divergent shop_trade left a durable transaction intent");
 	const std::string root_path = root.string();
 	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
 	critical_apply_result applied = flatfile_critical_command_repository_apply_selected(

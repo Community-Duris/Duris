@@ -109,7 +109,8 @@ int main(int argc, char **argv)
 {
 	assert(argc == 2);
 	assert(operation_log_init(argv[1], project, nullptr));
-	assert(critical_command_coordinator_init_ram(prepare, nullptr, operation_log_submit));
+	assert(critical_command_coordinator_init_ram(prepare, nullptr, operation_log_submit,
+						     operation_log_lookup));
 	const auto first = command(3);
 	const auto second = command(5);
 	assert(critical_command_coordinator_submit_for_publication(first) ==
@@ -167,5 +168,39 @@ int main(int argc, char **argv)
 	assert(operation_log_init(argv[1], project, nullptr));
 	assert(stored == 15 && projections == 3);
 	assert(critical_command_journal_health_copy().records == 0);
+	assert(critical_command_coordinator_init_ram(prepare, nullptr, operation_log_submit,
+						     operation_log_lookup));
+	live = stored;
+	// Evict all process-local receipts, then retry an earlier request. Neither
+	// preparation nor publication may run again, even with a new arrival time.
+	for (size_t index = 0; index <= CRITICAL_COORDINATOR_COMPLETED_CACHE_MAX; ++index)
+	{
+		assert(critical_command_coordinator_submit(command(0)) ==
+		       critical_submit_result::awaiting_durability);
+		assert(critical_command_coordinator_pulse(&completion, 1) == 1);
+		assert(completion.result_payload[0] == 15);
+		pump();
+	}
+	const auto prepared_before_duplicate = preparations;
+	auto duplicate = first;
+	duplicate.accepted_at_usec += 1000;
+	assert(critical_command_coordinator_submit(duplicate) == critical_submit_result::attached);
+	assert(critical_command_coordinator_get_completed(first.operation_id, &completion));
+	assert(completion.outcome == critical_apply_outcome::already_applied);
+	assert(completion.result_payload[0] == 3);
+	assert(preparations == prepared_before_duplicate && live == 15 && jobs.empty());
+	critical_command_coordinator_shutdown();
+	operation_log_shutdown();
+	assert(operation_log_init(argv[1], project, nullptr));
+	assert(critical_command_coordinator_init_ram(prepare, nullptr, operation_log_submit,
+						     operation_log_lookup));
+	assert(critical_command_coordinator_submit(first) == critical_submit_result::attached);
+	assert(critical_command_coordinator_get_completed(first.operation_id, &completion));
+	assert(completion.result_payload[0] == 3 && preparations == prepared_before_duplicate);
+	duplicate = first;
+	duplicate.payload[0] = 99;
+	assert(critical_command_coordinator_submit(duplicate) ==
+	       critical_submit_result::identity_conflict);
+	critical_command_coordinator_shutdown();
 	operation_log_shutdown();
 }

@@ -93,6 +93,15 @@ struct critical_coordinator_health
 
 using critical_apply_fn = critical_apply_result (*)(const critical_command &command, void *context);
 using critical_log_submit_fn = critical_submit_result (*)(const critical_command &outcome);
+enum class critical_receipt_status : uint8_t
+{
+	missing,
+	found,
+	identity_conflict,
+	unavailable,
+};
+using critical_log_lookup_fn = critical_receipt_status (*)(const critical_command &request,
+							   critical_apply_result *receipt);
 using critical_drain_observer_fn = void (*)(const critical_completion *completions, size_t count);
 
 // Commands run on the one persistence writer (player_save_worker.h), which must be
@@ -102,7 +111,7 @@ bool critical_command_coordinator_init(critical_apply_fn apply, void *context);
 // the prepared outcome and independently schedules its materialization.
 bool critical_command_coordinator_init_ram(critical_apply_fn prepare, void *context,
 					   critical_log_submit_fn append,
-					   critical_apply_fn service_apply = nullptr);
+					   critical_log_lookup_fn lookup);
 void critical_command_coordinator_shutdown(void);
 critical_submit_result critical_command_coordinator_submit(critical_command command);
 size_t critical_command_coordinator_pulse(critical_completion *completions, size_t capacity);

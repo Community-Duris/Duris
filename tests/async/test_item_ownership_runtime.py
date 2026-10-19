@@ -85,6 +85,20 @@ int main()
 	assert(item_ownership_runtime_prepare(move, &prepared) == 0);
 	assert(prepared.from_owner_revision == 11 && prepared.to_owner_revision == 1 &&
 	       prepared.max_item_revision == 6);
+	auto sidecar = move;
+	sidecar.corpse.present = true;
+	assert(item_ownership_runtime_prepare(sidecar, &prepared) == ENOTSUP);
+	sidecar = move;
+	sidecar.collector.present = true;
+	assert(item_ownership_runtime_prepare(sidecar, &prepared) == ENOTSUP);
+	sidecar = move;
+	sidecar.reason = item_transfer_reason::craft;
+	assert(item_ownership_runtime_prepare(sidecar, &prepared) == ENOTSUP);
+	sidecar = move;
+	sidecar.from_owner = { item_owner_type::corpse, (uint64_t(42) << 32) | 1, 0 };
+	assert(item_ownership_runtime_prepare(sidecar, &prepared) == ENOTSUP);
+	assert(prepared.from_owner_revision == 11 && prepared.to_owner_revision == 1 &&
+	       prepared.max_item_revision == 6);
 	item_ownership_runtime_entry before{};
 	assert(item_ownership_runtime_lookup(100, &before) && before.item_revision == 5);
 	auto stale_move = move;

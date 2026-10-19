@@ -206,7 +206,27 @@ int main(int argc, char **argv)
 	strcpy(listing.object_short.data(), "an auction test item");
 	strcpy(listing.id_keywords.data(), "auction test item");
 	strcpy(listing.object_info.data(), "durable test object");
-	const critical_command list_command = command(listing, 1);
+	critical_command list_command = command(listing, 1);
+	const auto preview_root = root.string() + "-sealed-preview";
+	fs::copy(root, preview_root, fs::copy_options::recursive);
+	fs::permissions(preview_root, fs::perms::owner_all, fs::perm_options::replace);
+	const auto preview = flatfile_auction_repository_apply(preview_root, list_command);
+	require(preview.outcome == critical_apply_outcome::applied && preview.result_size,
+		"could not prepare isolated sealed auction result");
+	list_command.schema_version = CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION;
+	list_command.outcome_revision = preview.durable_revision;
+	list_command.outcome_payload.assign(preview.result_payload.begin(),
+					    preview.result_payload.begin() + preview.result_size);
+	auto divergent = list_command;
+	++divergent.outcome_revision;
+	require(flatfile_auction_repository_apply(root.string(), divergent).error_code == EILSEQ,
+		"auction committed a divergent sealed revision");
+	divergent = list_command;
+	++divergent.outcome_payload[0];
+	require(flatfile_auction_repository_apply(root.string(), divergent).error_code == EILSEQ,
+		"auction committed a divergent sealed result");
+	require(!fs::exists(domains / ".critical-authority-transaction"),
+		"divergent auction left a durable transaction intent");
 	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
 	critical_apply_result applied = flatfile_critical_command_repository_apply_selected(
 		list_command, const_cast<char *>(root_path.c_str()));

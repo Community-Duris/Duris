@@ -589,9 +589,8 @@ bool finish_inbox(MYSQL *connection, const critical_command &command, uint64_t r
 		  unsigned int result_code, const uint8_t *payload, size_t payload_size,
 		  critical_failure_stage failure_stage = critical_failure_stage::none)
 {
-	if (command.schema_version == CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION &&
-	    (result_code || payload_size != command.outcome_payload.size() ||
-	     !std::equal(command.outcome_payload.begin(), command.outcome_payload.end(), payload)))
+	if (!critical_command_outcome_matches(command, revision, result_code, payload,
+					      payload_size))
 	{
 		// The operation was already accepted durably from RAM. Divergence of the
 		// materialized base is a recovery error, never a new gameplay decision.
