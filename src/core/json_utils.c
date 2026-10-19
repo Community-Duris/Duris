@@ -494,6 +494,38 @@ char *json_build_gmcp_message(const char *package, const char *data_json)
 	return result;
 }
 
+/* cJSON escapes string values itself. Only remove colors/invalid UTF-8 here;
+ * pre-escaping would expose literal backslashes in decoded room/object names. */
+static char *json_game_string(const char *str, bool strip_colors = true)
+{
+	if (!str)
+		return strdup("");
+	char *result = (char *)malloc(strlen(str) + 1);
+	if (!result)
+		return NULL;
+	size_t out = 0;
+	for (size_t i = 0; str[i];)
+	{
+		size_t color = strip_colors ? json_ansi_code_length(str + i) : 0;
+		if (color)
+		{
+			i += color;
+			continue;
+		}
+		int bytes = (unsigned char)str[i] >= 0x80 ? utf8_sequence_len(str, i) : 1;
+		if (bytes <= 0)
+		{
+			++i;
+			continue;
+		}
+		memcpy(result + out, str + i, bytes);
+		out += bytes;
+		i += bytes;
+	}
+	result[out] = '\0';
+	return result;
+}
+
 /* build room.info gmcp message (ch is for visibility checks, can be null) */
 char *json_build_room_info(struct room_data *room, struct char_data *ch)
 {
@@ -574,20 +606,20 @@ char *json_build_room_info(struct room_data *room, struct char_data *ch)
 	}
 
 	/* Room name - clean for Mudlet, colored for web */
-	clean_name = json_escape_ansi_string(room->name ? room->name : "Unknown");
+	clean_name = json_game_string(room->name ? room->name : "Unknown");
 	cJSON_AddStringToObject(root, "name", clean_name);
 	free(clean_name);
-	clean_name = json_escape_string(room->name ? room->name : "Unknown");
+	clean_name = json_game_string(room->name ? room->name : "Unknown", false);
 	cJSON_AddStringToObject(root, "colored_name", clean_name);
 	free(clean_name);
 
 	/* Area name - clean for Mudlet, colored for web */
 	if (has_zone && zone_table[room->zone].name)
 	{
-		clean_area = json_escape_ansi_string(zone_table[room->zone].name);
+		clean_area = json_game_string(zone_table[room->zone].name);
 		cJSON_AddStringToObject(root, "area", clean_area);
 		free(clean_area);
-		clean_area = json_escape_string(zone_table[room->zone].name);
+		clean_area = json_game_string(zone_table[room->zone].name, false);
 		cJSON_AddStringToObject(root, "colored_area", clean_area);
 		free(clean_area);
 	}
@@ -661,7 +693,7 @@ char *json_build_room_info(struct room_data *room, struct char_data *ch)
 				continue;
 			}
 			cJSON *door = cJSON_CreateObject();
-			char *clean_keyword = json_escape_ansi_string(
+			char *clean_keyword = json_game_string(
 				room->dir_option[dir]->keyword ? room->dir_option[dir]->keyword :
 								 "door");
 			cJSON_AddStringToObject(door, "name", clean_keyword);
@@ -689,7 +721,7 @@ char *json_build_room_info(struct room_data *room, struct char_data *ch)
 				continue; /* Visibility check */
 
 			cJSON *player = cJSON_CreateObject();
-			clean_name = json_escape_ansi_string(GET_NAME(tch));
+			clean_name = json_game_string(GET_NAME(tch));
 			cJSON_AddStringToObject(player, "name", clean_name);
 			free(clean_name);
 			cJSON_AddItemToArray(players, player);
@@ -722,14 +754,15 @@ char *json_build_room_info(struct room_data *room, struct char_data *ch)
 			else
 			{
 				/* normal visibility - use short_descr */
-				clean_name = json_escape_ansi_string(
-					tch->player.short_descr ? tch->player.short_descr :
-								  GET_NAME(tch));
+				clean_name = json_game_string(tch->player.short_descr ?
+								      tch->player.short_descr :
+								      GET_NAME(tch));
 				cJSON_AddStringToObject(npc, "name", clean_name);
 				free(clean_name);
-				clean_name = json_escape_string(tch->player.short_descr ?
-									tch->player.short_descr :
-									GET_NAME(tch));
+				clean_name = json_game_string(tch->player.short_descr ?
+								      tch->player.short_descr :
+								      GET_NAME(tch),
+							      false);
 				cJSON_AddStringToObject(npc, "colored_name", clean_name);
 				free(clean_name);
 				cJSON_AddNumberToObject(npc, "vnum", GET_VNUM(tch));
@@ -763,7 +796,7 @@ char *json_build_room_info(struct room_data *room, struct char_data *ch)
 					if (IS_NPC(opponent))
 					{
 						/* fighting another npc - use short_descr */
-						clean_name = json_escape_ansi_string(
+						clean_name = json_game_string(
 							opponent->player.short_descr ?
 								opponent->player.short_descr :
 								GET_NAME(opponent));
@@ -800,11 +833,11 @@ char *json_build_room_info(struct room_data *room, struct char_data *ch)
 
 			cJSON *item = cJSON_CreateObject();
 			/* Clean name for Mudlet compatibility */
-			clean_name = json_escape_ansi_string(obj->short_description);
+			clean_name = json_game_string(obj->short_description);
 			cJSON_AddStringToObject(item, "name", clean_name);
 			free(clean_name);
 			/* Colored name for web client */
-			clean_name = json_escape_string(obj->short_description);
+			clean_name = json_game_string(obj->short_description, false);
 			cJSON_AddStringToObject(item, "colored_name", clean_name);
 			free(clean_name);
 			cJSON_AddNumberToObject(item, "vnum", OBJ_VNUM(obj));
@@ -1239,12 +1272,12 @@ char *json_build_ship_info(struct ShipData *ship, struct char_data *ch)
 	cJSON_AddNumberToObject(root, "class", ship->m_class);
 	cJSON_AddNumberToObject(root, "frags", ship->frags);
 
-	cJSON_AddStringToObject(root, "status", get_ship_status(ship));
+	cJSON_AddStringToObject(root, "status", strip_ansi(get_ship_status(ship)).c_str());
 
 	cJSON_AddNumberToObject(root, "maxSpeed", ship->get_maxspeed(ch));
 	cJSON_AddNumberToObject(root, "contactRange", 35 + ship->crew.get_contact_range_mod());
 	cJSON_AddNumberToObject(root, "sail", ship->mainsail);
-	cJSON_AddNumberToObject(root, "maxSail", MAXSAIL);
+	cJSON_AddNumberToObject(root, "maxSail", SHIP_MAX_SAIL(ship));
 
 	/* crew */
 	cJSON_AddNumberToObject(root, "crewStamina", (int)ship->crew.stamina);
@@ -1281,7 +1314,7 @@ char *json_build_ship_info(struct ShipData *ship, struct char_data *ch)
 	cJSON_AddItemToObject(root, "skillMods", skillMods);
 
 	/* people */
-	cJSON_AddNumberToObject(root, "people", ship->people);
+	cJSON_AddNumberToObject(root, "people", num_people_in_ship(ship));
 	cJSON_AddNumberToObject(root, "maxPeople", ship->get_capacity());
 
 	/* armor - each arc is [current, max] */

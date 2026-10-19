@@ -159,6 +159,12 @@ older than the current projection. Accepted old observations remain immutable
 facts without replacing newer totals. Missing entry/exit observations remain
 incomplete; intervals never fabricate missing cumulative totals or context.
 
+Transient repository qualification failures are retried until the dependency
+recovers, with exponential backoff capped at one second. Qualification does not
+apply a batch, so it has no lifetime attempt limit. Permanent qualification
+failures still open the circuit, and write-batch retry limits are unchanged.
+Queue capacity remains bounded throughout an outage.
+
 After a retryable or ambiguous failure, the repository retains a fixed-size owned
 copy of the original batch and compares its named fields on retry. D must retry exactly that batch (same order,
 keys and named values); a different batch is rejected before SQL. Pending identity

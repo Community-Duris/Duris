@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fail-closed source contracts for destructive character save transitions."""
 
-from _paths import SRC
+from _paths import SRC, extract_function
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
@@ -121,11 +121,24 @@ checks["flat terminal saves require the typed durable outcome"] = all(
 
 # Ghost extraction shares one fail-closed terminal-save helper across the named
 # and bulk command paths, and extraction remains ordered after that save gate.
-actwiz = read("actwiz.c")
+ghost_extract = extract_function("actwiz.c", "static bool extractlink_attempt(P_char ch")
 checks["ghost extraction gate"] = (
-    actwiz.count("persistence_save_character_terminal(vict, RENT_LINKDEAD)") == 1
-    and actwiz.index("persistence_save_character_terminal(vict, RENT_LINKDEAD)")
-    < actwiz.index("extract_char_after_terminal_save(vict)")
+    ghost_extract.count("persistence_save_character_terminal(vict, RENT_LINKDEAD)") == 1
+    and ghost_extract.index("persistence_save_character_terminal(vict, RENT_LINKDEAD)")
+    < ghost_extract.index("extract_char_after_terminal_save(vict)")
+)
+
+# Every logout writes a log_entries row through sql_log(). The MariaDB build queues
+# it on the writer instead of inserting it on the game loop (MR !2 review finding 4);
+# test_mysql_stalled_writer_journey.py times the loop while log_entries is locked.
+sql = read("sql.c")
+sql_log = sql[sql.rindex("void sql_log(P_char ch, const char *kind, const char *format, ...)"):]
+sql_log = sql_log[:sql_log.index("\n}\n")]
+checks["logout log rows are queued, never inserted on the game loop"] = (
+    "persistence_job_kind::log" in sql_log
+    and "log_entry_repository_apply_from_pool(entry)" in sql_log
+    and "entry.logged_at = time(NULL);" in sql_log
+    and all(token not in sql_log for token in ("qry(", "db_query", "mysql_", "INSERT INTO"))
 )
 
 for name, passed in checks.items():

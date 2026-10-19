@@ -29,6 +29,7 @@
 #include "combat/ctf.h"
 #include "core/defines.h"
 #include "world/epic_bonus.h"
+#include "world/epic.h"
 #include "combat/frag_cap_config.h"
 #include "world/hardcore_config.h"
 #include "core/files.h"
@@ -1761,6 +1762,9 @@ void point_update(void)
 
 		if (i->desc && (i->desc->connected != CON_PLAYING))
 			continue;
+
+		if (affected_by_spell(i, TAG_EPIC_TASK_PENDING))
+			epic_choose_new_epic_task(i);
 
 		if (!IS_AFFECTED(i, AFF_WRAITHFORM))
 		{

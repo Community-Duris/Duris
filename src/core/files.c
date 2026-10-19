@@ -1688,6 +1688,13 @@ int calculate_save_room(P_char ch, int type, int room)
 	return room;
 }
 
+void locker_post_save_hook(P_char ch)
+{
+	if (ch && ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
+	    world[ch->in_room].funct)
+		(*world[ch->in_room].funct)(ch->in_room, ch, (-81), NULL);
+}
+
 int writeCharacter(P_char ch, int type, int room)
 {
 	P_obj obj, obj2;
@@ -1748,6 +1755,7 @@ int writeCharacter(P_char ch, int type, int room)
 		room = calculate_save_room(ch, type, room);
 		const player_save_pipeline_result queued = player_save_pipeline_request(
 			ch, PLAYER_CHECKPOINT_COMPONENT_ALL, type, room);
+		locker_post_save_hook(ch);
 		return queued == player_save_pipeline_result::queued ||
 		       queued == player_save_pipeline_result::coalesced;
 	}
@@ -1869,9 +1877,7 @@ int writeCharacter(P_char ch, int type, int room)
 			}
 			all_affects(ch, TRUE);
 		}
-		if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
-		    world[ch->in_room].funct)
-			(*world[ch->in_room].funct)(ch->in_room, ch, (-81), NULL);
+		locker_post_save_hook(ch);
 		return 1;
 	}
 #endif
@@ -1996,9 +2002,7 @@ int writeCharacter(P_char ch, int type, int room)
 	all_affects(ch, TRUE);
 
 	// locker hook (post-save)
-	if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
-	    (world[ch->in_room].funct))
-		(*world[ch->in_room].funct)(ch->in_room, ch, (-81), NULL);
+	locker_post_save_hook(ch);
 
 	return result;
 }
@@ -3155,14 +3159,13 @@ int restoreCharOnly(P_char ch, char *name)
 	room = GET_INTE(buf); /*
 	                       * virtual room they saved/rented in
 	                       */
+	// A loaded character is in no room (see player_load_materialize()): was_in_room is the
+	// room it comes back to. The pfile tool has no world to look the room up in.
+	ch->specials.was_in_room = room;
 #ifndef _PFILE_
-	ch->in_room = real_room(room);
-#else
-	ch->in_room = room;
-#endif
-	if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER))
+	const int locker_room = real_room(room);
+	if (locker_room != NOWHERE && IS_ROOM(locker_room, ROOM_LOCKER))
 	{
-		int locker_room = ch->in_room;
 		int exit_room = NOWHERE;
 
 		if (world[locker_room].dir_option[0] &&
@@ -3191,9 +3194,9 @@ int restoreCharOnly(P_char ch, char *name)
 			      exit_room,
 			      (world[exit_room].name) ? world[exit_room].name : "<unnamed>");
 			ch->specials.was_in_room = world[exit_room].number;
-			ch->in_room = exit_room;
 		}
 	}
+#endif
 
 	GET_LONG(buf);
 	start = (int)(buf - buff);

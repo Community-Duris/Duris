@@ -7,6 +7,7 @@ rules and event-loop integration reviewable alongside it.
 """
 from _paths import SRC
 from pathlib import Path
+import re
 
 from contract_text import contains, count, index
 
@@ -164,6 +165,10 @@ def test_proxy_metadata_requires_trusted_peer_and_validated_values():
     assert "src_port < 1 || src_port > 65535" in COMM
     assert 'strcmp(proto, "TCP4")' in COMM
     assert 'strcmp(proto, "TCP6")' in COMM
+    assert re.search(r'if\s*\(!shared_address\s*\|\|\s*conn_type\s*!=\s*2\)\s*'
+                     r'resolve_descriptor_hostname_async\(strip_ansi\(newd->host\)\.c_str\(\),\s*desc\)', COMM), (
+        "trusted WebSocket proxies must wait for the client address before starting DNS"
+    )
 
 
 def test_authentication_fails_closed_without_configured_secret():

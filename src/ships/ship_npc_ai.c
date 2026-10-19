@@ -877,8 +877,10 @@ void NPCShipAI::board_target()
 	{
 		int room_no = number(1, ship->target->room_count - 1);
 		grunt = crew_data->outer_grunts[number(0, grunt_count - 1)];
-		if (!load_npc_ship_crew_member(ship->target, ship->target->bridge + room_no, grunt,
-					       0))
+		/* Interior rooms come first-free from a shared pool, so they
+		 * need not be consecutive vnums: look each one up. */
+		if (!load_npc_ship_crew_member(ship->target, SHIP_ROOM_NUM(ship->target, room_no),
+					       grunt, 0))
 			return;
 		board_count--;
 	}

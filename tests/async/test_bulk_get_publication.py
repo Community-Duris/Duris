@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run production bulk selection/reporting with held item and coin publication."""
+"""Run production bulk get selection and reporting."""
 
 from pathlib import Path
 import subprocess
@@ -37,11 +37,16 @@ prelude = r'''
 #include <unordered_map>
 #include <vector>
 #include <utility>
+struct item_owner_identity { int type = 0; uint64_t id = 0; };
+enum class item_transfer_reason { unknown };
 #define MAX_STRING_LENGTH 65536
 #define FALSE 0
 #define LOWEST_MAT_VNUM 1000
 #define HIGHEST_MAT_VNUM 2000
 #define ITEM_MONEY 1
+#define ITEM_CORPSE 2
+#define CORPSE_FLAGS 1
+#define PC_CORPSE 1
 #define CURRENCY_DENOMINATION_COUNT 4
 #define ITEM2_ACCOUNT_BOUND 1
 #define ITEM2_NOLOOT 2
@@ -54,6 +59,7 @@ prelude = r'''
 #define GET_OBJ_WEIGHT(obj) ((obj)->weight)
 #define GET_ITEM_TYPE(obj) ((obj)->type)
 #define IS_OBJ_STAT2(obj,flag) ((obj)->flags & (flag))
+#define IS_SET(value,flag) ((value) & (flag))
 #define IS_TRUSTED(ch) false
 #define OBJS(obj,ch) ((obj)->short_description)
 #define PERS(victim,ch,hide) ((victim)->name)
@@ -75,8 +81,6 @@ using P_obj = obj_data *;
 struct synchronous_get_item { uint64_t item_uid; P_obj object; bool scrap;
     std::array<int32_t, CURRENCY_DENOMINATION_COUNT> coin_amount = {};
     bool coin_amount_valid = false; };
-struct item_owner_identity {};
-enum class item_transfer_reason { unknown };
 static std::string output;
 static bool isname(const char *filter, const char *name) { return !strcmp(filter, name); }
 static bool account_bound_reward_owner(P_char, P_obj) { return false; }
@@ -85,10 +89,9 @@ static bool item_command_object_is_takeable(P_char, P_obj object)
     return object->weight >= 0;
 }
 static bool checkgetput(P_char, P_obj) { return false; }
-static bool item_command_uses_durable_ownership(P_obj object)
-{
-    return object->type != ITEM_MONEY;
-}
+static void writeCorpse(P_obj) {}
+static P_obj find_live_item_uid(uint64_t) { return nullptr; }
+static bool item_command_uses_durable_ownership(P_obj) { return false; }
 static void send_to_char(const char *message, P_char) { output += message; }
 '''
 
@@ -110,29 +113,14 @@ int main()
     assert(!select_bulk_get_item(&actor, &container, &heavy, nullptr, false,
                                 count, weight, state, stop));
     assert(stop && count == 1 && weight == 1 && output.empty());
-    assert(state.durable_items.size() == 1);
+    assert(state.synchronous_items.size() == 1);
     // Snapshot rejection descriptions, not pointers into later world state.
     heavy.short_description = "a changed object";
     bulk_gets.emplace(actor.pid, std::move(state));
-    assert(bulk_get_player_busy(&actor));
-    assert(!bulk_get_player_busy(nullptr));
-    actor.pc = false;
-    assert(!bulk_get_player_busy(&actor));
-    actor.pc = true;
     output += "You get a dagger from the corpse.\r\n";
     bulk_gets.at(actor.pid).total = 1;
-    // First and subsequent coin acknowledgements must not release the gate.
-    for (int coin = 0; coin < 2; ++coin)
-    {
-        assert(bulk_get_player_busy(&actor));
-        assert(output.find("too heavy") == std::string::npos);
-        output += "You get 1 gold coin.\r\n";
-        bulk_gets.at(actor.pid).got_coins = true;
-    }
     finish_bulk_get(&actor, actor.pid);
-    assert(!bulk_get_player_busy(&actor));
     assert(output == "You get a dagger from the corpse.\r\n"
-                     "You get 1 gold coin.\r\nYou get 1 gold coin.\r\n"
                      "A boulder is too heavy.\r\n");
     finish_bulk_get(&actor, actor.pid); // No duplicate reporting.
     assert(output.find("too heavy") == output.rfind("too heavy"));
@@ -182,7 +170,6 @@ int main()
 harness = "\n".join([
     prelude, source[state_start:state_end],
     "std::unordered_map<uint32_t, bulk_get_state> bulk_gets;",
-    function("bool bulk_get_player_busy("),
     function("static void report_bulk_get("),
     function("static void finish_bulk_get("),
     function("static void reject_bulk_get_object("),

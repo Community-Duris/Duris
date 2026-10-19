@@ -86,6 +86,12 @@ int number_of_shops = 4, top_of_world = 2;
 P_char character_list = nullptr;
 std::vector<P_obj> objects;
 int births = 0;
+int weight_recalculations = 0;
+void recalc_container_weight(P_obj obj)
+{
+	assert(obj);
+	++weight_recalculations;
+}
 void extract_obj(P_obj obj, int = 0);
 #define GET_RNUM(ch) ((ch)->rnum)
 #define GET_BIRTHPLACE(ch) ((ch)->birthplace)
@@ -466,6 +472,7 @@ int main(int argc, char **argv)
 		shop_index[0].producing[0] = 80;
 		shop_index[1].producing[0] = 81;
 		assert(sql_restore_shopkeepers());
+		assert(weight_recalculations == 3);
 		P_char first = world[0].people, second = world[1].people;
 		assert(first->next_in_room == player && player->next_in_room);
 		assert(!second->next_in_room && world[2].people == elsewhere);
@@ -481,6 +488,7 @@ int main(int argc, char **argv)
 		saved_keepers = { { "1", "11", "100", "201" }, { "1", "12", "100", "201" } };
 		add_item(11, 71);
 		assert(sql_restore_shopkeepers());
+		assert(weight_recalculations == 1);
 		assert(births == 1 && objects.size() == 1 && world[1].people &&
 		       !world[1].people->next_in_room);
 		assert(has_item(world[1].people, 71) && !has_item(world[1].people, 72));

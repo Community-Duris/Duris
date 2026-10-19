@@ -520,11 +520,13 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 	}
 	ch->player.time.saved = result.saved_at;
 	ch->player.time.logon = time(nullptr);
+	// A loaded character is in no room until it enters the game (enter_game() starts from
+	// was_in_room). One left in in_room would be taken out of a room it never entered when
+	// it is freed, and char_to_room() refuses it.
 	ch->specials.was_in_room = result.snapshot.room_vnum;
-	ch->in_room = real_room(result.snapshot.room_vnum);
-	if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER))
+	const int locker_room = real_room(result.snapshot.room_vnum);
+	if (locker_room != NOWHERE && IS_ROOM(locker_room, ROOM_LOCKER))
 	{
-		const int locker_room = ch->in_room;
 		int exit_room = NOWHERE;
 		if (world[locker_room].dir_option[0] &&
 		    world[locker_room].dir_option[0]->to_room != NOWHERE)
@@ -538,7 +540,6 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 			logit(LOG_DEBUG,
 			      "player_load_materialize: location=locker outcome=redirected");
 			ch->specials.was_in_room = world[exit_room].number;
-			ch->in_room = exit_room;
 		}
 	}
 	GET_COPPER(ch) = result.domains.wallet[0];

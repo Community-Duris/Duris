@@ -69,9 +69,9 @@ struct locker_async_slot
 	int rebuild_objects; /* another dirty landed while inflight */
 	unsigned long gen;
 	time_t dirty_at;
+	/* The user by pid and the locker character by name, found again when a snapshot
+	 * starts: either may be extracted before then (a user saved on the way out). */
 	int user_pid;
-	P_char chLocker;
-	P_char chUser;
 };
 
 struct locker_async_job
@@ -604,10 +604,9 @@ static int ensure_locker_ids(P_char chLocker, int owner_pid, int owner_assoc_id,
 }
 
 /* Build sealed multi-statement SQL for chLocker->carrying public inventory. */
-static char *build_locker_snapshot_sql(struct locker_async_slot *s)
+static char *build_locker_snapshot_sql(struct locker_async_slot *s, P_char chLocker)
 {
 	struct la_buf b;
-	P_char chLocker = s->chLocker;
 	int owner_pid = s->owner_pid;
 	int owner_assoc_id = s->owner_assoc_id;
 	int locker_id = 0;
@@ -690,9 +689,8 @@ static int repair_failed_connection(MYSQL **conn_io)
 	 * example, a dropped socket or a failed statement in a batch).  Discard
 	 * it rather than returning it to the shared worker pool. */
 	replacement = sql_pool_replace_connection(conn);
-	if (replacement)
-		*conn_io = replacement;
-	else
+	*conn_io = replacement;
+	if (!replacement)
 		logit(LOG_FILE, "locker_async: failed to replace poisoned persistence connection");
 	return 0;
 }
@@ -833,9 +831,6 @@ int locker_async_mark_dirty(P_char chLocker, P_char chUser, int terminal, const 
 		return 0;
 	}
 
-	s->chLocker = chLocker;
-	if (chUser)
-		s->chUser = chUser;
 	if (terminal)
 		s->terminal = 1;
 	if (chUser && !IS_NPC(chUser))
@@ -954,11 +949,12 @@ static void apply_result(struct locker_async_result *r)
 
 	if (s->terminal)
 	{
-		if (durable_ok && chLocker)
+		/* A save that landed while a newer one waits (the user left during an
+		 * in-stay save) is not the one holding what the locker character carries. */
+		if (durable_ok && chLocker && !s->rebuild_objects)
 		{
 			chLocker->specials.timer = 0;
 			extract_char(chLocker);
-			s->chLocker = NULL;
 		}
 		else if (!durable_ok)
 		{
@@ -981,10 +977,6 @@ static void apply_result(struct locker_async_result *r)
 		s->state = LCHK_DIRTY;
 		s->gen = g_gen_seq++;
 		s->dirty_at = time(NULL);
-		if (chLocker)
-			s->chLocker = chLocker;
-		if (chUser)
-			s->chUser = chUser;
 	}
 	else if (durable_ok || !s->terminal)
 	{
@@ -1060,8 +1052,8 @@ static int start_one_snapshot(struct locker_async_slot *s)
 	if (g_snapshots_started_this_pulse >= LOCKER_ASYNC_SNAPSHOTS_PER_PULSE)
 		return 0;
 
-	chLocker = s->chLocker ? s->chLocker : find_locker_char_by_name(s->locker_name);
-	chUser = s->chUser ? s->chUser : find_char_by_pid(s->user_pid);
+	chLocker = find_locker_char_by_name(s->locker_name);
+	chUser = find_char_by_pid(s->user_pid);
 	if (!chLocker)
 	{
 		logit(LOG_FILE, "locker_async: dirty locker char missing for %s -- clearing",
@@ -1069,8 +1061,6 @@ static int start_one_snapshot(struct locker_async_slot *s)
 		slot_clear(s);
 		return 0;
 	}
-	s->chLocker = chLocker;
-	s->chUser = chUser;
 
 	/* Always re-prepare live inventory onto the locker char before sealing.
 	 * Terminal leave already did LockerToPFile; a second call is mostly no-op.
@@ -1088,7 +1078,7 @@ static int start_one_snapshot(struct locker_async_slot *s)
 	}
 
 	/* Player is obj-locked via user_pid while DIRTY. Build snapshot now. */
-	sql = build_locker_snapshot_sql(s);
+	sql = build_locker_snapshot_sql(s, chLocker);
 	if (!sql)
 	{
 		int durable_ok;
@@ -1101,7 +1091,6 @@ static int start_one_snapshot(struct locker_async_slot *s)
 		{
 			chLocker->specials.timer = 0;
 			extract_char(chLocker);
-			s->chLocker = NULL;
 			slot_clear(s);
 		}
 		else if (s->terminal)
@@ -1141,7 +1130,6 @@ static int start_one_snapshot(struct locker_async_slot *s)
 		{
 			chLocker->specials.timer = 0;
 			extract_char(chLocker);
-			s->chLocker = NULL;
 			slot_clear(s);
 		}
 		else if (s->terminal)

@@ -395,12 +395,42 @@ void do_trapset(P_char ch, char *argument, int /*cmd*/)
 	return;
 }
 
+extern const int top_of_world;
+
+static bool is_locker_room(int room)
+{
+	return room != NOWHERE && room >= 0 && room <= top_of_world && IS_ROOM(room, ROOM_LOCKER);
+}
+
+static bool is_in_locker(P_char ch, P_obj obj)
+{
+	if (ch && is_locker_room(ch->in_room))
+		return true;
+	for (P_obj cur = obj; cur;)
+	{
+		if (OBJ_ROOM(cur))
+			return is_locker_room(cur->loc.room);
+		if (cur->loc_p & (LOC_CARRIED | LOC_WORN))
+		{
+			P_char carrier = (cur->loc_p & LOC_CARRIED) ? cur->loc.carrying :
+								      cur->loc.wearing;
+			return carrier && is_locker_room(carrier->in_room);
+		}
+		if (cur->loc_p & LOC_INSIDE)
+			cur = cur->loc.inside;
+		else
+			break;
+	}
+	return false;
+}
+
 bool checkmovetrap(P_char ch, int dir)
 {
 	P_obj obj, obj_next;
 	bool found;
 
-	if (!world[ch->in_room].contents || IS_TRUSTED(ch) || (IS_NPC(ch) && !IS_PC_PET(ch)))
+	if (!ch || is_locker_room(ch->in_room) || !world[ch->in_room].contents || IS_TRUSTED(ch) ||
+	    (IS_NPC(ch) && !IS_PC_PET(ch)))
 		return FALSE;
 
 	for (obj = world[ch->in_room].contents; obj; obj = obj_next)
@@ -451,7 +481,10 @@ bool checkmovetrap(P_char ch, int dir)
 
 bool checkgetput(P_char ch, P_obj obj)
 {
-	if (!obj->trap_charge)
+	if (!obj || !obj->trap_charge)
+		return FALSE;
+
+	if (is_in_locker(ch, obj))
 		return FALSE;
 
 	if (IS_SET(obj->trap_eff, TRAP_EFF_OBJECT))
@@ -464,7 +497,10 @@ bool checkgetput(P_char ch, P_obj obj)
 
 bool checkopen(P_char ch, P_obj obj)
 {
-	if (!obj->trap_charge)
+	if (!obj || !obj->trap_charge)
+		return FALSE;
+
+	if (is_in_locker(ch, obj))
 		return FALSE;
 
 	if (IS_SET(obj->trap_eff, TRAP_EFF_OPEN))
@@ -482,7 +518,10 @@ void trapdamage(P_char ch, P_obj obj)
 	int level, dam, numdice, numsides;
 	struct damage_messages messages;
 
-	if (!obj->trap_charge)
+	if (!obj || !obj->trap_charge)
+		return;
+
+	if (is_in_locker(ch, obj))
 		return;
 
 	if (IS_NPC(ch) && !IS_PC_PET(ch))

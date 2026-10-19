@@ -23,7 +23,7 @@ def main():
     hook_signature = 'static void telemetry_group_context_changed('
     helper = function(source, hook_signature) if hook_signature in source else ''
     bodies = '\n'.join(function(source, s) for s in (
-        'bool group_remove_member(', 'bool group_add_member(', 'void do_disband('))
+        'bool group_remove_member(', 'bool group_add_member(', 'void do_disband(', 'void update_groupies('))
     prelude = r'''
 #include <cassert>
 #include <cstddef>
@@ -34,9 +34,10 @@ def main():
 #include <algorithm>
 struct character;
 using P_char = character*;
-struct descriptor { int connected = 0; };
+struct descriptor { int connected = 0, last_group_update = 0, term_type = 0, gmcp_enabled = 1; };
 struct group_list { P_char ch; group_list *next; };
 struct character {
+    int in_room = 1;
     group_list *group = nullptr;
     descriptor *desc = nullptr;
     bool alive = true, npc = false;
@@ -47,7 +48,7 @@ struct character {
 struct mm_ds {};
 mm_ds pool;
 mm_ds *dead_group_pool = &pool;
-constexpr int CON_PLAYING = 0, MAX_STRING_LENGTH = 1024, LOG_DEBUG = 0;
+constexpr int TERM_MSP = 9, CON_PLAYING = 0, MAX_STRING_LENGTH = 1024, LOG_DEBUG = 0;
 constexpr unsigned PLR2_BACK_RANK = 1;
 constexpr int LNK_CONSENT = 0;
 #define TRUE true
@@ -72,7 +73,7 @@ void wizlog(int, const char *, const char *) {}
 void logit(int, const char *) {}
 void fix_group_ranks(P_char) {}
 int free_back_slots(P_char) { return 0; }
-void update_groupies(P_char) {}
+void update_groupies(P_char, bool only_in_room = false);
 bool racewar(P_char, P_char) { return false; }
 bool is_linked_to(P_char, P_char, int) { return true; }
 int get_property(const char *, int n) { return n; }
@@ -107,10 +108,14 @@ int main() {
     observed.clear();
     assert(!group_add_member(&a, &b));
     assert(observed.empty());
+    da.last_group_update=db.last_group_update=dc.last_group_update=0;
     assert(group_remove_member(&b));
+    assert(da.last_group_update && db.last_group_update && dc.last_group_update);
     assert(last_size(&b) == 1 && last_size(&a) == 2 && last_size(&c) == 2);
     observed.clear();
+    da.last_group_update=dc.last_group_update=0;
     assert(group_remove_member(&a));
+    assert(da.last_group_update && dc.last_group_update);
     assert(last_size(&a) == 1 && last_size(&c) == 1);
     assert(!a.group && !b.group && !c.group);
     observed.clear();

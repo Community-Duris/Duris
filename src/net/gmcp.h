@@ -60,6 +60,12 @@ void gmcp_handle_input(struct descriptor_data *d, const char *data, size_t len);
 /* core send - handles both telnet (iac sb gmcp) and websocket (json) */
 void gmcp_send(struct descriptor_data *d, const char *package, const char *json);
 
+/* Initial snapshot on character entry or GMCP re-enable. */
+void gmcp_send_initial_state(struct char_data *ch);
+
+/* Send coalesced negotiation snapshots during the periodic GMCP flush. */
+void gmcp_flush_initial_states(void);
+
 /* room info - sends when character enters a room */
 void gmcp_room_info(struct char_data *ch);
 
@@ -124,8 +130,9 @@ void gmcp_broadcast_channel(const char *channel, const char *sender, const char 
 /* utility macros */
 
 /* check if character has gmcp enabled (negotiated and not toggled off) */
-#define GMCP_ENABLED(ch) \
-	((ch) && (ch)->desc && (ch)->desc->gmcp_enabled && !PLR3_FLAGGED(ch, PLR3_NOGMCP))
+#define GMCP_ENABLED(ch)                                   \
+	((ch) && (ch)->desc && (ch)->desc->gmcp_enabled && \
+	 !PLR3_FLAGGED(GET_TRUE_CHAR(ch), PLR3_NOGMCP))
 
 /* check if descriptor has gmcp enabled */
 #define DESC_GMCP_ENABLED(d) ((d) && (d)->gmcp_enabled)

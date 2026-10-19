@@ -34,6 +34,7 @@ using namespace std;
 #include "redis/redis_key_registry.h"
 #include "redis/redis_report_cache.h"
 #include "magic/spells.h"
+#include "persistence/persistence_checkpoint.h"
 #include "sql/sql.h"
 #include "world/timers.h"
 #include "item/trophy.h"
@@ -380,11 +381,15 @@ void epic_complete_errand(P_char ch, int zone)
 	}
 }
 
-int epic_random_task_zone(P_char ch)
+int epic_random_task_zone(P_char ch, epic_task_selection_status *status = nullptr)
 {
 	if (!ch || IS_NPC(ch))
+	{
+		if (status)
+			*status = epic_task_selection_status::unavailable;
 		return -1;
-	return epic_task_catalog_select(&ch->only.pc->gameplay_reads);
+	}
+	return epic_task_catalog_select(&ch->only.pc->gameplay_reads, status);
 }
 
 void epic_choose_new_epic_task(P_char ch)
@@ -394,20 +399,41 @@ void epic_choose_new_epic_task(P_char ch)
 	struct affected_type af;
 	int zone_number = -1;
 
-	if (!IS_ALIVE(ch))
+	if (!IS_ALIVE(ch) || IS_NPC(ch) || has_epic_task(ch))
 	{
 		return;
 	}
+
+	affected_type *pending = get_spell_from_char(ch, TAG_EPIC_TASK_PENDING);
 
 	memset(&af, 0, sizeof(af));
 	af.type = TAG_EPIC_ERRAND;
 	af.flags = AFFTYPE_STORE | AFFTYPE_PERM;
 	af.duration = -1;
 
-	// Now a 5% chance to get spill blood down from 9%.
-	if (number(0, 19))
+	// Roll once per assignment. A deferred zone roll must not reroll into Spill Blood.
+	if (pending || number(0, 19))
 	{
-		zone_number = epic_random_task_zone(ch);
+		epic_task_selection_status status = epic_task_selection_status::unavailable;
+		zone_number = epic_random_task_zone(ch, &status);
+		if (status == epic_task_selection_status::unavailable)
+		{
+			if (!pending)
+			{
+				af.type = TAG_EPIC_TASK_PENDING;
+				affect_to_char(ch, &af);
+				mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_AFFECTS);
+				logit(LOG_STATUS,
+				      "Epic task assignment deferred: catalog_ready=%d zones=%zu player_reads_ready=%d",
+				      epic_task_catalog_ready(), epic_task_catalog_size(),
+				      ch->only.pc->gameplay_reads.status ==
+					      gameplay_read_status::ready);
+				send_to_char(
+					"Your earned epic task is waiting for the Gods. It will be assigned automatically when task data is available.\n",
+					ch);
+			}
+			return;
+		}
 	}
 
 	// Getting rid of nexus . 7/13 Drannak
@@ -442,6 +468,9 @@ void epic_choose_new_epic_task(P_char ch)
 	}
 
 	affect_to_char(ch, &af);
+	if (pending)
+		affect_remove(ch, pending);
+	mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_AFFECTS);
 }
 
 vector<epic_trophy_data> get_epic_zone_trophy(P_char ch)

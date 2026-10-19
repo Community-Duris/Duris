@@ -3621,14 +3621,6 @@ int camp(P_char ch)
 						update_ingame_racewar(-GET_RACEWAR(ch));
 					}
 					extract_char_after_terminal_save(ch);
-
-					/*
-					 ok, to make the new nanny work correctly, we need to assign
-					 their in_room to where they just camped, so if they come right
-					 back in from the menu, they come in where they are supposed to.
-					 -JAB
-					 */
-					ch->in_room = real_room(GET_HOME(ch));
 					return 1;
 				}
 			}

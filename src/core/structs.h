@@ -558,6 +558,8 @@ struct spellcast_datatype
 	int timeleft;
 	int spell;
 	unsigned char flags;
+	// The tick the scheduled segment is due at; zero until the first one is scheduled.
+	unsigned long long due_tick;
 };
 
 struct scribing_data_type
@@ -1771,6 +1773,7 @@ struct descriptor_data
 
 	/* WebSocket support */
 	int websocket;
+	int proxy_named_client; /* a PROXY header gave host; X-Forwarded-For may not change it */
 	int ws_state;
 	int ws_handshake_done;
 	int ws_error_code;
@@ -1787,6 +1790,7 @@ struct descriptor_data
 	size_t ws_control_output_len;
 	size_t ws_control_output_offset;
 	int gmcp_enabled;
+	bool gmcp_initial_state_pending;
 	int sga_disabled;
 	int write_failed;
 	unsigned char *telnet_output_buffer;
@@ -1794,6 +1798,9 @@ struct descriptor_data
 	size_t telnet_output_offset;
 	int telnet_tls_retry;
 	int gmcp_quest_map_sent;
+	int gmcp_ship_bridge; /* room index + 1; zero means no bridge subscription */
+	unsigned long gmcp_ship_contacts_hash;
+	unsigned long gmcp_ship_info_hash;
 	char client_name[64];
 	char client_version[32];
 	int durisweb_verified;

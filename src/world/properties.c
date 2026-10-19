@@ -27,6 +27,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <ctype.h>
+#include <vector>
 #include "sql/sql.h"
 #include "core/safe_format.h"
 
@@ -36,6 +38,7 @@
 #define FNM_CASEFOLD 1 << 4
 #endif
 int properties_count;
+extern P_char character_list;
 extern void update_damage_data();
 extern void update_spellpulse_data();
 extern void update_racial_shrug_data();
@@ -174,20 +177,27 @@ void apply_properties()
 	telemetry_config_reload_notify();
 }
 
+// 1 is a property, 0 a comment/blank line, -1 a malformed property.
 int parse_property(struct property *property, char *buf)
 {
 	char key[128];
 	float value;
 	char *separator;
 
+	while (isspace((unsigned char)*buf))
+		++buf;
+	if (*buf == '[' || *buf == '#')
+		return 0;
 	separator = strchr(buf, '=');
 	if (!separator)
 		return 0;
+	if (strcspn(buf, "= \t\r\n") >= sizeof(key))
+		return -1;
 	*separator = ' ';
-	if (*buf == '[' || *buf == '#' || sscanf(buf, "%s%f", key, &value) != 2)
+	if (sscanf(buf, "%127s%f", key, &value) != 2)
 	{
 		*separator = '=';
-		return 0;
+		return -1;
 	}
 	*separator = '=';
 	property->key = (char *)str_dup(key);
@@ -218,7 +228,18 @@ static bool persist_durisweb_hook_property(const char *key, float value)
 	while (fgets(line, sizeof(line), source) != NULL)
 	{
 		struct property parsed;
-		if (parse_property(&parsed, line))
+		if (strlen(line) == sizeof(line) - 1 && line[sizeof(line) - 2] != '\n')
+		{
+			ok = FALSE;
+			break;
+		}
+		int status = parse_property(&parsed, line);
+		if (status < 0)
+		{
+			ok = FALSE;
+			break;
+		}
+		if (status > 0)
 		{
 			if (!strcmp(parsed.key, key))
 			{
@@ -251,7 +272,8 @@ static bool persist_durisweb_hook_property(const char *key, float value)
 		ok = FALSE;
 	if (fclose(target) != 0)
 		ok = FALSE;
-	fclose(source);
+	if (fclose(source) != 0)
+		ok = FALSE;
 
 	if (!ok || !found || rename(PROPERTIES_FILE ".new", PROPERTIES_FILE) != 0)
 	{
@@ -312,31 +334,54 @@ int load_properties(struct property *properties)
 	FILE *f;
 	char buf[1024];
 	int count;
+	bool ok = true;
 
 	count = 0;
 	f = fopen(PROPERTIES_FILE, "r");
 	if (f == NULL)
 	{
 		fprintf(stderr, "Cannot open properties file: %s.\n", PROPERTIES_FILE);
-		return 0;
+		return -1;
 	}
 
-	while (fgets(buf, 1024, f) != NULL)
+	while (fgets(buf, sizeof(buf), f) != NULL)
 	{
-		if (parse_property(&properties[count], buf))
+		if (strlen(buf) == sizeof(buf) - 1 && buf[sizeof(buf) - 2] != '\n')
 		{
-			count++;
+			ok = false;
+			break;
+		}
+		struct property parsed;
+		int status = parse_property(&parsed, buf);
+		if (status < 0)
+		{
+			ok = false;
+			break;
+		}
+		if (status > 0)
+		{
 			if (count == MAX_PROPERTIES)
 			{
-				fprintf(stderr,
-					"Too many properties in file %s, increase MAX_PROPERTIES value!\n",
-					PROPERTIES_FILE);
-				exit(1);
+				FREE(parsed.key);
+				ok = false;
+				break;
 			}
+			properties[count++] = parsed;
 		}
 	}
 
-	fclose(f);
+	if (ferror(f))
+		ok = false;
+	if (fclose(f) != 0)
+		ok = false;
+	if (!ok)
+	{
+		fprintf(stderr, "Could not completely read valid properties from %s.\n",
+			PROPERTIES_FILE);
+		for (int i = 0; i < count; ++i)
+			FREE(properties[i].key);
+		return -1;
+	}
 	return count;
 }
 
@@ -346,14 +391,27 @@ void save_properties(P_char ch)
 	struct property property, *result;
 	char buf[4096];
 	char changes[4096];
+	std::vector<struct property *> saved;
 
 	f_old = fopen(PROPERTIES_FILE, "r");
-	f_new = fopen(PROPERTIES_FILE ".new", "w");
+	f_new = f_old ? fopen(PROPERTIES_FILE ".new", "w") : nullptr;
+	bool ok = f_old && f_new;
 	changes[0] = '\0';
 
-	while (fgets(buf, 1024, f_old) != NULL)
+	while (ok && fgets(buf, sizeof(buf), f_old) != NULL)
 	{
-		if (parse_property(&property, buf))
+		if (strlen(buf) == sizeof(buf) - 1 && buf[sizeof(buf) - 2] != '\n')
+		{
+			ok = false;
+			break;
+		}
+		int status = parse_property(&property, buf);
+		if (status < 0)
+		{
+			ok = false;
+			break;
+		}
+		if (status > 0)
 		{
 			result = (struct property *)bsearch(property.key, duris_properties,
 							    properties_count,
@@ -365,33 +423,59 @@ void save_properties(P_char ch)
 				{
 					APPENDF(changes, "%s from %.3f to %.3f, ", property.key,
 						property.value, result->value);
-					result->old_value = result->value;
 				}
 				snprintf(buf, 4096, "%s=%.3f\n", property.key, result->value);
+				saved.push_back(result);
 			}
 			FREE(property.key);
 		}
-		fputs(buf, f_new);
+		if (fputs(buf, f_new) == EOF)
+			ok = false;
 	}
 
-	fclose(f_new);
-	fclose(f_old);
-	rename(PROPERTIES_FILE ".new", PROPERTIES_FILE);
+	if (f_old)
+	{
+		if (ferror(f_old))
+			ok = false;
+		if (fclose(f_old) != 0)
+			ok = false;
+	}
+	if (f_new)
+	{
+		if (fflush(f_new) != 0)
+			ok = false;
+		if (fclose(f_new) != 0)
+			ok = false;
+	}
+	if (!ok || rename(PROPERTIES_FILE ".new", PROPERTIES_FILE) != 0)
+	{
+		if (f_new)
+			remove(PROPERTIES_FILE ".new");
+		send_to_char("Properties save failed; saved values are unchanged.\r\n", ch);
+		logit(LOG_WIZ, "Properties save failed: %s", PROPERTIES_FILE);
+		return;
+	}
+	for (struct property *entry : saved)
+		entry->old_value = entry->value;
 
 	checked_snprintf(buf, 4096, "%s saved the properties: %s", GET_NAME(ch), changes);
 	wizlog(57, "%s", buf);
 	logit(LOG_WIZ, "%s", buf);
 	sql_log(ch, WIZLOG, "Saved properties");
-
-	// snprintf(buf, 4096, "svn commit -m \'%s: %s\' " PROPERTIES_FILE, name, changes);
-	// system(buf);
 }
 
-void initialize_properties()
+bool initialize_properties()
 {
+	struct property loaded[MAX_PROPERTIES];
+	int count = load_properties(loaded);
+	if (count < 0)
+		return false;
+	qsort(loaded, count, sizeof(struct property), property_comp);
+	for (int i = 0; i < properties_count; ++i)
+		FREE(duris_properties[i].key);
+	memcpy(duris_properties, loaded, count * sizeof(struct property));
+	properties_count = count;
 	item_actions_reload();
-	properties_count = load_properties(duris_properties);
-	qsort(duris_properties, properties_count, sizeof(struct property), property_comp);
 	apply_properties();
 	auto content = divine_refusal_content_registry().reload_file(DIVINE_REFUSAL_CONTENT_FILE);
 	if (content.ok)
@@ -399,6 +483,7 @@ void initialize_properties()
 	else
 		logit(LOG_STATUS, "Divine refusal content unavailable: %s; retaining revision %u.",
 		      content.diagnostic.c_str(), content.revision);
+	return true;
 }
 
 void do_properties(P_char ch, char *args, int /*cmd*/)
@@ -498,7 +583,20 @@ void do_properties(P_char ch, char *args, int /*cmd*/)
 		}
 		else if (!strcmp(command, "reload") && (GET_LEVEL(ch) >= FORGER))
 		{
-			initialize_properties();
+			if (!initialize_properties())
+			{
+				send_to_char(
+					"Properties reload failed; active values are unchanged.\r\n",
+					ch);
+				logit(LOG_WIZ, "Properties reload failed: %s", PROPERTIES_FILE);
+				return;
+			}
+			// Racial stat factors are cached by players, NPCs and pets alike.
+			for (P_char character = character_list; character;
+			     character = character->next)
+			{
+				balance_affects(character);
+			}
 			std::string ability_error;
 			if (!studio_abilities_reload_file(ability_error))
 			{

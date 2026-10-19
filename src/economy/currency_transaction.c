@@ -1,10 +1,16 @@
 #include "economy/currency_transaction.h"
 #include "economy/currency_publication.h"
+#include "economy/economic_event_outbox.h"
 
+#include "core/files.h"
 #include "net/gmcp.h"
+#include "player/player_save_pipeline.h"
 #include "core/prototypes.h"
 #include "sql/sql_player.h"
 #include "core/utils.h"
+
+extern P_room world;
+extern const int top_of_world;
 
 #include <algorithm>
 #include <array>
@@ -196,6 +202,9 @@ bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator fo
 		}
 		entry.coin_wallets_published = true;
 	}
+	// Descriptor loss can leave a retained death body. Its physical pile must
+	// publish to the same character that received the wallet receipt above.
+	actor = coin_wallet_by_pid(entry.pid);
 	// Extract the node so a successful callback can advance a bulk command. A
 	// temporarily unavailable live destination keeps this same operation for retry.
 	auto node = pending.extract(found);
@@ -424,11 +433,27 @@ bool currency_transaction_publish_wallet(P_char character, const currency_vector
 	// offline. Finish its callback without rolling the authoritative wallet back.
 	if (wallet_revision < character->only.pc->wallet_revision)
 		return true;
+	const int64_t previous_value = static_cast<int64_t>(GET_COPPER(character)) +
+				       10LL * GET_SILVER(character) + 100LL * GET_GOLD(character) +
+				       1000LL * GET_PLATINUM(character);
+	const int64_t next_value = wallet.amount[0] + 10 * wallet.amount[1] +
+				   100 * wallet.amount[2] + 1000 * wallet.amount[3];
 	GET_COPPER(character) = static_cast<int>(wallet.amount[0]);
 	GET_SILVER(character) = static_cast<int>(wallet.amount[1]);
 	GET_GOLD(character) = static_cast<int>(wallet.amount[2]);
 	GET_PLATINUM(character) = static_cast<int>(wallet.amount[3]);
 	character->only.pc->wallet_revision = wallet_revision;
+	// Audit the committed change once, when its receipt reaches the live wallet.
+	// Replayed receipts with the same balance contribute no additional event.
+	if (const int64_t delta = next_value - previous_value; delta != 0)
+		economic_event_record(
+			GET_PID(character),
+			delta > 0 ? EconomicAction::WALLET_ADD : EconomicAction::WALLET_SUB, delta,
+			0,
+			character->in_room >= 0 && character->in_room <= top_of_world ?
+				world[character->in_room].number :
+				0,
+			"wallet_commit");
 	gmcp_char_vitals(character);
 	return true;
 }
@@ -973,4 +998,12 @@ void currency_transaction_reset_for_tests(void)
 {
 	pending.clear();
 	health = {};
+}
+
+void currency_transaction_save_first(P_char character)
+{
+	if (!character || IS_NPC(character) || GET_PID(character) <= 0)
+		return;
+	const int room = character->in_room == NOWHERE ? NOWHERE : world[character->in_room].number;
+	player_save_pipeline_request(character, PLAYER_CHECKPOINT_COMPONENT_ALL, RENT_CRASH, room);
 }

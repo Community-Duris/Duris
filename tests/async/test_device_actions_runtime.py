@@ -61,6 +61,7 @@ bool ac_can_see_obj(P_char, P_obj, int) { return visible; }
 bool is_silent(P_char, bool) { return silent; }
 bool is_in_safe(P_char actor) { return IS_ROOM(actor->in_room, ROOM_SAFE); }
 bool account_bound_reward_owner(P_char, P_obj) { return bound_owner; }
+bool item_restricted_for_player_pet(P_char, P_obj) { return false; }
 bool should_not_kill(P_char, P_char) { ++law_calls; return !legal; }
 int CanDoFightMove(P_char, P_char) { return legal; }
 bool should_area_hit(P_char, P_char) { return true; }
@@ -306,6 +307,11 @@ static void staff_area() {
     {
         device_scene s(ITEM_STAFF); s.source->value[3]=2; s.use(); advance();
         assert(calls.size()==2 && calls[0].actor==calls[0].target && calls[1].actor==calls[1].target);
+    }
+    for(bool enabled:{false,true}) {
+        // Non-aggressive ignore-target staves (gate) need the typed words, such as a plane name.
+        device_scene s(ITEM_STAFF,enabled); skills[1].targets=TAR_IGNORE; s.use(); if(enabled) advance();
+        assert(calls.size()==1 && !calls[0].target && calls[0].arguments=="original words");
     }
 }
 // Separate legacy hardening regression: previously the early guard observed

@@ -62,6 +62,7 @@ using namespace std;
 #include "player/player_load_pipeline.h"
 #include "player/player_death_restitution_adapter.h"
 #include "persistence/maintenance_scheduler.h"
+#include "world/epic_task_catalog.h"
 #include "world/world_recovery_pipeline.h"
 #include "redis/redis_cache_store.h"
 #include "redis/redis_command_observability.h"
@@ -4298,6 +4299,21 @@ static void show_world_persistence(P_char ch)
 									     "empty",
 				   0, 0, &world_recovery.publish_operations);
 
+	size_t pending_tasks = 0, pending_reads_unavailable = 0;
+	for (P_char player = character_list; player; player = player->next)
+		if (!IS_NPC(player) && affected_by_spell(player, TAG_EPIC_TASK_PENDING))
+		{
+			++pending_tasks;
+			if (player->only.pc->gameplay_reads.status != gameplay_read_status::ready)
+				++pending_reads_unavailable;
+		}
+	snprintf(line, sizeof(line),
+		 "epic_tasks catalog_ready=%d zones=%zu last_refresh=%s pending=%zu "
+		 "pending_reads_unavailable=%zu\n",
+		 epic_task_catalog_ready(), epic_task_catalog_size(),
+		 epic_task_catalog_last_refresh(), pending_tasks, pending_reads_unavailable);
+	send_to_char(line, ch);
+
 	snprintf(line, sizeof(line),
 		 "maintenance state=%s queued=%llu inflight=%llu completions=%llu "
 		 "queue_age_ticks=%llu run_age_ticks=%llu high_water=%llu stop_pending=%d\n",
@@ -4631,36 +4647,27 @@ static void show_world_persistence(P_char ch)
 		 player_journal.age_limit_exceeded);
 	send_to_char(line, ch);
 
-	snprintf(line, sizeof(line),
-		 "player_save state=%s queued=%llu inflight=%llu bytes=%llu oldest_age_ms=%llu "
-		 "high_water_pids=%llu high_water_bytes=%llu submitted=%llu coalesced=%llu "
-		 "applied=%llu stale=%llu retryable=%llu terminal=%llu "
-		 "custody_payload_mismatch=%llu retries_exhausted=%llu "
-		 "age_limit_exceeded=%d workers=%u/%u stop_pending=%d "
-		 "max_capture_to_apply_us=%llu max_apply_us=%llu "
-		 "max_ack_us=%llu max_revision_gap=%llu\n",
-		 !player_saves.running					? "stopped" :
-		 player_saves.queued_pids || player_saves.inflight_pids ? "pending" :
-									  "empty",
-		 (unsigned long long)player_saves.queued_pids,
-		 (unsigned long long)player_saves.inflight_pids,
-		 (unsigned long long)player_saves.queued_bytes,
-		 (unsigned long long)player_saves.oldest_age_msec,
-		 (unsigned long long)player_saves.high_water_pids,
-		 (unsigned long long)player_saves.high_water_bytes,
-		 (unsigned long long)player_saves.submitted,
-		 (unsigned long long)player_saves.coalesced,
-		 (unsigned long long)player_saves.applied, (unsigned long long)player_saves.stale,
-		 (unsigned long long)player_saves.retryable_failures,
-		 (unsigned long long)player_saves.terminal_failures,
-		 (unsigned long long)player_saves.custody_payload_mismatches,
-		 (unsigned long long)player_saves.retries_exhausted,
-		 player_saves.age_limit_exceeded, player_saves.running_workers,
-		 player_saves.worker_threads, player_saves.stop_pending,
-		 (unsigned long long)player_saves.max_capture_to_apply_usec,
-		 (unsigned long long)player_saves.max_apply_usec,
-		 (unsigned long long)player_saves.max_ack_latency_usec,
-		 (unsigned long long)player_saves.max_revision_gap);
+	snprintf(
+		line, sizeof(line),
+		"writer state=%s queued_jobs=%llu inflight_jobs=%llu bytes=%llu oldest_age_ms=%llu "
+		"high_water_jobs=%llu high_water_bytes=%llu submitted=%llu replaced=%llu "
+		"applied=%llu connection_retries=%llu failures=%llu age_limit_exceeded=%d "
+		"stop_pending=%d max_capture_to_apply_usec=%llu max_apply_usec=%llu\n",
+		player_saves.running ? "running" : "idle",
+		(unsigned long long)player_saves.queued_jobs,
+		(unsigned long long)player_saves.inflight_jobs,
+		(unsigned long long)player_saves.queued_bytes +
+			(unsigned long long)player_saves.inflight_bytes,
+		(unsigned long long)player_saves.oldest_age_msec,
+		(unsigned long long)player_saves.high_water_jobs,
+		(unsigned long long)player_saves.high_water_bytes,
+		(unsigned long long)player_saves.submitted,
+		(unsigned long long)player_saves.replaced, (unsigned long long)player_saves.applied,
+		(unsigned long long)player_saves.connection_retries,
+		(unsigned long long)player_saves.failures, player_saves.age_limit_exceeded,
+		player_saves.stop_pending,
+		(unsigned long long)player_saves.max_capture_to_apply_usec,
+		(unsigned long long)player_saves.max_apply_usec);
 	send_to_char(line, ch);
 
 	snprintf(line, sizeof(line),

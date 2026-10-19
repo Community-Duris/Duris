@@ -1,3 +1,17 @@
+/****************************************************************************
+ *
+ *  File: critical_command_coordinator.h                        Part of Duris
+ *  Usage: critical command coordinator interface and health
+ *
+ *  Copyright 1990, 1991 - see LICENSE for complete information
+ *
+ *  Additions since 2025 by the Duris maintainers and since 2026 by
+ *    LuminariMUD maintainers are public domain (Unlicense, see LICENSE)
+ *
+ *  Created by: Duris, LuminariMUD, Zusuk                  Date: 2026-09-23
+ *
+ ****************************************************************************/
+
 #ifndef CRITICAL_COMMAND_COORDINATOR_H
 #define CRITICAL_COMMAND_COORDINATOR_H
 
@@ -16,9 +30,8 @@ constexpr unsigned int CRITICAL_COORDINATOR_DEFAULT_WORKERS = 2;
 
 enum class critical_submit_result : uint8_t
 {
+	// Queued on the one persistence writer; durable once it has landed.
 	accepted,
-	// The operation is reserved in memory and queued for the journal worker.
-	// This result is not evidence that the command is durable or executable.
 	awaiting_durability,
 	attached,
 	invalid,
@@ -29,8 +42,6 @@ enum class critical_submit_result : uint8_t
 	unavailable,
 };
 
-// journal_uncertain retains the original coordinator operation and the caller's pending
-// state; it is not a durability success, but callers must not erase or retry it.
 inline bool critical_submit_result_keeps_operation(critical_submit_result result)
 {
 	return result == critical_submit_result::accepted ||
@@ -39,8 +50,6 @@ inline bool critical_submit_result_keeps_operation(critical_submit_result result
 	       result == critical_submit_result::journal_uncertain;
 }
 
-// This reports journal admission only.  `durable` does not imply that execution
-// or live publication has completed.
 enum class critical_command_durability : uint8_t
 {
 	unknown,
@@ -55,7 +64,6 @@ struct critical_coordinator_health
 	uint64_t queued;
 	uint64_t inflight;
 	uint64_t blocked;
-	uint64_t publication_pending;
 	uint64_t retained_bytes;
 	uint64_t completed_cache;
 	uint64_t fenced_keys;
@@ -70,44 +78,27 @@ struct critical_coordinator_health
 	uint64_t terminal_failures;
 	uint64_t stale_completions;
 	uint64_t overloads;
-	uint64_t awaiting_durability;
-	uint64_t admission_queue_bytes;
-	uint64_t durable_admissions;
-	uint64_t admission_failures;
-	uint64_t admission_uncertain;
+	uint64_t awaiting_durability = 0;
+	uint64_t admission_queue_bytes = 0;
+	bool admission_worker_running = false;
+	bool append_inflight = false;
+	uint64_t durable_admissions = 0;
+	uint64_t admission_failures = 0;
+	uint64_t admission_uncertain = 0;
+	uint64_t publication_pending = 0;
 	bool initialized;
 	bool accepting;
 	bool running;
-	bool admission_worker_running;
-	bool append_inflight;
 };
 
 using critical_apply_fn = critical_apply_result (*)(const critical_command &command, void *context);
 using critical_drain_observer_fn = void (*)(const critical_completion *completions, size_t count);
-using critical_replay_observer_fn = bool (*)(const critical_command &command, void *context);
 
-bool critical_command_coordinator_init(const char *journal_directory, critical_apply_fn apply,
-				       void *context,
-				       unsigned int workers = CRITICAL_COORDINATOR_DEFAULT_WORKERS,
-				       critical_replay_observer_fn replay_observer = nullptr,
-				       void *replay_context = nullptr);
+// Commands run on the one persistence writer (player_save_worker.h), which must be
+// running.
+bool critical_command_coordinator_init(critical_apply_fn apply, void *context);
 void critical_command_coordinator_shutdown(void);
 critical_submit_result critical_command_coordinator_submit(critical_command command);
-// Opt-in path for commands whose durable result is not complete until the game
-// thread has safely published its live projection. The operation and all of its
-// entity fences remain held until critical_command_coordinator_acknowledge_publication().
-critical_submit_result
-critical_command_coordinator_submit_for_publication(critical_command command);
-// `awaiting_durability` is the only positive submit result before the admission
-// worker has acknowledged the journal append and fsync.
-critical_command_durability
-critical_command_coordinator_durability(const critical_operation_id &operation_id);
-bool critical_command_coordinator_recover_uncertain(void);
-bool critical_command_coordinator_get_completed(const critical_operation_id &operation_id,
-						critical_completion *completion);
-// Release a publication-held operation only after the live callback succeeded and
-// the journal checkpoint was durable. A false result leaves the operation fenced.
-bool critical_command_coordinator_acknowledge_publication(const critical_operation_id &operation_id);
 size_t critical_command_coordinator_pulse(critical_completion *completions, size_t capacity);
 bool critical_command_coordinator_is_fenced(const critical_entity_key &key,
 					    critical_operation_id *operation_id);
@@ -116,6 +107,40 @@ void critical_command_coordinator_resume(void);
 bool critical_command_coordinator_drain(uint64_t timeout_msec);
 void critical_command_coordinator_set_drain_observer(critical_drain_observer_fn observer);
 critical_coordinator_health critical_command_coordinator_health_copy(void);
+bool critical_command_coordinator_inject_completion_for_tests(const critical_completion &completion);
+void critical_command_coordinator_reset_for_tests(void);
+
+using critical_replay_observer_fn = bool (*)(const critical_command &command, void *context);
+
+inline bool
+critical_command_coordinator_init(const char * /*journal_directory*/, critical_apply_fn apply,
+				  void *context,
+				  unsigned int /*workers*/ = CRITICAL_COORDINATOR_DEFAULT_WORKERS,
+				  critical_replay_observer_fn /*replay_observer*/ = nullptr,
+				  void * /*replay_context*/ = nullptr)
+{
+	return critical_command_coordinator_init(apply, context);
+}
+
+// These callers retain their entity fences through deferred or failed live publication.
+critical_submit_result
+critical_command_coordinator_submit_for_publication(critical_command command);
+bool critical_command_coordinator_acknowledge_publication(const critical_operation_id &operation_id);
+
+inline critical_command_durability
+critical_command_coordinator_durability(const critical_operation_id &)
+{
+	return critical_command_durability::durable;
+}
+
+inline bool critical_command_coordinator_recover_uncertain(void)
+{
+	return true;
+}
+
+bool critical_command_coordinator_get_completed(const critical_operation_id &operation_id,
+						critical_completion *completion);
+
 struct critical_recovery_case
 {
 	critical_operation_id operation_id = {};
@@ -126,11 +151,13 @@ struct critical_recovery_case
 	unsigned int error_code = 0;
 	uint64_t elapsed_msec = 0;
 };
-// Diagnostic copy of retained corpse commands, including exhausted retries.
-// Capacity bounds output; total retains the count when display is truncated.
-size_t critical_command_coordinator_recovery_copy(critical_recovery_case *cases, size_t capacity,
-						  size_t *total, size_t offset = 0);
-bool critical_command_coordinator_inject_completion_for_tests(const critical_completion &completion);
-void critical_command_coordinator_reset_for_tests(void);
+
+inline size_t critical_command_coordinator_recovery_copy(critical_recovery_case *, size_t,
+							 size_t *total, size_t = 0)
+{
+	if (total)
+		*total = 0;
+	return 0;
+}
 
 #endif

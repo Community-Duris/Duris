@@ -300,9 +300,10 @@ void do_camp(P_char ch, char *arg, int /*cmd*/)
 		if (ch->desc && ch->desc->snoop.snooping)
 		{
 			send_to_char("You stop your snoop.\r\n", ch);
-			rem_char_from_snoopby_list(
-				&ch->desc->snoop.snooping->desc->snoop.snoop_by_list,
-				ch->desc->character);
+			if (ch->desc->snoop.snooping->desc)
+				rem_char_from_snoopby_list(
+					&ch->desc->snoop.snooping->desc->snoop.snoop_by_list,
+					ch->desc->character);
 			ch->desc->snoop.snooping = 0;
 		}
 
@@ -2167,6 +2168,8 @@ static bool persistence_save_character_terminal_with_policy(P_char ch, int type,
 #endif
 	const player_save_terminal_result terminal =
 		player_save_pipeline_terminal(ch, type, room, timeout_msec, allow_journal_handoff);
+	// A character leaving from inside a locker takes the locker's save with them.
+	locker_post_save_hook(ch);
 	const bool saved =
 		terminal == player_save_terminal_result::database_acknowledged ||
 		(allow_journal_handoff && terminal == player_save_terminal_result::journal_durable);
@@ -2246,6 +2249,18 @@ struct persistence_deferred_save_snapshot persistence_deferred_save_snapshot_cop
 	return snapshot;
 }
 
+/* Find the loaded ship owned by this player character.  get_ship_from_char() gives
+ * the room `ch` stands in, which may be someone else's ship or an NPC ship
+ * that write_ship() always refuses.
+ */
+static P_ship owned_player_ship(P_char ch)
+{
+	if (!IS_PC(ch))
+		return NULL;
+	P_ship ship = get_ship_from_owner(GET_NAME(ch));
+	return ship && !IS_NPC_SHIP(ship) && SHIP_LOADED(ship) ? ship : NULL;
+}
+
 /** Request an ordinary checkpoint or compatibility save and report admission or save failure. */
 bool do_save_silent(P_char ch, int type)
 {
@@ -2274,8 +2289,7 @@ bool do_save_silent(P_char ch, int type)
 		const int room_vnum = ch->in_room == NOWHERE ? NOWHERE : world[ch->in_room].number;
 		const player_save_pipeline_result queued = player_save_pipeline_request(
 			ch, PLAYER_CHECKPOINT_COMPONENT_ALL, type, room_vnum);
-		extern P_ship get_ship_from_char(P_char ch);
-		P_ship ship = get_ship_from_char(ch);
+		P_ship ship = owned_player_ship(ch);
 		if (ship)
 			queue_ship_save(ship, "player checkpoint");
 		return queued == player_save_pipeline_result::queued ||
@@ -2322,17 +2336,10 @@ bool do_save_silent(P_char ch, int type)
 		}
 	}
 
-	/* Also save player's ship if they have one */
-	{
-		extern P_ship get_ship_from_char(P_char ch);
-		P_ship ship = get_ship_from_char(ch);
-		if (ship)
-		{
-			extern int write_ship(P_ship ship);
-			if (!write_ship(ship))
-				return false;
-		}
-	}
+	/* Also save the character's own ship, if they have one */
+	P_ship ship = owned_player_ship(ch);
+	if (ship && !write_ship(ship))
+		return false;
 
 	return true;
 }
@@ -3880,7 +3887,7 @@ void do_steal(P_char ch, char *argument, int /*cmd*/)
 
 		// roll is number(0,100) - ensure that percent is 1,101
 		percent = BOUNDED(1, percent, 101); // percent 101 is a critical hit and
-			// roll 0 is a crit miss
+		// roll 0 is a crit miss
 		if (!failed && (trusted || (roll && (GET_LEVEL(ch) > 40) && (roll < percent))))
 		{ /* success */
 			if (IS_PC(victim) &&
@@ -4509,28 +4516,21 @@ void do_area(P_char ch, char *argument, int /*cmd*/)
 		zone_id = world[ch->in_room].zone;
 		zone = &zone_table[zone_id];
 
-		if (IS_TRUSTED(ch))
-		{
-			snprintf(buf, MAX_STRING_LENGTH, "&+LZone Name: %s %d\r\n",
-				 pad_ansi(zone->name, 30).c_str(), zone_id);
-		}
-		else
-		{
-			snprintf(buf, MAX_STRING_LENGTH, "&+LZone Name: %s\r\n",
-				 pad_ansi(zone->name, 30).c_str());
-		}
-
-		snprintf(buf2, MAX_STRING_LENGTH, "&+LAverage &+rmob&+L level in zone: &n%d\r\n ",
-			 zone->avg_mob_level);
-		strcat(buf, buf2);
-		if ((zone->avg_mob_level - GET_LEVEL(ch)) > 15)
-		{
-			snprintf(
-				buf2, MAX_STRING_LENGTH,
-				"&-L&+RWarning&-L, some mobs in this zone may be very hazardous for you! Travel with care!&n\r\n");
-			strcat(buf, buf2);
-		}
-		send_to_char(buf, ch);
+		std::string details = IS_TRUSTED(ch) ? " " + std::to_string(zone_id) : "";
+		details += "\r\n&+LAverage &+rmob&+L level in zone: &n";
+		details += zone->avg_mob_level >= 0  ? std::to_string(zone->avg_mob_level) :
+			   zone->avg_mob_level == -1 ? "not applicable" :
+						       "unknown";
+		details += "\r\n ";
+		if (zone->avg_mob_level >= 0 && (zone->avg_mob_level - GET_LEVEL(ch)) > 15)
+			details +=
+				"&-L&+RWarning&-L, some mobs in this zone may be very hazardous for you! Travel with care!&n\r\n";
+		// Reserve the complete suffix so a long name cannot hide the danger warning.
+		std::string response = "&+LZone Name: ";
+		response.append(pad_ansi(zone->name, 30), 0,
+				MAX_STRING_LENGTH - 1 - response.size() - details.size());
+		response += details;
+		send_to_char(response.c_str(), ch);
 		return;
 	}
 	// Immortal arguments:
@@ -5999,6 +5999,8 @@ void do_toggle(P_char ch, char *arg, int /*cmd*/)
 		break;
 	case 64: /* gmcp */
 		result = gmcp_tog(PLR3_FLAGS(ch), arg);
+		if (result == 1)
+			gmcp_send_initial_state(send_ch);
 		break;
 	case 65: // jchat
 		result = plr_tog(PLR3_FLAGS(ch), PLR3_JESTROS, arg, 1);

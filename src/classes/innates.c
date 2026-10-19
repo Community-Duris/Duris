@@ -26,6 +26,7 @@
 #include <ctype.h>
 #include <signal.h>
 #include <string.h>
+#include <vector>
 #include "core/config.h"
 #include "combat/damage.h"
 #include "combat/guard.h"
@@ -50,8 +51,10 @@ float regen_factor[REG_MAX + 1];
 
 extern Skill skills[];
 extern P_room world;
+extern struct zone_data *zone_table;
 extern P_index mob_index;
 extern const char *dirs[];
+extern const char *planes_name[];
 // extern int rev_dir[];
 extern P_char character_list;
 extern struct time_info_data time_info;
@@ -1240,7 +1243,7 @@ void event_embrace_death(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*d
 	float hp_state = ((float)GET_HIT(ch)) / GET_MAX_HIT(ch);
 	struct affected_type *afp;
 
-	if ((afp = get_spell_from_char(ch, TAG_EMBRACE_DEATH)))
+	if (!(afp = get_spell_from_char(ch, TAG_EMBRACE_DEATH)))
 		return;
 
 	if (hp_state > .75)
@@ -1962,16 +1965,78 @@ void do_shift_ethereal(P_char ch, char * /*arg*/, int /*cmd*/)
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
+struct shift_prime_destination
+{
+	int room;
+	bool random_in_zone = false;
+};
+
+template <size_t N>
+static int select_shift_prime_room(P_char ch, const shift_prime_destination (&destinations)[N])
+{
+	std::vector<int> rooms[N];
+	int available_slots[N];
+	int available = 0;
+	for (size_t slot = 0; slot < N; ++slot)
+	{
+		const auto &destination = destinations[slot];
+		const int room = real_room(destination.room);
+		if (room == NOWHERE)
+			continue;
+		if (!destination.random_in_zone)
+			rooms[slot].push_back(room);
+		else
+		{
+			const auto &zone = zone_table[world[room].zone];
+			for (int target = zone.real_bottom; target <= zone.real_top; ++target)
+			{
+				if (IS_ROOM(target, ROOM_PRIVATE | ROOM_NO_MAGIC |
+							    ROOM_NO_TELEPORT | ROOM_NO_GATE) ||
+				    IS_HOMETOWN(target) ||
+				    world[target].sector_type == SECT_OCEAN ||
+				    world[target].sector_type == SECT_NO_GROUND ||
+				    world[target].sector_type == SECT_UNDRWLD_NOGROUND ||
+				    !can_enter_room(ch, target, FALSE))
+					continue;
+				rooms[slot].push_back(target);
+			}
+		}
+		if (!rooms[slot].empty())
+			available_slots[available++] = slot;
+	}
+	if (!available)
+		return NOWHERE;
+
+	// Keep equal odds per usable destination, then per eligible room within its zone.
+	const int slot = available_slots[number(0, available - 1)];
+	return destinations[slot].random_in_zone ? rooms[slot][number(0, rooms[slot].size() - 1)] :
+						   rooms[slot][0];
+}
+
 #define PLANE_ZONETARG_ROOMNUMB 19701 /* astral */
 
 void do_shift_prime(P_char ch, char * /*arg*/, int /*cmd*/)
 {
-	int astral = world[real_room(PLANE_ZONETARG_ROOMNUMB)].zone, r_room = NOWHERE;
-	const int githyanki_room[] = { 33366, 2381,  11545,  42950, 23691, 36171, 93001, 4437,
-				       90803, 96803, 619036, 17607, 6405,  88122, 53122 };
-	const int githzerai_room[] = { 41767, 20484, 6224,  66651, 7117,  93665,  16805,
-				       5759,  2018,  99295, 93919, 16302, 574427, 557620 };
-	const int phantom_room[] = { 5927, 98731, 14373, 99465, 18305, 217481, 15100, 8486, 8430 };
+	int r_room = NOWHERE;
+	static constexpr shift_prime_destination githyanki_room[] = {
+		{ 6000, true }, // Clavikord, replacing Killing Fields
+		{ 2381, false },   { 11545, false },
+		{ 95800, true }, // Bugentolen (bugbears), replacing Drustl
+		{ 23691, false },  { 22400, true }, // Storm Port, replacing Crescent Chasm
+		{ 93001, false },  { 4437, false },
+		{ 90803, false },  { 96803, false },
+		{ 619036, false }, { 17607, false },
+		{ 6405, false },   { 1700, true }, // Quietus Quay, replacing Kelek
+		{ 53122, false },
+	};
+	static constexpr shift_prime_destination githzerai_room[] = {
+		{ 41767 }, { 20484 }, { 6224 },	 { 66651 }, { 7117 },  { 93665 },  { 16805 },
+		{ 5759 },  { 2018 },  { 99295 }, { 93919 }, { 16302 }, { 574427 }, { 557620 },
+	};
+	static constexpr shift_prime_destination phantom_room[] = {
+		{ 5927 },   { 98731 }, { 14373 }, { 99465 }, { 18305 },
+		{ 217481 }, { 15100 }, { 8486 },  { 8430 },
+	};
 
 	if (IS_FIGHTING(ch))
 	{
@@ -1980,7 +2045,15 @@ void do_shift_prime(P_char ch, char * /*arg*/, int /*cmd*/)
 		return;
 	}
 
-	if (world[ch->in_room].zone != astral)
+	if (affected_by_spell(ch, TAG_PVPDELAY))
+	{
+		send_to_char("There is too much adrenaline pumping through your body right now.\n",
+			     ch);
+		return;
+	}
+
+	const int astral = real_room(PLANE_ZONETARG_ROOMNUMB);
+	if (astral == NOWHERE || world[ch->in_room].zone != world[astral].zone)
 	{
 		send_to_char("Your shifting will not work here!\n", ch);
 		return;
@@ -1992,35 +2065,15 @@ void do_shift_prime(P_char ch, char * /*arg*/, int /*cmd*/)
 		return;
 	}
 
-	if (GET_RACE(ch) == RACE_GITHYANKI || GET_RACE(ch) == RACE_PILLITHID)
-	{
-		do
-			r_room = real_room(githyanki_room[number(
-				0, (sizeof(githyanki_room) / sizeof(int)) - 1)]);
-		while (r_room == -1);
-	}
+	if (GET_RACE(ch) == RACE_GITHYANKI || GET_RACE(ch) == RACE_PILLITHID ||
+	    GET_RACE(ch) == RACE_ILLITHID)
+		r_room = select_shift_prime_room(ch, githyanki_room);
 	else if (GET_RACE(ch) == RACE_GITHZERAI)
-	{
-		do
-			r_room = real_room(githzerai_room[number(
-				0, (sizeof(githzerai_room) / sizeof(int)) - 1)]);
-		while (r_room == -1);
-	}
+		r_room = select_shift_prime_room(ch, githzerai_room);
 	else if (GET_RACE(ch) == RACE_PHANTOM)
-	{
-		do
-			r_room = real_room(
-				phantom_room[number(0, (sizeof(phantom_room) / sizeof(int)) - 1)]);
-		while (r_room == -1);
-	}
-	else if (GET_RACE(ch) == RACE_ILLITHID)
-	{
-		do
-			r_room = real_room(githyanki_room[number(
-				0, (sizeof(githyanki_room) / sizeof(int)) - 1)]);
-		while (r_room == -1);
-	}
-	else
+		r_room = select_shift_prime_room(ch, phantom_room);
+
+	if (r_room == NOWHERE)
 	{
 		send_to_char("You cannot find a path back to the prime plane.\n", ch);
 		return;
@@ -2241,6 +2294,9 @@ void do_flurry(P_char ch, char * /*arg*/, int /*cmd*/)
 
 void do_plane_shift(P_char ch, char *arg, int /*cmd*/)
 {
+	char plane[MAX_INPUT_LENGTH];
+	int plane_id;
+
 	if (IS_FIGHTING(ch))
 	{
 		send_to_char("You're too busy fighting!\n", ch);
@@ -2258,6 +2314,17 @@ void do_plane_shift(P_char ch, char *arg, int /*cmd*/)
 	{
 		send_to_char("There is too much adrenaline pumping through your body to do that.\n",
 			     ch);
+		return;
+	}
+
+	// Reject a bad plane name before check_innate_time() spends the use.
+	one_argument(arg, plane);
+	plane_id = search_block(plane, planes_name, FALSE);
+	if (plane_id < 0 || plane_id > 8)
+	{
+		send_to_char(
+			"You may only travel to the Prime, Negative, Hell, Ethereal, Astral, Earth, Fire, Water or Air planes!\r\n",
+			ch);
 		return;
 	}
 
@@ -3282,7 +3349,7 @@ void do_breathe(P_char ch, char *arg, int /*cmd*/)
 	}
 	else
 	{
-		if (arg || *arg)
+		if (arg && *arg)
 		{
 			one_argument(arg, buf);
 			dir = search_block(buf, dirs, FALSE);
@@ -3415,11 +3482,45 @@ void do_innate(P_char ch, char *arg, int cmd)
 		return;
 	}
 
+	char *handler_args = innate_args;
+	char *rest = arg && cmd != CMD_SUMMON ? skip_spaces(arg) : NULL;
+
+	// Resolve an owned full name before abbreviations: "summon warg" must not
+	// select the earlier "summon horde" entry. Keep the arguments after that name.
 	for (i = 0; i <= LAST_INNATE; i++)
 	{
-		if (is_abbrev(innate_name, innates_data[i].name) && has_innate(ch, i))
+		const char *name = innates_data[i].name;
+		if (!rest || !strchr(name, ' ') || !has_innate(ch, i))
+			continue;
+
+		char *input = rest;
+		while (*name)
 		{
+			size_t len = strcspn(name, " ");
+			if (strn_cmp(input, name, len) ||
+			    (input[len] && !isspace((unsigned char)input[len])))
+				break;
+			input += len;
+			while (isspace((unsigned char)*input))
+				input++;
+			name += len;
+			if (*name)
+				name++;
+		}
+		if (!*name)
+		{
+			handler_args = input;
 			break;
+		}
+	}
+	if (i > LAST_INNATE)
+	{
+		for (i = 0; i <= LAST_INNATE; i++)
+		{
+			if (is_abbrev(innate_name, innates_data[i].name) && has_innate(ch, i))
+			{
+				break;
+			}
 		}
 	}
 
@@ -3427,7 +3528,7 @@ void do_innate(P_char ch, char *arg, int cmd)
 	{
 		if (innates_data[i].func)
 		{
-			(innates_data[i].func)(ch, innate_args, CMD_INNATE);
+			(innates_data[i].func)(ch, handler_args, CMD_INNATE);
 		}
 		else
 		{
@@ -3650,7 +3751,7 @@ int get_innate_resistance(P_char ch)
 		if (count > 0)
 		{
 			count = MIN(count, (int)get_property("innate.rrakkma.maxSteps", 5));
-			res += count * (int)get_property("innate.rrakkma.stepPc", 5);
+			res += count * (int)get_property("innate.rrakkma.stepPct", 5);
 		}
 		//  debug("after: %d", res);
 	}

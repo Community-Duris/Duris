@@ -7,6 +7,7 @@
 #include "core/structs.h"
 #include "telemetry/telemetry_runtime.h"
 #include "net/comm.h"
+#include "net/gmcp.h"
 #include "world/db.h"
 #include "world/epic_transaction.h"
 #include "world/handler.h"
@@ -2385,6 +2386,7 @@ int is_char_in_game(struct acct_chars *c, P_desc d)
 		d->character->desc = d;
 		ch->desc = NULL;
 	}
+	gmcp_send_initial_state(d->character);
 	return 1;
 }
 

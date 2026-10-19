@@ -30,11 +30,13 @@ struct critical_apply_result
 	critical_failure_stage failure_stage = critical_failure_stage::none;
 	uint16_t result_size = 0;
 	std::array<uint8_t, CRITICAL_COMPLETION_RESULT_MAX_BYTES> result_payload = {};
+	std::array<char, 1024> failure_detail = {};
 };
 
 struct critical_completion
 {
 	critical_operation_id operation_id;
+	critical_command_type type = {};
 	critical_apply_outcome outcome;
 	uint64_t durable_revision;
 	unsigned int error_code;
@@ -47,6 +49,7 @@ struct critical_completion
 	std::array<uint8_t, CRITICAL_COMPLETION_RESULT_MAX_BYTES> result_payload = {};
 	// Reconstructed from durable command entity keys after restart; diagnostics only.
 	std::array<char, 33> recovery_correlation = {};
+	std::array<char, 2048> failure_detail = {};
 };
 
 // Completion delivery is serialized by the coordinator mutex. It owns bounded

@@ -7,6 +7,7 @@
 #include "net/comm.h"
 #include "net/output_preference_codec.h"
 #include "world/db.h"
+#include "world/vnum.obj.h"
 #include "core/utils.h"
 #include "sql/sql_player.h"
 #include "player/player_playtime.h"
@@ -2377,6 +2378,52 @@ static int sql_batch_save_simple_items(int pid, int container_id, P_obj first_ob
 static bool sql_merge_duplicate_spellbook(struct extra_descr_data *existing,
 					  struct extra_descr_data *candidate);
 
+// Attach one stored extra description to obj. A second native spellbook row of the
+// same item is merged into the first (*loaded_spellbook) instead of attached.
+static void sql_add_item_extra_descr(P_obj obj, const char *keyword, const char *description,
+				     const char *table, int item_id,
+				     struct extra_descr_data **loaded_spellbook)
+{
+	int16_t trap_effect = 0, trap_damage = 0, trap_charges = 0, trap_level = 0;
+	const auto trap = sql_decode_item_trap_state(keyword, description, &trap_effect,
+						     &trap_damage, &trap_charges, &trap_level);
+	if (trap != sql_item_trap_state_decode_status::not_trap_state)
+	{
+		if (trap == sql_item_trap_state_decode_status::decoded)
+		{
+			obj->trap_eff = trap_effect;
+			obj->trap_dam = trap_damage;
+			obj->trap_charge = trap_charges;
+			obj->trap_level = trap_level;
+		}
+		else
+			persistence_alert(AVATAR, "item_extra_descr", table ? table : "unknown",
+					  "none", "none", "invalid_trap_state",
+					  "item_id=%d had invalid persisted trap state", item_id);
+		return;
+	}
+	struct extra_descr_data *ed;
+	CREATE(ed, extra_descr_data, 1, MEM_TAG_EXDESCD);
+
+	sql_load_item_extra_descr_values(keyword, description, ed, table, item_id);
+
+	if (sql_item_extra_descr_is_spellbook_marker(ed->keyword))
+	{
+		if (*loaded_spellbook && sql_merge_duplicate_spellbook(*loaded_spellbook, ed))
+		{
+			persistence_alert(
+				AVATAR, "item_extra_descr", table ? table : "unknown", "none",
+				"none", "duplicate_spellbook_rows",
+				"item_id=%d had duplicate native spellbook rows; merged their bitmaps",
+				item_id);
+			return;
+		}
+		*loaded_spellbook = ed;
+	}
+	ed->next = obj->ex_description;
+	obj->ex_description = ed;
+	obj->str_mask |= STRUNG_EDESC;
+}
 static bool sql_load_item_extra_descr_from_table(int item_id, P_obj obj, const char *table)
 {
 	char query[256];
@@ -2401,29 +2448,8 @@ static bool sql_load_item_extra_descr_from_table(int item_id, P_obj obj, const c
 		MYSQL_ROW row;
 		while ((row = mysql_fetch_row(result)))
 		{
-			struct extra_descr_data *ed;
-			CREATE(ed, extra_descr_data, 1, MEM_TAG_EXDESCD);
-
-			sql_load_item_extra_descr_values(row[0], row[1], ed, table, item_id);
-
-			if (sql_item_extra_descr_is_spellbook_marker(ed->keyword))
-			{
-				if (loaded_spellbook &&
-				    sql_merge_duplicate_spellbook(loaded_spellbook, ed))
-				{
-					persistence_alert(
-						AVATAR, "item_extra_descr",
-						table ? table : "unknown", "none", "none",
-						"duplicate_spellbook_rows",
-						"item_id=%d had duplicate native spellbook rows; merged their bitmaps",
-						item_id);
-					continue;
-				}
-				loaded_spellbook = ed;
-			}
-			ed->next = obj->ex_description;
-			obj->ex_description = ed;
-			obj->str_mask |= STRUNG_EDESC;
+			sql_add_item_extra_descr(obj, row[0], row[1], table, item_id,
+						 &loaded_spellbook);
 		}
 		mysql_free_result(result);
 	}
@@ -4686,30 +4712,14 @@ bool sql_load_player_items(P_char ch)
 			if (!obj)
 				continue;
 
-			struct extra_descr_data *ed;
-			CREATE(ed, extra_descr_data, 1, MEM_TAG_EXDESCD);
-
-			sql_load_item_extra_descr_values(row[1], row[2], ed, "player_item", db_id);
-
-			if (loaded_spellbooks && object_index >= 0 &&
-			    sql_item_extra_descr_is_spellbook_marker(ed->keyword))
-			{
-				if (loaded_spellbooks[object_index] &&
-				    sql_merge_duplicate_spellbook(loaded_spellbooks[object_index],
-								  ed))
-				{
-					persistence_alert(
-						AVATAR, "item_extra_descr", "player_item", "none",
-						"none", "duplicate_spellbook_rows",
-						"item_id=%d had duplicate native spellbook rows; merged their bitmaps",
-						db_id);
-					continue;
-				}
-				loaded_spellbooks[object_index] = ed;
-			}
-			ed->next = obj->ex_description;
-			obj->ex_description = ed;
-			obj->str_mask |= STRUNG_EDESC;
+			struct extra_descr_data *loaded_spellbook =
+				(loaded_spellbooks && object_index >= 0) ?
+					loaded_spellbooks[object_index] :
+					NULL;
+			sql_add_item_extra_descr(obj, row[1], row[2], "player_item", db_id,
+						 &loaded_spellbook);
+			if (loaded_spellbooks && object_index >= 0)
+				loaded_spellbooks[object_index] = loaded_spellbook;
 		}
 		mysql_free_result(result);
 	}
@@ -6400,6 +6410,7 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 			c->loc_p = LOC_INSIDE;
 			c->loc.inside = obj;
 		}
+		recalc_container_weight(obj);
 
 		if (!first_obj)
 			first_obj = obj;
@@ -7192,7 +7203,9 @@ void sql_load_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 			c->loc_p = LOC_INSIDE;
 			c->loc.inside = obj;
 		}
+		recalc_container_weight(obj);
 	}
+	recalc_container_weight(chest_obj);
 	mysql_free_result(result);
 }
 
@@ -8349,6 +8362,11 @@ bool sql_load_all_corpses(void)
 					o->loc_p = LOC_INSIDE;
 					o->loc.inside = cur_corpse;
 				}
+				for (int i = 0; i < num_objs; i++)
+				{
+					if (obj_map[i])
+						recalc_container_weight(obj_map[i]);
+				}
 				if (!corpse_lifecycle_transaction_hydrate(
 					    cur_owner_pid, cur_save_id, cur_corpse_revision))
 				{
@@ -8639,6 +8657,11 @@ bool sql_load_all_corpses(void)
 		{
 			o->loc_p = LOC_INSIDE;
 			o->loc.inside = cur_corpse;
+		}
+		for (int i = 0; i < num_objs; i++)
+		{
+			if (obj_map[i])
+				recalc_container_weight(obj_map[i]);
 		}
 		if (!corpse_lifecycle_transaction_hydrate(cur_owner_pid, cur_save_id,
 							  cur_corpse_revision))
@@ -9835,6 +9858,12 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 			}
 	}
 
+	for (struct all_items_temp *t = all_items; t; t = t->next)
+	{
+		if (t->obj)
+			recalc_container_weight(t->obj);
+	}
+
 	// assign items to shopkeepers
 	for (struct all_items_temp *t = all_items; t; t = t->next)
 	{
@@ -10220,6 +10249,7 @@ static P_obj sql_load_saved_item_contents(const char *item_key, int room_vnum, i
 			c->loc_p = LOC_INSIDE;
 			c->loc.inside = obj;
 		}
+		recalc_container_weight(obj);
 
 		if (!first_obj)
 			first_obj = obj;
@@ -10740,6 +10770,7 @@ void sql_restore_saved_items(void)
 			c->loc_p = LOC_INSIDE;
 			c->loc.inside = obj;
 		}
+		recalc_container_weight(obj);
 		if (!valid || !sql_saved_item_source_rows_match(item_key, source_ids, false))
 		{
 			logit(LOG_SYS,
@@ -10927,6 +10958,10 @@ bool sql_save_ship(P_ship ship)
 		own_transaction = true;
 	}
 
+	/* Only a row this call inserted is undone by a rollback.  An existing
+	 * ship keeps its id when its update fails, or its next save would take
+	 * the insert path and collide with UNIQUE(owner_name). */
+	bool inserted = false;
 	if (ship->db_id == -1)
 	{
 		char initQuery[1024];
@@ -10980,6 +11015,7 @@ bool sql_save_ship(P_ship ship)
 		}
 
 		ship->db_id = atoi(row[0]);
+		inserted = true;
 
 		mysql_free_result(result);
 	}
@@ -11005,7 +11041,8 @@ bool sql_save_ship(P_ship ship)
 		free(batch);
 		if (own_transaction)
 			sql_rollback();
-		ship->db_id = -1;
+		if (inserted)
+			ship->db_id = -1;
 		return false;
 	}
 
@@ -11017,7 +11054,8 @@ bool sql_save_ship(P_ship ship)
 		sql_clear_results();
 		if (own_transaction)
 			sql_rollback();
-		ship->db_id = -1;
+		if (inserted)
+			ship->db_id = -1;
 		return false;
 	}
 	result = mysql_store_result(DB);
@@ -11033,6 +11071,8 @@ bool sql_save_ship(P_ship ship)
 		logit(LOG_DEBUG, "sql_save_ship: failed to commit for ship %d", ship->db_id);
 		if (sql_in_transaction())
 			sql_rollback();
+		if (inserted)
+			ship->db_id = -1;
 		return false;
 	}
 
@@ -11217,23 +11257,21 @@ bool sql_load_all_ships()
 		return false;
 
 	// collect owner names first to avoid nested queries
-	char owner_names[512][64];
-	int num_ships = 0;
+	std::vector<std::string> owner_names;
 
 	MYSQL_ROW row;
-	while ((row = mysql_fetch_row(result)) && num_ships < 512)
+	while ((row = mysql_fetch_row(result)))
 	{
 		if (!row[0])
 			continue;
-		strlcpy(owner_names[num_ships], row[0], sizeof owner_names[num_ships]);
-		num_ships++;
+		owner_names.emplace_back(row[0]);
 	}
 	mysql_free_result(result);
 
 	// now load each ship
-	for (int i = 0; i < num_ships; i++)
+	for (const std::string &owner_name : owner_names)
 	{
-		P_ship ship = sql_load_ship(owner_names[i]);
+		P_ship ship = sql_load_ship(owner_name.c_str());
 		if (!ship)
 		{
 			logit(LOG_FILE, "sql_load_all_ships: component=rows outcome=failure");
@@ -11243,7 +11281,11 @@ bool sql_load_all_ships()
 		name_ship(ship->name, ship);
 		if (!load_ship(ship, real_room0(ship->anchor)))
 		{
+			/* Usually the ship-room pool is full.  The row is kept for a
+			 * later boot, but an unplaced ship must not stay registered. */
 			logit(LOG_FILE, "sql_load_all_ships: component=ship outcome=failure");
+			shipObjHash.erase(ship);
+			delete_ship(ship, true);
 			continue;
 		}
 

@@ -199,8 +199,11 @@ falling_step_result falling_step(P_char ch, int speed)
 	int new_room = source_room;
 	bool completed_vertical_descent = false;
 
+	/* A down exit back onto the room itself, or onto the room the step came from,
+	 * is a loop in the data, not a way down: the fall lands rather than never. */
 	const auto *source_down = world[source_room].dir_option[DIR_DOWN];
 	const bool open_down = source_down && source_down->to_room != NOWHERE &&
+			       source_down->to_room != source_room &&
 			       !IS_SET(source_down->exit_info, EX_CLOSED) &&
 			       !IS_SET(source_down->exit_info, EX_BREAKABLE);
 	const falling_route route = falling_choose_route(ch->specials.z_cord > 0, open_down);
@@ -275,7 +278,9 @@ falling_step_result falling_step(P_char ch, int speed)
 	}
 
 	const auto *down = world[new_room].dir_option[DIR_DOWN];
-	const bool should_land = falling_should_land(down != NULL, down && down->to_room != NOWHERE,
+	const bool down_leads_on = down && down->to_room != NOWHERE && down->to_room != new_room &&
+				   down->to_room != source_room;
+	const bool should_land = falling_should_land(down != NULL, down_leads_on,
 						     down && IS_SET(down->exit_info, EX_CLOSED),
 						     down && IS_SET(down->exit_info, EX_BREAKABLE),
 						     completed_vertical_descent);

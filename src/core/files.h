@@ -95,6 +95,10 @@
 #define RENT_FIGHTARTI 10
 
 int calculate_save_room(P_char ch, int type, int room);
+// Queued saves do not run writeCharacter()'s locker post-save hook. Run it after
+// queuing the save of a character inside a locker, so the locker is saved with its
+// occupant and its idle rule applies, as for a direct save.
+void locker_post_save_hook(P_char ch);
 /*
  * these macros are a very good idea, I salute whoever thought of it.
  * -JAB

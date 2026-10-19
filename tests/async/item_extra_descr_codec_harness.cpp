@@ -35,6 +35,24 @@ static void require(bool condition, const char *message)
 
 int main()
 {
+	char trap_state[64];
+	require(sql_encode_item_trap_state(6, 2, 0, 100, trap_state, sizeof(trap_state)),
+		"trap state did not encode");
+	int16_t effect = 0, damage = 0, charges = 0, level = 0;
+	require(sql_decode_item_trap_state(SQL_ITEM_TRAP_STATE_KEYWORD, trap_state, &effect,
+					   &damage, &charges,
+					   &level) == sql_item_trap_state_decode_status::decoded &&
+			effect == 6 && damage == 2 && charges == 0 && level == 100,
+		"trap state did not round trip");
+	require(sql_decode_item_trap_state("ordinary", trap_state, &effect, &damage, &charges,
+					   &level) ==
+			sql_item_trap_state_decode_status::not_trap_state,
+		"an ordinary description was treated as trap state");
+	for (const char *invalid : { "", "6,2,0", "6,2,0,100,1", "6,2,nope,100", "32768,2,0,100" })
+		require(sql_decode_item_trap_state(SQL_ITEM_TRAP_STATE_KEYWORD, invalid, &effect,
+						   &damage, &charges, &level) ==
+				sql_item_trap_state_decode_status::invalid,
+			"invalid trap state was accepted");
 	const char marker[] = { 3, 1, 3, 0 };
 	char bits[(MAX_SKILLS + 1) / 8 + 1] = {};
 	bits[1 / 8] |= 1 << (1 % 8);

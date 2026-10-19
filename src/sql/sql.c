@@ -29,9 +29,11 @@
 #include "item/item_ownership_runtime.h"
 #include "persistence/persistence_checkpoint.h"
 #include "sql/sql_pool.h"
+#include "player/player_snapshot_repository.h"
 #include "account/session_audit_transaction.h"
 #include "core/runtime_compatibility_contract.h"
 #include <algorithm>
+#include <atomic>
 #include <memory>
 #include <openssl/sha.h>
 #include <math.h>
@@ -1470,6 +1472,18 @@ int initialize_mysql()
 	DB = sql_open_configured_connection(CLIENT_MULTI_STATEMENTS);
 	if (!DB)
 	{
+		return -1;
+	}
+	// This connection holds the runtime lock and may remain idle between queries.
+	// MariaDB closes a connection idle past wait_timeout (8 hours by
+	// default), which would release the lock and stop every write; 31536000 seconds is
+	// the most it takes.
+	if (!sql_connection_execute(DB, "SET SESSION wait_timeout=31536000"))
+	{
+		logit(LOG_STATUS,
+		      "FATAL: could not keep the main database connection open; aborting boot");
+		mysql_close(DB);
+		DB = NULL;
 		return -1;
 	}
 	if (!duris_sql_exclusion_guard_acquire(DB))
@@ -4134,6 +4148,19 @@ void show_frag_trophy(P_char ch, P_char who)
 	mysql_free_result(res);
 }
 
+// At most `bytes` bytes of `value`, cut at a UTF-8 character boundary.
+static std::string log_entry_field(const char *value, size_t bytes)
+{
+	std::string field = value ? value : "";
+	if (field.size() <= bytes)
+		return field;
+	size_t end = bytes;
+	while (end > 0 && (static_cast<unsigned char>(field[end]) & 0xC0) == 0x80)
+		--end;
+	field.resize(end);
+	return field;
+}
+
 void sql_log(P_char ch, const char *kind, const char *format, ...)
 {
 	static char buff[MAX_STRING_LENGTH];
@@ -4168,27 +4195,32 @@ void sql_log(P_char ch, const char *kind, const char *format, ...)
 		return;
 	}
 
-	static char message_buff[MAX_STRING_LENGTH];
-	message_buff[0] = '\0';
-	mysql_real_escape_string(DB, message_buff, buff, strlen(buff));
-
-	static char ip_buff[15];
-	ip_buff[0] = '\0';
-
-	if (ch->desc && *ch->desc->host)
+	// The persistence writer inserts the row, in order with the saves, so the game
+	// never waits on the database for a log line. Each field is kept to its column.
+	log_entry_snapshot entry;
+	entry.logged_at = time(NULL);
+	entry.kind = log_entry_field(kind, 255);
+	entry.ip_address = log_entry_field(ch->desc ? ch->desc->host : "", 15);
+	entry.pid = GET_PID(ch);
+	entry.player_name = log_entry_field(GET_NAME(ch), 255);
+	if (world && ch->in_room >= 0 && ch->in_room <= top_of_world)
 	{
-		checked_snprintf(ip_buff, sizeof ip_buff, "%s", ch->desc->host);
+		entry.room_vnum = world[ch->in_room].number;
+		const int zone_rnum = world[ch->in_room].zone;
+		if (zone_table && zone_rnum >= 0 && zone_rnum <= top_of_zone_table)
+			entry.zone_number = zone_table[zone_rnum].number;
 	}
-
-	checked_snprintf(
-		buff, MAX_STRING_LENGTH,
-		"INSERT INTO log_entries (date, kind, ip_address, pid, player_name, zone_number, room_vnum, message) VALUES "
-		"(now(), '%s', '%s', %d, '%s', %d, %d, '%s')",
-		kind, ip_buff, GET_PID(ch), GET_NAME(ch),
-		zone_table[world[ch->in_room].zone].number, world[ch->in_room].number,
-		message_buff);
-
-	qry(buff);
+	entry.message = log_entry_field(buff, 255);
+	static std::atomic<uint64_t> sequence{ 0 };
+	const size_t bytes = sizeof(entry) + entry.kind.size() + entry.ip_address.size() +
+			     entry.player_name.size() + entry.message.size();
+	const player_save_submit_result submitted = persistence_writer_submit(
+		persistence_job_kind::log, ++sequence, bytes, [entry = std::move(entry)]()
+		{ return log_entry_repository_apply_from_pool(entry); });
+	if (submitted != player_save_submit_result::accepted &&
+	    submitted != player_save_submit_result::replaced)
+		logit(LOG_FILE, "log_entries row not queued: kind=%s pid=%d %s", kind, GET_PID(ch),
+		      buff);
 }
 
 bool get_zone_info(int zone_number, struct zone_info *info)

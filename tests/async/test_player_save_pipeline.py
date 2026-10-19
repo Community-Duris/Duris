@@ -16,7 +16,7 @@ CHECKPOINT = (SRC / "persistence_checkpoint.c").read_text()
 EVENTS = (SRC / "new_events.c").read_text()
 COMM = (SRC / "comm.c").read_text()
 NANNY = (SRC / "nanny.c").read_text()
-WORKER = (SRC / "player_save_worker.c").read_text()
+WORKER = (SRC / "player_save_worker.c").read_text() + (SRC / "player_save_worker.h").read_text()
 SQL_PLAYER = (SRC / "sql_player.c").read_text()
 
 
@@ -116,7 +116,7 @@ assert "player_save_worker_pulse" in pulse
 assert "player_save_worker_submit_retained" in pulse
 for forbidden in ("player_save_journal_", "sql_", "redis_", "fopen", "open(", "write("):
     assert forbidden not in pulse
-assert "if (append && !acknowledge)" in WORKER
+assert "append && !acknowledge" in WORKER
 print("[PASS] simulation-thread checkpoint and completion paths contain no external I/O")
 
 write_character = section(FILES, "int writeCharacter(P_char ch", "int deleteCharacter")
@@ -226,7 +226,8 @@ assert "if (!accepting)" in mark_body
 assert "fence->revision = revision" in mark_body
 assert "fence->journaled = false" in mark_body
 drain = section(PIPELINE, "bool player_save_pipeline_drain", "player_save_pipeline_health")
-assert "pending_append.empty() && !append_inflight" in drain
+assert "pending_append.empty() && !append_inflight && durable_ready.empty()" in drain
+assert "persistence_writer_wait_idle(0)" in drain
 assert "std::chrono::steady_clock::now()" in drain
 assert "++health.drain_failures" in drain
 print("[PASS] terminal fences, exact durability outcomes, retry tracking, and bounded drain are wired")
@@ -454,3 +455,103 @@ subprocess.run([
 ], cwd=ROOT, check=True)
 subprocess.run([str(terminal_binary)], check=True, timeout=10)
 print("[PASS] ten terminal-intent trials cover prior ACK, pending save, timed-out camp retry, and journal handoff")
+
+# Use the real pulse, writer, journal and revision state together. Only game-world
+# diagnostics are stubbed; this exercises the acknowledgement that releases grants.
+completion_harness = r'''
+#include "player/player_save_pipeline.c"
+#include <cassert>
+P_char character_list = nullptr;
+[[noreturn]] int panic_corruption_int(const char *, const char *, ...) { abort(); }
+void logit(const char *, const char *, ...) {}
+void persistence_alert(int, const char *, const char *, const char *, const char *,
+                       const char *, const char *, ...) {}
+void persistence_schedule_character_save(P_char, int, int, const char *) {}
+
+static player_save_apply_outcome outcome = player_save_apply_outcome::applied;
+static player_save_apply_result apply_test(const player_snapshot &snapshot, void *)
+{
+    assert(snapshot.output_preferences == "complete retained payload");
+    return {outcome, snapshot.revision, 0};
+}
+static player_snapshot seal(int pid)
+{
+    player_snapshot snapshot = {};
+    snapshot.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
+    snapshot.pid = pid;
+    snapshot.room_vnum = 3001;
+    snapshot.save_intent = RENT_CRASH;
+    snapshot.encoded_size_bound = 8192;
+    snapshot.output_preferences = "complete retained payload";
+    assert(player_revision_mark(pid, PLAYER_COMPONENT_STATUS, nullptr));
+    assert(player_revision_queue(pid, &snapshot.revision, &snapshot.components));
+    assert(player_save_journal_append(snapshot) == player_save_journal_result::ok);
+    retained_bytes += snapshot.encoded_size_bound;
+    durable_ready.push_back(snapshot);
+    return snapshot;
+}
+int main(int argc, char **argv)
+{
+    assert(argc == 2 && player_save_journal_init(argv[1]));
+    health.initialized = accepting = true;
+    assert(player_revision_hydrate(77, 1));
+    const auto first = seal(77);
+    player_save_pipeline_pulse(); // Stopped writer: keep the sealed payload for retry.
+    assert(durable_ready.size() == 1);
+    assert(durable_ready.front().output_preferences == first.output_preferences);
+    assert(player_save_pipeline_sealed_save_pending(77));
+    assert(player_save_worker_init(apply_test, nullptr));
+    assert(player_save_worker_set_journal_hooks(nullptr, player_save_journal_worker_ack, nullptr));
+    for (auto expected : {player_save_apply_outcome::applied,
+                          player_save_apply_outcome::already_applied,
+                          player_save_apply_outcome::stale_revision})
+    {
+        outcome = expected;
+        if (expected != player_save_apply_outcome::applied) seal(77);
+        const auto saved_revision = durable_ready.front().revision;
+        terminal_fences[0] = {77, saved_revision, true, false};
+        player_save_pipeline_pulse();
+        assert(persistence_writer_wait_idle(5000));
+        // A completion is not acknowledged until the game thread consumes it.
+        player_revision_snapshot revision = {};
+        assert(player_revision_snapshot_copy(77, &revision));
+        assert(revision.queued_components == PLAYER_COMPONENT_STATUS);
+        assert(player_save_journal_health_copy().records == 0);
+        player_save_pipeline_pulse();
+        assert(player_revision_snapshot_copy(77, &revision));
+        assert(revision.acknowledged_revision == saved_revision);
+        assert(!revision.queued_components && !revision.unacknowledged_components);
+        assert(terminal_fences[0].acknowledged);
+        terminal_fences[0] = {};
+        assert(!player_save_pipeline_sealed_save_pending(77));
+    }
+    assert(player_save_journal_health_copy().checkpoints == 3);
+    // An older completion must not acknowledge a later modification.
+    outcome = player_save_apply_outcome::applied;
+    const auto old = seal(77);
+    assert(player_revision_mark(77, PLAYER_COMPONENT_STATUS, nullptr));
+    player_save_pipeline_pulse();
+    assert(persistence_writer_wait_idle(5000));
+    player_save_pipeline_pulse();
+    player_revision_snapshot revision = {};
+    assert(player_revision_snapshot_copy(77, &revision));
+    assert(revision.acknowledged_revision == old.revision);
+    assert(revision.current_revision > old.revision);
+    assert(revision.unacknowledged_components == PLAYER_COMPONENT_STATUS);
+    player_save_worker_reset_for_tests();
+    player_save_journal_shutdown();
+}
+'''
+with tempfile.TemporaryDirectory(prefix="save-completion-") as directory:
+    source = Path(directory) / "completion.cpp"
+    binary = Path(directory) / "completion"
+    source.write_text(completion_harness)
+    subprocess.run([
+        "g++", "-std=c++20", "-D__NO_MYSQL__", "-Isrc", "-Isrc/no_mysql",
+        "-ffunction-sections", "-fdata-sections", str(source),
+        rel("player_save_worker.c"), rel("player_save_journal.c"),
+        rel("player_snapshot_codec.c"), rel("player_revision_state.c"),
+        rel("persistence_observability.c"), "-Wl,--gc-sections", "-pthread", "-o", str(binary),
+    ], cwd=ROOT, check=True)
+    subprocess.run([str(binary), str(Path(directory) / "journal")], check=True, timeout=20)
+print("[PASS] real save completions compact the journal, acknowledge revisions, and release save fences")

@@ -720,6 +720,9 @@ bool auction_repository_execute(MYSQL *connection, const critical_command &comma
 		{
 			if (!stage_items(connection, auction.id, auction.seller_pid))
 				return false;
+			if (auction.winner_pid &&
+			    !stage_money(connection, auction.winner_pid, auction.cur_price))
+				return false;
 		}
 		else
 		{

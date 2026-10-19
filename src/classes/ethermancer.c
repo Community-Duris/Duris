@@ -2915,12 +2915,10 @@ void spell_etheric_gust(int level, P_char ch, char * /*arg*/, int /*type*/, P_ch
 	if (tries >= 1000)
 		to_room = victim->in_room;
 
-	if (LIMITED_TELEPORT_ZONE(victim->in_room))
+	if (LIMITED_TELEPORT_ZONE(victim->in_room) && how_close(victim->in_room, to_room, 5) < 0)
 	{
-		if (how_close(victim->in_room, to_room, 5))
-			send_to_char(
-				"The magic gathers, but somehow fades away before taking effect.\n",
-				victim);
+		send_to_char("The magic gathers, but somehow fades away before taking effect.\n",
+			     victim);
 		return;
 	}
 

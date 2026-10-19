@@ -75,7 +75,11 @@ affected_type *get_spell_from_char(P_char, int) { return nullptr; }
 void logit(int, const char *, ...) {}
 void set_short_affected_by(P_char, int, int) {}
 void gmcp_mark_room_dirty(int) {}
-void gmcp_combat_end(P_char) {}
+std::vector<bool> gmcp_fighting;
+int gmcp_targets=0, gmcp_ends=0;
+void gmcp_char_vitals(P_char ch) { gmcp_fighting.push_back(IS_FIGHTING(ch)); }
+void gmcp_combat_target(P_char ch, P_char victim) { assert(GET_OPPONENT(ch)==victim); ++gmcp_targets; }
+void gmcp_combat_end(P_char) { ++gmcp_ends; }
 void update_pos(P_char) {}
 std::vector<bool> observed;
 std::vector<P_char> promoted;
@@ -100,6 +104,8 @@ int main() {
     stop_fighting(&player);
     assert(!combat_list && !IS_FIGHTING(&player));
     assert(observed.size() == 2 && !observed.back());
+    assert(gmcp_fighting.size()==2 && gmcp_fighting[0] && !gmcp_fighting[1]);
+    assert(gmcp_targets==1 && gmcp_ends==1);
     stop_fighting(&player); // no-op doesn't emit another boundary
     assert(observed.size() == 2);
     telemetry_combat_context_changed(nullptr);

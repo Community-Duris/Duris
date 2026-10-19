@@ -4,8 +4,118 @@
 from _paths import SRC, extract_function
 from pathlib import Path
 import unittest
+import subprocess
+import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
+GIVE_PRELUDE = r'''
+#include <cassert>
+#include <cstdint>
+#include <cstdio>
+#include <iostream>
+#include <vector>
+#include <cstring>
+struct object;
+struct character {int pid=0,in_room=1,carry_w=0,carry_n=0,runtime_flags=0; object *carrying=nullptr;};
+struct object {int R_num=1,type=1,value[8]{},runtime_flags=0,extra_flags=0,loc_p=0,z_cord=0,g_key=0; uint64_t obj_uid=1; object *next_content=nullptr; const char *short_description="sword"; struct {character *carrying=nullptr;} loc;};
+using P_obj=object*; using P_char=character*;
+enum class obj_to_char_result {placed,deferred,destroyed,rejected};
+enum class item_owner_type {player};
+enum class item_custody_state {active};
+struct item_owner_identity {item_owner_type type; uint64_t id,context;};
+struct item_ownership_runtime_entry {item_owner_identity owner; item_custody_state state;};
+constexpr int MAX_STRING_LENGTH=1024,LOG_MOB=0,LOG_OBJ=0,LOG_DEBUG=0,LOG_FILE=0,NOWHERE=-1,
+    ITEM2_CRUMBLELOOT=1,ITEM_MONEY=2,ITEM_CORPSE=3,CORPSE_FLAGS=0,PC_CORPSE=1,
+    OBJ_RFLAG_CREATION_CANDIDATE=2,ITEM_LIT=4,ITEM_LIGHT=5,REAL=0,LOC_CARRIED=1,
+    CHAR_RFLAG_DIRTY_INVENTORY=4,TO_NOTVICT=0,TO_VICT=1;
+constexpr bool TRUE=true,FALSE=false;
+constexpr int PLAYER_COMPONENT_STATUS=1,PLAYER_COMPONENT_EQUIPMENT=2,PLAYER_COMPONENT_INVENTORY=4;
+#define IS_PC(c) true
+#define IS_NPC(c) false
+#define IS_TRUSTED(c) false
+#define GET_PID(c) ((c)->pid)
+#define GET_VNUM(c) 0
+#define GET_NAME(c) "player"
+#define J_NAME(c) "player"
+#define GET_LEVEL(c) 30
+#define OBJ_VNUM(o) 100
+#define OBJ_NOWHERE(o) ((o)->loc_p==0)
+#define IS_OBJ_STAT2(o,f) false
+#define IS_SET(n,f) ((n)&(f))
+#define SET_BIT(n,f) ((n)|=(f))
+#define GET_CARRYING_W(c) ((c)->carry_w)
+#define IS_CARRYING_N(c) ((c)->carry_n)
+#define GET_OBJ_WEIGHT(o) 1
+#define IS_ARTIFACT(o) false
+void logit(int,const char*,...) {}
+bool training_dummy_is(P_char) {return false;}
+void obj_to_room(P_obj,int) {}
+void send_to_room(const char*,int) {}
+void send_to_char(const char*,P_char) {}
+void extract_obj(P_obj,bool) {}
+static uint64_t owner_pid = 1;
+bool item_ownership_runtime_lookup(uint64_t,item_ownership_runtime_entry *out) {*out={{item_owner_type::player,owner_pid,0},item_custody_state::active};return true;}
+bool item_owner_identity_equal(item_owner_identity a,item_owner_identity b) {return a.id==b.id;}
+bool item_creation_grant_submit_to_player(P_char,P_obj,P_char) {return false;}
+void char_light(P_char) {}
+void room_light(int,int) {}
+void world_activity_object_enter(P_obj) {}
+int encumbrance_weight(int v) {return v;}
+void artifact_update_location_sql(P_obj) {}
+void mark_char_or_owner_dirty(P_char) {}
+void mark_player_dirty_components(int,int) {}
+void act(const char*,int,P_char,P_obj,P_char,int) {}
+void obj_from_char(P_obj o) {o->loc.carrying->carrying=nullptr;o->loc.carrying=nullptr;o->loc_p=0;}
+
+#define OBJ_CARRIED_BY(o,c) ((o)->loc_p==LOC_CARRIED && (o)->loc.carrying==(c))
+constexpr int AVATAR=60;
+enum class item_transfer_reason { player_give };
+enum class item_movement_reject { none };
+struct item_transfer_result {};
+static P_char recipient_view=nullptr;
+static P_obj live_object=nullptr;
+static bool admitted=true;
+using callback=void(*)(P_char,bool,const item_transfer_result &,unsigned,const uint8_t *,size_t);
+static callback pending_callback=nullptr;
+static std::vector<uint8_t> pending_context;
+static int scripts_run=0;
+P_char find_live_player_pid(uint32_t pid) { return recipient_view && recipient_view->pid==static_cast<int>(pid) ? recipient_view : nullptr; }
+P_obj find_live_item_uid(uint64_t uid) { return live_object && live_object->obj_uid==uid ? live_object : nullptr; }
+bool item_command_uses_durable_ownership(P_obj) { return true; }
+void report_movement_reject(P_char,item_movement_reject,const char *,P_obj) {}
+void persistence_alert(int,const char *,const char *,const char *,const char *,const char *,...) {}
+void nq_action_check(P_char,P_char,void *) {}
+void studioproc_give(P_char,P_obj,P_char) { ++scripts_run; }
+bool item_movement_transaction_submit(P_char,P_obj,P_obj,item_owner_identity,item_owner_identity,
+    item_transfer_reason,int64_t,callback complete,const void *context,size_t size,P_obj,item_movement_reject *) {
+    if(!admitted) return false;
+    pending_callback=complete;
+    pending_context.assign(static_cast<const uint8_t *>(context),static_cast<const uint8_t *>(context)+size);
+    return true;
+}
+'''
+
+GIVE_DRIVER = r'''
+int main() {
+    character donor,recipient; donor.pid=1; recipient.pid=2;
+    object sword; donor.carrying=&sword; sword.loc.carrying=&donor; sword.loc_p=LOC_CARRIED;
+    live_object=&sword; recipient_view=&recipient;
+    admitted=false;
+    give_fragment(&donor,&recipient,&sword);
+    assert(donor.carrying==&sword && !recipient.carrying && !OBJ_NOWHERE(&sword));
+    admitted=true;
+    give_fragment(&donor,&recipient,&sword);
+    assert(pending_callback && donor.carrying==&sword && !recipient.carrying);
+    pending_callback(&donor,false,{},0,pending_context.data(),pending_context.size());
+    assert(donor.carrying==&sword && !recipient.carrying && owner_pid==1);
+    give_fragment(&donor,&recipient,&sword);
+    owner_pid=2; // The committed receipt updates authoritative ownership first.
+    pending_callback(&donor,true,{},0,pending_context.data(),pending_context.size());
+    assert(!donor.carrying && recipient.carrying==&sword && OBJ_CARRIED_BY(&sword,&recipient));
+    assert(scripts_run==1);
+}
+'''
+
 class LiveItemMovementContractTests(unittest.TestCase):
     def test_runtime_hydrates_authoritative_rows_not_relative_events(self):
         sql = (SRC / "sql.c").read_text()
@@ -41,7 +151,7 @@ class LiveItemMovementContractTests(unittest.TestCase):
                         movement.index("item_ownership_runtime_apply"))
 
     def test_transfer_captures_exact_snapshot_before_submission(self):
-        movement = (SRC / "item_movement_transaction.c").read_text()
+        movement = extract_function("item_movement_transaction.c", "bool item_movement_transaction_submit(")
         capture = movement.index("player_item_snapshot_tree_capture")
         encode = movement.index("player_item_snapshot_list_encode")
         build = movement.index("item_transfer_command_build")
@@ -225,7 +335,25 @@ class LiveItemMovementContractTests(unittest.TestCase):
         coordinator = (SRC / "persistence/critical_command_coordinator.c").read_text()
         self.assertIn("publication_pending", coordinator)
         self.assertIn("state.retain_until_publication", coordinator)
-        self.assertIn("!snapshot.publication_pending", coordinator)
+        self.assertIn("if (!state.publication_pending)", coordinator)
+
+
+    def test_give_keeps_custody_until_receipt(self):
+        handler = extract_function("handler.c", "obj_to_char_result obj_to_char_checked(")
+        context = extract_function("actobj.c", "struct give_movement_context") + ";"
+        completion = extract_function("actobj.c", "void item_give_completion(")
+        give = extract_function("actobj.c", "void do_give(")
+        start = give.index("\tif (IS_PC(ch) && IS_PC(vict) && ch != vict")
+        end = give.index("\n\tif (IS_TRUSTED(ch))", start)
+        fragment = "void give_fragment(P_char ch,P_char vict,P_obj obj) {\n" + give[start:end] + "\n}"
+        harness = GIVE_PRELUDE + handler + context + completion + fragment + GIVE_DRIVER
+        with tempfile.TemporaryDirectory(prefix="give-custody-") as directory:
+            source = Path(directory) / "give.cpp"
+            binary = Path(directory) / "give"
+            source.write_text(harness)
+            subprocess.run(["g++", "-std=c++20", "-fsanitize=address,undefined", "-g",
+                            str(source), "-o", str(binary)], check=True)
+            subprocess.run([str(binary)], check=True)
 
 
 if __name__ == "__main__":

@@ -37,6 +37,7 @@
 extern P_char character_list;
 extern P_desc descriptor_list;
 extern P_room world;
+extern const int top_of_world;
 extern P_index obj_index;
 extern P_index mob_index;
 // extern int rev_dir[];
@@ -967,7 +968,8 @@ void do_shout(P_char ch, char *argument, int /*cmd*/)
 		send_to_char("You cannot speak in that form!\r\n", ch);
 		return;
 	}
-	if ((IS_ROOM(ch->in_room, ROOM_UNDERWATER) || ch->specials.z_cord < 0) && !IS_TRUSTED(ch) &&
+	if (ch->in_room >= 0 && ch->in_room <= top_of_world &&
+	    (IS_ROOM(ch->in_room, ROOM_UNDERWATER) || ch->specials.z_cord < 0) && !IS_TRUSTED(ch) &&
 	    !IS_NPC(ch))
 	{
 		send_to_char("You shout at the top of your lungs and inhale some water!\r\n", ch);

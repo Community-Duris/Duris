@@ -5582,14 +5582,10 @@ void spell_teleport(int level, P_char ch, char * /*arg*/, int /*type*/, P_char v
 			to_room = vict->in_room;
 	}
 
-	if (LIMITED_TELEPORT_ZONE(vict->in_room))
+	if (LIMITED_TELEPORT_ZONE(vict->in_room) && how_close(vict->in_room, to_room, 5) < 0)
 	{
-		if (how_close(vict->in_room, to_room, 5))
-		{
-			send_to_char(
-				"The magic gathers, but somehow fades away before taking effect.\n",
-				vict);
-		}
+		send_to_char("The magic gathers, but somehow fades away before taking effect.\n",
+			     vict);
 		return;
 	}
 	act("$n slowly fades out of existence.", FALSE, vict, 0, 0, TO_ROOM);

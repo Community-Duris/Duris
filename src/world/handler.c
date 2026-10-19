@@ -1332,7 +1332,8 @@ bool char_to_room(P_char ch, int room, int dir)
 		for (d = descriptor_list; d; d = d->next)
 		{
 			who = d->character;
-			if (!who || !who->desc)
+			// A character at the account menu after a rent or a quit is in no room.
+			if (!who || !who->desc || who->in_room < 0 || who->in_room > top_of_world)
 				continue;
 
 			// Determine observer's effective map room
@@ -1831,7 +1832,7 @@ static void mark_char_or_owner_dirty(P_char ch)
 }
 
 // Give an object to a char
-void obj_to_char(P_obj object, P_char ch)
+obj_to_char_result obj_to_char_checked(P_obj object, P_char ch)
 {
 	P_obj o;
 	char Gbuf[MAX_STRING_LENGTH];
@@ -1840,7 +1841,7 @@ void obj_to_char(P_obj object, P_char ch)
 	{
 		logit(LOG_MOB, "obj_to_char: no ch, obj vnum %d", object ? OBJ_VNUM(object) : -1);
 		logit(LOG_OBJ, "obj_to_char: no ch, obj vnum %d", object ? OBJ_VNUM(object) : -1);
-		return;
+		return obj_to_char_result::rejected;
 	}
 
 	if (!object)
@@ -1853,7 +1854,7 @@ void obj_to_char(P_obj object, P_char ch)
 		{
 			logit(LOG_OBJ, "obj_to_char: no obj: player (%s).", GET_NAME(ch));
 		}
-		return;
+		return obj_to_char_result::rejected;
 	}
 
 	if (training_dummy_is(ch))
@@ -1862,14 +1863,14 @@ void obj_to_char(P_obj object, P_char ch)
 		      J_NAME(ch), OBJ_VNUM(object));
 		if (OBJ_NOWHERE(object) && ch->in_room != NOWHERE)
 			obj_to_room(object, ch->in_room);
-		return;
+		return obj_to_char_result::rejected;
 	}
 
 	if (!OBJ_NOWHERE(object))
 	{
 		logit(LOG_DEBUG, "obj_to_char: wonders never cease, obj vnum %d not in NOWHERE",
 		      OBJ_VNUM(object));
-		return;
+		return obj_to_char_result::rejected;
 		/*
 		    act("&+gWith a scurry, bugs appear from nowhere, engulfing $p.", TRUE, ch, object, 0, TO_ROOM);
 		    extract_obj(object, TRUE); // A bug -> eating an arti.. ouch.
@@ -1879,11 +1880,7 @@ void obj_to_char(P_obj object, P_char ch)
 
 	if (IS_OBJ_STAT2(object, ITEM2_CRUMBLELOOT) && IS_PC(ch) && !IS_TRUSTED(ch))
 	{
-		// DEFERRED: use-after-free — extract_obj frees object, but callers in
-		// do_get/give/remove (actobj.c) still dereference the stale pointer.
-		// Setting object=NULL here only clears our local copy; the caller's
-		// pointer is passed by value. Fix requires returning a freed-status
-		// from obj_to_char/obj_to_room, touching hundreds of call sites.
+		// Callers using the checked entry point must not access object after this.
 		if (ch->in_room)
 		{
 			snprintf(
@@ -1893,8 +1890,7 @@ void obj_to_char(P_obj object, P_char ch)
 			send_to_room(Gbuf, ch->in_room);
 		}
 		extract_obj(object, TRUE); // Crumbleloot arti?
-		object = NULL;
-		return;
+		return obj_to_char_result::destroyed;
 	}
 
 	// A persisted generic item may only reach a player after its active ownership row names
@@ -1920,7 +1916,7 @@ void obj_to_char(P_obj object, P_char ch)
 		{
 			if (!has_authoritative_ownership && creation_candidate &&
 			    item_creation_grant_submit_to_player(ch, object, ch))
-				return;
+				return obj_to_char_result::deferred;
 			logit(LOG_FILE,
 			      "obj_to_char refused unowned player publication (uid=%llu vnum=%d pid=%d)",
 			      (unsigned long long)object->obj_uid, OBJ_VNUM(object), GET_PID(ch));
@@ -1934,7 +1930,10 @@ void obj_to_char(P_obj object, P_char ch)
 			 * loaded graph must remain available for recovery.
 			 */
 			if (!has_authoritative_ownership && creation_candidate)
+			{
 				extract_obj(object, FALSE);
+				return obj_to_char_result::destroyed;
+			}
 			else
 				logit(LOG_FILE,
 				      "obj_to_char preserved non-candidate object after publication refusal "
@@ -1944,7 +1943,7 @@ void obj_to_char(P_obj object, P_char ch)
 				      (unsigned int)ownership.owner.type,
 				      (unsigned long long)ownership.owner.id,
 				      (unsigned int)ownership.state);
-			return;
+			return obj_to_char_result::rejected;
 		}
 	}
 
@@ -1999,6 +1998,12 @@ void obj_to_char(P_obj object, P_char ch)
 
 	mark_char_or_owner_dirty(ch);
 	SET_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
+	return obj_to_char_result::placed;
+}
+
+void obj_to_char(P_obj object, P_char ch)
+{
+	(void)obj_to_char_checked(object, ch);
 }
 
 /*
@@ -3085,7 +3090,7 @@ void obj_to_obj(P_obj obj, P_obj obj_to)
 		}
 	}
 
-	add_weight(obj_to, obj->weight);
+	add_weight(obj_to, GET_OBJ_WEIGHT(obj));
 	resync_reducing_container(obj_to);
 	world_activity_object_enter(obj);
 	/* Broken out into a recursive function; neater and more correct for handling negative weights properly.
@@ -3166,7 +3171,7 @@ void obj_to_obj_at_end(P_obj obj, P_obj obj_to)
 	obj->loc.inside = obj_to;
 	append_obj_to_list(&obj_to->contains, obj);
 
-	add_weight(obj_to, obj->weight);
+	add_weight(obj_to, GET_OBJ_WEIGHT(obj));
 	resync_reducing_container(obj_to);
 	world_activity_object_enter(obj);
 
@@ -3282,7 +3287,7 @@ void obj_from_obj(P_obj obj)
 		tmp->next_content = obj->next_content;
 	}
 
-	add_weight(obj_from, -(obj->weight));
+	add_weight(obj_from, -(GET_OBJ_WEIGHT(obj)));
 
 	/* Safe here and nowhere earlier: `obj` has already been unlinked above,
 	 * so the fresh sum is of what actually remains inside. */
@@ -3718,8 +3723,12 @@ void collect_corpse_discarded_uids(P_obj container, bool preserve_coins,
 	for (P_obj item = container ? container->contains : nullptr; item;
 	     item = item->next_content)
 	{
+		// A legacy coin pile has no custody record: the wallet took its coins, and the
+		// transaction discarded nothing for it.
+		item_ownership_runtime_entry custody = {};
 		if ((IS_SET(item->extra_flags, ITEM_TRANSIENT) ||
-		     (!preserve_coins && OBJ_VNUM(item) == VOBJ_COINS)) &&
+		     (!preserve_coins && OBJ_VNUM(item) == VOBJ_COINS &&
+		      item_ownership_runtime_lookup(item->obj_uid, &custody))) &&
 		    item->obj_uid)
 			uids->push_back(item->obj_uid);
 		collect_corpse_discarded_uids(item, preserve_coins, uids);
@@ -4637,16 +4646,13 @@ bool submit_corpse_destruction(P_obj corpse)
 
 bool durable_corpse_lifecycle_enabled()
 {
-	const persistence_mode mode = persistence_mode_get();
-	return mode == PERSISTENCE_MODE_MARIADB_PRIMARY ||
-	       mode == PERSISTENCE_MODE_FLATFILE_PRIMARY;
+	return false;
 }
 } // namespace
 
-bool corpse_raise_player_save_fenced(P_char character)
+bool corpse_raise_player_save_fenced(P_char)
 {
-	return character && !IS_NPC(character) && GET_PID(character) > 0 &&
-	       IS_SET(character->runtime_flags, CHAR_RFLAG_CORPSE_RAISE_SAVE_FENCE);
+	return false;
 }
 
 void corpse_raise_player_ready(P_char character, bool inventory_reloaded)
@@ -5624,22 +5630,21 @@ void extract_char(P_char ch)
 
 		if (ch->desc->snoop.snooping)
 		{
-			/*
-			 * if !d->character, or they aren't playing, I can't get their
-			 * level.. so I'll assume its better then 58 to be safe
-			 */
-			if (GET_LEVEL(ch) < 58)
-				// send_to_char("&+CYou are no longer being snooped.&N\r\n",
-				//            ch->desc->snoop.snooping);
+			if (ch->desc->snoop.snooping->desc)
 				rem_char_from_snoopby_list(
 					&ch->desc->snoop.snooping->desc->snoop.snoop_by_list, ch);
+			ch->desc->snoop.snooping = 0;
 		}
 		snoop_by_ptr = ch->desc->snoop.snoop_by_list;
 		while (snoop_by_ptr)
 		{
-			send_to_char("Your victim is no longer among us.\r\n",
-				     snoop_by_ptr->snoop_by);
-			snoop_by_ptr->snoop_by->desc->snoop.snooping = 0;
+			if (snoop_by_ptr->snoop_by)
+			{
+				send_to_char("Your victim is no longer among us.\r\n",
+					     snoop_by_ptr->snoop_by);
+				if (snoop_by_ptr->snoop_by->desc)
+					snoop_by_ptr->snoop_by->desc->snoop.snooping = 0;
+			}
 
 			snoop_by_ptr = snoop_by_ptr->next;
 		}
@@ -6673,6 +6678,13 @@ void ac_stopAllFromIgnoring(P_char ch)
 	}
 }
 
+// anti2_flags holds one bit for each of races 1-32. Other races have none: no
+// deny list names them, and every allow list leaves them out.
+static bool obj_race_bit_set(P_obj obj, int race)
+{
+	return race >= 1 && race <= 32 && IS_SET(obj->anti2_flags, 1U << (race - 1));
+}
+
 int can_char_use_item(P_char ch, P_obj obj)
 {
 	if (!ch || !obj)
@@ -6693,16 +6705,14 @@ int can_char_use_item(P_char ch, P_obj obj)
 
 	if (!IS_SET(obj->extra_flags, ITEM_ALLOWED_RACES))
 	{
-		if (GET_RACE(ch) <= RACE_PLAYER_MAX &&
-		    IS_SET(obj->anti2_flags, 1 << (GET_RACE(ch) - 1)))
+		if (obj_race_bit_set(obj, GET_RACE(ch)))
 		{
 			return FALSE;
 		}
 	}
 	else
 	{
-		if (GET_RACE(ch) > RACE_PLAYER_MAX ||
-		    !IS_SET(obj->anti2_flags, 1 << (GET_RACE(ch) - 1)))
+		if (!obj_race_bit_set(obj, GET_RACE(ch)))
 		{
 			return FALSE;
 		}
@@ -6840,12 +6850,10 @@ int can_prime_class_use_item(P_char ch, P_obj obj)
 
 	if (!IS_SET(obj->extra_flags, ITEM_ALLOWED_RACES))
 	{
-		if (GET_RACE(ch) <= RACE_PLAYER_MAX &&
-		    IS_SET(obj->anti2_flags, 1 << (GET_RACE(ch) - 1)))
+		if (obj_race_bit_set(obj, GET_RACE(ch)))
 			return FALSE;
 	}
-	else if (GET_RACE(ch) > RACE_PLAYER_MAX ||
-		 !IS_SET(obj->anti2_flags, 1 << (GET_RACE(ch) - 1)))
+	else if (!obj_race_bit_set(obj, GET_RACE(ch)))
 		return FALSE;
 
 	if (!IS_SET(obj->extra_flags, ITEM_ALLOWED_CLASSES))

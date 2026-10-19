@@ -102,7 +102,7 @@ void completed(P_char completed_character, bool committed, const shop_trade_resu
 }
 } // namespace
 
-critical_submit_result critical_command_coordinator_submit(critical_command command)
+critical_submit_result critical_command_coordinator_submit_for_publication(critical_command command)
 {
 	submitted_command = std::move(command);
 	return critical_submit_result::accepted;
@@ -213,4 +213,14 @@ int main()
 	       !shop_trade_transaction_player_busy(&character));
 
 	shop_trade_transaction_reset_for_tests();
+}
+
+bool critical_command_coordinator_acknowledge_publication(const critical_operation_id &)
+{
+	return true;
+}
+
+void persistence_alert(int, const char *, const char *, const char *, const char *, const char *,
+		       const char *, ...)
+{
 }

@@ -13,6 +13,7 @@
 #include "player/player_save_worker.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_repository.h"
+#include "item/item_movement_transaction.h"
 #include "core/structs.h"
 #include "core/utils.h"
 
@@ -46,6 +47,22 @@ bool trace_player_saves()
 		return value && std::strcmp(value, "1") == 0;
 	}();
 	return enabled;
+}
+
+P_char live_player(int pid)
+{
+	for (P_char ch = character_list; ch; ch = ch->next)
+		if (IS_PC(ch) && GET_PID(ch) == pid)
+			return ch;
+	return nullptr;
+}
+
+void retire_ended_player(int pid)
+{
+	player_revision_snapshot revision = {};
+	if (player_revision_snapshot_copy(pid, &revision) && revision.session_ended &&
+	    !live_player(pid) && !player_save_worker_pid_pending(pid))
+		player_revision_forget(pid);
 }
 
 std::mutex pipeline_mutex;
@@ -375,6 +392,9 @@ void player_save_pipeline_shutdown(void)
 	}
 	if (dispatcher.joinable())
 		dispatcher.join();
+	player_save_pipeline_pulse();
+	persistence_writer_wait_idle(3000);
+	player_save_pipeline_pulse();
 	player_save_worker_shutdown();
 	player_save_journal_shutdown();
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
@@ -429,6 +449,11 @@ player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int
 	if (!ch || IS_NPC(ch) || GET_PID(ch) <= 0)
 		return player_save_pipeline_result::invalid;
 	if (IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+		return player_save_pipeline_result::unavailable;
+	// Grant admission and capture run on the game thread. Once admitted, a
+	// grant owns this boundary until its result reaches the live graph.
+	// Leave dirty components intact so the next checkpoint includes that graph.
+	if (item_creation_grant_player_publication_pending(ch))
 		return player_save_pipeline_result::unavailable;
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
@@ -677,6 +702,15 @@ void player_save_pipeline_pulse(void)
 		health.completions += completed;
 		for (size_t index = 0; index < completed; ++index)
 		{
+			const auto &completion = completions[index];
+			if (completion.kind != persistence_job_kind::player)
+				continue;
+			if ((completion.outcome == player_save_apply_outcome::applied ||
+			     completion.outcome == player_save_apply_outcome::already_applied ||
+			     completion.outcome == player_save_apply_outcome::stale_revision) &&
+			    completion.durable_revision >= completion.revision)
+				player_revision_acknowledge_durable(
+					completion.pid, completion.revision, completion.components);
 			if (completions[index].outcome == player_save_apply_outcome::applied ||
 			    completions[index].outcome ==
 				    player_save_apply_outcome::already_applied)
@@ -725,6 +759,32 @@ void player_save_pipeline_pulse(void)
 						.second;
 				++custody_mismatch_count;
 			}
+			if (completions[index].outcome ==
+				    player_save_apply_outcome::terminal_failure &&
+			    completions[index].error_code !=
+				    PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH &&
+			    completions[index].error_code != ENOENT && completions[index].pid > 0)
+			{
+				player_revision_snapshot revision = {};
+				player_revision_snapshot_copy(completions[index].pid, &revision);
+				if (completions[index].failed_field[0])
+					logit(LOG_FILE,
+					      "PLAYER SAVE FIELD: pid=%d revision=%llu field=%.63s",
+					      completions[index].pid,
+					      (unsigned long long)completions[index].revision,
+					      completions[index].failed_field.data());
+				persistence_alert(
+					AVATAR, "player_save", "redacted", "none", "none",
+					"write_failed",
+					"pid=%d revision=%llu error=%u remarked=0 ended=%d queued_revision=%llu written_revision=%llu rollback_confirmed=%d",
+					completions[index].pid,
+					(unsigned long long)completions[index].revision,
+					completions[index].error_code,
+					revision.session_ended ? 1 : 0,
+					(unsigned long long)revision.acknowledged_revision,
+					(unsigned long long)revision.current_revision,
+					completions[index].rolled_back ? 1 : 0);
+			}
 		}
 	}
 	for (size_t index = 0; index < custody_mismatch_count; ++index)
@@ -770,6 +830,8 @@ void player_save_pipeline_pulse(void)
 		      "pid=%d sync_fallback=%d",
 		      pid, rearmed ? 1 : 0);
 	}
+	for (size_t index = 0; index < completed; ++index)
+		retire_ended_player(completions[index].pid);
 	for (size_t count = 0; count < PLAYER_SAVE_PIPELINE_PULSE_BUDGET; ++count)
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
@@ -825,10 +887,16 @@ bool player_save_pipeline_drain(uint64_t timeout_msec)
 	while (std::chrono::steady_clock::now() < deadline)
 	{
 		player_save_pipeline_pulse();
+		bool pipeline_empty = false;
 		{
 			std::lock_guard<std::mutex> lock(pipeline_mutex);
-			if (pending_append.empty() && !append_inflight)
-				return true;
+			if (pending_append.empty() && !append_inflight && durable_ready.empty())
+				pipeline_empty = true;
+		}
+		if (pipeline_empty && persistence_writer_wait_idle(0))
+		{
+			player_save_pipeline_pulse();
+			return true;
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
@@ -934,6 +1002,25 @@ void player_save_pipeline_release_target_save_login_fence(int pid,
 			*fence = {};
 }
 
+bool player_save_pipeline_sealed_save_pending(int pid)
+{
+	if (pid <= 0)
+		return true;
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		if (!health.initialized || stop_requested || !accepting ||
+		    find_target_save_login_fence_locked(pid) || find_terminal_fence_locked(pid) ||
+		    append_inflight_pid == pid || any_snapshot_is_retained_locked(pid))
+			return true;
+	}
+	if (player_save_worker_pid_pending(pid))
+		return true;
+	player_revision_snapshot revision = {};
+	if (!player_revision_snapshot_copy(pid, &revision))
+		return false;
+	return revision.overflowed || revision.queued_components || revision.inflight_components;
+}
+
 bool player_save_pipeline_target_save_login_fenced(int pid)
 {
 	if (pid <= 0)
@@ -948,6 +1035,19 @@ bool player_save_pipeline_save_admitted(int pid)
 		return false;
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	return find_target_save_login_fence_locked(pid) == nullptr;
+}
+
+bool player_save_pipeline_load_held(int pid)
+{
+	return pid > 0 && player_save_worker_pid_pending(pid);
+}
+
+void player_save_pipeline_end_session(int pid)
+{
+	if (pid <= 0 || live_player(pid))
+		return;
+	player_revision_end_session(pid);
+	retire_ended_player(pid);
 }
 
 /** Stop the pipeline and clear worker, revision, and health state for an isolated test. */

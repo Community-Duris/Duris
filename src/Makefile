@@ -2,11 +2,12 @@
 
 SHELL = /bin/sh
 
-CC	= g++
+CXX ?= g++
+CC = $(CXX)
 DEBUG	= -ggdb3
 #LDFLAGS	= -ggdb3
 
-HARDENING_FLAGS = -Og -D_FORTIFY_SOURCE=3 -fstack-protector-strong -fstack-clash-protection
+HARDENING_FLAGS = -Og -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3 -fstack-protector-strong -fstack-clash-protection
 WARNING_FLAGS = -Wall -Wextra -Wpedantic -Werror \
 	-Wformat=2 -Wformat-overflow=2 -Wformat-truncation=2 \
 	-Wnull-dereference -Wduplicated-cond -Wduplicated-branches -Wlogical-op \
@@ -151,6 +152,7 @@ OBJS =  $(SHIP_OBJS) \
 				 guild/artifact_cache_codec.o \
 				 persistence/report_cache_codec.o \
 				 economy/donation_event.o \
+				 economy/economic_event_outbox.o \
 				 redis/redis_connection.o \
 				 redis/redis_command_observability.o \
 				 redis/redis_donation_runtime.o \

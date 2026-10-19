@@ -139,6 +139,9 @@ bool item_creation_grant_mark_blocking(P_char actor);
 bool item_creation_grant_blocks_commands(P_char actor);
 // Orderly maintenance must not quiesce between the roots of an accepted kit.
 bool item_creation_grant_batches_pending(void);
+// Grant admission and capture run on the game thread. A pending grant owns this
+// boundary until its item reaches the live graph.
+bool item_creation_grant_player_publication_pending(P_char player);
 // A disconnected pre-entry character cannot finish unsubmitted kit roots.
 void item_creation_grant_cancel_batch_before_entry(P_char actor);
 void item_movement_transaction_handle_completions(const critical_completion *completions,

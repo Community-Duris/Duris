@@ -654,6 +654,38 @@ void circuit_breaker_tests()
 	telemetry_transport_shutdown();
 	telemetry_transport_unbind_for_tests();
 	repository_state = {};
+
+	case_name = "transient initialization failure is retried until it clears";
+	bind_and_init(config(4U, 1U, 2U, 1U));
+	repository_state.init_failures_left = 20U;
+	CHECK(telemetry_transport_enqueue(detail_record(100U)).admission ==
+	      telemetry_queue_admission::accepted_detail);
+	now = 101U;
+	for (std::uint32_t attempt = 1U; attempt <= 20U; ++attempt)
+	{
+		CHECK(telemetry_transport_pulse(now).outcome ==
+		      telemetry_transport_outcome::unavailable);
+		CHECK(repository_state.init_calls == attempt);
+		const auto waiting = telemetry_transport_health_copy();
+		CHECK(waiting.state == telemetry_health_state::degraded);
+		CHECK(waiting.last_failure_class == telemetry_failure_class::transient_connection);
+		CHECK(waiting.repository_retry_attempts == attempt);
+		CHECK(waiting.circuit_open_count == 0U);
+		// Before the backoff passes nothing is attempted; at the one-second cap
+		// every pulse past it is.
+		CHECK(telemetry_transport_pulse(now + 500U).examined == 0U);
+		CHECK(repository_state.init_calls == attempt);
+		now += 1'000'000U;
+	}
+	CHECK(telemetry_transport_pulse(now).examined == 1U);
+	CHECK(repository_state.init_calls == 21U);
+	const auto qualified = telemetry_transport_health_copy();
+	CHECK(qualified.state == telemetry_health_state::healthy);
+	CHECK(qualified.repository_retry_attempts == 0U);
+	CHECK(telemetry_transport_enqueue(detail_record(101U)).admission ==
+	      telemetry_queue_admission::accepted_detail);
+	CHECK(telemetry_transport_pulse(now + 1'000U).examined == 1U);
+	finish();
 }
 
 void controlled_io_teardown_tests()

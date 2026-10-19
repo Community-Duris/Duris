@@ -29,8 +29,10 @@
 #include "cmd/interp.h"
 #include "core/utility.h"
 #include "core/utils.h"
+#include <algorithm>
 #include <arpa/inet.h>
 #include <ctype.h>
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <gnutls/gnutls.h>
@@ -168,7 +170,6 @@ extern void checkpointing(void);
 long sentbytes = 0;
 long receivedbytes = 0;
 bool game_booted = FALSE;
-static std::vector<int32_t> maintenance_catalog_candidate;
 
 static bool hydrate_flatfile_system_item_owner(void)
 {
@@ -232,35 +233,7 @@ static void maintenance_handle_completions(const maintenance_result *results, si
 					ctf_delete_flag(criteria);
 				boon_notify_snapshot(id, racewar, pid, reason);
 			}
-		if (result.job_id != maintenance_job_id::epic_task_catalog)
-			continue;
-		if (result.outcome != maintenance_outcome::complete &&
-		    result.outcome != maintenance_outcome::more)
-		{
-			maintenance_catalog_candidate.clear();
-			continue;
-		}
-		bool valid = maintenance_catalog_candidate.size() + result.value_count <=
-			     EPIC_TASK_CATALOG_MAX;
-		for (size_t value = 0; valid && value < result.value_count; ++value)
-			if (result.values[value] <= 0 || result.values[value] > INT32_MAX)
-				valid = false;
-			else
-				maintenance_catalog_candidate.push_back(
-					static_cast<int32_t>(result.values[value]));
-		if (!valid)
-		{
-			maintenance_catalog_candidate.clear();
-			continue;
-		}
-		if (result.outcome == maintenance_outcome::complete)
-		{
-			if (!epic_task_catalog_publish(maintenance_catalog_candidate.data(),
-						       maintenance_catalog_candidate.size()))
-				logit(LOG_DEBUG,
-				      "maintenance job=epic_task_catalog outcome=publish_failed actor=redacted");
-			maintenance_catalog_candidate.clear();
-		}
+		epic_task_catalog_complete(result);
 	}
 }
 
@@ -610,7 +583,8 @@ int main(int argc, char **argv)
 	// Property hooks now also own main-thread item-action cancellation. Bind
 	// before loading them; the event pool is initialized later during world boot.
 	nevent_bind_game_thread();
-	initialize_properties();
+	if (!initialize_properties())
+		fatal_boot_error("comm", "Could not load valid server properties");
 	// Optional configuration is loaded once before gameplay, never during a send.
 	if (const char *profile_path = getenv("DURIS_OUTPUT_PROFILES_FILE");
 	    profile_path && *profile_path)
@@ -784,9 +758,7 @@ int run_the_game(int port, int sslport)
 	{
 		fprintf(stderr, "-- Updating zone database.\r\n");
 		update_zone_db();
-		if (!epic_task_catalog_refresh())
-			logit(LOG_STATUS,
-			      "Epic task catalog unavailable; zone task selection uses safe fallback.");
+		epic_task_catalog_refresh();
 	}
 	else
 	{
@@ -1996,6 +1968,7 @@ static void run_recurring_persistence_phase(game_loop_pulse_context &ctx)
 	if (!(pulse % 2))
 	{
 		const uint64_t gmcp_begin_us = loop_monotonic_us();
+		gmcp_flush_initial_states();
 		gmcp_flush_dirty_rooms();
 		gmcp_flush_dirty_ship_contacts();
 		gmcp_flush_dirty_ship_info();
@@ -2151,16 +2124,11 @@ static void run_combat_phase(game_loop_pulse_context &ctx)
 										  ship->location);
 							if (n > 1)
 							{
-								// Render map and send via GMCP only (skip text by using websocket flag temporarily)
-								bool was_websocket =
-									t_ch->desc->websocket;
-								t_ch->desc->websocket =
-									1; // Force skip_text_output in display_map_room
+								/* MAP_AUTOMAP suppresses text for GMCP clients.
+								 * Preserve the actual transport while sending the map. */
 								display_map_room(t_ch,
 										 ship->location, n,
 										 MAP_AUTOMAP, 0);
-								t_ch->desc->websocket =
-									was_websocket;
 							}
 						}
 					}
@@ -2709,7 +2677,7 @@ resume_game_loop:
 						update_ingame_racewar(
 							-GET_RACEWAR(point->character));
 					}
-					extract_char(point->character);
+					extract_char_after_terminal_save(point->character);
 				}
 			}
 		}
@@ -3246,6 +3214,8 @@ void close_sockets(int s)
 	close(s);
 }
 
+static void forget_hostname(int descriptor);
+
 void close_socket(struct descriptor_data *d)
 {
 	struct descriptor_data *tmp;
@@ -3269,7 +3239,10 @@ void close_socket(struct descriptor_data *d)
 	if (d->sslses)
 		ssl_close(d->sslses);
 	if (d->descriptor)
+	{
 		close(d->descriptor);
+		forget_hostname(d->descriptor);
+	}
 	flush_queues(d);
 	--used_descs;
 
@@ -3283,14 +3256,18 @@ void close_socket(struct descriptor_data *d)
 	snoop_by_ptr = d->snoop.snoop_by_list;
 	while (snoop_by_ptr)
 	{
-		if (is_morphed && affected_by_spell(d->character, SPELL_CHANNEL))
-			send_to_char(
-				"Your host has lost link... you can no longer maintain the sight link.\r\n",
-				snoop_by_ptr->snoop_by);
-		else
-			send_to_char("Your victim is no longer among us.\r\n",
-				     snoop_by_ptr->snoop_by);
-		snoop_by_ptr->snoop_by->desc->snoop.snooping = 0;
+		if (snoop_by_ptr->snoop_by)
+		{
+			if (is_morphed && affected_by_spell(d->character, SPELL_CHANNEL))
+				send_to_char(
+					"Your host has lost link... you can no longer maintain the sight link.\r\n",
+					snoop_by_ptr->snoop_by);
+			else
+				send_to_char("Your victim is no longer among us.\r\n",
+					     snoop_by_ptr->snoop_by);
+			if (snoop_by_ptr->snoop_by->desc)
+				snoop_by_ptr->snoop_by->desc->snoop.snooping = 0;
+		}
 
 		next = snoop_by_ptr->next;
 		FREE(snoop_by_ptr);
@@ -3323,8 +3300,10 @@ void close_socket(struct descriptor_data *d)
 		}
 		if (d->snoop.snooping)
 		{
-			rem_char_from_snoopby_list(&d->snoop.snooping->desc->snoop.snoop_by_list,
-						   d->character);
+			if (d->snoop.snooping->desc)
+				rem_char_from_snoopby_list(
+					&d->snoop.snooping->desc->snoop.snoop_by_list,
+					d->character);
 			d->snoop.snooping = 0;
 		}
 	}
@@ -3503,7 +3482,7 @@ void nonblock(int s)
         * old/new socket code. 9/18/95  JAB                                                                                                                                                            \
         */
 
-static int proxy_peer_is_trusted(int desc)
+int proxy_peer_is_trusted(int desc)
 {
 	const char *trusted_ip = getenv("DURIS_TRUSTED_PROXY_IP");
 	struct sockaddr_storage peer;
@@ -3533,71 +3512,120 @@ static int parse_proxy_protocol(int desc, char *real_ip, size_t ip_len)
 	int src_port, dst_port;
 	struct in_addr src4, dst4;
 	struct in6_addr src6, dst6;
-	ssize_t n;
-	int i;
 
-	/* peek first 6 bytes to check for "PROXY " */
-	n = recv(desc, buf, 6, MSG_PEEK);
-	if (n < 6 || strncmp(buf, "PROXY ", 6) != 0)
+	const ssize_t n = recv(desc, buf, sizeof(buf) - 1, MSG_PEEK | MSG_DONTWAIT);
+	if (n <= 0)
+		return n == 0 ? -1 : 2;
+	if (memcmp(buf, "PROXY ", std::min<ssize_t>(n, 6)) != 0)
 		return 0;
-
-	/* read full line up to \r\n */
-	for (i = 0; i < (int)sizeof(buf) - 1; i++)
-	{
-		n = recv(desc, &buf[i], 1, 0);
-		if (n <= 0)
-			return 0;
-		if (buf[i] == '\n')
-		{
-			buf[i + 1] = '\0';
-			break;
-		}
-	}
-	buf[i] = '\0';
-	if (i > 0 && buf[i - 1] == '\r')
-		buf[i - 1] = '\0';
+	buf[n] = '\0';
+	char *end = strstr(buf, "\r\n");
+	if (!end)
+		return n == static_cast<ssize_t>(sizeof(buf) - 1) ? -1 : 2;
+	const size_t bytes = static_cast<size_t>(end - buf) + 2;
+	*end = '\0';
 
 	if (sscanf(buf, "PROXY %7s %45s %45s %d %d %c", proto, src_ip, dst_ip, &src_port, &dst_port,
 		   &trailing) != 5)
-		return 0;
+		return -1;
 	if (src_port < 1 || src_port > 65535 || dst_port < 1 || dst_port > 65535)
-		return 0;
+		return -1;
 	if (strcmp(proto, "TCP4") == 0)
 	{
 		if (inet_pton(AF_INET, src_ip, &src4) != 1 ||
 		    inet_pton(AF_INET, dst_ip, &dst4) != 1)
-			return 0;
+			return -1;
 	}
 	else if (strcmp(proto, "TCP6") == 0)
 	{
 		if (inet_pton(AF_INET6, src_ip, &src6) != 1 ||
 		    inet_pton(AF_INET6, dst_ip, &dst6) != 1)
-			return 0;
+			return -1;
 	}
 	else
-		return 0;
+		return -1;
 
-	strncpy(real_ip, src_ip, ip_len - 1);
-	real_ip[ip_len - 1] = '\0';
+	strlcpy(real_ip, src_ip, ip_len);
+	return recv(desc, buf, bytes, MSG_DONTWAIT) == static_cast<ssize_t>(bytes) ? 1 : -1;
+}
+
+// Called only for the first WebSocket input from a trusted proxy. The descriptor
+// is already linked, so the count includes this connection.
+int process_proxy_protocol(P_desc d)
+{
+	char client_ip[46];
+	const int result = parse_proxy_protocol(d->descriptor, client_ip, sizeof(client_ip));
+	if (result != 1)
+		return result;
+	strlcpy(d->host, client_ip, sizeof(d->host));
+	d->proxy_named_client = 1;
+	resolve_descriptor_hostname_async(strip_ansi(d->host).c_str(), d->descriptor);
 	return 1;
+}
+
+static void remove_hostname_files(const char *prefix)
+{
+	DIR *directory = opendir("lib/etc/hosts");
+	if (!directory)
+		return;
+	const size_t length = strlen(prefix);
+	while (const struct dirent *entry = readdir(directory))
+		if (!strncmp(entry->d_name, prefix, length) && strcmp(entry->d_name, ".") &&
+		    strcmp(entry->d_name, "..") && strcmp(entry->d_name, ".gitignore"))
+			unlinkat(dirfd(directory), entry->d_name, 0);
+	closedir(directory);
 }
 
 struct hostname_lookup_request
 {
 	char address[INET6_ADDRSTRLEN];
 	int descriptor;
+	bool cancelled; // its descriptor closed during the lookup
+	struct hostname_lookup_request *next;
 };
 
 #define MAX_HOSTNAME_LOOKUP_WORKERS 8
+// The mutex guards the running lookups, their count, and every change to lib/etc/hosts after
+// the boot, so a lookup publishes its file before its descriptor closes or not at all.
 static pthread_mutex_t hostname_lookup_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int hostname_lookup_workers = 0;
+static struct hostname_lookup_request *hostname_lookups = NULL;
+
+// With hostname_lookup_mutex held.
+static void hostname_lookup_done(struct hostname_lookup_request *request)
+{
+	struct hostname_lookup_request **link = &hostname_lookups;
+	while (*link != request)
+		link = &(*link)->next;
+	*link = request->next;
+	hostname_lookup_workers--;
+}
+
+// A closed descriptor keeps no reverse-DNS name. A lookup still running for it
+// writes nothing, and its files go, a temporary one a copyover cut short included.
+static void forget_hostname(int descriptor)
+{
+	char prefix[16];
+
+	pthread_mutex_lock(&hostname_lookup_mutex);
+	for (struct hostname_lookup_request *request = hostname_lookups; request;
+	     request = request->next)
+		if (request->descriptor == descriptor)
+			request->cancelled = true;
+	snprintf(prefix, sizeof(prefix), "%d.", descriptor);
+	remove_hostname_files(prefix);
+	snprintf(prefix, sizeof(prefix), ".%d.", descriptor);
+	remove_hostname_files(prefix);
+	pthread_mutex_unlock(&hostname_lookup_mutex);
+}
 
 static void *hostname_lookup_worker(void *arg)
 {
 	struct hostname_lookup_request *request = (struct hostname_lookup_request *)arg;
 	struct addrinfo hints, *result = NULL;
 	char hostname[NI_MAXHOST];
-	char temp_path[128], final_path[128];
+	char temp_path[128] = "", final_path[128];
+	bool written = false;
 	FILE *f;
 
 	bzero(&hints, sizeof(hints));
@@ -3620,15 +3648,18 @@ static void *hostname_lookup_worker(void *arg)
 			{
 				int write_ok = fprintf(f, "%s\n", hostname) >= 0;
 				int close_ok = fclose(f) == 0;
-				if (write_ok && close_ok)
-					rename(temp_path, final_path);
+				written = write_ok && close_ok;
 			}
 		}
 		freeaddrinfo(result);
 	}
 
 	pthread_mutex_lock(&hostname_lookup_mutex);
-	hostname_lookup_workers--;
+	if (written && !request->cancelled)
+		rename(temp_path, final_path);
+	else if (*temp_path)
+		unlink(temp_path);
+	hostname_lookup_done(request);
 	pthread_mutex_unlock(&hostname_lookup_mutex);
 	free(request);
 	return NULL;
@@ -3644,37 +3675,36 @@ void resolve_descriptor_hostname_async(const char *address, int descriptor)
 	if (request == NULL)
 		return;
 
-	pthread_mutex_lock(&hostname_lookup_mutex);
-	if (hostname_lookup_workers >= MAX_HOSTNAME_LOOKUP_WORKERS)
-	{
-		pthread_mutex_unlock(&hostname_lookup_mutex);
-		free(request);
-		return;
-	}
-	hostname_lookup_workers++;
-	pthread_mutex_unlock(&hostname_lookup_mutex);
-
 	strncpy(request->address, address, sizeof(request->address) - 1);
 	request->descriptor = descriptor;
-	{
-		char stale_path[128];
-		snprintf(stale_path, sizeof(stale_path), "lib/etc/hosts/%d.%s", descriptor,
-			 request->address);
-		unlink(stale_path);
-	}
 	if (pthread_attr_init(&attr) != 0)
 	{
-		pthread_mutex_lock(&hostname_lookup_mutex);
-		hostname_lookup_workers--;
-		pthread_mutex_unlock(&hostname_lookup_mutex);
 		free(request);
 		return;
 	}
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+	pthread_mutex_lock(&hostname_lookup_mutex);
+	if (hostname_lookup_workers >= MAX_HOSTNAME_LOOKUP_WORKERS)
+	{
+		pthread_mutex_unlock(&hostname_lookup_mutex);
+		pthread_attr_destroy(&attr);
+		free(request);
+		return;
+	}
+	char stale_path[128];
+	snprintf(stale_path, sizeof(stale_path), "lib/etc/hosts/%d.%s", descriptor,
+		 request->address);
+	unlink(stale_path);
+	hostname_lookup_workers++;
+	request->next = hostname_lookups;
+	hostname_lookups = request;
+	pthread_mutex_unlock(&hostname_lookup_mutex);
+
 	if (pthread_create(&thread, &attr, hostname_lookup_worker, request) != 0)
 	{
 		pthread_mutex_lock(&hostname_lookup_mutex);
-		hostname_lookup_workers--;
+		hostname_lookup_done(request);
 		pthread_mutex_unlock(&hostname_lookup_mutex);
 		free(request);
 	}
@@ -3688,6 +3718,7 @@ int new_descriptor(int s, int conn_type)
 	socklen_t size;
 	sockaddr_in6 sock;
 	gnutls_session_t sslses = 0;
+	bool shared_address = false;
 
 	if ((desc = new_connection(s)) < 0)
 		return (-1);
@@ -3715,6 +3746,8 @@ int new_descriptor(int s, int conn_type)
 	{
 		// shouldn't write anything before setup
 		// write(desc, "Sorry, the game is full...\r\n");
+		if (sslses)
+			gnutls_deinit(sslses);
 		used_descs--;
 		shutdown(desc, 2);
 		close(desc);
@@ -3758,13 +3791,9 @@ int new_descriptor(int s, int conn_type)
 			memmove(newd->host, mapped, strlen(mapped) + 1);
 		}
 
-		/* check for proxy protocol on websocket connections */
-		if (conn_type == 2 && proxy_peer_is_trusted(desc))
-		{
-			char proxy_ip[46];
-			if (parse_proxy_protocol(desc, proxy_ip, sizeof(proxy_ip)))
-				strlcpy(newd->host, proxy_ip, sizeof newd->host);
-		}
+		// A trusted proxy is shared until its client address arrives in the input
+		// stream. WebSocket input handles fragmented PROXY headers after accept.
+		shared_address = proxy_peer_is_trusted(desc);
 
 		/*
 		 * things got ugly, 20k+ sites, so, split it into 2 files, a
@@ -3798,7 +3827,10 @@ int new_descriptor(int s, int conn_type)
 	newd->descriptor = desc;
 	// newd->connected = CON_HOST_LOOKUP;
 	newd->wait = 1;
-	resolve_descriptor_hostname_async(strip_ansi(newd->host).c_str(), desc);
+	// WebSocket proxy metadata will supply the client address on input. Looking
+	// up the shared proxy now would compete with that client's bounded DNS worker.
+	if (!shared_address || conn_type != 2)
+		resolve_descriptor_hostname_async(strip_ansi(newd->host).c_str(), desc);
 	*newd->host2 = '\0';
 	newd->prompt_mode = FALSE;
 	*newd->buf = '\0';
@@ -3843,16 +3875,15 @@ int new_descriptor(int s, int conn_type)
 		setsockopt(desc, IPPROTO_TCP, TCP_NODELAY, &ws_opt, sizeof(ws_opt));
 	}
 
+	/* Never linked as CON_PLAYING (0): code that walks descriptor_list takes a playing
+	 * descriptor to have a character.  A WebSocket waits for its HTTP handshake in
+	 * CON_GET_TERM, and greet() moves a telnet client on. */
+	STATE(newd) = conn_type == 1 ? CON_SSLNEGO : CON_GET_TERM;
 	descriptor_list = newd;
 
-	if (conn_type == 1) // ssl - always use CON_SSLNEGO, let game loop handle greet
-	{
+	if (conn_type == 1) // ssl - let game loop handle greet
 		ssl_negotiate(sslses); // do first round immediately
-		STATE(newd) = CON_SSLNEGO;
-	}
-	else if (conn_type == 2)
-		STATE(newd) = CON_GET_TERM; /* WebSocket waits for HTTP handshake */
-	else
+	else if (conn_type == 0)
 	{
 		/* Terminal discovery is optional metadata.  Start it before the
 		 * greeting so responsive clients can answer immediately, but never
@@ -3877,8 +3908,7 @@ static void greet(P_desc newd)
 			"feel this is in error, please e-mail multiplay@durismud.com\r\n");
 		banlog(56, "Reject Connect from %s, banned site.", newd->host);
 		logit(LOG_STATUS, "Rejected Connect from %s, banned site.", newd->host);
-		STATE(newd) = CON_EXIT;
-		// flush_queues(newd);
+		STATE(newd) = CON_FLUSH; /* closed once the message is sent */
 		return;
 	}
 
@@ -4263,7 +4293,8 @@ int process_output(P_desc t)
 		}
 		while (snoop_by_ptr)
 		{
-			write_to_q(buf2, &snoop_by_ptr->snoop_by->desc->output, 1);
+			if (snoop_by_ptr->snoop_by && snoop_by_ptr->snoop_by->desc)
+				write_to_q(buf2, &snoop_by_ptr->snoop_by->desc->output, 1);
 
 			snoop_by_ptr = snoop_by_ptr->next;
 		}
@@ -4496,9 +4527,12 @@ static void process_line(P_desc t, char *in)
 
 	while (snoop_by_ptr)
 	{
-		write_to_q("&+y%&n ", &snoop_by_ptr->snoop_by->desc->output, 1);
-		write_to_q(out, &snoop_by_ptr->snoop_by->desc->output, 1);
-		write_to_q("\r\n", &snoop_by_ptr->snoop_by->desc->output, 1);
+		if (snoop_by_ptr->snoop_by && snoop_by_ptr->snoop_by->desc)
+		{
+			write_to_q("&+y%&n ", &snoop_by_ptr->snoop_by->desc->output, 1);
+			write_to_q(out, &snoop_by_ptr->snoop_by->desc->output, 1);
+			write_to_q("\r\n", &snoop_by_ptr->snoop_by->desc->output, 1);
+		}
 
 		snoop_by_ptr = snoop_by_ptr->next;
 	}
@@ -5857,14 +5891,12 @@ void delete_doubledollar(char *string)
 // Puts a Cyan % in front of each line.
 void format_to_snoopers(char *from_string, char *to_string)
 {
-	char *index, *index2;
+	char *index = from_string;
+	size_t used = 7;
 
 	//  debug( "From: '%s'.", from_string );
-	index2 = to_string;
-	snprintf(index2, MAX_STRING_LENGTH, "&+C%%&N ");
-	index2 += 7;
-	index = from_string;
-	while (*index != '\0')
+	snprintf(to_string, MAX_STRING_LENGTH, "&+C%%&N ");
+	while (*index != '\0' && used < MAX_STRING_LENGTH - 9) // a prefix is 8 bytes, then the null
 	{
 		if (*index == '\r')
 		{
@@ -5873,14 +5905,14 @@ void format_to_snoopers(char *from_string, char *to_string)
 		}
 		if (index[0] == '\n' && index[1] != '\0')
 		{
-			snprintf(index2, MAX_STRING_LENGTH, "\n&+C%%&N ");
-			index2 += 8;
+			snprintf(to_string + used, MAX_STRING_LENGTH - used, "\n&+C%%&N ");
+			used += 8;
 			index++;
 		}
 		else
 		{
-			*(index2++) = *(index++);
+			to_string[used++] = *(index++);
 		}
 	}
-	*index2 = '\0';
+	to_string[used] = '\0';
 }

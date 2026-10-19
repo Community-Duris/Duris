@@ -90,6 +90,6 @@ int assoc_founder(P_char mob, P_char pl, int cmd, char *arg);
 bool player_recipes_exists(char *charname);
 void create_recipes_file(const char *dir, char *name);
 void create_recipes_name(char *name);
-void create_recipe(P_char ch, P_obj temp);
+bool create_recipe(P_char ch, P_obj temp);
 
 #endif // _TRADESKILL_H_

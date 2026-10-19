@@ -600,7 +600,7 @@ int vamp(P_char ch, double fhits, double fcap)
 		send_to_char(buf, ch);
 	}
 
-	update_groupies(ch, true);
+	gmcp_char_vitals(ch);
 
 	return hits;
 }
@@ -1385,6 +1385,8 @@ void update_pos(P_char ch)
 	/*
 	 * finally, set new position and status
 	 */
+	if (stat == STAT_RESTING && pos == POS_STANDING)
+		pos = POS_SITTING;
 
 	SET_POS(ch, pos + stat);
 	if (stat == STAT_DEAD)
@@ -2965,6 +2967,21 @@ static long lich_death_residual_experience(long experience, int level)
 	return MAX(1L, static_cast<long>(experience * percentage));
 }
 
+static P_char credited_player_killer(P_char victim, P_char killer)
+{
+	if (!killer || killer == victim)
+		return NULL;
+	if (IS_PC(killer))
+		return killer;
+	if (!IS_PC_PET(killer))
+		return NULL;
+	P_char master = GET_MASTER(killer);
+	if (!master || master->in_room != killer->in_room || !killer->group ||
+	    killer->group != master->group)
+		return NULL;
+	return master;
+}
+
 void die(P_char ch, P_char killer)
 {
 	char buf[MAX_STRING_LENGTH];
@@ -3137,14 +3154,11 @@ void die(P_char ch, P_char killer)
 			  world[ch->in_room].number, world[ch->in_room].name);
 
 		// If killer is a PC, or a pet with master group and in room.. then we have PvP
-		if ((IS_PC(killer) ||
-		     (IS_PC_PET(killer) && (GET_MASTER(killer)->in_room == killer->in_room) &&
-		      killer->group && killer->group == GET_MASTER(killer)->group)) &&
-		    (killer != ch))
+		P_char credited_killer = credited_player_killer(ch, killer);
+		if (credited_killer)
 		{
 			// It's important that this is before sql_save_pkill, 'cause we don't want to count this death as recent.
 			setHeavenTime(ch);
-			P_char credited_killer = IS_PC_PET(killer) ? GET_MASTER(killer) : killer;
 			if (opposite_racewar(ch, credited_killer))
 			{
 				const bool award = !CHAR_IN_ARENA(ch) &&
@@ -4606,7 +4620,7 @@ bool damage(P_char ch, P_char victim, double dam, int attacktype)
 
 		return spell_damage(ch, victim, dam, type, flags, &tmsg);
 	}
-	else if (raw_damage(ch, victim, dam, RAWDAM_DEFAULT, &tmsg) == DAM_VICTDEAD)
+	else if (raw_damage(ch, victim, dam, RAWDAM_DEFAULT, &tmsg) != DAM_NONEDEAD)
 	{
 		return TRUE;
 	}
@@ -6379,7 +6393,13 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 
 			/* Send GMCP updates for combat */
 			gmcp_char_vitals(victim); /* Update victim's vitals */
-			gmcp_combat_target(ch, GET_OPPONENT(ch)); /* Update with actual opponent */
+			if (victim != ch)
+			{
+				if (GET_OPPONENT(ch) && GET_OPPONENT(ch) != victim)
+					gmcp_combat_target(ch, GET_OPPONENT(ch));
+				else
+					gmcp_combat_update(ch, victim, (int)dam, "unknown", 0);
+			}
 		}
 
 		if (IS_PC(victim) && victim->desc &&
@@ -7388,7 +7408,7 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 	P_char tch, mount, gvict;
 	int msg, to_hit, diceroll, wpn_skill, sic, tmp, wpn_skill_num;
 	double dam;
-	int room, pos;
+	int room;
 	int vs_skill = GET_CHAR_SKILL(ch, SKILL_VICIOUS_STRIKE);
 	struct affected_type ir;
 	char attacker_msg[512];
@@ -7556,7 +7576,6 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 		sic = 0;
 
 	// Quickstep stops crits if victim can respond
-	bool bIsQuickStepMiss = FALSE;
 	if (sic == -1 && !IS_AFFECTED2(victim, AFF2_STUNNED) && !IS_IMMOBILE(victim) &&
 	    (notch_skill(victim, SKILL_QUICK_STEP,
 			 get_property("skill.notch.criticalAttack", 10)) ||
@@ -7591,8 +7610,6 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 			if (((GET_LEVEL(victim) / 5) + STAT_INDEX(GET_C_AGI(victim))) >
 			    number(0, 40))
 			{
-				// need to know this, as quick-step crit misses won't fumble to ground
-				bIsQuickStepMiss = TRUE;
 				sic = 1;
 			}
 			else
@@ -7616,26 +7633,8 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 			if (weapon && GET_LEVEL(ch) > 1 &&
 			    !IS_SET(weapon->extra_flags, ITEM_NODROP))
 			{
-				if (bIsQuickStepMiss)
-				{
-					for (pos = 0; pos < MAX_WEAR; pos++)
-						if (ch->equipment[pos] == weapon)
-							break;
-					P_obj weap = pos < MAX_WEAR ? unequip_char(ch, pos) : NULL;
-					if (weap)
-					{
-						act("&-L&+YYou swing at your foe _really_ badly, losing control of your&n $q&-L&+Y!\r\n",
-						    FALSE, ch, weap, victim, TO_CHAR);
-						act("$n stumbles with $s attack, losing control of $s weapon!",
-						    TRUE, ch, 0, 0, TO_ROOM);
-						obj_to_char(weap, ch);
-					}
-					char_light(ch);
-					room_light(ch->in_room, REAL);
-				}
-				else
-					forced_weapon_drop(ch, weapon,
-							   forced_weapon_drop_cause::combat_fumble);
+				forced_weapon_drop(ch, weapon,
+						   forced_weapon_drop_cause::combat_fumble);
 			}
 			else
 			{
@@ -8469,6 +8468,8 @@ void set_fighting(P_char ch, P_char vict)
 		show_string(victim->desc, Gbuf);
 	}
 	GET_OPPONENT(ch) = victim;
+	gmcp_char_vitals(ch);
+	gmcp_combat_target(ch, victim);
 	ch->specials.next_fighting = combat_list;
 	combat_list = ch;
 	world_activity_promote_character(ch);
@@ -9398,6 +9399,7 @@ void stop_fighting(P_char ch)
 	gmcp_combat_end(ch);
 
 	update_pos(ch);
+	gmcp_char_vitals(ch);
 }
 
 void event_windstrom(P_char ch, P_char vict, char *args)

@@ -2,6 +2,7 @@
 
 from _paths import SRC, rel
 import pathlib
+import re
 import subprocess
 import tempfile
 
@@ -41,6 +42,13 @@ with tempfile.TemporaryDirectory(prefix="duris-item-codec-") as temporary:
     if run_result.returncode:
         raise SystemExit(run_result.stdout)
     print(run_result.stdout.strip())
+
+limit = int(re.search(r"PLAYER_SNAPSHOT_MAX_STRING_BYTES = (\d+);",
+                      (SRC / "player_snapshot.h").read_text()).group(1))
+longest = max((len(text.encode("latin-1")), path.name)
+              for path in (ROOT / "areas/obj").glob("*.obj")
+              for text in path.read_text(encoding="latin-1").split("~"))
+assert longest[0] <= limit, f"{longest[1]} contains a {longest[0]}-byte string; saves take {limit}"
 
 codec_source = (SRC / "player_snapshot_codec.c").read_text()
 for token in (

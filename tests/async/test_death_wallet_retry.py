@@ -64,6 +64,8 @@ constexpr int DEATH_EXTRACT_RETRY_INITIAL = 4;
 enum class persistence_severity { info, alert };
 template<class... T> void persistence_report(T...) {}
 template<class... T> void persistence_alert(T...) {}
+// Diagnostics do not affect the wallet/custody state machine under test.
+void death_recovery_report(P_char, persistence_severity, const char *, const char *, ...) {}
 bool items_busy = false, currency_busy = false, wallet_admitted = false;
 bool terminal_ok = true, disposition_ok = true;
 int wallet_attempts = 0, item_submissions = 0, dispositions = 0;

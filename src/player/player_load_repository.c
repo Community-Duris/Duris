@@ -792,7 +792,13 @@ bool append_loaded_extra_description(
 	}
 	if (duplicate_description(descriptions, normalized_keyword, normalized_description))
 		return true;
-	if (descriptions.size() >= PLAYER_LOAD_ITEM_DESCRIPTION_MAX)
+	// Internal trap state must not consume one of the item's description slots.
+	// Bound it separately so conflicting state rows cannot bypass the limit.
+	const bool trap_state = !strcmp(normalized_keyword, SQL_ITEM_TRAP_STATE_KEYWORD);
+	const size_t count = std::count_if(
+		descriptions.begin(), descriptions.end(), [trap_state](const auto &existing)
+		{ return (existing.keyword == SQL_ITEM_TRAP_STATE_KEYWORD) == trap_state; });
+	if (count >= (trap_state ? 1 : PLAYER_LOAD_ITEM_DESCRIPTION_MAX))
 	{
 		result->outcome = player_load_outcome::limit_exceeded;
 		return false;

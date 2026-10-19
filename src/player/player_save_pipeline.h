@@ -91,6 +91,7 @@ bool player_save_pipeline_drain(uint64_t timeout_msec);
 player_save_pipeline_health player_save_pipeline_health_copy(void);
 size_t player_save_pipeline_dirty_count(void);
 bool player_save_pipeline_is_nonterminal_type(int save_intent);
+bool player_save_pipeline_sealed_save_pending(int pid);
 // Exact-PID save/login barrier used by offline critical commands.  A target
 // fence rejects new saves for that PID without quiescing unrelated players.
 bool player_save_pipeline_target_save_pending(int pid);
@@ -100,6 +101,11 @@ void player_save_pipeline_release_target_save_login_fence(int pid,
 							  player_revision_t expected_revision);
 bool player_save_pipeline_target_save_login_fenced(int pid);
 bool player_save_pipeline_save_admitted(int pid);
+// A load of this character waits while its save is queued.
+bool player_save_pipeline_load_held(int pid);
+
+/** Game thread, when freeing a character: retire revision state once saves/completions resolve. */
+void player_save_pipeline_end_session(int pid);
 void player_save_pipeline_reset_for_tests(void);
 
 #endif

@@ -41,6 +41,14 @@ bool can_equip_soulbound_item(P_char, P_obj, bool)
 {
 	return bound_ok;
 }
+bool item_restricted_for_player_pet(P_char, P_obj)
+{
+	return false;
+}
+P_char get_linked_char(P_char, ush_int)
+{
+	return nullptr;
+}
 int can_char_use_item(P_char, P_obj)
 {
 	return usable;

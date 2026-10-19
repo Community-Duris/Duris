@@ -14,6 +14,7 @@ from _paths import ROOT, extract_function, rel
 PRELUDE = r'''
 #include "core/utils.h"
 #include "core/prototypes.h"
+#include "world/handler.h"
 #include "classes/necromancy.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
@@ -92,6 +93,8 @@ void send_to_char(const char *text, P_char ch)
 }
 void send_to_char(const char *text, P_char ch, int) { send_to_char(text, ch); }
 void mark_player_dirty_components(int pid, player_component_mask_t) { ++dirty[pid]; }
+static int sealed_save_pid = 0;
+bool player_save_pipeline_sealed_save_pending(int pid) { return pid == sealed_save_pid; }
 // Deliberately preserve the real descriptor-only lookup contract: linkdead
 // characters are still in character_list but cannot be found by this API.
 P_char find_player_by_pid(int pid)
@@ -101,7 +104,7 @@ P_char find_player_by_pid(int pid)
             return ch;
     return nullptr;
 }
-void obj_to_char(P_obj obj, P_char ch)
+obj_to_char_result obj_to_char_checked(P_obj obj, P_char ch)
 {
     assert(OBJ_NOWHERE(obj));
     // Execute the production publication guard; only the world-list mutation
@@ -116,6 +119,11 @@ void obj_to_char(P_obj obj, P_char ch)
     obj->loc.carrying = ch;
     obj->next_content = ch->carrying;
     ch->carrying = obj;
+    return obj_to_char_result::placed;
+}
+void obj_to_char(P_obj obj, P_char ch)
+{
+    (void)obj_to_char_checked(obj, ch);
 }
 void obj_from_char(P_obj obj)
 {
@@ -199,6 +207,7 @@ struct fixture
         item_ownership_runtime_reset();
         submitted.clear(); publications.clear(); extractions.clear(); dirty.clear(); commands.clear();
         fixture_messages.clear(); submit_result = critical_submit_result::accepted;
+        sealed_save_pid = 0;
         pc.pid = 42; other_pc.pid = 43;
         actor.only.pc = &pc; other.only.pc = &other_pc;
         actor.desc = &desc; other.desc = &other_desc;
@@ -486,6 +495,18 @@ int main()
             assert(row.owner.id == 42 && row.state == item_custody_state::active);
         }
     }
+    // A sealed player save holds new grants until that checkpoint completes.
+    {
+        fixture f;
+        sealed_save_pid = 42;
+        assert(item_creation_grant_submit_to_player(&f.actor, &f.bag, &f.actor));
+        assert(submitted.empty() && publications.empty());
+        assert(item_movement_transaction_player_busy(&f.actor));
+        sealed_save_pid = 0;
+        item_movement_transaction_handle_completions(nullptr, 0);
+        deliver(next_completion(critical_apply_outcome::applied));
+        assert(publications[100] == 1 && !item_movement_transaction_player_busy(&f.actor));
+    }
     // A failed transient grant never publishes the object. A refused queue
     // submission is retained for retry, while a terminal commit failure cleans
     // up once at the existing boundary.
@@ -763,7 +784,7 @@ int main()
 
 
 def main() -> int:
-    to_char = extract_function("handler.c", "void obj_to_char(")
+    to_char = extract_function("handler.c", "obj_to_char_result obj_to_char_checked(")
     guard = to_char[to_char.index("// A persisted generic item"):
                     to_char.index("if (ch->carrying &&")]
     harness = "\n".join([PRELUDE.replace("PUBLICATION_GUARD", guard), extract_function(

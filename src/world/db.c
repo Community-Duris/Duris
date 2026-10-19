@@ -10,6 +10,7 @@
  */
 
 #include "core/prototypes.h"
+#include "player/player_save_pipeline.h"
 #include "world/world_singletons.h"
 #include "world/difficulty.h"
 #include "core/structs.h"
@@ -1345,11 +1346,11 @@ void boot_world(int mini_mode)
 		}
 		if (world[room_nr].room_flags & ROOM_INN)
 			world[room_nr].funct = inn;
-		if ((room_nr >= 65201) && (room_nr <= 65300))
-		{
+		// The locker rooms (vnums 65201-65300) are flagged, so a character saved in
+		// one is moved out on login. Their proc is set only while a locker is in use:
+		// finding a free locker room looks for a room without it.
+		if (world[room_nr].number >= 65201 && world[room_nr].number <= 65300)
 			world[room_nr].room_flags |= ROOM_LOCKER;
-			world[room_nr].funct = storage_locker;
-		}
 
 		room_light(room_nr, REAL);
 		room_nr++;
@@ -3975,7 +3976,8 @@ void reset_zone(int zone, int force_item_repop)
 						logit(LOG_MOB, "R cmd not executed %d %d %d %d",
 						      ZCMD.arg1, ZCMD.arg2, ZCMD.arg3, ZCMD.arg4);
 					}
-					if (!last_mob)
+					// A missed roll leaves no mount, with the rider still in last_mob.
+					if (!mob || !last_mob)
 					{
 						last_cmd = last_mob_load = 0;
 						break;
@@ -4265,6 +4267,8 @@ void free_char(P_char ch)
 
 	if (IS_PC(ch) && ch->only.pc)
 	{
+		// Covers extraction and temporary offline loads, after their last save.
+		player_save_pipeline_end_session(GET_PID(ch));
 		delete_knownShapes(ch);
 		delete ch->only.pc->held_pets;
 		ch->only.pc->held_pets = nullptr;

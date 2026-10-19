@@ -1791,12 +1791,16 @@ P_char un_morph(P_char mob)
 		snoop_by_ptr = mob->desc->snoop.snoop_by_list;
 		while (snoop_by_ptr)
 		{
-			//      snoop_by_ptr->snoop_by->desc->snoop.snooping = mob->desc->original;
 			if (is_avatar)
 				send_to_char(
 					"&+RYour diety has returned from whence it came, you can no longer sight link with it.&n\r\n",
 					snoop_by_ptr->snoop_by);
-			snoop_by_ptr->snoop_by->desc->snoop.snooping = 0;
+			else
+				send_to_char(
+					"Your victim has returned from shapechange, ending your snoop.\r\n",
+					snoop_by_ptr->snoop_by);
+			if (snoop_by_ptr->snoop_by && snoop_by_ptr->snoop_by->desc)
+				snoop_by_ptr->snoop_by->desc->snoop.snooping = 0;
 			snoop_by_ptr = snoop_by_ptr->next;
 		}
 		snoop_by_ptr = mob->desc->snoop.snoop_by_list;

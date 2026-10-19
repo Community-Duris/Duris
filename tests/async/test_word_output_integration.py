@@ -5,6 +5,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 from _paths import ROOT, extract_function
+from _paths import HARNESS_STUBS
 
 BUILD = ROOT / "bin/tests"
 BUILD.mkdir(parents=True, exist_ok=True)
@@ -34,6 +35,7 @@ for filename, signatures in [
                   "void show_exits_to_char(", "void display_room_auras("]),
     ("weather.c", ["void send_to_weather_sector("]),
     ("fight.c", ["void dam_message("]),
+    ("specs.object.c", ["int totem_of_mastery(", "int circlet_of_light("]),
     ("prompt.c", ["void make_prompt("]),
     ("json_utils.c", ["char *json_build_comm_channel("]),
     ("gmcp.c", ["void gmcp_broadcast_channel("])
@@ -57,6 +59,6 @@ with tempfile.TemporaryDirectory(prefix="word-output-", dir=BUILD) as directory:
         str(ROOT / "src/net/chat_presentation.c"),
         str(ROOT / "src/net/output_style.c"), str(ROOT / "src/core/safe_format.c"),
         str(ROOT / "src/net/output_profiles.c"), str(ROOT / "src/player/output_preferences.c"),
-        str(ROOT / "src/player/output_message.c"), "-lcjson", "-pthread", "-o", str(binary)
+        str(ROOT / "src/player/output_message.c"), "-lcjson", "-pthread", str(HARNESS_STUBS), "-o", str(binary)
     ], check=True, timeout=120)
     subprocess.run([str(binary)], check=True, timeout=120)

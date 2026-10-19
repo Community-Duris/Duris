@@ -18,11 +18,15 @@ COPYOVER = (SRC / "copyover.c").read_text()
 HARNESS = r'''
 #include "world/epic_task_catalog.h"
 #include "persistence/gameplay_read_state.h"
+#include "persistence/maintenance_scheduler.h"
 
 #include <cassert>
 #include <cstdint>
+#include <string>
 
 int real_zone0(const int zone) { return zone == 999 ? -1 : zone; }
+static int catalog_logs = 0;
+void logit(const char *, const char *, ...) { ++catalog_logs; }
 
 int number(int from, int to)
 {
@@ -70,12 +74,55 @@ int main()
 
     epic_task_catalog_reset_for_tests();
     assert(epic_task_catalog_select(&state) == -1);
+    assert(!epic_task_catalog_publish(nullptr, 0));
+    assert(!epic_task_catalog_ready());
+    assert(std::string(epic_task_catalog_last_refresh()) == "empty_task_flags");
+    const int empty_logs = catalog_logs;
+    assert(!epic_task_catalog_publish(nullptr, 0));
+    assert(catalog_logs == empty_logs); // Unchanged failure is quiet.
     const int32_t zones[] = {10, 20, 30, 40};
     assert(epic_task_catalog_publish(zones, 4));
     assert(epic_task_catalog_ready() && epic_task_catalog_size() == 4);
     const int32_t invalid[] = {10, 999};
     assert(!epic_task_catalog_publish(invalid, 2));
     assert(epic_task_catalog_size() == 4);
+    const int32_t duplicate[] = {10, 10};
+    assert(!epic_task_catalog_publish(duplicate, 2));
+    assert(epic_task_catalog_size() == 4);
+
+    // A failed middle page is retried at the same cursor, not from zero.
+    maintenance_result page = {};
+    page.job_id = maintenance_job_id::epic_task_catalog;
+    page.outcome = maintenance_outcome::more;
+    page.value_count = 2;
+    page.values[0] = 10; page.values[1] = 20;
+    epic_task_catalog_complete(page);
+    page.outcome = maintenance_outcome::retryable_failure;
+    epic_task_catalog_complete(page);
+    page.outcome = maintenance_outcome::complete;
+    page.values[0] = 30; page.values[1] = 40;
+    epic_task_catalog_complete(page);
+    assert(epic_task_catalog_size() == 4);
+    assert(std::string(epic_task_catalog_last_refresh()) == "ready");
+
+    // Reject a whole refresh if any prefix is invalid, even when the tail is valid.
+    page.outcome = maintenance_outcome::more;
+    page.values[0] = 10; page.values[1] = INT64_MAX;
+    epic_task_catalog_complete(page);
+    page.outcome = maintenance_outcome::complete;
+    page.values[0] = 30; page.values[1] = 40;
+    epic_task_catalog_complete(page);
+    assert(epic_task_catalog_size() == 4);
+    assert(std::string(epic_task_catalog_last_refresh()) == "invalid_scheduled_page");
+    page.value_count = page.values.size() + 1;
+    epic_task_catalog_complete(page);
+    assert(epic_task_catalog_size() == 4);
+    page.value_count = 0;
+    epic_task_catalog_complete(page);
+    assert(epic_task_catalog_size() == 4);
+    assert(std::string(epic_task_catalog_last_refresh()) == "empty_task_flags");
+    assert(!epic_task_catalog_publish(invalid, 2));
+    assert(std::string(epic_task_catalog_last_refresh()) == "unloaded_zone");
 
     int selected_10 = 0;
     int selected_other = 0;

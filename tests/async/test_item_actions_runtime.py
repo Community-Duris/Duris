@@ -645,6 +645,6 @@ for signature, hook in [("void char_from_room(", "item_actions_character_leaving
 assert "item_action_active(ch)" in (ROOT / "src/combat/fight.c").read_text()
 properties = (ROOT / "src/world/properties.c").read_text()
 assert "update_item_action_properties();" in properties.split("void apply_properties()", 1)[1]
-assert "item_actions_reload();" in properties.split("void initialize_properties()", 1)[1]
+assert "item_actions_reload();" in properties.split("bool initialize_properties()", 1)[1]
 assert "itemActions.enabled=0" in (ROOT / "lib/duris.properties").read_text()
 print("Item-action transition/configuration hooks and default-off routing passed")

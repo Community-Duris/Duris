@@ -18,15 +18,17 @@ struct char_data;
 using P_char = char_data *;
 struct group_list { P_char ch; group_list *next; };
 struct affected_type { int modifier = 9; };
+struct descriptor_data { int last_group_update = 0; };
 struct char_data {
     group_list *group = nullptr;
     struct { int act2 = 3; int affected_by3 = 3; P_char was_fighting = nullptr;
              P_char next_fighting = nullptr; P_char opponent = nullptr; } specials;
     struct { const char *short_descr = "synthetic mobile"; } player;
-    void *desc = nullptr;
+    descriptor_data connection;
+    descriptor_data *desc = &connection;
     const char *name = "synthetic character";
     int in_room = 5;
-    int updates = 0, telemetry = 0, combat_ends = 0, positions = 0, cooldowns = 0;
+    int updates = 0, telemetry = 0, combat_ends = 0, positions = 0, cooldowns = 0, vitals = 0;
     int purges = 0, aura_adds = 0, aura_removes = 0, rank_fixes = 0;
     int skill = 1;
     bool sane = true, spell = true, aura = true;
@@ -89,6 +91,7 @@ void set_short_affected_by(P_char ch, int skill, int duration) {
 }
 void gmcp_mark_room_dirty(int room) { assert(room == 5); ++room_marks; }
 void gmcp_combat_end(P_char ch) { ++ch->combat_ends; }
+void gmcp_char_vitals(P_char ch) { ++ch->vitals; }
 void update_pos(P_char ch) { ++ch->positions; }
 bool group_remove_member(P_char);
 '''
@@ -116,6 +119,7 @@ void test_group_absent(int size) {
     assert(group_logs == 1 && released.empty());
     assert(outsider.group == head && outsider.specials.act2 == 3);
     assert(outsider.purges == 0 && outsider.updates == 0 && outsider.telemetry == 0);
+    assert(outsider.desc->last_group_update == 0);
     assert(head->ch == &leader && head->next == tail && leader.group == head);
     assert(leader.messages.empty() && leader.rank_fixes == 0 && leader.aura_removes == 0);
     if (size == 2) assert(member.group == head && !tail->next && tail->ch == &member);
@@ -131,18 +135,21 @@ void test_group_remove(int index, int size) {
     auto expected_head = index == 0 ? head->next : head;
     assert(group_remove_member(removed));
     assert(!removed->group && removed->specials.act2 == 2 && removed->purges == 1);
-    assert(removed->updates == 1 && removed->telemetry == 1 && group_logs == 0);
+    assert(removed->updates == 0 && removed->telemetry == 1 && group_logs == 0);
+    assert(removed->desc->last_group_update == 1);
     if (size <= 2) {
         assert(released.size() == static_cast<size_t>(size));
         for (auto ch : members) assert(!ch->group);
         if (size == 2) {
             auto survivor = &chars[1 - index];
+            assert(survivor->desc->last_group_update == 1);
             assert(survivor->messages.size() == 1);
             assert(survivor->messages[0] == "Your group has been disbanded.\n");
         }
         return;
     }
     assert(released.size() == 1);
+    assert(expected_head->ch->updates == 1);
     auto node = expected_head;
     for (int i = 0; i < size; ++i) {
         if (i == index) continue;
@@ -170,6 +177,7 @@ void check_combat_cleanup(P_char ch, P_char opponent) {
     assert(ch->specials.affected_by3 == 2 && ch->effect.modifier == 0);
     assert(ch->telemetry == 1 && ch->cooldowns == 1 && ch->combat_ends == 1);
     assert(ch->positions == 1 && room_marks == 1);
+    assert(ch->vitals == 1);
 }
 void test_combat_remove(int index, bool is_next) {
     reset_counts();

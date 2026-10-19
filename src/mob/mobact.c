@@ -67,6 +67,7 @@ extern struct str_app_type str_app[];
 extern struct zone_data *zone_table;
 extern const char *undead_type[];
 extern bool can_banish(P_char ch, P_char victim);
+extern unsigned long long ne_event_tick;
 extern bool has_skin_spell(P_char);
 extern bool has_wind_blade_wielded(P_char);
 extern void event_wait(P_char ch, P_char victim, P_obj obj, void *data);
@@ -816,6 +817,8 @@ bool MobCastSpell(P_char ch, P_char victim, P_obj object, int spl, int lvl)
 		event_spellcast(ch, victim, object, &castdata);
 	else
 	{
+		// The continuations shorten their segments by what this one loses.
+		castdata.due_tick = ne_event_tick + 4;
 		add_event(event_spellcast, 4, ch, victim, 0, 0, &castdata,
 			  sizeof(struct spellcast_datatype));
 		if (victim)
@@ -7374,10 +7377,11 @@ void event_mob_mundane(P_char ch, P_char /*victim*/, P_obj /*object*/, void * /*
 
 	if (!ch->only.npc)
 	{
-		wizlog(IMMORTAL, "PANIC! NewMobAct called with an invalid npc! #%d",
-		       mob_index[GET_RNUM(ch)].virtual_number);
-		logit(LOG_DEBUG, "NewMobAct called with an invalid npc! #%d",
-		      mob_index[GET_RNUM(ch)].virtual_number);
+		// There is no npc data to take a vnum from.
+		wizlog(IMMORTAL, "PANIC! NewMobAct called with an invalid npc! %s",
+		       GET_NAME(ch) ? GET_NAME(ch) : "(unnamed)");
+		logit(LOG_DEBUG, "NewMobAct called with an invalid npc! %s",
+		      GET_NAME(ch) ? GET_NAME(ch) : "(unnamed)");
 		return;
 	}
 	//  if(get_linked_char(ch, LNK_RIDING))

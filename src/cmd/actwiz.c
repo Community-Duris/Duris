@@ -12,9 +12,12 @@
 #include "world/rested.h"
 #include "account/creation_availability_config.h"
 #include "net/comm.h"
+#include "net/unicode.h"
 #include "world/db.h"
 #include "world/events.h"
 #include <errno.h>
+#include <climits>
+#include <cstddef>
 #include <ctype.h>
 #include <stdarg.h>
 #include <signal.h>
@@ -38,6 +41,11 @@
 #include "core/files.h"
 #include "net/gmcp.h"
 #include "item/item_movement_transaction.h"
+#include "economy/currency_transaction.h"
+#include "economy/collector_transaction.h"
+#include "economy/collector_service.h"
+#include "redis/redis_presence_runtime.h"
+#include "world/handler.h"
 #include "combat/justice.h"
 #include "net/listen.h"
 #include "world/map.h"
@@ -520,9 +528,7 @@ void do_read_player(P_char ch, char *arg, int /*cmd*/)
 	vict->next = character_list;
 	character_list = vict;
 
-	/* saving info for teleport return command */
-	vict->specials.was_in_room = vict->in_room;
-
+	// The load left vict in no room, its saved room in was_in_room.
 	char_to_room(vict, ch->in_room, -2);
 	update_ingame_racewar(GET_RACEWAR(vict));
 
@@ -1008,11 +1014,29 @@ void do_at(P_char ch, char *argument, int /*cmd*/)
 	}
 }
 
+static void show_poof(P_char ch, bool entering, int target)
+{
+	const char *message = entering ? ch->only.pc->poofIn : ch->only.pc->poofOut;
+	std::string output;
+	if (!message || !*message)
+		output = entering ? "$n appears with an ear-splitting bang." :
+				    "$n disappears in a puff of smoke.";
+	else if (!strstr(message, "%n"))
+		output = std::string("$n ") + message;
+	else
+	{
+		output = message;
+		for (size_t i = 0; i + 1 < output.size(); ++i)
+			if (output[i] == '%' && output[i + 1] == 'n')
+				output[i] = '$';
+	}
+	act(output.c_str(), TRUE, ch, 0, 0, target);
+}
+
 void do_goto(P_char ch, char *argument, int /*cmd*/)
 {
-	char buf[MAX_STRING_LENGTH], output[MAX_STRING_LENGTH];
+	char buf[MAX_STRING_LENGTH];
 	int location = NOWHERE, old_room, bits, zcoord = 0;
-	size_t i;
 	P_char target_mob = NULL;
 	P_obj target_obj = NULL;
 
@@ -1104,28 +1128,7 @@ void do_goto(P_char ch, char *argument, int /*cmd*/)
 		send_to_char("You try, but you can't seem to get there.\n\r", ch);
 		return;
 	}
-	if (ch->only.pc->poofOut == NULL)
-	{
-		strcpy(output, "$n disappears in a puff of smoke.");
-	}
-	else
-	{
-		if (!strstr(ch->only.pc->poofOut, "%n"))
-		{
-			strcpy(output, "$n ");
-			strcat(output, ch->only.pc->poofOut);
-		}
-		else
-		{
-			strcpy(output, ch->only.pc->poofOut);
-
-			for (i = 0; i < strlen(output); i++)
-				if ((*(output + i) == '%') && (*(output + i + 1) == 'n'))
-					*(output + i) = '$';
-		}
-	}
-
-	act(output, TRUE, ch, 0, 0, TO_ROOM);
+	show_poof(ch, false, TO_ROOM);
 
 	old_room = ch->in_room;
 	char_from_room(ch);
@@ -1147,28 +1150,7 @@ void do_goto(P_char ch, char *argument, int /*cmd*/)
 		}
 	}
 
-	if (ch->only.pc->poofIn == NULL)
-	{
-		strcpy(output, "$n appears with an ear-splitting bang.");
-	}
-	else
-	{
-		if (!strstr(ch->only.pc->poofIn, "%n"))
-		{
-			strcpy(output, "$n ");
-			strcat(output, ch->only.pc->poofIn);
-		}
-		else
-		{
-			strcpy(output, ch->only.pc->poofIn);
-
-			for (i = 0; i < strlen(output); i++)
-				if ((*(output + i) == '%') && (*(output + i + 1) == 'n'))
-					*(output + i) = '$';
-		}
-	}
-
-	act(output, TRUE, ch, 0, 0, TO_ROOM);
+	show_poof(ch, true, TO_ROOM);
 }
 
 void do_affectpurge(P_char ch, char *argument, int /*cmd*/)
@@ -4882,8 +4864,9 @@ void do_snoop(P_char ch, char *argument, int /*cmd*/)
 				sql_log(ch, WIZLOG, "Stopped snooping %s",
 					GET_NAME(ch->desc->snoop.snooping));
 			}
-			rem_char_from_snoopby_list(
-				&ch->desc->snoop.snooping->desc->snoop.snoop_by_list, ch);
+			if (ch->desc->snoop.snooping->desc)
+				rem_char_from_snoopby_list(
+					&ch->desc->snoop.snooping->desc->snoop.snoop_by_list, ch);
 			ch->desc->snoop.snooping = 0;
 		}
 		return;
@@ -4904,8 +4887,9 @@ void do_snoop(P_char ch, char *argument, int /*cmd*/)
 		/*
 		    ch->desc->snoop.snooping->desc->snoop.snoop_by = 0;
 		*/
-		rem_char_from_snoopby_list(&ch->desc->snoop.snooping->desc->snoop.snoop_by_list,
-					   ch);
+		if (ch->desc->snoop.snooping->desc)
+			rem_char_from_snoopby_list(
+				&ch->desc->snoop.snooping->desc->snoop.snoop_by_list, ch);
 
 		sql_log(ch, WIZLOG, "Stopped snooping %s", GET_NAME(ch->desc->snoop.snooping));
 		logit(LOG_WIZ, "(%s) stopped snooping (%s)", GET_NAME(ch),
@@ -5028,10 +5012,15 @@ void do_switch(P_char ch, char *argument, int cmd)
 				snoop_by_ptr = ch->desc->snoop.snoop_by_list;
 				while (snoop_by_ptr)
 				{
-					send_to_char(
-						"Your victim has switched into something, killing your snoop.\n",
-						snoop_by_ptr->snoop_by);
-					snoop_by_ptr->snoop_by->desc->snoop.snooping = NULL;
+					if (snoop_by_ptr->snoop_by)
+					{
+						send_to_char(
+							"Your victim has switched into something, killing your snoop.\n",
+							snoop_by_ptr->snoop_by);
+						if (snoop_by_ptr->snoop_by->desc)
+							snoop_by_ptr->snoop_by->desc->snoop
+								.snooping = NULL;
+					}
 
 					next = snoop_by_ptr->next;
 					FREE(snoop_by_ptr);
@@ -5109,6 +5098,12 @@ void do_return(P_char ch, char * /*argument*/, int /*cmd*/)
 
 		ch->desc->character->desc = ch->desc;
 		switched_mob->desc = 0; // Clear the MOB's desc, not ch->desc
+
+		for (snoop_by_data *node = ch->desc->snoop.snoop_by_list; node; node = node->next)
+		{
+			if (node->snoop_by && node->snoop_by->desc)
+				node->snoop_by->desc->snoop.snooping = ch->desc->character;
+		}
 	}
 	else /* switched body due to shape change  */
 		send_to_char("No effect.\n", ch);
@@ -5427,6 +5422,36 @@ void do_purge(P_char ch, char *argument, int /*cmd*/)
 				send_to_char("You are too lame to be able to purge chars!\n", ch);
 				return;
 			}
+			if (IS_PC(vict))
+			{
+				if (IS_ROOM(vict->in_room, ROOM_LOCKER))
+				{
+					send_to_char(
+						"Move the player out of the locker before purging.\r\n",
+						ch);
+					return;
+				}
+				if (item_movement_transaction_player_busy(vict) ||
+				    currency_transaction_player_busy(vict) ||
+				    collector_transaction_player_busy(vict) ||
+				    corpse_raise_player_save_fenced(vict) ||
+				    !collector_service_recover_player(vict))
+				{
+					send_to_char(
+						"The player's possessions are still being secured. Try again shortly.\r\n",
+						ch);
+					return;
+				}
+				// Keep the existing ownership and complete item graph in the terminal
+				// save. Ordinary extraction would publish saved items into the room.
+				if (!persistence_save_character_terminal(vict, RENT_QUIT))
+				{
+					send_to_char(
+						"Purge cancelled: the player could not be saved.\r\n",
+						ch);
+					return;
+				}
+			}
 			act("$n disintegrates $N, who is reduced to a small pile of ashes.", FALSE,
 			    ch, 0, vict, TO_NOTVICT);
 
@@ -5444,20 +5469,11 @@ void do_purge(P_char ch, char *argument, int /*cmd*/)
 			}
 			else
 			{
-				// If it's not an immortal.
-				if (GET_LEVEL(ch) < MINLVLIMMORTAL)
-				{
-					update_ingame_racewar(-GET_RACEWAR(ch));
-				}
-
-				/* player will lose all objects! */
-				extract_char(vict);
-				writeCharacter(vict, 2, NOWHERE);
-				if (vict->desc)
-					close_socket(vict->desc);
-				else
-					free_char(vict);
-				vict->desc = 0;
+				if (GET_LEVEL(vict) < MINLVLIMMORTAL)
+					update_ingame_racewar(-GET_RACEWAR(vict));
+				sql_log_player_login(vict, "logout");
+				redis_player_offline(vict);
+				extract_char_after_terminal_save(vict);
 				vict = NULL;
 			}
 		}
@@ -6764,16 +6780,16 @@ void do_setattr(P_char ch, char *arg, int /*cmd*/)
 	} attr_tuples[] = {
 		{ "age", OFFSET(player.time.birth), sa_ageCopy },
 		{ "sex", OFFSET(player.sex), sa_byteCopy },
-		{ "str", OFFSET(base_stats.Str), sa_byteCopy },
-		{ "dex", OFFSET(base_stats.Dex), sa_byteCopy },
-		{ "agi", OFFSET(base_stats.Agi), sa_byteCopy },
-		{ "con", OFFSET(base_stats.Con), sa_byteCopy },
-		{ "pow", OFFSET(base_stats.Pow), sa_byteCopy },
-		{ "int", OFFSET(base_stats.Int), sa_byteCopy },
-		{ "wis", OFFSET(base_stats.Wis), sa_byteCopy },
-		{ "cha", OFFSET(base_stats.Cha), sa_byteCopy },
-		{ "luck", OFFSET(base_stats.Luk), sa_byteCopy },
-		{ "Karma", OFFSET(base_stats.Kar), sa_byteCopy },
+		{ "str", OFFSET(base_stats.Str), sa_shortCopy },
+		{ "dex", OFFSET(base_stats.Dex), sa_shortCopy },
+		{ "agi", OFFSET(base_stats.Agi), sa_shortCopy },
+		{ "con", OFFSET(base_stats.Con), sa_shortCopy },
+		{ "pow", OFFSET(base_stats.Pow), sa_shortCopy },
+		{ "int", OFFSET(base_stats.Int), sa_shortCopy },
+		{ "wis", OFFSET(base_stats.Wis), sa_shortCopy },
+		{ "cha", OFFSET(base_stats.Cha), sa_shortCopy },
+		{ "luck", OFFSET(base_stats.Luk), sa_shortCopy },
+		{ "Karma", OFFSET(base_stats.Kar), sa_shortCopy },
 		{ "hit", OFFSET(points.max_hit), sa_shortCopy },
 		{ "hitroll", OFFSET(points.hitroll), sa_byteCopy },
 		{ "damroll", OFFSET(points.damroll), sa_byteCopy },
@@ -6861,8 +6877,6 @@ void do_setattr(P_char ch, char *arg, int /*cmd*/)
 		return;
 	}
 
-	value = atoi(value_str);
-
 	/* Handle the special cases ...  */
 
 	/* Find out which attributes to set  */
@@ -6885,6 +6899,24 @@ void do_setattr(P_char ch, char *arg, int /*cmd*/)
 		send_to_char("ship\n", ch);
 		return;
 	}
+	// Base stats occupy signed shorts; reject input before any narrowing conversion.
+	if (attr_tuples[i].attr_offset >= offsetof(char_data, base_stats) &&
+	    attr_tuples[i].attr_offset < offsetof(char_data, base_stats) + sizeof(stat_data))
+	{
+		char *end = nullptr;
+		errno = 0;
+		const long parsed = strtol(value_str, &end, 10);
+		if (errno == ERANGE || end == value_str || *end || parsed < SHRT_MIN ||
+		    parsed > SHRT_MAX)
+		{
+			send_to_char("Enter a whole number from -32768 to 32767.\r\n", ch);
+			return;
+		}
+		value = static_cast<int>(parsed);
+	}
+	else
+		value = atoi(value_str);
+
 	/* Now set attributes  */
 
 	(*(attr_tuples[i].attr_func))(victim, attr_tuples[i].attr_offset, value);
@@ -6894,108 +6926,54 @@ void do_setattr(P_char ch, char *arg, int /*cmd*/)
 	return;
 }
 
-void do_poofIn(P_char ch, char *argument, int /*cmd*/)
+static void set_poof(P_char ch, char *argument, bool entering)
 {
-	char arg[MAX_INPUT_LENGTH], buf[MAX_INPUT_LENGTH];
-	size_t i;
-
 	if (!IS_TRUSTED(ch))
 		return;
 
-	one_argument(argument, arg);
-
-	if (!*arg)
+	while (isspace(static_cast<unsigned char>(*argument)))
+		++argument;
+	char *&message = entering ? ch->only.pc->poofIn : ch->only.pc->poofOut;
+	if (!*argument)
 	{
-		if (ch->only.pc->poofIn != NULL)
-			str_free(ch->only.pc->poofIn);
-		ch->only.pc->poofIn = NULL;
+		str_free(message);
+		message = NULL;
 	}
-	else if (!str_cmp("?", arg))
-	{
-		if (ch->only.pc->poofIn == NULL)
-		{
-			strcpy(buf, "$n appears with an ear-splitting bang.");
-		}
-		else
-		{
-			if (!strstr(ch->only.pc->poofIn, "%n"))
-			{
-				strcpy(buf, "$n ");
-				strcat(buf, ch->only.pc->poofIn);
-			}
-			else
-			{
-				strcpy(buf, ch->only.pc->poofIn);
-
-				/* bleah, code doubles $ to prevent entering 'act' strings */
-				for (i = 0; i < strlen(buf); i++)
-					if ((*(buf + i) == '%') && (*(buf + i + 1) == 'n'))
-						*(buf + i) = '$';
-			}
-		}
-		act(buf, TRUE, ch, 0, 0, TO_CHAR);
-	}
+	else if (*argument == '?' &&
+		 (!argument[1] || isspace(static_cast<unsigned char>(argument[1]))))
+		show_poof(ch, entering, TO_CHAR);
 	else
 	{
-		if (ch->only.pc->poofIn != NULL)
-			str_free(ch->only.pc->poofIn);
-
-		if (*argument == ' ')
-			argument++;
-		ch->only.pc->poofIn = str_dup(argument);
+		// player_data.poof_in and poof_out are VARCHAR(512), measured in characters.
+		int length = 0;
+		for (const char *cursor = argument; *cursor;)
+		{
+			if (get_utf8(cursor) == UNI_BAD)
+			{
+				send_to_char("Poof messages must contain valid UTF-8.\n", ch);
+				return;
+			}
+			if (++length > 512)
+			{
+				send_to_char(
+					"Poof messages may contain at most 512 characters, including color codes.\n",
+					ch);
+				return;
+			}
+		}
+		str_free(message);
+		message = str_dup(argument);
 	}
+}
+
+void do_poofIn(P_char ch, char *argument, int /*cmd*/)
+{
+	set_poof(ch, argument, true);
 }
 
 void do_poofOut(P_char ch, char *argument, int /*cmd*/)
 {
-	char arg[MAX_INPUT_LENGTH], buf[MAX_INPUT_LENGTH];
-	size_t i;
-
-	if (!IS_TRUSTED(ch))
-		return;
-
-	one_argument(argument, arg);
-
-	if (!*arg)
-	{
-		if (ch->only.pc->poofOut != NULL)
-			str_free(ch->only.pc->poofOut);
-
-		ch->only.pc->poofOut = NULL;
-	}
-	else if (!str_cmp("?", arg))
-	{
-		if (ch->only.pc->poofOut == NULL)
-		{
-			strcpy(buf, "$n disappears in a puff of smoke.");
-		}
-		else
-		{
-			if (!strstr(ch->only.pc->poofOut, "%n"))
-			{
-				strcpy(buf, "$n ");
-				strcat(buf, ch->only.pc->poofOut);
-			}
-			else
-			{
-				strcpy(buf, ch->only.pc->poofOut);
-				/* bleah, code doubles $ to prevent entering 'act' strings */
-				for (i = 0; i < strlen(buf); i++)
-					if ((*(buf + i) == '%') && (*(buf + i + 1) == 'n'))
-						*(buf + i) = '$';
-			}
-		}
-		act(buf, TRUE, ch, 0, 0, TO_CHAR);
-	}
-	else
-	{
-		if (ch->only.pc->poofOut != NULL)
-			str_free(ch->only.pc->poofOut);
-
-		if (*argument == ' ')
-			argument++;
-		ch->only.pc->poofOut = str_dup(argument);
-	}
+	set_poof(ch, argument, false);
 }
 
 void do_teleport(P_char ch, char *argument, int /*cmd*/)

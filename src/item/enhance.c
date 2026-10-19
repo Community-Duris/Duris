@@ -63,13 +63,20 @@ extern P_room world;
 extern struct zone_data *zone_table;
 extern int top_of_zone_table;
 
+static int enhance_maximum_item_value(int level)
+{
+	if (level <= 0 || enhance_level_gate_multiplier <= 0)
+		return 0;
+	const int64_t limit = static_cast<int64_t>(level) * enhance_level_gate_multiplier;
+	return limit > INT_MAX ? INT_MAX : static_cast<int>(limit);
+}
+
 void enhance(P_char ch, P_obj source, P_obj material)
 {
 	char buf[MAX_STRING_LENGTH];
 	P_obj robj;
-	int cost, searchcount, maxsearch, sval;
-	int newval, minval, chluck, wearflags;
-	int cascade_dir, cascade_step, cascade_ival;
+	int cost, sval, chluck, wearflags, cascade_dir;
+	int64_t searchcount, maxsearch, newval, minval, cascade_step, cascade_ival;
 	struct enhance_index_entry *entry;
 
 	if (!ch || !source || !material)
@@ -93,7 +100,7 @@ void enhance(P_char ch, P_obj source, P_obj material)
 
 	chluck = (GET_C_LUK(ch));
 	sval = itemvalue(source);
-	minval = itemvalue(source) - enhance_material_ival_delta;
+	minval = static_cast<int64_t>(sval) - enhance_material_ival_delta;
 	searchcount = 0;
 	maxsearch = enhance_search_max_attempts;
 	// Only search matching wear flags unless none matching, then just search source wear flags.
@@ -115,12 +122,12 @@ void enhance(P_char ch, P_obj source, P_obj material)
 	}
 
 	// Can enhance up to 3x level, same as forge/craft. --Eikel
-	if (sval > GET_LEVEL(ch) * enhance_level_gate_multiplier)
+	if (sval > enhance_maximum_item_value(GET_LEVEL(ch)))
 	{
 		snprintf(
 			buf, MAX_STRING_LENGTH,
 			"This item has ival %d; at your level you can enhance items up to ival %d.\r\n",
-			sval, GET_LEVEL(ch) * enhance_level_gate_multiplier);
+			sval, enhance_maximum_item_value(GET_LEVEL(ch)));
 		send_to_char(buf, ch);
 		return;
 	}
@@ -134,8 +141,8 @@ void enhance(P_char ch, P_obj source, P_obj material)
 		snprintf(source_description, MAX_STRING_LENGTH, "%s", source->short_description);
 		checked_snprintf(
 			buf, MAX_STRING_LENGTH,
-			"&+REnhancing %s requires an item with at least an &+Witem value of: %d&n\r\n",
-			source_description, minval);
+			"&+REnhancing %s requires an item with at least an &+Witem value of: %lld&n\r\n",
+			source_description, static_cast<long long>(minval));
 		send_to_char(buf, ch);
 		return;
 	}
@@ -160,25 +167,25 @@ void enhance(P_char ch, P_obj source, P_obj material)
 
 	if (number(1, enhance_luck_extreme_range) < chluck)
 	{
-		newval = sval + enhance_ival_gain_extreme;
+		newval = static_cast<int64_t>(sval) + enhance_ival_gain_extreme;
 		maxsearch *= 4;
 		send_to_char("&+YYou feel &+MEXTREMELY Lucky&+Y!\r\n", ch);
 	}
 	else if (number(1, enhance_luck_very_range) < chluck)
 	{
-		newval = sval + enhance_ival_gain_very;
+		newval = static_cast<int64_t>(sval) + enhance_ival_gain_very;
 		maxsearch *= 3;
 		send_to_char("&+YYou feel &+MVery Lucky&+Y!\r\n", ch);
 	}
 	else if (number(1, enhance_luck_lucky_range) < chluck)
 	{
-		newval = sval + enhance_ival_gain_lucky;
+		newval = static_cast<int64_t>(sval) + enhance_ival_gain_lucky;
 		maxsearch *= 2;
 		send_to_char("&+YYou feel &+MLucky&+Y!\r\n", ch);
 	}
 	else
 	{
-		newval = sval + enhance_ival_gain_normal;
+		newval = static_cast<int64_t>(sval) + enhance_ival_gain_normal;
 	}
 
 	/* Cascade search through the ival hash table.
@@ -211,13 +218,15 @@ void enhance(P_char ch, P_obj source, P_obj material)
 								    (newval - cascade_step);
 			}
 
-			if (cascade_ival < 1 ||
-			    cascade_ival > enhance_ival_cap + enhance_original_max_roll)
+			if (cascade_ival < 1 || cascade_ival > INT_MAX ||
+			    cascade_ival > static_cast<int64_t>(enhance_ival_cap) +
+						   enhance_original_max_roll)
 				continue;
 
 			/* Look up in hash table */
-			for (entry = enhance_ival_table[enhance_hash(cascade_ival)]; entry;
-			     entry = entry->next)
+			for (entry = enhance_ival_table[enhance_hash(
+				     static_cast<int>(cascade_ival))];
+			     entry; entry = entry->next)
 			{
 				if (entry->ival != cascade_ival)
 					continue;
@@ -697,12 +706,12 @@ void do_enhance(P_char ch, char *argument, int /*cmd*/)
 			    FALSE, ch, source, 0, TO_CHAR);
 			return;
 		}
-		if (itemvalue(source) > GET_LEVEL(ch) * enhance_level_gate_multiplier)
+		if (itemvalue(source) > enhance_maximum_item_value(GET_LEVEL(ch)))
 		{
 			snprintf(
 				rest, sizeof(rest),
 				"&+yThis item has ival %d; at your level you can enhance items up to ival %d.\r\n",
-				itemvalue(source), GET_LEVEL(ch) * enhance_level_gate_multiplier);
+				itemvalue(source), enhance_maximum_item_value(GET_LEVEL(ch)));
 			send_to_char(rest, ch);
 			return;
 		}
@@ -1098,7 +1107,7 @@ void thanksgiving_proc(P_char ch)
 static void enhance_load_essence_drop(P_char ch, P_char killer)
 {
 	int reward = 0;
-	int moblvl = GET_LEVEL(ch);
+	int64_t moblvl = GET_LEVEL(ch);
 
 	if (!enhance_essence_drop_enabled)
 		return;
@@ -1131,8 +1140,9 @@ static void enhance_load_essence_drop(P_char ch, P_char killer)
 		}
 		if (number(1, primary_roll_max) < moblvl)
 		{
-			debug("enhancematload: mob: '%s' (%d) moblvl %d%s", J_NAME(ch),
-			      GET_VNUM(ch), moblvl, IS_ELITE(ch) ? " ELITE." : ".");
+			debug("enhancematload: mob: '%s' (%d) moblvl %lld%s", J_NAME(ch),
+			      GET_VNUM(ch), static_cast<long long>(moblvl),
+			      IS_ELITE(ch) ? " ELITE." : ".");
 			if (number(1, max_roll_max) < moblvl)
 			{
 				switch (number(1, 8))
