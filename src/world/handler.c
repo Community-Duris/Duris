@@ -3090,7 +3090,7 @@ void obj_to_obj(P_obj obj, P_obj obj_to)
 		}
 	}
 
-	add_weight(obj_to, obj->weight);
+	add_weight(obj_to, GET_OBJ_WEIGHT(obj));
 	resync_reducing_container(obj_to);
 	world_activity_object_enter(obj);
 	/* Broken out into a recursive function; neater and more correct for handling negative weights properly.
@@ -3171,7 +3171,7 @@ void obj_to_obj_at_end(P_obj obj, P_obj obj_to)
 	obj->loc.inside = obj_to;
 	append_obj_to_list(&obj_to->contains, obj);
 
-	add_weight(obj_to, obj->weight);
+	add_weight(obj_to, GET_OBJ_WEIGHT(obj));
 	resync_reducing_container(obj_to);
 	world_activity_object_enter(obj);
 
@@ -3287,7 +3287,7 @@ void obj_from_obj(P_obj obj)
 		tmp->next_content = obj->next_content;
 	}
 
-	add_weight(obj_from, -(obj->weight));
+	add_weight(obj_from, -(GET_OBJ_WEIGHT(obj)));
 
 	/* Safe here and nowhere earlier: `obj` has already been unlinked above,
 	 * so the fresh sum is of what actually remains inside. */

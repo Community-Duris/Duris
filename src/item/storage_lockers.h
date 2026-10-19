@@ -146,7 +146,12 @@ class EqSlotChest : public LockerChest
 	friend class StorageLocker;
 
     public:
-	virtual bool ItemFits(P_obj obj) { return (obj->wear_flags & m_eqBit) ? true : false; };
+	virtual bool ItemFits(P_obj obj)
+	{
+		if (!obj || obj->type == ITEM_CONTAINER || obj->type == ITEM_CORPSE)
+			return false;
+		return (obj->wear_flags & m_eqBit) ? true : false;
+	};
 
     protected:
 	EqSlotChest(unsigned int eqSlotBit, const char *keyword, const char *prettyDesc)
@@ -164,6 +169,8 @@ class EqWearChest : public LockerChest
     public:
 	virtual bool ItemFits(P_obj obj)
 	{
+		if (!obj || obj->type == ITEM_CONTAINER || obj->type == ITEM_CORPSE)
+			return false;
 		return IS_SET(obj->extra_flags, ITEM_ALLOWED_CLASSES) ?
 			       IS_SET(obj->anti_flags, m_wearClass) :
 			       !IS_SET(obj->anti_flags, m_wearClass);
@@ -235,6 +242,8 @@ class OreChest : public LockerChest
     public:
 	virtual bool ItemFits(P_obj obj)
 	{
+		if (!obj || obj->type == ITEM_CONTAINER || obj->type == ITEM_CORPSE)
+			return false;
 		return (strstr(obj->name, "_ore_") &&
 			(!m_oreType[0] || strstr(obj->name, m_oreType))) ?
 			       true :

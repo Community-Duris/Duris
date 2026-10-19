@@ -700,6 +700,9 @@ void StorageLocker::NukeLockerChests(void)
 
 bool StorageLocker::PutInProperChest(P_obj obj)
 {
+	if (!obj)
+		return false;
+
 	// assumes 'obj' is located in nowhere
 	LockerChest *p = m_pChestList;
 
@@ -1620,6 +1623,9 @@ void ComboChest::FillExtraDescBuf(char *GBuf1)
 
 bool ComboChest::ItemFits(P_obj obj)
 {
+	if (!obj || obj->type == ITEM_CONTAINER || obj->type == ITEM_CORPSE)
+		return false;
+
 	LockerChest *p = m_LockerChests;
 
 	while (p)
@@ -1662,6 +1668,9 @@ PrivateChest::PrivateChest(int chest_id, const char *name, bool has_password)
 
 bool EqApplyChest::ItemFits(P_obj obj)
 {
+	if (!obj || obj->type == ITEM_CONTAINER || obj->type == ITEM_CORPSE)
+		return false;
+
 	for (int i = 0; i < MAX_OBJ_AFFECT; i++)
 	{
 		if ((obj->affected[i].location == m_applyType) && (obj->affected[i].modifier != 0))
@@ -1672,6 +1681,9 @@ bool EqApplyChest::ItemFits(P_obj obj)
 
 bool EqAffectChest::ItemFits(P_obj obj)
 {
+	if (!obj || obj->type == ITEM_CONTAINER || obj->type == ITEM_CORPSE)
+		return false;
+
 	// Removed buggy switch.
 	if (m_bitVector == 1 && IS_SET(obj->bitvector, m_bit))
 	{

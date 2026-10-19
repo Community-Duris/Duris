@@ -6410,6 +6410,7 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 			c->loc_p = LOC_INSIDE;
 			c->loc.inside = obj;
 		}
+		recalc_container_weight(obj);
 
 		if (!first_obj)
 			first_obj = obj;
@@ -7202,7 +7203,9 @@ void sql_load_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 			c->loc_p = LOC_INSIDE;
 			c->loc.inside = obj;
 		}
+		recalc_container_weight(obj);
 	}
+	recalc_container_weight(chest_obj);
 	mysql_free_result(result);
 }
 
@@ -8359,6 +8362,11 @@ bool sql_load_all_corpses(void)
 					o->loc_p = LOC_INSIDE;
 					o->loc.inside = cur_corpse;
 				}
+				for (int i = 0; i < num_objs; i++)
+				{
+					if (obj_map[i])
+						recalc_container_weight(obj_map[i]);
+				}
 				if (!corpse_lifecycle_transaction_hydrate(
 					    cur_owner_pid, cur_save_id, cur_corpse_revision))
 				{
@@ -8649,6 +8657,11 @@ bool sql_load_all_corpses(void)
 		{
 			o->loc_p = LOC_INSIDE;
 			o->loc.inside = cur_corpse;
+		}
+		for (int i = 0; i < num_objs; i++)
+		{
+			if (obj_map[i])
+				recalc_container_weight(obj_map[i]);
 		}
 		if (!corpse_lifecycle_transaction_hydrate(cur_owner_pid, cur_save_id,
 							  cur_corpse_revision))
@@ -9845,6 +9858,12 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 			}
 	}
 
+	for (struct all_items_temp *t = all_items; t; t = t->next)
+	{
+		if (t->obj)
+			recalc_container_weight(t->obj);
+	}
+
 	// assign items to shopkeepers
 	for (struct all_items_temp *t = all_items; t; t = t->next)
 	{
@@ -10230,6 +10249,7 @@ static P_obj sql_load_saved_item_contents(const char *item_key, int room_vnum, i
 			c->loc_p = LOC_INSIDE;
 			c->loc.inside = obj;
 		}
+		recalc_container_weight(obj);
 
 		if (!first_obj)
 			first_obj = obj;
@@ -10750,6 +10770,7 @@ void sql_restore_saved_items(void)
 			c->loc_p = LOC_INSIDE;
 			c->loc.inside = obj;
 		}
+		recalc_container_weight(obj);
 		if (!valid || !sql_saved_item_source_rows_match(item_key, source_ids, false))
 		{
 			logit(LOG_SYS,
