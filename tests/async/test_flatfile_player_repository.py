@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 
 from _paths import SRC, rel
+import contextlib
+import fcntl
+import os
 import pathlib
 import shutil
 import sys
@@ -10,135 +13,156 @@ import tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
-(ROOT / "bin/tests").mkdir(parents=True, exist_ok=True)
-with tempfile.TemporaryDirectory(prefix="flat-player-test-", dir=ROOT / "bin/tests") as temporary:
-    temporary_path = pathlib.Path(temporary)
-    binary = temporary_path / "flatfile_player_test"
-    compile_result = subprocess.run(
-        [
-            "g++",
-            "-std=c++20",
-            "-Wall",
-            "-Wextra",
-            "-Wpedantic",
-            "-Werror",
-            "-D__NO_MYSQL__",
-            "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST",
-            "-Isrc",
-            "-Isrc/no_mysql",
-            "tests/async/flatfile_player_repository_harness.cpp",
-            rel("flatfile_player_repository.c"),
-            rel("player_load_topology.c"),
-            rel("flatfile_identity_repository.c"),
-            rel("flatfile_item_repository.c"),
-            rel("flatfile_collector_repository.c"),
-            rel("collector_command.c"),
-            rel("collector_codec.c"),
-            rel("collector_policy.c"),
-            rel("coin_transfer_command.c"),
-            rel("flatfile_player_snapshot_file.c"),
-            rel("flatfile_corpse_repository.c"),
-            rel("flatfile_locker_repository.c"),
-            rel("flatfile_world_item_repository.c"),
-            rel("flatfile_artifact_repository.c"),
-            rel("flatfile_shop_trade_repository.c"),
-            rel("flatfile_shop_trade_materialization.c"),
-            rel("flatfile_shopkeeper_repository.c"),
-            rel("flatfile_auction_repository.c"),
-            rel("flatfile_boon_repository.c"),
-            rel("flatfile_player_domain_repository.c"),
-            rel("flatfile_authority_transaction.c"),
-            rel("player_snapshot_codec.c"),
-            rel("flatfile_store.c"),
-            rel("item_transfer_command.c"),
-            rel("corpse_lifecycle_command.c"),
-            rel("shop_trade_command.c"),
-            rel("critical_command.c"),
-            rel("epic_command.c"),
-            rel("currency_command.c"),
-            rel("auction_command.c"),
-            rel("combat_outcome_command.c"),
-            rel("boon_reward_command.c"),
-            rel("boon_shop_command.c"),
-            rel("persistence_observability.c"),
-            rel("persistence_mode.c"),
-            rel("flatfile_ip_activity_repository.c"),
-            "-lcrypto",
-            "-pthread",
-            "-o",
-            str(binary),
-        ],
-        cwd=ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-    )
-    if compile_result.returncode:
-        raise SystemExit(compile_result.stdout)
+destination = None
+if len(sys.argv) == 3 and sys.argv[1] == "--build-inspector":
+    destination = pathlib.Path(sys.argv[2]).resolve()
+    if not destination.is_relative_to((ROOT / "bin").resolve()):
+        raise SystemExit("inspector must be placed below bin/")
+    destination.parent.mkdir(parents=True, exist_ok=True)
 
-    if len(sys.argv) == 3 and sys.argv[1] == "--build-inspector":
-        destination = pathlib.Path(sys.argv[2]).resolve()
-        if not destination.is_relative_to((ROOT / "bin").resolve()):
-            raise SystemExit("inspector must be placed below bin/")
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(binary, destination)
-        raise SystemExit(0)
+# Share a publication made while waiting; independent later requests rebuild fresh.
+lock = (destination.with_name(destination.name + ".lock").open("a+")
+        if destination is not None else contextlib.nullcontext())
+with lock as publication:
+    if publication is not None:
+        publication.seek(0)
+        requested_generation = publication.read()
+        fcntl.flock(publication, fcntl.LOCK_EX)
+        publication.seek(0)
+        if publication.read() != requested_generation and destination.is_file():
+            raise SystemExit(0)
 
-    state_root = temporary_path / "state"
-    run_result = subprocess.run(
-        [str(binary), str(state_root)],
-        cwd=ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-    )
-    if run_result.returncode:
-        raise SystemExit(run_result.stdout)
+    (ROOT / "bin/tests").mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="flat-player-test-", dir=ROOT / "bin/tests") as temporary:
+        temporary_path = pathlib.Path(temporary)
+        binary = temporary_path / "flatfile_player_test"
+        compile_result = subprocess.run(
+            [
+                "g++",
+                "-std=c++20",
+                "-Wall",
+                "-Wextra",
+                "-Wpedantic",
+                "-Werror",
+                "-D__NO_MYSQL__",
+                "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST",
+                "-Isrc",
+                "-Isrc/no_mysql",
+                "tests/async/flatfile_player_repository_harness.cpp",
+                rel("flatfile_player_repository.c"),
+                rel("player_load_topology.c"),
+                rel("flatfile_identity_repository.c"),
+                rel("flatfile_item_repository.c"),
+                rel("flatfile_collector_repository.c"),
+                rel("collector_command.c"),
+                rel("collector_codec.c"),
+                rel("collector_policy.c"),
+                rel("coin_transfer_command.c"),
+                rel("flatfile_player_snapshot_file.c"),
+                rel("flatfile_corpse_repository.c"),
+                rel("flatfile_locker_repository.c"),
+                rel("flatfile_world_item_repository.c"),
+                rel("flatfile_artifact_repository.c"),
+                rel("flatfile_shop_trade_repository.c"),
+                rel("flatfile_shop_trade_materialization.c"),
+                rel("flatfile_shopkeeper_repository.c"),
+                rel("flatfile_auction_repository.c"),
+                rel("flatfile_boon_repository.c"),
+                rel("flatfile_player_domain_repository.c"),
+                rel("flatfile_authority_transaction.c"),
+                rel("player_snapshot_codec.c"),
+                rel("flatfile_store.c"),
+                rel("item_transfer_command.c"),
+                rel("corpse_lifecycle_command.c"),
+                rel("shop_trade_command.c"),
+                rel("critical_command.c"),
+                rel("epic_command.c"),
+                rel("currency_command.c"),
+                rel("auction_command.c"),
+                rel("combat_outcome_command.c"),
+                rel("boon_reward_command.c"),
+                rel("boon_shop_command.c"),
+                rel("persistence_observability.c"),
+                rel("persistence_mode.c"),
+                rel("flatfile_ip_activity_repository.c"),
+                "-lcrypto",
+                "-pthread",
+                "-o",
+                str(binary),
+            ],
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        if compile_result.returncode:
+            raise SystemExit(compile_result.stdout)
 
-    recovery_root = temporary_path / "recovery"
-    subprocess.run([str(binary), str(recovery_root), "seed-recovery"], cwd=ROOT, check=True)
-    import json
-    import os
-    recovery_artifact = temporary_path / "recovery-status.json"
-    status_command = [sys.executable, str(ROOT / "scripts/player_death_restitution.py"),
-                      "status", "--flatfile-root", str(recovery_root), "--artifact", str(recovery_artifact)]
-    subprocess.run(status_command, cwd=ROOT, check=True)
-    first = json.loads(recovery_artifact.read_text())
-    case = first["cases"][0]
-    assert case["terminal_custody"] == "quarantine" and case["recovery_owner"] == "reviewed_restitution"
-    assert case["counts"]["quarantine"] == 2 and case["unmatched_count"] == 1
-    assert case["captured_count"] == 1 and case["authority_count"] == 2
-    assert {item["item_uid"] for item in case["items"]} == {100, 101}
-    assert recovery_artifact.stat().st_mode & 0o077 == 0
-    subprocess.run(status_command + ["--overwrite"], cwd=ROOT, check=True)
-    second = json.loads(recovery_artifact.read_text())
-    assert second["cases"][0]["correlation"] == case["correlation"]
-    assert second["cases"][0]["items"] == case["items"]
-    pending = recovery_root / "domains/.critical-authority-transaction"
-    pending.write_bytes(b"synthetic interruption")
-    refused = subprocess.run(status_command + ["--overwrite"], cwd=ROOT, capture_output=True, text=True)
-    assert refused.returncode != 0 and "authority replay is pending" in refused.stderr
-    pending.unlink()
-    print("[PASS] cold-load durable-only descendant, disputed batch, authority interruption, restart and protected custody query")
+        if destination is not None:
+            # Publish a complete executable while other journeys may still run the old one.
+            staged = destination.with_name(f"{destination.name}.{os.getpid()}")
+            shutil.copy2(binary, staged)
+            os.replace(staged, destination)
+            publication.seek(0)
+            publication.truncate()
+            publication.write(os.urandom(16).hex())
+            publication.flush()
+            raise SystemExit(0)
 
-    domain_source = (SRC / "flatfile_player_domain_repository.c").read_text()
-    player_source = (SRC / "flatfile_player_repository.c").read_text()
-    materialize_source = (SRC / "player_load_materialize.c").read_text()
-    for token in (
-        "constexpr uint32_t domain_format_version = 3",
-        "base_stat_revision",
-        "record.domains.base_stats",
-        "format_version >= 3",
-    ):
-        if token not in domain_source:
-            raise SystemExit(f"flat player stat authority is missing {token}")
-    if "record.domains.base_stat_revision = 1" not in player_source:
-        raise SystemExit("first player baseline does not establish stat authority")
-    for token in (
-        "result.domains.base_stat_revision",
-        "ch->base_stats.Str = result.domains.base_stats[0]",
-        "ch->base_stats.Luk = result.domains.base_stats[9]",
-    ):
-        if token not in materialize_source:
-            raise SystemExit(f"player load does not publish authoritative stats: {token}")
-    print(run_result.stdout.strip())
+        state_root = temporary_path / "state"
+        run_result = subprocess.run(
+            [str(binary), str(state_root)],
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        if run_result.returncode:
+            raise SystemExit(run_result.stdout)
+
+        recovery_root = temporary_path / "recovery"
+        subprocess.run([str(binary), str(recovery_root), "seed-recovery"], cwd=ROOT, check=True)
+        import json
+        recovery_artifact = temporary_path / "recovery-status.json"
+        status_command = [sys.executable, str(ROOT / "scripts/player_death_restitution.py"),
+                          "status", "--flatfile-root", str(recovery_root), "--artifact", str(recovery_artifact)]
+        subprocess.run(status_command, cwd=ROOT, check=True)
+        first = json.loads(recovery_artifact.read_text())
+        case = first["cases"][0]
+        assert case["terminal_custody"] == "quarantine" and case["recovery_owner"] == "reviewed_restitution"
+        assert case["counts"]["quarantine"] == 2 and case["unmatched_count"] == 1
+        assert case["captured_count"] == 1 and case["authority_count"] == 2
+        assert {item["item_uid"] for item in case["items"]} == {100, 101}
+        assert recovery_artifact.stat().st_mode & 0o077 == 0
+        subprocess.run(status_command + ["--overwrite"], cwd=ROOT, check=True)
+        second = json.loads(recovery_artifact.read_text())
+        assert second["cases"][0]["correlation"] == case["correlation"]
+        assert second["cases"][0]["items"] == case["items"]
+        pending = recovery_root / "domains/.critical-authority-transaction"
+        pending.write_bytes(b"synthetic interruption")
+        refused = subprocess.run(status_command + ["--overwrite"], cwd=ROOT, capture_output=True, text=True)
+        assert refused.returncode != 0 and "authority replay is pending" in refused.stderr
+        pending.unlink()
+        print("[PASS] cold-load durable-only descendant, disputed batch, authority interruption, restart and protected custody query")
+
+        domain_source = (SRC / "flatfile_player_domain_repository.c").read_text()
+        player_source = (SRC / "flatfile_player_repository.c").read_text()
+        materialize_source = (SRC / "player_load_materialize.c").read_text()
+        for token in (
+            "constexpr uint32_t domain_format_version = 3",
+            "base_stat_revision",
+            "record.domains.base_stats",
+            "format_version >= 3",
+        ):
+            if token not in domain_source:
+                raise SystemExit(f"flat player stat authority is missing {token}")
+        if "record.domains.base_stat_revision = 1" not in player_source:
+            raise SystemExit("first player baseline does not establish stat authority")
+        for token in (
+            "result.domains.base_stat_revision",
+            "ch->base_stats.Str = result.domains.base_stats[0]",
+            "ch->base_stats.Luk = result.domains.base_stats[9]",
+        ):
+            if token not in materialize_source:
+                raise SystemExit(f"player load does not publish authoritative stats: {token}")
+        print(run_result.stdout.strip())
