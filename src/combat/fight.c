@@ -7408,7 +7408,7 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 	P_char tch, mount, gvict;
 	int msg, to_hit, diceroll, wpn_skill, sic, tmp, wpn_skill_num;
 	double dam;
-	int room, pos;
+	int room;
 	int vs_skill = GET_CHAR_SKILL(ch, SKILL_VICIOUS_STRIKE);
 	struct affected_type ir;
 	char attacker_msg[512];
@@ -7576,7 +7576,6 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 		sic = 0;
 
 	// Quickstep stops crits if victim can respond
-	bool bIsQuickStepMiss = FALSE;
 	if (sic == -1 && !IS_AFFECTED2(victim, AFF2_STUNNED) && !IS_IMMOBILE(victim) &&
 	    (notch_skill(victim, SKILL_QUICK_STEP,
 			 get_property("skill.notch.criticalAttack", 10)) ||
@@ -7611,8 +7610,6 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 			if (((GET_LEVEL(victim) / 5) + STAT_INDEX(GET_C_AGI(victim))) >
 			    number(0, 40))
 			{
-				// need to know this, as quick-step crit misses won't fumble to ground
-				bIsQuickStepMiss = TRUE;
 				sic = 1;
 			}
 			else
@@ -7636,26 +7633,8 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 			if (weapon && GET_LEVEL(ch) > 1 &&
 			    !IS_SET(weapon->extra_flags, ITEM_NODROP))
 			{
-				if (bIsQuickStepMiss)
-				{
-					for (pos = 0; pos < MAX_WEAR; pos++)
-						if (ch->equipment[pos] == weapon)
-							break;
-					P_obj weap = pos < MAX_WEAR ? unequip_char(ch, pos) : NULL;
-					if (weap)
-					{
-						act("&-L&+YYou swing at your foe _really_ badly, losing control of your&n $q&-L&+Y!\r\n",
-						    FALSE, ch, weap, victim, TO_CHAR);
-						act("$n stumbles with $s attack, losing control of $s weapon!",
-						    TRUE, ch, 0, 0, TO_ROOM);
-						obj_to_char(weap, ch);
-					}
-					char_light(ch);
-					room_light(ch->in_room, REAL);
-				}
-				else
-					forced_weapon_drop(ch, weapon,
-							   forced_weapon_drop_cause::combat_fumble);
+				forced_weapon_drop(ch, weapon,
+						   forced_weapon_drop_cause::combat_fumble);
 			}
 			else
 			{

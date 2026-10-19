@@ -3803,6 +3803,9 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 		return FALSE;
 	}
 
+	if (s_obj && checkgetput(ch, s_obj))
+		return FALSE;
+
 	if (o_obj) /* Trap check */
 	{
 		if (s_obj->type == ITEM_QUIVER)

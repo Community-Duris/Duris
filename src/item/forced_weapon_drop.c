@@ -63,6 +63,18 @@ void announce_recovery(P_char actor, P_obj weapon, int room, forced_weapon_drop_
 		    TO_ROOM);
 }
 
+void announce_fumble_inventory(P_char actor, P_obj weapon, int room)
+{
+	if (!actor || !weapon)
+		return;
+	act("&-L&+YYou swing at your foe _really_ badly, losing control of your&n "
+	    "$q&-L&+Y!\r\n",
+	    FALSE, actor, weapon, 0, TO_CHAR);
+	if (valid_room(room) && actor->in_room == room)
+		act("$n stumbles with $s attack, losing control of $s weapon!", TRUE, actor, 0, 0,
+		    TO_ROOM);
+}
+
 void announce_drop(P_char actor, P_obj weapon, int room, forced_weapon_drop_cause cause)
 {
 	if (!actor || !weapon || cause != forced_weapon_drop_cause::combat_fumble)
@@ -175,6 +187,24 @@ forced_weapon_drop_result forced_weapon_drop(P_char actor, P_obj weapon,
 	{
 		announce_recovery(actor, weapon, room, cause);
 		return forced_weapon_drop_result::rejected;
+	}
+
+	if (cause == forced_weapon_drop_cause::combat_fumble)
+	{
+		if (!stage_in_inventory(actor, weapon, slot))
+		{
+			announce_recovery(actor, weapon, room, cause);
+			return forced_weapon_drop_result::rejected;
+		}
+		if (IS_PC(actor) && GET_PID(actor) > 0)
+			mark_player_dirty_components(GET_PID(actor), PLAYER_COMPONENT_STATUS |
+								     PLAYER_COMPONENT_EQUIPMENT |
+								     PLAYER_COMPONENT_INVENTORY);
+		char_light(actor);
+		if (valid_room(actor->in_room))
+			room_light(actor->in_room, REAL);
+		announce_fumble_inventory(actor, weapon, room);
+		return forced_weapon_drop_result::retained;
 	}
 
 	const bool durable_player_weapon = IS_PC(actor) && GET_PID(actor) > 0 &&
