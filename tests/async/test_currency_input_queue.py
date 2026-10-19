@@ -189,6 +189,7 @@ static bool item_pending = false;
 static int submission_count = 0;
 
 void logit(const char *, const char *, ...) {}
+void CharWait(P_char, int) {}
 // money_to_inventory() reports a wallet conversion it could not even submit.
 void persistence_alert(int, const char *, const char *, const char *, const char *, const char *,
 		       const char *, ...)
