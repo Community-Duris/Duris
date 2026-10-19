@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from pathlib import Path
 
 
@@ -51,8 +52,11 @@ def main() -> None:
     runtime = json.loads(
         (ROOT / "migrations/runtime_compatibility_manifest.json").read_text()
     )
-    assert runtime["current_table_count"] == 203
-    assert "'zone_story_quest_state'" in runtime["runtime_table_sql_list"]
+    # Later additive migrations can grow the table set without changing this
+    # quest schema. Verify manifest consistency and this table's membership.
+    runtime_tables = re.findall(r"'([^']+)'", runtime["runtime_table_sql_list"])
+    assert runtime["current_table_count"] == len(runtime_tables) == len(set(runtime_tables))
+    assert "zone_story_quest_state" in runtime_tables
     assert runtime["migration_head"]["sequence"] >= step["sequence"]
 
     lifecycle = json.loads((ROOT / "migrations/data_lifecycle_manifest.json").read_text())

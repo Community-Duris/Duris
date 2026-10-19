@@ -469,8 +469,17 @@ size_t critical_command_coordinator_pulse(critical_completion *completions, size
 		if (!front)
 			break;
 		const critical_completion completion = *front;
+		std::string identity;
+		try
+		{
+			identity = operation_key(completion.operation_id);
+		}
+		catch (const std::bad_alloc &)
+		{
+			// The queue still owns this receipt; a later pulse can deliver it.
+			break;
+		}
 		completion_delivery.pop_front(critical_completion_channel::execution);
-		const std::string identity = operation_key(completion.operation_id);
 		auto found = operations.find(identity);
 		if (found == operations.end() || found->second->attempt != completion.attempt ||
 		    found->second->publication_pending)
@@ -500,7 +509,15 @@ size_t critical_command_coordinator_pulse(critical_completion *completions, size
 bool critical_command_coordinator_acknowledge_publication(const critical_operation_id &operation_id)
 {
 	std::lock_guard<std::mutex> lock(coordinator_mutex);
-	const auto identity = operation_key(operation_id);
+	std::string identity;
+	try
+	{
+		identity = operation_key(operation_id);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
 	auto found = operations.find(identity);
 	if (found == operations.end())
 		return completed_cache.count(identity) != 0;

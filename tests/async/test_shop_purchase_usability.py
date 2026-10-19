@@ -33,7 +33,7 @@ PRELUDE = r'''
 #include "economy/shop.h"
 #include "economy/currency_transaction.h"
 #include "economy/shop_trade_runtime.h"
-#include "economy/shop_trade_transaction.h"
+#include "economy/shop_trade_publication.h"
 #include "item/item_movement_transaction.h"
 #include "persistence/persistence_mode.h"
 #include "world/epic_bonus.h"
@@ -141,7 +141,8 @@ shop_trade_payload_build_result shop_trade_runtime_build_payload(
     payload->price = price; payload->action = action; pending_item = selected;
     return shop_trade_payload_build_result::ok;
 }
-bool shop_trade_transaction_submit(P_char, const shop_trade_payload &payload, shop_trade_completion_fn callback) {
+bool shop_trade_publish_physical(P_char, const shop_trade_result &, const shop_trade_payload &, uint32_t &) { return true; }
+bool shop_trade_transaction_submit_with_publication(P_char, const shop_trade_payload &payload, shop_trade_physical_publication_fn, shop_trade_completion_fn callback) {
     if (refuse_submit) return false;
     ++submissions; trade_payload = payload; trade_callback = callback; return true;
 }
@@ -192,6 +193,10 @@ struct fixture {
             const auto payload = trade_payload; auto callback = trade_callback;
             shop_trade_result result{};
             if (committed) { result.shop_revision = 1; result.item_count = 1; GET_COPPER(&player) -= payload.price; }
+            if (committed && publish) {
+                obj_to_char(pending_item, &player);
+                if (payload.target_parent_item_uid) { obj_from_char(pending_item); obj_to_obj(pending_item, &bag); }
+            }
             exact = publish; callback(&player, committed && publish, result, error, payload);
         } else {
             if (payment_callback) {
@@ -369,7 +374,7 @@ def main():
         assert "up to 9 of an item" not in help_text
     # Preserve the actual parser/token conventions and callback bodies; only
     # authority submission, world lookup and output are replaced by fixtures.
-    functions = ["static P_obj shop_trade_find_object(", "static P_char shop_trade_find_keeper(",
+    functions = ["static void shop_tell_customer(", "static P_obj shop_trade_find_object(", "static P_char shop_trade_find_keeper(",
                  "static bool shop_trade_container_accepts(", "static bool shop_purchase_count(",
                  "static const char *shop_purchase_parse(", "static std::string shop_purchase_price(",
                  "static void shop_purchase_acknowledge(", "static void shop_purchase_report(",

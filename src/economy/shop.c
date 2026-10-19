@@ -28,7 +28,10 @@
 #include "sql/sql.h"
 #include "persistence/persistence_mode.h"
 #include "economy/shop_trade_runtime.h"
-#include "economy/shop_trade_transaction.h"
+#include "economy/shop_trade_publication.h"
+#include "player/player_snapshot_capture.h"
+#include "player/player_snapshot_codec.h"
+#include "world/handler.h"
 #include <cerrno>
 #include <cstdlib>
 #include <new>
@@ -113,6 +116,232 @@ static P_char shop_trade_find_keeper(uint32_t shop_id)
 		if (IS_NPC(candidate) && GET_RNUM(candidate) == shop_index[shop_id].keeper)
 			return candidate;
 	return NULL;
+}
+
+static bool shop_trade_published_bytes_match(P_char ch, P_obj object,
+					     const shop_trade_payload &payload, bool buying,
+					     bool placement_complete = true)
+{
+	std::vector<player_item_snapshot> expected, actual;
+	std::vector<uint8_t> expected_bytes, actual_bytes;
+	if (player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
+					     &expected) != player_snapshot_codec_result::ok ||
+	    expected.empty() || expected.front().object_uid != payload.selected_item_uid)
+		return false;
+	// These are the existing native inventory-placement effects, not prototype
+	// defaults. Every other captured field and descendant must remain exact.
+	if (buying)
+	{
+		expected.front().extra2_flags |= ITEM2_STOREITEM;
+		if (!expected.front().generated_key && GET_LEVEL(ch) < 57 &&
+		    GET_PID(ch) < 10000000 && (placement_complete || object->g_key == 1))
+			expected.front().generated_key = 1;
+	}
+	return player_item_snapshot_tree_capture(object, &actual, nullptr) ==
+		       player_snapshot_capture_result::ok &&
+	       player_item_snapshot_list_encode(expected, &expected_bytes) ==
+		       player_snapshot_codec_result::ok &&
+	       player_item_snapshot_list_encode(actual, &actual_bytes) ==
+		       player_snapshot_codec_result::ok &&
+	       expected_bytes == actual_bytes;
+}
+
+static bool shop_trade_publish_physical(P_char ch, const shop_trade_result &,
+					const shop_trade_payload &payload, uint32_t &stages)
+{
+	constexpr uint32_t source_verified = 1, detach_started = 2, audited = 4, audit_started = 8,
+			   destruction_started = 16, physically_complete = 32,
+			   room_notice_started = 64, cash_complete = 128, cash_started = 256,
+			   placement_started = 512, placement_returned = 1024,
+			   nesting_started = 2048, nesting_returned = 4096,
+			   destruction_returned = 8192, room_notice_returned = 16384,
+			   detachment_started = 32768, detachment_returned = 65536;
+	if (!ch || IS_NPC(ch) || static_cast<uint32_t>(GET_PID(ch)) != payload.player_pid)
+		return false;
+	// Location/snapshot agreement cannot prove carry bookkeeping, artifact
+	// persistence, dirty marking, or extraction tails after a native throw.
+	// Shared native recovery must discharge these uncertain effects explicitly.
+	if (((stages & placement_started) && !(stages & placement_returned)) ||
+	    ((stages & nesting_started) && !(stages & nesting_returned)) ||
+	    ((stages & destruction_started) && !(stages & destruction_returned)) ||
+	    ((stages & room_notice_started) && !(stages & room_notice_returned)) ||
+	    ((stages & detachment_started) && !(stages & detachment_returned)))
+		return false;
+	P_char keeper = shop_trade_find_keeper(payload.shop_id);
+	P_obj object = shop_trade_find_object(payload.selected_item_uid);
+	P_obj destination = payload.target_parent_item_uid ?
+				    shop_trade_find_object(payload.target_parent_item_uid) :
+				    nullptr;
+	const bool produced = payload.action == shop_trade_action::buy_produced;
+	const bool buying = produced || payload.action == shop_trade_action::buy_existing;
+	const bool cleanup = payload.action == shop_trade_action::discard_invalid;
+	const bool destroying = cleanup || payload.action == shop_trade_action::sell_destroy;
+	if (!keeper ||
+	    (payload.target_parent_item_uid && (!destination || !OBJ_CARRIED_BY(destination, ch) ||
+						GET_ITEM_TYPE(destination) != ITEM_CONTAINER)))
+		return false;
+	if (!(stages & source_verified))
+	{
+		const bool source = object &&
+				    ((produced && OBJ_NOWHERE(object)) ||
+				     ((buying || cleanup) && OBJ_CARRIED_BY(object, keeper)) ||
+				     (!buying && !cleanup && OBJ_CARRIED_BY(object, ch)));
+		if (!source || !shop_trade_runtime_object_matches_payload(object, payload) ||
+		    (buying && IS_OBJ_STAT2(object, ITEM2_CRUMBLELOOT) && !IS_TRUSTED(ch)) ||
+		    (destination && !obj_can_nest(object, destination)))
+			return false;
+		stages |= source_verified;
+	}
+	if (!(stages & physically_complete))
+	{
+		if ((stages & audit_started) && !(stages & audited))
+			return false; // Ancillary SQL audit may have taken effect; never replay it blindly.
+		if (!object)
+		{
+			if (!destroying || !(stages & destruction_started))
+				return false;
+		}
+		else if (destroying)
+		{
+			if (!shop_trade_runtime_object_matches_payload(object, payload))
+				return false;
+			if (!cleanup && !(stages & audited))
+			{
+				stages |= audit_started;
+				sql_shop_sell(ch, object, payload.price);
+				stages |= audited;
+			}
+			if (!(stages & room_notice_started))
+			{
+				stages |= room_notice_started;
+				if (cleanup)
+					wizlog(56,
+					       "(%s) shopkeeper durably destroyed invalid stock (%s %d).",
+					       GET_NAME(keeper), object->short_description,
+					       OBJ_VNUM(object));
+				else
+					act("$n sells $p.", FALSE, ch, object, 0, TO_ROOM);
+				stages |= room_notice_returned;
+			}
+			stages |= destruction_started;
+			extract_obj(object, TRUE);
+			stages |= destruction_returned;
+		}
+		else
+		{
+			if (!object)
+				return false;
+			const bool at_target =
+				buying ? (destination ? OBJ_INSIDE(object) &&
+								object->loc.inside == destination :
+							OBJ_CARRIED_BY(object, ch)) :
+					 OBJ_CARRIED_BY(object, keeper);
+			if (!at_target)
+			{
+				if (!(stages & detach_started) &&
+				    !shop_trade_runtime_object_matches_payload(object, payload))
+					return false;
+				if ((stages & detach_started) &&
+				    !shop_trade_published_bytes_match(ch, object, payload, buying,
+								      false))
+					return false;
+				if (!buying && !(stages & audited))
+				{
+					stages |= audit_started;
+					sql_shop_sell(ch, object, payload.price);
+					stages |= audited;
+				}
+				stages |= detach_started;
+				if (OBJ_CARRIED(object))
+				{
+					if (!OBJ_CARRIED_BY(object, buying ? keeper : ch) &&
+					    !(buying && destination && OBJ_CARRIED_BY(object, ch)))
+						return false;
+					stages |= detachment_started;
+					stages &= ~detachment_returned;
+					obj_from_char(object);
+					stages |= detachment_returned;
+				}
+				object = shop_trade_find_object(payload.selected_item_uid);
+				if (!object || !OBJ_NOWHERE(object))
+					return false;
+				if (buying)
+					SET_BIT(object->extra2_flags, ITEM2_STOREITEM);
+				stages |= placement_started;
+				stages &= ~placement_returned;
+				const auto placement =
+					obj_to_char_checked(object, buying ? ch : keeper);
+				stages |= placement_returned;
+				if (placement != obj_to_char_result::placed)
+					return false;
+				object = shop_trade_find_object(payload.selected_item_uid);
+				if (!object || !OBJ_CARRIED_BY(object, buying ? ch : keeper))
+					return false;
+				if (destination)
+				{
+					stages |= detachment_started;
+					stages &= ~detachment_returned;
+					obj_from_char(object);
+					stages |= detachment_returned;
+					object = shop_trade_find_object(payload.selected_item_uid);
+					destination = shop_trade_find_object(
+						payload.target_parent_item_uid);
+					if (!object || !OBJ_NOWHERE(object) || !destination ||
+					    !OBJ_CARRIED_BY(destination, ch) ||
+					    !obj_can_nest(object, destination))
+						return false;
+					stages |= nesting_started;
+					stages &= ~nesting_returned;
+					obj_to_obj(object, destination);
+					stages |= nesting_returned;
+				}
+			}
+		}
+		object = shop_trade_find_object(payload.selected_item_uid);
+		if (destroying)
+		{
+			for (size_t index = 0; index < payload.item_count; ++index)
+				if (shop_trade_find_object(payload.items[index].item_uid))
+					return false;
+		}
+		else if (!object ||
+			 !(buying ? (destination ? OBJ_INSIDE(object) &&
+							   object->loc.inside == destination :
+						   OBJ_CARRIED_BY(object, ch)) :
+				    OBJ_CARRIED_BY(object, keeper)) ||
+			 !shop_trade_published_bytes_match(ch, object, payload, buying))
+			return false;
+		stages |= physically_complete;
+	}
+	// A later retry must not acknowledge an item that has since moved or changed.
+	object = shop_trade_find_object(payload.selected_item_uid);
+	if (destroying)
+	{
+		for (size_t index = 0; index < payload.item_count; ++index)
+			if (shop_trade_find_object(payload.items[index].item_uid))
+				return false;
+	}
+	else if (!object ||
+		 !(buying ? (destination ? OBJ_INSIDE(object) && object->loc.inside == destination :
+					   OBJ_CARRIED_BY(object, ch)) :
+			    OBJ_CARRIED_BY(object, keeper)) ||
+		 !shop_trade_published_bytes_match(ch, object, payload, buying))
+		return false;
+	keeper = shop_trade_find_keeper(payload.shop_id);
+	if (!keeper)
+		return false;
+	if (!(stages & cash_complete))
+	{
+		if (stages & cash_started)
+			return false; // A throwing legacy cash helper has an uncertain effect.
+		stages |= cash_started;
+		if (buying && payload.price)
+			ADD_MONEY(keeper, payload.price);
+		else if (!buying && !cleanup)
+			SUB_MONEY(keeper, payload.price, 0);
+		stages |= cash_complete;
+	}
+	return true;
 }
 
 static void shop_trade_completion(P_char ch, bool committed, const shop_trade_result &result,
@@ -441,7 +670,8 @@ static bool shop_trade_submit_produced_continuation(P_char ch,
 	if (shop_trade_runtime_build_payload(ch, selected, stock, destination, sequence.shop_id,
 					     shop_trade_action::buy_produced, sequence.price,
 					     &payload) != shop_trade_payload_build_result::ok ||
-	    !shop_trade_transaction_submit(ch, payload, shop_trade_completion))
+	    !shop_trade_transaction_submit_with_publication(
+		    ch, payload, shop_trade_publish_physical, shop_trade_completion))
 	{
 		extract_obj(selected, FALSE);
 		return false;
@@ -458,7 +688,8 @@ static bool shop_trade_submit_invalid_cleanup(P_char ch, P_char keeper, P_obj ob
 	return shop_trade_runtime_build_payload(ch, object, NULL, NULL, shop_id,
 						shop_trade_action::discard_invalid, 0,
 						&payload) == shop_trade_payload_build_result::ok &&
-	       shop_trade_transaction_submit(ch, payload, shop_trade_completion);
+	       shop_trade_transaction_submit_with_publication(
+		       ch, payload, shop_trade_publish_physical, shop_trade_completion);
 }
 
 static bool shop_trade_route_invalid_cleanup(P_char ch, P_char keeper, P_obj object,
@@ -482,27 +713,12 @@ static void shop_trade_completion(P_char ch, bool committed, const shop_trade_re
 		return;
 	P_obj object = shop_trade_find_object(payload.selected_item_uid);
 	P_char keeper = shop_trade_find_keeper(payload.shop_id);
-	P_obj destination = payload.target_parent_item_uid ?
-				    shop_trade_find_object(payload.target_parent_item_uid) :
-				    NULL;
 	const bool produced = payload.action == shop_trade_action::buy_produced;
 	const bool buying = payload.action == shop_trade_action::buy_existing || produced;
-	const bool selling = payload.action == shop_trade_action::sell_store ||
-			     payload.action == shop_trade_action::sell_destroy;
 	const bool cleanup = payload.action == shop_trade_action::discard_invalid;
-	const bool correct_location =
-		object && (payload.action != shop_trade_action::sell_store || keeper) &&
-		((produced && keeper && OBJ_NOWHERE(object) &&
-		  (!payload.target_parent_item_uid ||
-		   (destination && OBJ_CARRIED_BY(destination, ch) &&
-		    GET_ITEM_TYPE(destination) == ITEM_CONTAINER))) ||
-		 (!produced && buying && keeper && OBJ_CARRIED(object) &&
-		  object->loc.carrying == keeper) ||
-		 (cleanup && keeper && OBJ_CARRIED_BY(object, keeper)) ||
-		 (selling && OBJ_CARRIED(object) && object->loc.carrying == ch));
-	const bool exact_object = correct_location &&
-				  shop_trade_runtime_object_matches_payload(object, payload);
-	if (!committed || !exact_object)
+	// Committed notifications arrive only after the bool physical publisher
+	// verified delivery/destruction. Projection refusal never enters this path.
+	if (!committed)
 	{
 		const bool durable_commit = committed ||
 					    (result.shop_revision && result.item_count);
@@ -559,9 +775,6 @@ static void shop_trade_completion(P_char ch, bool committed, const shop_trade_re
 	char message[MAX_STRING_LENGTH];
 	if (cleanup)
 	{
-		wizlog(56, "(%s) shopkeeper durably destroyed invalid stock (%s %d).",
-		       GET_NAME(keeper), object->short_description, OBJ_VNUM(object));
-		extract_obj(object, TRUE);
 		send_to_char("The shopkeeper removed invalid stock; please try again.\r\n", ch);
 		return;
 	}
@@ -582,16 +795,6 @@ static void shop_trade_completion(P_char ch, bool committed, const shop_trade_re
 					   coin_stringv(payload.price));
 			if (!batch)
 				shop_tell_customer(keeper, GET_NAME(ch), message);
-			ADD_MONEY(keeper, payload.price);
-		}
-		if (!produced)
-			obj_from_char(object);
-		SET_BIT(object->extra2_flags, ITEM2_STOREITEM);
-		obj_to_char(object, ch);
-		if (payload.target_parent_item_uid)
-		{
-			obj_from_char(object);
-			obj_to_obj(object, destination);
 		}
 		if (!batch)
 		{
@@ -631,25 +834,21 @@ static void shop_trade_completion(P_char ch, bool committed, const shop_trade_re
 		return;
 	}
 
-	act("$n sells $p.", FALSE, ch, object, 0, TO_ROOM);
-	sql_shop_sell(ch, object, payload.price);
+	if (payload.action == shop_trade_action::sell_store)
+		act("$n sells $p.", FALSE, ch, object, 0, TO_ROOM);
+
 	if (keeper)
 	{
 		checked_substitute(message, MAX_STRING_LENGTH,
 				   shop_index[payload.shop_id].message_sell, GET_NAME(ch),
 				   coin_stringv(payload.price));
 		shop_tell_customer(keeper, GET_NAME(ch), message);
-		SUB_MONEY(keeper, payload.price, 0);
 	}
 	snprintf(message, MAX_STRING_LENGTH, "The shopkeeper gives you %s.\r\n",
 		 coin_stringv(payload.price));
 	send_to_char(message, ch);
-	obj_from_char(object);
-	if (payload.action == shop_trade_action::sell_destroy)
-		extract_obj(object, TRUE);
-	else
+	if (payload.action == shop_trade_action::sell_store)
 	{
-		obj_to_char(object, keeper);
 		snprintf(message, MAX_STRING_LENGTH, "The shopkeeper now has %s.\r\n",
 			 object->short_description);
 		send_to_char(message, ch);
@@ -1463,7 +1662,8 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 			    produced ? shop_trade_action::buy_produced :
 				       shop_trade_action::buy_existing,
 			    transaction_price, &payload) != shop_trade_payload_build_result::ok ||
-		    !shop_trade_transaction_submit(ch, payload, shop_trade_completion))
+		    !shop_trade_transaction_submit_with_publication(
+			    ch, payload, shop_trade_publish_physical, shop_trade_completion))
 		{
 			if (produced)
 				extract_obj(selected, FALSE);
@@ -1713,7 +1913,8 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 		if (shop_trade_runtime_build_payload(ch, temp1, NULL, NULL, shop_nr, action, sale,
 						     &payload) !=
 			    shop_trade_payload_build_result::ok ||
-		    !shop_trade_transaction_submit(ch, payload, shop_trade_completion))
+		    !shop_trade_transaction_submit_with_publication(
+			    ch, payload, shop_trade_publish_physical, shop_trade_completion))
 		{
 			send_to_char("The shop transaction service is busy. Please try again.\r\n",
 				     ch);

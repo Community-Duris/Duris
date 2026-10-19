@@ -106,16 +106,22 @@ class CurrencyTransactionContractTests(unittest.TestCase):
         self.assertIn("!rebasable_reward &&", repository)
         self.assertIn("currency_command_is_rebasable_reward", repository)
 
-    def test_checkpoint_handoff_captures_and_saves_wallet(self):
+    def test_checkpoint_cannot_overwrite_transaction_owned_balances(self):
         capture = (SRC / "player_snapshot_capture.c").read_text()
         replay = (SRC / "player_snapshot_repository.c").read_text()
         sql_player = (SRC / "sql_player.c").read_text()
         apply_status = replay[replay.index("query_result apply_status("):
                               replay.index("template <typename Row, typename Append>")]
         for field in ("copper", "silver", "gold", "platinum"):
-            # RAM owns live wallet balances and player saves write them to player_data.
+            # Capture keeps format-compatible values, but a delayed checkpoint
+            # must not overwrite a newer committed ledger balance.
             self.assertIn(f"ADD_STATUS({field},", capture)
-            self.assertNotIn(f"row.field == player_status_field::{field}", apply_status)
+        skip = re.search(r"if \((row\.field == player_status_field::copper.*?)\)\s*continue;",
+                         apply_status, re.DOTALL)
+        self.assertIsNotNone(skip)
+        for field in ("copper", "silver", "gold", "platinum", "epics", "frags", "old_frags"):
+            self.assertIn(f"row.field == player_status_field::{field}", skip.group(1))
+        self.assertLess(skip.end(), apply_status.index("status_column(row.field)"))
         self.assertIn("copper=copper, silver=silver, gold=gold, platinum=platinum", sql_player)
         self.assertIn("INSERT INTO currency_wallet_baseline", sql_player)
         self.assertIn("currency_bank_baseline", sql_player)

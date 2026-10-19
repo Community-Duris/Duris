@@ -22,11 +22,38 @@ HARNESS = r'''
 
 #include <cassert>
 #include <cstdint>
+#include <cstdlib>
+#include <new>
 #include <fcntl.h>
 #include <string>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <vector>
+
+static int allocation_fail_after = -1;
+static bool allocation_failed = false;
+void *operator new(size_t bytes)
+{
+    if (allocation_fail_after >= 0 && allocation_fail_after-- == 0) {
+        allocation_failed = true;
+        throw std::bad_alloc();
+    }
+    if (void *memory = std::malloc(bytes ? bytes : 1)) return memory;
+    throw std::bad_alloc();
+}
+void operator delete(void *memory) noexcept { std::free(memory); }
+void operator delete(void *memory, size_t) noexcept { std::free(memory); }
+
+std::vector<uint8_t> read_journal(const std::string &path)
+{
+    const int fd = open(path.c_str(), O_RDONLY);
+    struct stat status{};
+    assert(fd >= 0 && fstat(fd, &status) == 0);
+    std::vector<uint8_t> bytes(status.st_size);
+    assert(read(fd, bytes.data(), bytes.size()) == static_cast<ssize_t>(bytes.size()));
+    close(fd);
+    return bytes;
+}
 
 struct replay_state
 {
@@ -289,6 +316,28 @@ int main(int argc, char **argv)
     assert(player_save_journal_append(make_snapshot(10, 2)) == player_save_journal_result::ok);
     assert(player_save_journal_append(make_snapshot(20, 1)) == player_save_journal_result::ok);
     assert(player_save_journal_append(make_snapshot(20, 1)) == player_save_journal_result::ok);
+    // A temporary decode allocation failure must never quarantine a valid save
+    // or compact it out of the durable journal. Sweep every allocation in scan.
+    const auto original_journal = read_journal(journal);
+    unsigned failures = 0;
+    bool completed = false;
+    for (int index = 0; index < 512; ++index) {
+        allocation_failed = false;
+        allocation_fail_after = index;
+        const auto result = player_save_journal_checkpoint(999, 1);
+        allocation_fail_after = -1;
+        assert(read_journal(journal) == original_journal);
+        assert(player_save_journal_health_copy().corrupt_records == 0);
+        assert(access(quarantine.c_str(), F_OK) != 0);
+        if (!allocation_failed) {
+            assert(result == player_save_journal_result::ok);
+            completed = true;
+            break;
+        }
+        ++failures;
+        assert(result == player_save_journal_result::io_failure);
+    }
+    assert(completed && failures > 20);
     assert(player_save_journal_checkpoint(10, 1) == player_save_journal_result::ok);
     assert(player_save_journal_health_copy().records == 3);
 

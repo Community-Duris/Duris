@@ -208,13 +208,7 @@ const char *get_account_name_safe(P_char character)
 	return character && GET_PID(character) == 45 ? "recipient_account" : "queue_account";
 }
 
-P_char find_player_by_pid(int pid)
-{
-	for (P_char character = character_list; character; character = character->next)
-		if (character->only.pc && GET_PID(character) == pid)
-			return character;
-	return nullptr;
-}
+''' + extract(SRC / "utility.c", "P_char find_player_by_pid(int pid)") + r'''
 
 P_char find_character_by_runtime_id(uint64_t runtime_id)
 {
@@ -826,6 +820,7 @@ int main()
 	assert(currency_command_encode_result(result, &encoded));
 	completion.operation_id = submitted_command.operation_id;
 	std::copy(encoded.begin(), encoded.end(), completion.result_payload.begin());
+	descriptor.character = nullptr;
 	character_list = nullptr;
 	coordinator_fenced = false;
 	currency_transaction_handle_completions(&completion, 1);
@@ -835,6 +830,7 @@ int main()
 	player.wallet_revision = 4;
 	GET_BALANCE_GOLD(&actor) = 5;
 	player.bank_revision = 4;
+	descriptor.character = &actor;
 	character_list = &actor;
 	currency_transaction_player_ready(&actor);
 	assert(GET_COPPER(&actor) == 7 && GET_PLATINUM(&actor) == 2);
@@ -849,11 +845,16 @@ int main()
 	char_data recipient = {};
 	recipient.only.pc = &recipient_player;
 	recipient.player.racewar = 1;
+	descriptor_data recipient_descriptor = {};
+	recipient_descriptor.connected = CON_PLAYING;
+	descriptor.next = &recipient_descriptor;
 	for (int scenario = 0; scenario < 5; ++scenario)
 	{
 		currency_transaction_reset_for_tests();
 		coordinator_fenced = false;
 		actor.next = &recipient;
+		descriptor.character = &actor;
+		recipient_descriptor.character = &recipient;
 		character_list = &actor;
 		GET_PLATINUM(&actor) = 100;
 		GET_COPPER(&actor) = GET_SILVER(&actor) = GET_GOLD(&actor) = 0;
@@ -923,9 +924,15 @@ int main()
 		else
 			std::copy(coin_bytes.begin(), coin_bytes.end(), ack.result_payload.begin());
 		if (scenario == 1)
+		{
+			descriptor.character = nullptr;
 			character_list = &recipient; // Sender detached before acknowledgement.
+		}
 		if (scenario == 2)
+		{
+			recipient_descriptor.character = nullptr;
 			actor.next = nullptr; // Recipient detached before acknowledgement.
+		}
 		if (scenario == 3)
 		{
 			// Re-entry already loaded a later wallet before this completion arrived.
@@ -1054,6 +1061,7 @@ int main()
 	assert(GET_SILVER(&actor) == 6 && GET_COPPER(&actor) == 0);
 	assert(GET_SILVER(&recipient) == 4 && GET_COPPER(&recipient) == 10);
 	assert(submission_count == admitted_before + 1);
+	descriptor.next = nullptr;
 	actor.next = nullptr;
 	character_list = &actor;
 	currency_transaction_reset_for_tests();
@@ -1460,6 +1468,64 @@ int main()
     actor.carrying = nullptr;
     converted->loc_p = LOC_NOWHERE;
     extract_obj(converted, false);
+	// A retained body remains the physical destination after descriptor loss.
+	// In death recovery it is also dead and held outside every room; descriptor
+	// lookup must stay authentic so this cannot pass through a connected actor.
+	for (bool pending_death : {false, true})
+	{
+		const int room_before = actor.in_room;
+		const auto position_before = actor.specials.position;
+		const std::array<int32_t, 4> retained_cash = {37, 5, 2, 1};
+		std::copy(retained_cash.begin(), retained_cash.end(), actor.points.cash);
+		const auto retained_wallet_revision = player.wallet_revision;
+		assert(money_to_inventory(&actor));
+		assert(coin_transfer_command_decode_payload(submitted_command, &death_money));
+		assert(item_transfer_command_decode_payload(death_money.destination.change, &death_pile));
+		const uint64_t retained_uid = death_pile.selected_item_uid;
+		P_obj retained_pile = find_live_item_uid(retained_uid);
+		assert(retained_pile && OBJ_NOWHERE(retained_pile));
+		assert(actor.carrying == nullptr && currency_transaction_player_busy(&actor));
+		for (size_t i = 0; i < retained_cash.size(); ++i)
+			assert(actor.points.cash[i] == retained_cash[i]);
+		descriptor.character = nullptr;
+		if (pending_death)
+		{
+			descriptor.connected = CON_ACCT_SELECT_CHAR;
+			actor.in_room = NOWHERE;
+			SET_POS(&actor, STAT_DEAD);
+		}
+		assert(character_list == &actor);
+		assert(find_player_by_pid(GET_PID(&actor)) == nullptr);
+		const size_t live_before_publication = live_items.size();
+		pile_ack(true);
+		assert(!currency_transaction_player_busy(&actor));
+		assert(actor.carrying == retained_pile && OBJ_CARRIED_BY(retained_pile, &actor));
+		assert(find_live_item_uid(retained_uid) == retained_pile);
+		assert(live_items.size() == live_before_publication);
+		assert(player.wallet_revision == retained_wallet_revision + 1);
+		assert(item_ownership_runtime_lookup(retained_uid, &death_custody));
+		assert(death_custody.owner.type == item_owner_type::player &&
+		       death_custody.owner.id == 42 && death_custody.root_item_uid == retained_uid &&
+		       death_custody.parent_item_uid == 0 && death_custody.item_revision == 1 &&
+		       death_custody.state == item_custody_state::active);
+		for (size_t i = 0; i < retained_cash.size(); ++i)
+			assert(actor.points.cash[i] == 0 && retained_pile->value[i] == retained_cash[i]);
+		// The exact duplicate receipt cannot create, credit, or attach another pile.
+		pile_ack(true);
+		assert(actor.carrying == retained_pile && retained_pile->next_content == nullptr);
+		assert(find_live_item_uid(retained_uid) == retained_pile &&
+		       live_items.size() == live_before_publication);
+		assert(player.wallet_revision == retained_wallet_revision + 1);
+		for (size_t i = 0; i < retained_cash.size(); ++i)
+			assert(actor.points.cash[i] == 0 && retained_pile->value[i] == retained_cash[i]);
+		actor.carrying = nullptr;
+		retained_pile->loc_p = LOC_NOWHERE;
+		extract_obj(retained_pile, false);
+		actor.in_room = room_before;
+		actor.specials.position = position_before;
+		descriptor.connected = CON_PLAYING;
+		descriptor.character = &actor;
+	}
 	// Held item admission neither credits coins nor starts a coin transaction.
 	actor.in_room = bag.loc.room = 0;
 	GET_COPPER(&actor) = GET_SILVER(&actor) = GET_GOLD(&actor) = GET_PLATINUM(&actor) = 0;

@@ -125,6 +125,8 @@ std::string render_daily_surface(P_char player, bool colors, bool score, std::st
 	if (!tracker.get_daily_policy().enabled)
 		return {};
 	const std::string before = tracker.serialize_state(error);
+	if (before.empty())
+		return {};
 	tracker.remember_character(current_season_id(), static_cast<uint32_t>(GET_PID(player)),
 				   GET_NAME(player), !IS_TRUSTED(player),
 				   static_cast<int>(GET_RACEWAR(player)));
@@ -204,6 +206,8 @@ bool remember_character(P_char player, std::string *error)
 	if (!ready() || !player || IS_NPC(player))
 		return fail(error, "zone-story character identity is unavailable");
 	const std::string before = tracker.serialize_state(error);
+	if (before.empty())
+		return false;
 	tracker.remember_character(current_season_id(), static_cast<uint32_t>(GET_PID(player)),
 				   GET_NAME(player), !IS_TRUSTED(player),
 				   static_cast<int>(GET_RACEWAR(player)));
@@ -228,6 +232,8 @@ bool erase_character(uint32_t pid, std::string *error)
 		       fail(error, "zone-story catalog is disabled and stored state needs "
 				   "reconciliation");
 	const std::string before = tracker.serialize_state(error);
+	if (before.empty())
+		return false;
 	if (!tracker.erase_character_all_seasons(pid, current_season_id()))
 		return fail(error, "zone-story character identity is invalid");
 	if (save_persisted_state(error))
@@ -293,6 +299,8 @@ bool record_authoritative_completion(std::string_view definition_id, int32_t zon
 	event.party_size = party_size;
 	event.strongest_party_level = strongest_party_level;
 	const std::string before = tracker.serialize_state(error);
+	if (before.empty())
+		return false;
 	const auto recorded = tracker.record_completion(event, error);
 	if (recorded != zone_story_quest_feature::result::applied &&
 	    recorded != zone_story_quest_feature::result::already_applied)

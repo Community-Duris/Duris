@@ -202,6 +202,9 @@ bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator fo
 		}
 		entry.coin_wallets_published = true;
 	}
+	// Descriptor loss can leave a retained death body. Its physical pile must
+	// publish to the same character that received the wallet receipt above.
+	actor = coin_wallet_by_pid(entry.pid);
 	// Extract the node so a successful callback can advance a bulk command. A
 	// temporarily unavailable live destination keeps this same operation for retry.
 	auto node = pending.extract(found);

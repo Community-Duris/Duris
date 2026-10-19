@@ -21,10 +21,12 @@
 #include <cerrno>
 #include <chrono>
 #include <condition_variable>
-#include <deque>
+#include <array>
+#include <cassert>
 #include <list>
 #include <map>
-#include <memory>
+#include <optional>
+#include <type_traits>
 #include <mutex>
 #include <new>
 #include <thread>
@@ -56,8 +58,43 @@ std::condition_variable retry_wakeup;
 job_list queue;
 std::map<persistence_job_owner, job_list::iterator> queued_by_owner;
 // The job being written, owned by the writer thread while set.
-std::unique_ptr<queued_job> inflight;
-std::deque<player_save_completion> results;
+std::optional<queued_job> inflight;
+static_assert(std::is_nothrow_move_constructible_v<queued_job>);
+static_assert(std::is_nothrow_move_assignable_v<player_save_completion>);
+static_assert(std::is_nothrow_move_constructible_v<player_save_completion>);
+// Admission reserves a slot through completion consumption. Delivery after the
+// journal ACK must never allocate: losing that receipt would strand its owner.
+class completion_queue
+{
+    public:
+	bool empty() const noexcept { return count_ == 0; }
+	size_t size() const noexcept { return count_; }
+	const player_save_completion &operator[](size_t index) const noexcept
+	{
+		assert(index < count_);
+		return entries_[(head_ + index) % entries_.size()];
+	}
+	const player_save_completion &front() const noexcept { return (*this)[0]; }
+	void push_back(player_save_completion completion) noexcept
+	{
+		assert(count_ < entries_.size());
+		entries_[(head_ + count_) % entries_.size()] = std::move(completion);
+		++count_;
+	}
+	void pop_front() noexcept
+	{
+		assert(count_ > 0);
+		head_ = (head_ + 1) % entries_.size();
+		--count_;
+	}
+	void clear() noexcept { head_ = count_ = 0; }
+
+    private:
+	std::array<player_save_completion, PLAYER_SAVE_WORKER_MAX_PENDING_JOBS> entries_{};
+	size_t head_ = 0;
+	size_t count_ = 0;
+};
+completion_queue results;
 std::thread writer;
 player_save_apply_fn apply_callback = nullptr;
 void *apply_context = nullptr;
@@ -175,7 +212,7 @@ void writer_main()
 				queued_by_owner.find({ queue.front().kind, queue.front().owner });
 			if (owned != queued_by_owner.end() && owned->second == queue.begin())
 				queued_by_owner.erase(owned);
-			inflight = std::make_unique<queued_job>(std::move(queue.front()));
+			inflight.emplace(std::move(queue.front()));
 			queue.pop_front();
 			queued_bytes -= inflight->bytes;
 			update_depth_health_locked();
@@ -242,13 +279,7 @@ void writer_main()
 		// An abandoned retry at shutdown stays pending: the caller names it.
 		if (!stop_requested || !connection_lost(applied.outcome))
 		{
-			try
-			{
-				results.push_back(completion);
-			}
-			catch (const std::bad_alloc &)
-			{
-			}
+			results.push_back(std::move(completion));
 			inflight.reset();
 		}
 		update_depth_health_locked();
@@ -415,7 +446,7 @@ void player_save_worker_shutdown(void (*interrupt)(void))
 		std::lock_guard<std::mutex> lock(worker_mutex);
 		stop_requested = true;
 		health.stop_pending = true;
-		writing = inflight != nullptr;
+		writing = inflight.has_value();
 		job_available.notify_all();
 		retry_wakeup.notify_all();
 	}
@@ -513,8 +544,9 @@ bool player_save_worker_pid_pending(int pid)
 		return true;
 	if (queued_by_owner.count({ persistence_job_kind::player, static_cast<uint64_t>(pid) }))
 		return true;
-	for (const auto &completion : results)
-		if (completion.kind == persistence_job_kind::player && completion.pid == pid)
+	for (size_t index = 0; index < results.size(); ++index)
+		if (results[index].kind == persistence_job_kind::player &&
+		    results[index].pid == pid)
 			return true;
 	return false;
 }

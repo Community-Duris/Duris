@@ -33,8 +33,8 @@ HARNESS = r'''
 #include <thread>
 #include <vector>
 
-// Fail only allocations made by the submitting thread; the blocked writer and
-// test bookkeeping remain independent of the injected failure.
+// Fault injection is thread-local: admission and post-ACK delivery can fail
+// independently without disturbing the other thread or test bookkeeping.
 static thread_local int allocation_fail_after = -1;
 void *operator new(size_t bytes)
 {
@@ -284,8 +284,62 @@ static void test_journal_and_death_admission()
     state.attempts.clear();
 }
 
+static unsigned int delivery_acks = 0;
+static unsigned int delivery_writes = 0;
+static bool delivery_allocation_attempted = false;
+static player_save_apply_result apply_without_allocation(const player_snapshot &snapshot, void *)
+{
+    // The previous ACK armed failure. Moving the next queued job and delivering
+    // its predecessor must not allocate, even when the completion ring wraps.
+    if (delivery_writes && allocation_fail_after != 0)
+        delivery_allocation_attempted = true;
+    allocation_fail_after = -1;
+    ++delivery_writes;
+    return {player_save_apply_outcome::applied, snapshot.revision, 0};
+}
+static bool acknowledge_without_allocation(int, player_revision_t, void *)
+{
+    ++delivery_acks;
+    allocation_fail_after = 0;
+    return true;
+}
+static void test_delivery_after_ack()
+{
+    player_save_worker_reset_for_tests();
+    assert(player_save_worker_init(apply_without_allocation, nullptr));
+    assert(player_save_worker_set_journal_hooks(nullptr, acknowledge_without_allocation, nullptr));
+    // Fill every reserved completion slot, check admission backpressure, consume
+    // half, then refill to exercise wraparound with the writer allocation denied.
+    const size_t limit = PLAYER_SAVE_WORKER_MAX_PENDING_JOBS;
+    for (size_t i = 0; i < limit; ++i)
+        assert(player_save_worker_submit(snapshot_for(1000 + i, 1)) == player_save_submit_result::accepted);
+    assert(persistence_writer_wait_idle(10000));
+    assert(player_save_worker_health_copy().completion_jobs == limit);
+    assert(player_save_worker_submit(snapshot_for(999, 1)) == player_save_submit_result::unavailable);
+    std::vector<player_save_completion> completed(limit);
+    assert(player_save_worker_pulse(completed.data(), limit / 2) == limit / 2);
+    for (size_t i = 0; i < limit / 2; ++i) {
+        assert(completed[i].pid == static_cast<int>(1000 + i));
+        assert(completed[i].outcome == player_save_apply_outcome::applied);
+        assert(!player_save_worker_pid_pending(1000 + i));
+        assert(player_save_worker_submit(snapshot_for(1000 + limit + i, 1)) == player_save_submit_result::accepted);
+    }
+    assert(persistence_writer_wait_idle(10000));
+    assert(player_save_worker_pulse(completed.data(), limit) == limit);
+    for (size_t i = 0; i < limit; ++i) {
+        assert(completed[i].pid == static_cast<int>(1000 + limit / 2 + i));
+        assert(completed[i].revision == 1 && completed[i].durable_revision == 1);
+        assert(completed[i].outcome == player_save_apply_outcome::applied);
+    }
+    assert(delivery_acks == limit + limit / 2 && delivery_writes == delivery_acks);
+    assert(!delivery_allocation_attempted);
+    assert(player_save_worker_health_copy().completion_jobs == 0);
+    player_save_worker_reset_for_tests();
+}
+
 int main()
 {
+    test_delivery_after_ack();
     test_journal_and_death_admission();
     test_admission_allocation_failure();
     player_save_worker_reset_for_tests();

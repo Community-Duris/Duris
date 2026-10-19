@@ -19,6 +19,8 @@ HARNESS = r'''
 #include "player/player_save_worker.h"
 
 #include <array>
+#include <cstdlib>
+#include <new>
 #include <cassert>
 #include <chrono>
 #include <cstdarg>
@@ -26,6 +28,19 @@ HARNESS = r'''
 #include <cstdio>
 #include <thread>
 #include <vector>
+
+static thread_local bool fail_next_allocation = false;
+void *operator new(size_t bytes)
+{
+    if (fail_next_allocation) {
+        fail_next_allocation = false;
+        throw std::bad_alloc();
+    }
+    if (void *memory = std::malloc(bytes ? bytes : 1)) return memory;
+    throw std::bad_alloc();
+}
+void operator delete(void *memory) noexcept { std::free(memory); }
+void operator delete(void *memory, size_t) noexcept { std::free(memory); }
 
 P_char character_list = nullptr;
 P_obj object_list = nullptr;
@@ -207,6 +222,11 @@ int main(int argc, char **argv)
     }
 
     critical_completion completions[8] = {};
+    assert(persistence_writer_wait_idle(5000));
+    fail_next_allocation = true;
+    assert(critical_command_coordinator_pulse(completions, 8) == 0);
+    assert(!fail_next_allocation);
+    assert(critical_command_coordinator_is_fenced({critical_entity_type::player, 1001}, nullptr));
     bool first_completion_seen = false;
     for (int spin = 0; spin < 1000 && !first_completion_seen; ++spin)
     {
@@ -229,6 +249,10 @@ int main(int argc, char **argv)
     assert(retained.pending == 1 && retained.publication_retrying == 1);
     critical_coordinator_health coordinator = critical_command_coordinator_health_copy();
     assert(coordinator.publication_pending == 1);
+    fail_next_allocation = true;
+    assert(!critical_command_coordinator_acknowledge_publication(receipt.operation_id));
+    assert(!fail_next_allocation);
+    assert(critical_command_coordinator_health_copy().publication_pending == 1);
     assert(critical_command_coordinator_is_fenced(
         {critical_entity_type::item, object.obj_uid}, nullptr));
     assert(critical_command_coordinator_is_fenced(
