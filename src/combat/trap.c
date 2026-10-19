@@ -406,13 +406,14 @@ static bool is_in_locker(P_char ch, P_obj obj)
 {
 	if (ch && is_locker_room(ch->in_room))
 		return true;
-	for (P_obj cur = obj; cur; )
+	for (P_obj cur = obj; cur;)
 	{
 		if (OBJ_ROOM(cur))
 			return is_locker_room(cur->loc.room);
 		if (cur->loc_p & (LOC_CARRIED | LOC_WORN))
 		{
-			P_char carrier = (cur->loc_p & LOC_CARRIED) ? cur->loc.carrying : cur->loc.wearing;
+			P_char carrier = (cur->loc_p & LOC_CARRIED) ? cur->loc.carrying :
+								      cur->loc.wearing;
 			return carrier && is_locker_room(carrier->in_room);
 		}
 		if (cur->loc_p & LOC_INSIDE)

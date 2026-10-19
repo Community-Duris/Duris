@@ -17,9 +17,7 @@ size_t last_submitted_bytes = 0;
 } // namespace
 
 // Stubs for standalone test compilation
-void logit(const char * /*filename*/, const char * /*format*/, ...)
-{
-}
+void logit(const char * /*filename*/, const char * /*format*/, ...) {}
 
 player_save_submit_result persistence_writer_submit(persistence_job_kind kind, uint64_t owner,
 						    size_t bytes, persistence_job_write_fn write)
@@ -94,10 +92,12 @@ static void test_resilient_open_world_fallback()
 	economic_event_record(303, EconomicAction::UNKNOWN, -12000, 100, 0, "mystery_sink");
 
 	// Explicit UNCLASSIFIED_INFLOW
-	economic_event_record(404, EconomicAction::UNCLASSIFIED_INFLOW, 100, 0, 0, "unclassified_in");
+	economic_event_record(404, EconomicAction::UNCLASSIFIED_INFLOW, 100, 0, 0,
+			      "unclassified_in");
 
 	// Explicit UNCLASSIFIED_OUTFLOW
-	economic_event_record(404, EconomicAction::UNCLASSIFIED_OUTFLOW, -50, 0, 0, "unclassified_out");
+	economic_event_record(404, EconomicAction::UNCLASSIFIED_OUTFLOW, -50, 0, 0,
+			      "unclassified_out");
 
 	EconomicOutboxHealth health = economic_event_outbox_health();
 	assert(health.queue_depth == 4);
@@ -126,7 +126,8 @@ static void test_outbox_flush_submits_to_writer()
 	economic_event_outbox_reset_for_tests();
 	submitted_jobs.clear();
 
-	economic_event_record(505, EconomicAction::AUCTION_PAYOUT, 800000, 0, 999, "auction_payout");
+	economic_event_record(505, EconomicAction::AUCTION_PAYOUT, 800000, 0, 999,
+			      "auction_payout");
 	economic_event_record(505, EconomicAction::BANK_DEPOSIT, -800000, 0, 0, "bank_deposit");
 
 	economic_event_flush_outbox();

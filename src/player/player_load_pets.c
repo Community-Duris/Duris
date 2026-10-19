@@ -13,21 +13,20 @@
 
 namespace
 {
-	bool fail(player_load_pet_materialize_metrics * metrics,
-		  player_load_pet_materialize_outcome outcome)
-	{
-		if (metrics)
-			metrics->outcome = outcome;
-		return false;
-	}
+bool fail(player_load_pet_materialize_metrics *metrics, player_load_pet_materialize_outcome outcome)
+{
+	if (metrics)
+		metrics->outcome = outcome;
+	return false;
+}
 
-	bool valid_pet(const player_pet_snapshot &pet)
-	{
-		return pet.mob_vnum > 0 && pet.order >= 0 &&
-		       pet.order < static_cast<int32_t>(PLAYER_LOAD_PET_MAX) && pet.max_hit > 0 &&
-		       pet.hit >= 0 && pet.max_mana >= 0 && pet.mana >= 0 &&
-		       pet.max_vitality >= 0 && pet.vitality >= 0 && pet.charm_duration >= -1;
-	}
+bool valid_pet(const player_pet_snapshot &pet)
+{
+	return pet.mob_vnum > 0 && pet.order >= 0 &&
+	       pet.order < static_cast<int32_t>(PLAYER_LOAD_PET_MAX) && pet.max_hit > 0 &&
+	       pet.hit >= 0 && pet.max_mana >= 0 && pet.mana >= 0 && pet.max_vitality >= 0 &&
+	       pet.vitality >= 0 && pet.charm_duration >= -1;
+}
 }
 
 void player_load_pets_discard(std::vector<P_char> *pets)
@@ -60,7 +59,7 @@ bool player_load_pets_stage(P_char owner, const player_load_result &result,
 	{
 		pets->reserve(metrics->pet_count);
 	}
-	catch(const std::bad_alloc &)
+	catch (const std::bad_alloc &)
 	{
 		return fail(metrics, player_load_pet_materialize_outcome::allocation_failure);
 	}
@@ -73,7 +72,7 @@ bool player_load_pets_stage(P_char owner, const player_load_result &result,
 		database_ids.reserve(metrics->pet_count);
 		orders.reserve(metrics->pet_count);
 	}
-	catch(const std::bad_alloc &)
+	catch (const std::bad_alloc &)
 	{
 		return fail(metrics, player_load_pet_materialize_outcome::allocation_failure);
 	}
@@ -87,7 +86,7 @@ bool player_load_pets_stage(P_char owner, const player_load_result &result,
 			unique = database_ids.insert(identity.database_id).second &&
 				 orders.insert(snapshot.order).second;
 		}
-		catch(const std::bad_alloc &)
+		catch (const std::bad_alloc &)
 		{
 			player_load_pets_discard(pets);
 			return fail(metrics,
@@ -144,7 +143,7 @@ bool player_load_pets_stage(P_char owner, const player_load_result &result,
 					nullptr); // retain snapshot/identity index correspondence
 				metrics->item_count += snapshot.items.size();
 			}
-			catch(const std::bad_alloc &)
+			catch (const std::bad_alloc &)
 			{
 				player_load_pets_discard(pets);
 				return fail(
@@ -169,7 +168,7 @@ bool player_load_pets_stage(P_char owner, const player_load_result &result,
 		{
 			pets->push_back(pet);
 		}
-		catch(const std::bad_alloc &)
+		catch (const std::bad_alloc &)
 		{
 			extract_char(pet);
 			player_load_pets_discard(pets);

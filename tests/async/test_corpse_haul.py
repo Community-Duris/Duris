@@ -42,6 +42,9 @@ prelude = r'''
 #define CORPSE_SAVEID 3
 #define AVATAR 60
 #define LOG_FILE 0
+#define LOG_CORPSE 1
+#define PULSE_VIOLENCE 1
+#define GET_NAME(ch) "tester"
 #define LOWEST_MAT_VNUM 1000
 #define HIGHEST_MAT_VNUM 2000
 #define ITEM2_ACCOUNT_BOUND 1
@@ -82,7 +85,7 @@ using P_char = char_data *;
 struct obj_data {
  uint64_t obj_uid=0; int type=0, location=0; int value[8]={};
  struct { P_obj_unused_placeholder; } unused;
- const char *short_description="a dagger", *name="dagger";
+ const char *short_description="a dagger", *name="dagger", *action_description="Source";
  int weight=1, condition=1, flags=0; bool visible=true;
  P_char carrier=nullptr, hitched_to=nullptr;
  obj_data *next_content=nullptr, *contains=nullptr;
@@ -141,7 +144,15 @@ static bool item_movement_transaction_player_busy(P_char) { return false; }
 static bool corpse_lifecycle_transaction_busy(uint32_t,uint32_t) { return false; }
 static bool corpse_lifecycle_transaction_note_item_transfer(uint32_t,uint32_t,int) { return true; }
 static void persistence_alert(int,const char *,const char *,const char *,const char *,const char *,...) { ++alerts; }
-static void logit(int,const char *,...) {}
+static int loot_audits=0, loot_waits=0;
+static std::string loot_audit;
+static void logit(int type,const char *format,...) {
+ if(type!=LOG_CORPSE) return;
+ char buffer[256]; va_list args; va_start(args,format);
+ vsnprintf(buffer,sizeof(buffer),format,args); va_end(args);
+ ++loot_audits; loot_audit=buffer;
+}
+static void CharWait(P_char actor,int) { assert(actor->alive); ++loot_waits; }
 static bool item_movement_reject_is_transient(item_movement_reject r) { return r==item_movement_reject::busy; }
 static const char *item_movement_reject_name(item_movement_reject) { return "refused"; }
 static void report_batch_movement_reject(P_char ch,item_movement_reject,const char *,const char *s) { send_to_char(s,ch); }
@@ -213,6 +224,7 @@ static void do_get_finalize_room_item(P_char ch,P_obj o,bool &found,int &total) 
 
 driver = r'''
 static void reset() {
+ loot_audits=loot_waits=0; loot_audit.clear();
  trapped_uid=0; trap_effect=trap_calls=checked_after_trap=corpse_writes=0; live_actor=nullptr;
  die_on_delivery=throw_on_delivery=false; durable_items=true;
  bulk_gets.clear(); objects.clear(); rooms.clear(); output.clear();
@@ -415,10 +427,13 @@ int main() {
   start_bulk_get(&actor,&corpse,nullptr,false);
   if(mixed) acknowledge(&actor);
   assert(coin_attempts==1 && output.find("Haul:")==std::string::npos);
+  assert(loot_audits==0 && loot_waits==0);
   actor.in_room=2;
   coin_pickup_context context={50,42,TRUE,true};
   coin_transfer_payload payload; payload.source.before={0,0,450,0}; payload.source.after={0,0,50,0};
   assert(coin_get_completion(&actor,true,payload,{},0,(const uint8_t*)&context,sizeof(context)));
+  assert(loot_audits==1 && loot_waits==1);
+  assert(loot_audit.find("0p, 400g, 0s, 0c")!=std::string::npos);
   assert(output.find("  0p 400g 0s 0c")!=std::string::npos);
   assert(output.find("couldn't carry")>output.find("Haul:"));
   assert(rooms[2].empty() && bulk_gets.empty());
@@ -432,8 +447,10 @@ int main() {
  coin_pickup_context context={50,42,TRUE,true}; coin_transfer_payload first;
  first.source.before={0,0,7,0};
  assert(coin_get_completion(&actor,true,first,{},0,(const uint8_t*)&context,sizeof(context)));
+ assert(loot_audits==1 && loot_waits==1);
  assert(coin_attempts==2 && output.find("Haul:")==std::string::npos);
  assert(coin_get_completion(&actor,false,{}, {},0,(const uint8_t*)&context,sizeof(context)));
+ assert(loot_audits==1 && loot_waits==1);
  assert(output.find("  a dagger")!=std::string::npos && output.find("  0p 7g 0s 0c")!=std::string::npos);
  assert(output.find("sorting")<output.find("did not commit") && bulk_gets.empty());
  // The helper is PC-only. The strict PID macro above aborts for a real NPC,

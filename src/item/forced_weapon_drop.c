@@ -197,9 +197,10 @@ forced_weapon_drop_result forced_weapon_drop(P_char actor, P_obj weapon,
 			return forced_weapon_drop_result::rejected;
 		}
 		if (IS_PC(actor) && GET_PID(actor) > 0)
-			mark_player_dirty_components(GET_PID(actor), PLAYER_COMPONENT_STATUS |
-								     PLAYER_COMPONENT_EQUIPMENT |
-								     PLAYER_COMPONENT_INVENTORY);
+			mark_player_dirty_components(GET_PID(actor),
+						     PLAYER_COMPONENT_STATUS |
+							     PLAYER_COMPONENT_EQUIPMENT |
+							     PLAYER_COMPONENT_INVENTORY);
 		char_light(actor);
 		if (valid_room(actor->in_room))
 			room_light(actor->in_room, REAL);

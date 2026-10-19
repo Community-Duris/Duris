@@ -839,7 +839,8 @@ bool create_recipe(P_char ch, P_obj temp)
 		return false;
 
 	SET_BIT(objrecipe->value[6], recipenumber);
-	const char *old_desc = objrecipe->short_description ? objrecipe->short_description : "a recipe for";
+	const char *old_desc = objrecipe->short_description ? objrecipe->short_description :
+							      "a recipe for";
 	const char *target_desc = temp->short_description ? temp->short_description : "an item";
 	checked_snprintf(buffer, sizeof(buffer), "%s %s&n", old_desc, target_desc);
 

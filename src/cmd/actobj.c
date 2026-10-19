@@ -193,6 +193,9 @@ static bool can_equip_soulbound_item(P_char actor, P_obj object, bool show_rejec
 			logit(LOG_DEBUG, __VA_ARGS__); \
 	} while (0)
 
+static void do_get_report_container_success(P_char, P_char, P_obj, P_obj, bool);
+static void do_get_log_room_artifact_pickup(P_char, P_obj);
+
 namespace
 {
 struct get_movement_context
@@ -548,9 +551,25 @@ void item_get_completion(P_char actor, bool committed, const item_transfer_resul
 		persistence_alert(AVATAR, "corpse", "revision_publish", "none", "none",
 				  "runtime_rejected", "save_id=%d",
 				  container->value[CORPSE_SAVEID]);
+	const uint64_t runtime_id = actor->runtime_id;
 	item_get_ack_publication = true;
 	get(actor, object, container, context.showit);
 	item_get_ack_publication = false;
+	if (find_character_by_runtime_id(runtime_id) != actor)
+		return;
+	P_obj delivered = find_live_item_uid(context.item_uid);
+	container = find_live_item_uid(context.container_uid);
+	if (!item_get_deferred && !item_get_rejected && delivered &&
+	    OBJ_CARRIED_BY(delivered, actor))
+	{
+		if (container)
+			do_get_report_container_success(
+				actor, actor, container, delivered,
+				container->type == ITEM_CORPSE &&
+					IS_SET(container->value[CORPSE_FLAGS], PC_CORPSE));
+		else if (!context.container_uid)
+			do_get_log_room_artifact_pickup(actor, delivered);
+	}
 	if (IS_NPC(actor))
 	{
 		// Mob scavenging used to evaluate equipment immediately after the live
@@ -871,6 +890,9 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 	int got_p = 0, got_g = 0, got_s = 0, got_c = 0, notall = 0;
 	char Gbuf3[MAX_STRING_LENGTH];
 	P_obj corpse = NULL;
+	uint64_t corpse_uid = 0;
+	const uint64_t runtime_id = ch ? ch->runtime_id : 0;
+	const int room = ch ? ch->in_room : NOWHERE;
 	bool slip = FALSE;
 	item_get_deferred = false;
 	item_get_rejected = true;
@@ -956,10 +978,13 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 
 	/* Trap check */
 	/* A triggered trap rejects pickup and may already have extracted ch. */
+	if (s_obj && s_obj->type == ITEM_CORPSE && IS_SET(s_obj->value[CORPSE_FLAGS], PC_CORPSE))
+		corpse = s_obj;
+	corpse_uid = corpse ? corpse->obj_uid : 0;
 	if (checkgetput(ch, o_obj))
 	{
-		if (corpse)
-			writeCorpse(corpse);
+		if (P_obj live_corpse = find_live_item_uid(corpse_uid))
+			writeCorpse(live_corpse);
 		return;
 	}
 
@@ -1000,9 +1025,6 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 		OBJ_WORN(o_obj) ? 1 : 0, OBJ_INSIDE(o_obj) ? 1 : 0, OBJ_ROOM(o_obj) ? 1 : 0,
 		s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
 		s_obj ? OBJ_VNUM(s_obj) : -1);
-
-	if (s_obj && (s_obj->type == ITEM_CORPSE) && IS_SET(s_obj->value[1], PC_CORPSE))
-		corpse = s_obj;
 
 	if (s_obj && IS_OBJ_STAT(s_obj, ITEM_NOSHOW))
 		showit = TRUE;
@@ -1323,6 +1345,11 @@ publish_after_ack:
 	if (corpse)
 		writeCorpse(corpse);
 
+	if (!get_can_continue(ch, runtime_id, room, NULL, 0))
+	{
+		item_get_rejected = true;
+		return;
+	}
 	char_light(ch);
 	room_light(ch->in_room, REAL);
 }
@@ -1343,11 +1370,18 @@ int fight_in_room(P_char ch)
 
 static bool do_get_commit_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj, bool &found)
 {
+	const uint64_t runtime_id = ch->runtime_id;
+	const int room = ch->in_room;
 	const uint64_t item_uid = o_obj->obj_uid;
 	const bool money = GET_ITEM_TYPE(o_obj) == ITEM_MONEY;
 	get(ch, o_obj, s_obj, TRUE);
 	if (item_get_deferred || item_get_rejected)
 		return false;
+	if (!get_can_continue(ch, runtime_id, room, NULL, 0))
+	{
+		item_get_rejected = true;
+		return false;
+	}
 	// obj_to_char can consume crumble-on-loot items instead of delivering them.
 	if (!money && (find_live_item_uid(item_uid) != o_obj || !OBJ_CARRIED_BY(o_obj, ch)))
 	{
@@ -1400,6 +1434,24 @@ do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_obj, P_obj o_o
 				  bool &found, bool corpse_flag, const char *post_tag,
 				  const coin_get_submission_options *coin_options = NULL)
 {
+	if (coin_options && o_obj && GET_ITEM_TYPE(o_obj) == ITEM_MONEY)
+	{
+		item_get_deferred = submit_coin_get(ch, o_obj, s_obj, TRUE, coin_options);
+		item_get_rejected = !item_get_deferred;
+		if (item_get_rejected)
+			report_coin_get_rejection(ch, s_obj);
+		return;
+	}
+	const bool money = GET_ITEM_TYPE(o_obj) == ITEM_MONEY;
+	if (!do_get_finalize_container_item(ch, s_obj, o_obj, total, found, post_tag) || money)
+		return;
+	do_get_report_container_success(ch, hood, s_obj, o_obj, corpse_flag);
+}
+
+static void do_get_report_container_success(P_char ch, P_char hood, P_obj s_obj, P_obj o_obj,
+					    bool corpse_flag)
+{
+	// Audit and artifact side effects describe delivery, never admission.
 	if ((GET_ITEM_TYPE(o_obj) == ITEM_CORPSE) && IS_SET(o_obj->value[1], PC_CORPSE))
 	{
 		logit(LOG_CORPSE, "%s%s: corpse of %s from %s", GET_NAME(ch),
@@ -1449,16 +1501,6 @@ do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_obj, P_obj o_o
 	{
 		CharWait(ch, PULSE_VIOLENCE);
 	}
-	if (coin_options && o_obj && GET_ITEM_TYPE(o_obj) == ITEM_MONEY)
-	{
-		item_get_deferred = submit_coin_get(ch, o_obj, s_obj, TRUE, coin_options);
-		item_get_rejected = !item_get_deferred;
-		if (item_get_rejected)
-			report_coin_get_rejection(ch, s_obj);
-		return;
-	}
-
-	do_get_finalize_container_item(ch, s_obj, o_obj, total, found, post_tag);
 }
 
 static void do_get_log_room_artifact_pickup(P_char ch, P_obj o_obj)
@@ -4240,6 +4282,15 @@ static bool coin_get_completion(P_char actor, bool committed, const coin_transfe
 				got[index] =
 					payload.source.before[index] - payload.source.after[index];
 				partial = partial || payload.source.after[index] != 0;
+			}
+			if (container && container->type == ITEM_CORPSE &&
+			    IS_SET(container->value[CORPSE_FLAGS], PC_CORPSE))
+			{
+				logit(LOG_CORPSE, "%s: %dp, %dg, %ds, %dc from %s", GET_NAME(actor),
+				      got[3], got[2], got[1], got[0],
+				      container->action_description);
+				if (!IS_TRUSTED(actor))
+					CharWait(actor, PULSE_VIOLENCE);
 			}
 			char line[MAX_STRING_LENGTH];
 			const std::string coins =
