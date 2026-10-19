@@ -43,6 +43,7 @@ struct materialization
 {
 	bool unavailable = false;
 	bool diverge = false;
+	bool diverge_revision = false;
 	unsigned calls = 0;
 	unsigned applied = 0;
 	std::vector<critical_operation_id> receipts;
@@ -73,6 +74,11 @@ static critical_apply_result project(const critical_command &command, void *cont
 	if (state.diverge)
 	{
 		++result.result_payload[1];
+		return result;
+	}
+	if (state.diverge_revision)
+	{
+		++result.durable_revision;
 		return result;
 	}
 	for (const auto &id : state.receipts)
@@ -119,6 +125,19 @@ int main(int argc, char **argv)
 {
 	assert(argc == 2);
 	const auto first = transfer(60), second = transfer(25);
+	for (auto outcome :
+	     { critical_apply_outcome::applied, critical_apply_outcome::already_applied })
+	{
+		critical_apply_result result{ outcome, first.outcome_revision, 0 };
+		result.result_size = first.outcome_payload.size();
+		std::copy(first.outcome_payload.begin(), first.outcome_payload.end(),
+			  result.result_payload.begin());
+		assert(operation_log_result_matches(first, result));
+		result.durable_revision = first.outcome_revision - 1;
+		assert(!operation_log_result_matches(first, result));
+		result.durable_revision = first.outcome_revision + 1;
+		assert(!operation_log_result_matches(first, result));
+	}
 	std::vector<uint8_t> bytes;
 	assert(critical_command_encode(first, &bytes) == critical_command_codec_result::ok);
 	critical_command decoded{};
@@ -188,6 +207,24 @@ int main(int argc, char **argv)
 	state.diverge = false;
 	assert(operation_log_init(argv[1], project, &state));
 	assert(state.balances[0] == 5 && state.balances[1] == 95);
+
+	// Matching bytes at a different revision are not the promised outcome.
+	// Keep the redo record and fence later writes, including on cold replay.
+	state.diverge_revision = true;
+	assert(operation_log_submit(transfer(4)) == critical_submit_result::accepted);
+	pump();
+	assert(!operation_log_ready() && jobs.size() == 1);
+	assert(critical_command_journal_health_copy().records == 1);
+	assert(operation_log_submit(transfer(1)) == critical_submit_result::unavailable);
+	jobs.clear();
+	operation_log_shutdown();
+	assert(!operation_log_init(argv[1], project, &state));
+	assert(critical_command_journal_health_copy().records == 1);
+	operation_log_shutdown();
+	state.diverge_revision = false;
+	assert(operation_log_init(argv[1], project, &state));
+	assert(state.balances[0] == 4 && state.balances[1] == 96);
+	assert(critical_command_journal_health_copy().records == 0);
 
 	// A real player checkpoint codec shares the operation ordering and supports
 	// snapshots larger than the ordinary critical-command payload limit.

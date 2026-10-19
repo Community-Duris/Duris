@@ -82,6 +82,7 @@ bool operation_log_result_matches(const critical_command &command,
 		result.outcome == critical_apply_outcome::already_applied) &&
 	       !result.error_code &&
 	       command.schema_version == CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION &&
+	       result.durable_revision == command.outcome_revision &&
 	       result.result_size == command.outcome_payload.size() &&
 	       std::equal(command.outcome_payload.begin(), command.outcome_payload.end(),
 			  result.result_payload.begin());

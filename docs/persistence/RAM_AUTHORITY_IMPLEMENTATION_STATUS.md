@@ -21,6 +21,8 @@ login/logout and read-projection requirements.
 - Exclusive journal ownership and ordered writer admission before durable append.
 - Retention after uncertain append or divergent projection, without publishing a
   successful gameplay result or allowing following writes to overtake it.
+- Exact result-byte and revision checks before discarding a projected log record;
+  revision divergence retains recovery evidence both live and during cold replay.
 - Pure RAM preparation for basic currency, epic and item/coin commands.
 - A coordinator path that prepares on the game thread and publishes only after
   durable admission, plus stronger currency and epic publication retention.
@@ -35,6 +37,11 @@ that is not evidence that the runtime migration below is complete.
   including after cache eviction, restart and migration from existing receipts.
 - Startup replay before world/player hydration, with a defined legacy-journal
   transition and safe writer shutdown.
+- Qualification of the coordinator's shared-writer integration. The legacy
+  `test_critical_command_coordinator.py` harness currently fails to link the new
+  writer dependency; its parallel-command expectations also need an explicit
+  replacement with ordered-writer and publication-fence tests. The focused RAM
+  coordinator test does not replace this broader coverage.
 - Complete atomic trade and auction preparation/materialization, including
   offline wallets, item custody, escrow/refunds and deterministic deadlines.
 - Completion of item sidecar handling for corpse, collector and crafting paths;
