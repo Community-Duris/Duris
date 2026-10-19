@@ -2019,6 +2019,8 @@ bool load_cyrics_revenge_crew(P_ship ship)
 	up_ex->keyword = str_dup("hatch heavy");
 
 	P_obj chest = load_treasure_chest(ship, captain, crew_data);
+	if (!chest)
+		return false;
 
 	int r_num = real_object(AUTOMATONS_MOONSTONE_CORE);
 	if (r_num < 0)

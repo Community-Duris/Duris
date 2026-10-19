@@ -113,11 +113,16 @@ static void act(const char *s,int,P_char ch,P_obj,void *,int target) {
  if(target==TO_ROOM) rooms[ch->in_room]+=s; else output+=s;
 }
 static void obj_from_obj(P_obj o) { o->location=0; }
-static void obj_to_char(P_obj o,P_char ch) {
- if(fail_delivery) { objects.erase(o->obj_uid); return; }
+enum class obj_to_char_result { placed, deferred, rejected, destroyed };
+static obj_to_char_result obj_to_char_checked(P_obj o, P_char ch) {
+ if(fail_delivery) { objects.erase(o->obj_uid); return obj_to_char_result::destroyed; }
  o->location=3; o->carrier=ch;
  if(die_on_delivery) extract_actor(ch);
  if(throw_on_delivery) throw std::bad_alloc();
+ return obj_to_char_result::placed;
+}
+static void obj_to_char(P_obj o, P_char ch) {
+ (void)obj_to_char_checked(o, ch);
 }
 static bool item_movement_transaction_player_busy(P_char) { return false; }
 static bool isname(const char *a,const char *b) { return !strcmp(a,b); }

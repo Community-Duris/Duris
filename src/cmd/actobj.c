@@ -13,6 +13,7 @@
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
+#include "world/handler.h"
 #include "world/transport.h"
 #include "cmd/interp.h"
 #include "mob/studioproc.h"
@@ -411,7 +412,18 @@ static void publish_container_get(P_char ch, P_obj o_obj, P_obj s_obj, int showi
 		if (showit && !slip)
 			act("$n gets $p from $P.", 1, ch, o_obj, s_obj, TO_ROOM);
 	}
-	obj_to_char(o_obj, ch);
+	const obj_to_char_result placement = obj_to_char_checked(o_obj, ch);
+	if (placement != obj_to_char_result::placed)
+	{
+		if (haul)
+		{
+			haul->failed = true;
+			item_get_rejected = true;
+			haul->rejections.emplace_back(
+				"An accepted item could not be delivered to your inventory.\r\n");
+		}
+		return;
+	}
 	if (haul)
 	{
 		P_obj delivered = find_live_item_uid(picked_uid);
@@ -789,8 +801,8 @@ publish_after_ack:
 		act("You get $p.", 0, ch, o_obj, 0, TO_CHAR);
 		if (showit && !slip)
 			act("$n gets $p.", 1, ch, o_obj, 0, TO_ROOM);
-		obj_to_char(o_obj, ch);
-		item_get_rejected = false;
+		const obj_to_char_result placement = obj_to_char_checked(o_obj, ch);
+		item_get_rejected = (placement != obj_to_char_result::placed);
 	}
 
 	if (corpse)
@@ -1943,8 +1955,8 @@ void do_get(P_char ch, char *argument, int cmd)
 					{
 						// Set object to LOC_NOWHERE so we can give it to the char without errors: Applies to NULL location objects.
 						s_obj->loc_p = LOC_NOWHERE;
-						obj_to_char(s_obj, ch);
-						if (i < MAX_STRING_LENGTH - 1)
+						const obj_to_char_result placement = obj_to_char_checked(s_obj, ch);
+						if (placement == obj_to_char_result::placed && i < MAX_STRING_LENGTH - 1)
 						{
 							APPENDF(Gbuf2, "%s, ", OBJ_SHORT(s_obj));
 							i = strnlen(Gbuf2, MAX_STRING_LENGTH);
@@ -4236,10 +4248,21 @@ void do_give(P_char ch, char *argument, int cmd)
 	act("$n gives $p to $N.", 1, ch, obj, vict, TO_NOTVICT);
 	act("$n gives you $p.", 0, ch, obj, vict, TO_VICT);
 	send_to_char("Ok.\r\n", ch);
-	// DEFERRED: use-after-free — obj_to_char may free obj via crumbleloot
-	// extraction (handler.c), but callers below dereference obj (IS_ARTIFACT,
-	// short_description, R_num). Fix requires obj_to_char returning freed-status.
-	obj_to_char(obj, vict);
+	const obj_to_char_result placement = obj_to_char_checked(obj, vict);
+	if (placement != obj_to_char_result::placed)
+	{
+		if (IS_PC(ch))
+			mark_player_dirty_components(
+				GET_PID(ch), PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_EQUIPMENT |
+						     PLAYER_COMPONENT_INVENTORY);
+		if (IS_PC(vict))
+			mark_player_dirty_components(
+				GET_PID(vict), PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_EQUIPMENT |
+						       PLAYER_COMPONENT_INVENTORY);
+		char_light(ch);
+		room_light(ch->in_room, REAL);
+		return;
+	}
 	if (IS_TRUSTED(ch))
 	{
 		if (IS_ARTIFACT(obj))
@@ -5718,8 +5741,10 @@ int remove_item(P_char ch, P_obj obj, int position)
 			}
 			const bool crumbles = IS_OBJ_STAT2(obj, ITEM2_CRUMBLELOOT) && IS_PC(ch) &&
 					      !IS_TRUSTED(ch);
-			obj_to_char(obj, ch);
-			return crumbles ? REMOVE_EXTRACTED : result;
+			const obj_to_char_result placement = obj_to_char_checked(obj, ch);
+			return (crumbles || placement == obj_to_char_result::destroyed) ?
+				       REMOVE_EXTRACTED :
+				       result;
 		}
 		else
 		{
