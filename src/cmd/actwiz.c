@@ -4882,8 +4882,9 @@ void do_snoop(P_char ch, char *argument, int /*cmd*/)
 				sql_log(ch, WIZLOG, "Stopped snooping %s",
 					GET_NAME(ch->desc->snoop.snooping));
 			}
-			rem_char_from_snoopby_list(
-				&ch->desc->snoop.snooping->desc->snoop.snoop_by_list, ch);
+			if (ch->desc->snoop.snooping->desc)
+				rem_char_from_snoopby_list(
+					&ch->desc->snoop.snooping->desc->snoop.snoop_by_list, ch);
 			ch->desc->snoop.snooping = 0;
 		}
 		return;
@@ -4904,8 +4905,9 @@ void do_snoop(P_char ch, char *argument, int /*cmd*/)
 		/*
 		    ch->desc->snoop.snooping->desc->snoop.snoop_by = 0;
 		*/
-		rem_char_from_snoopby_list(&ch->desc->snoop.snooping->desc->snoop.snoop_by_list,
-					   ch);
+		if (ch->desc->snoop.snooping->desc)
+			rem_char_from_snoopby_list(&ch->desc->snoop.snooping->desc->snoop.snoop_by_list,
+						   ch);
 
 		sql_log(ch, WIZLOG, "Stopped snooping %s", GET_NAME(ch->desc->snoop.snooping));
 		logit(LOG_WIZ, "(%s) stopped snooping (%s)", GET_NAME(ch),
@@ -5028,10 +5030,14 @@ void do_switch(P_char ch, char *argument, int cmd)
 				snoop_by_ptr = ch->desc->snoop.snoop_by_list;
 				while (snoop_by_ptr)
 				{
-					send_to_char(
-						"Your victim has switched into something, killing your snoop.\n",
-						snoop_by_ptr->snoop_by);
-					snoop_by_ptr->snoop_by->desc->snoop.snooping = NULL;
+					if (snoop_by_ptr->snoop_by)
+					{
+						send_to_char(
+							"Your victim has switched into something, killing your snoop.\n",
+							snoop_by_ptr->snoop_by);
+						if (snoop_by_ptr->snoop_by->desc)
+							snoop_by_ptr->snoop_by->desc->snoop.snooping = NULL;
+					}
 
 					next = snoop_by_ptr->next;
 					FREE(snoop_by_ptr);
@@ -5109,6 +5115,12 @@ void do_return(P_char ch, char * /*argument*/, int /*cmd*/)
 
 		ch->desc->character->desc = ch->desc;
 		switched_mob->desc = 0; // Clear the MOB's desc, not ch->desc
+
+		for (snoop_by_data *node = ch->desc->snoop.snoop_by_list; node; node = node->next)
+		{
+			if (node->snoop_by && node->snoop_by->desc)
+				node->snoop_by->desc->snoop.snooping = ch->desc->character;
+		}
 	}
 	else /* switched body due to shape change  */
 		send_to_char("No effect.\n", ch);

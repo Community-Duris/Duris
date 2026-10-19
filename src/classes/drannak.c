@@ -798,16 +798,16 @@ int equipped_value(P_char ch)
 	return total;
 }
 
-void create_recipe(P_char ch, P_obj temp)
+bool create_recipe(P_char ch, P_obj temp)
 {
 	/***RECIPE CREATE***/
 	P_obj objrecipe;
-	char buffer[256], old_name[256];
+	char buffer[256];
 	int recipenumber = obj_index[temp->R_num].virtual_number;
 
 	if ((temp->type == ITEM_CONTAINER || temp->type == ITEM_STORAGE) && temp->contains)
 	{
-		return;
+		return false;
 	}
 
 	// No recipes for high end equipment.
@@ -820,24 +820,28 @@ void create_recipe(P_char ch, P_obj temp)
 		   (AFF4_VAMPIRE_FORM | AFF4_HOLY_SACRIFICE | AFF4_BATTLE_ECSTASY | AFF4_SANCTUARY |
 		    AFF4_HELLFIRE | AFF4_ICE_AURA | AFF4_WILDMAGIC)))
 	{
-		return;
+		return false;
 	}
 	for (int i = 0; i < MAX_OBJ_AFFECT; i++)
 	{
 		if ((temp->affected[i].location == APPLY_COMBAT_PULSE) ||
 		    (temp->affected[i].location == APPLY_SPELL_PULSE))
 		{
-			return;
+			return false;
 		}
 	}
 
 	if (!crafting_recipe_target_is_available(temp))
-		return;
+		return false;
 
 	objrecipe = read_object(400210, VIRTUAL);
+	if (!objrecipe)
+		return false;
+
 	SET_BIT(objrecipe->value[6], recipenumber);
-	strcpy(old_name, objrecipe->short_description);
-	checked_snprintf(buffer, 256, "%s %s&n", old_name, temp->short_description);
+	const char *old_desc = objrecipe->short_description ? objrecipe->short_description : "a recipe for";
+	const char *target_desc = temp->short_description ? temp->short_description : "an item";
+	checked_snprintf(buffer, sizeof(buffer), "%s %s&n", old_desc, target_desc);
 
 	if ((objrecipe->str_mask & STRUNG_DESC2) && objrecipe->short_description)
 		FREE(objrecipe->short_description);
@@ -849,6 +853,7 @@ void create_recipe(P_char ch, P_obj temp)
 	debug("create_recipe: %s reward was: %s ival: %d.", J_NAME(ch),
 	      objrecipe->short_description, itemvalue(temp));
 	obj_to_char(objrecipe, ch);
+	return true;
 }
 
 void random_recipe(P_char ch, P_char victim)

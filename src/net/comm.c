@@ -3249,14 +3249,18 @@ void close_socket(struct descriptor_data *d)
 	snoop_by_ptr = d->snoop.snoop_by_list;
 	while (snoop_by_ptr)
 	{
-		if (is_morphed && affected_by_spell(d->character, SPELL_CHANNEL))
-			send_to_char(
-				"Your host has lost link... you can no longer maintain the sight link.\r\n",
-				snoop_by_ptr->snoop_by);
-		else
-			send_to_char("Your victim is no longer among us.\r\n",
-				     snoop_by_ptr->snoop_by);
-		snoop_by_ptr->snoop_by->desc->snoop.snooping = 0;
+		if (snoop_by_ptr->snoop_by)
+		{
+			if (is_morphed && affected_by_spell(d->character, SPELL_CHANNEL))
+				send_to_char(
+					"Your host has lost link... you can no longer maintain the sight link.\r\n",
+					snoop_by_ptr->snoop_by);
+			else
+				send_to_char("Your victim is no longer among us.\r\n",
+					     snoop_by_ptr->snoop_by);
+			if (snoop_by_ptr->snoop_by->desc)
+				snoop_by_ptr->snoop_by->desc->snoop.snooping = 0;
+		}
 
 		next = snoop_by_ptr->next;
 		FREE(snoop_by_ptr);
@@ -3289,8 +3293,9 @@ void close_socket(struct descriptor_data *d)
 		}
 		if (d->snoop.snooping)
 		{
-			rem_char_from_snoopby_list(&d->snoop.snooping->desc->snoop.snoop_by_list,
-						   d->character);
+			if (d->snoop.snooping->desc)
+				rem_char_from_snoopby_list(&d->snoop.snooping->desc->snoop.snoop_by_list,
+							   d->character);
 			d->snoop.snooping = 0;
 		}
 	}
@@ -4227,7 +4232,8 @@ int process_output(P_desc t)
 		}
 		while (snoop_by_ptr)
 		{
-			write_to_q(buf2, &snoop_by_ptr->snoop_by->desc->output, 1);
+			if (snoop_by_ptr->snoop_by && snoop_by_ptr->snoop_by->desc)
+				write_to_q(buf2, &snoop_by_ptr->snoop_by->desc->output, 1);
 
 			snoop_by_ptr = snoop_by_ptr->next;
 		}
@@ -4460,9 +4466,12 @@ static void process_line(P_desc t, char *in)
 
 	while (snoop_by_ptr)
 	{
-		write_to_q("&+y%&n ", &snoop_by_ptr->snoop_by->desc->output, 1);
-		write_to_q(out, &snoop_by_ptr->snoop_by->desc->output, 1);
-		write_to_q("\r\n", &snoop_by_ptr->snoop_by->desc->output, 1);
+		if (snoop_by_ptr->snoop_by && snoop_by_ptr->snoop_by->desc)
+		{
+			write_to_q("&+y%&n ", &snoop_by_ptr->snoop_by->desc->output, 1);
+			write_to_q(out, &snoop_by_ptr->snoop_by->desc->output, 1);
+			write_to_q("\r\n", &snoop_by_ptr->snoop_by->desc->output, 1);
+		}
 
 		snoop_by_ptr = snoop_by_ptr->next;
 	}

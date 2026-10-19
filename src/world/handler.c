@@ -5626,22 +5626,21 @@ void extract_char(P_char ch)
 
 		if (ch->desc->snoop.snooping)
 		{
-			/*
-			 * if !d->character, or they aren't playing, I can't get their
-			 * level.. so I'll assume its better then 58 to be safe
-			 */
-			if (GET_LEVEL(ch) < 58)
-				// send_to_char("&+CYou are no longer being snooped.&N\r\n",
-				//            ch->desc->snoop.snooping);
+			if (ch->desc->snoop.snooping->desc)
 				rem_char_from_snoopby_list(
 					&ch->desc->snoop.snooping->desc->snoop.snoop_by_list, ch);
+			ch->desc->snoop.snooping = 0;
 		}
 		snoop_by_ptr = ch->desc->snoop.snoop_by_list;
 		while (snoop_by_ptr)
 		{
-			send_to_char("Your victim is no longer among us.\r\n",
-				     snoop_by_ptr->snoop_by);
-			snoop_by_ptr->snoop_by->desc->snoop.snooping = 0;
+			if (snoop_by_ptr->snoop_by)
+			{
+				send_to_char("Your victim is no longer among us.\r\n",
+					     snoop_by_ptr->snoop_by);
+				if (snoop_by_ptr->snoop_by->desc)
+					snoop_by_ptr->snoop_by->desc->snoop.snooping = 0;
+			}
 
 			snoop_by_ptr = snoop_by_ptr->next;
 		}
