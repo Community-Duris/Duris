@@ -234,9 +234,9 @@ void boon_ram_overlay_stats(uint32_t pid, uint64_t observed_revision,
 {
 	if (!stats)
 		return;
-	for (uint8_t i = 0; i < stats->size(); ++i)
+	for (size_t i = 0; i < stats->size(); ++i)
 	{
-		const auto found = state.stat_changes.find({ pid, i });
+		const auto found = state.stat_changes.find({ pid, static_cast<uint8_t>(i) });
 		if (found != state.stat_changes.end() && found->second.first > observed_revision)
 			(*stats)[i] = found->second.second;
 	}
