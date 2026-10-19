@@ -47,20 +47,19 @@ player_save_apply_result write_economy_events_to_db(const std::vector<EconomicEv
 
 	if (!table_initialized.load(std::memory_order_acquire))
 	{
-		const char *create_sql =
-			"CREATE TABLE IF NOT EXISTS economy_events ("
-			"id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, "
-			"event_id BIGINT UNSIGNED NOT NULL, "
-			"timestamp_usec BIGINT UNSIGNED NOT NULL, "
-			"actor_pid INT UNSIGNED NOT NULL, "
-			"action_type SMALLINT UNSIGNED NOT NULL, "
-			"copper_delta BIGINT NOT NULL, "
-			"target_id INT UNSIGNED NOT NULL DEFAULT 0, "
-			"context_vnum INT UNSIGNED NOT NULL DEFAULT 0, "
-			"reason VARCHAR(32) NOT NULL DEFAULT '', "
-			"INDEX idx_actor_time (actor_pid, timestamp_usec), "
-			"INDEX idx_action (action_type)"
-			") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+		const char *create_sql = "CREATE TABLE IF NOT EXISTS economy_events ("
+					 "id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, "
+					 "event_id BIGINT UNSIGNED NOT NULL, "
+					 "timestamp_usec BIGINT UNSIGNED NOT NULL, "
+					 "actor_pid INT UNSIGNED NOT NULL, "
+					 "action_type SMALLINT UNSIGNED NOT NULL, "
+					 "copper_delta BIGINT NOT NULL, "
+					 "target_id INT UNSIGNED NOT NULL DEFAULT 0, "
+					 "context_vnum INT UNSIGNED NOT NULL DEFAULT 0, "
+					 "reason VARCHAR(32) NOT NULL DEFAULT '', "
+					 "INDEX idx_actor_time (actor_pid, timestamp_usec), "
+					 "INDEX idx_action (action_type)"
+					 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
 		if (mysql_query(connection, create_sql) != 0)
 		{
 			unsigned int err = mysql_errno(connection);
@@ -79,13 +78,14 @@ player_save_apply_result write_economy_events_to_db(const std::vector<EconomicEv
 	{
 		const auto &event = events[index];
 		char safe_reason[65] = {};
-		mysql_real_escape_string(connection, safe_reason, event.reason, strlen(event.reason));
+		mysql_real_escape_string(connection, safe_reason, event.reason,
+					 strlen(event.reason));
 		if (index > 0)
 			sql << ',';
 		sql << '(' << event.event_id << ',' << event.timestamp_usec << ','
 		    << event.actor_pid << ',' << static_cast<unsigned int>(event.action) << ','
-		    << event.copper_delta << ',' << event.target_id << ','
-		    << event.context_vnum << ",'" << safe_reason << "')";
+		    << event.copper_delta << ',' << event.target_id << ',' << event.context_vnum
+		    << ",'" << safe_reason << "')";
 	}
 	sql << " ON DUPLICATE KEY UPDATE timestamp_usec = VALUES(timestamp_usec)";
 
@@ -199,11 +199,9 @@ void economic_event_flush_outbox(void)
 		const uint64_t owner = next_owner_id++;
 		const size_t bytes = batch.size() * sizeof(EconomicEvent);
 
-		persistence_writer_submit(
-			persistence_job_kind::economy, owner, bytes,
-			[events = std::move(batch)]() -> player_save_apply_result {
-				return write_economy_events_to_db(events);
-			});
+		persistence_writer_submit(persistence_job_kind::economy, owner, bytes,
+					  [events = std::move(batch)]() -> player_save_apply_result
+					  { return write_economy_events_to_db(events); });
 	}
 }
 

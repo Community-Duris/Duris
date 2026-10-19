@@ -74,8 +74,7 @@ int main(int argc, char **argv)
 				assert(pet_restore_state_encode(state, &pet.restore_state));
 			// Move existing authoritative leaf UIDs; never mint or copy custody.
 			auto item = std::find_if(snapshot.items.begin(), snapshot.items.end(),
-						 [](const auto &row)
-						 {
+						 [](const auto &row) {
 							 return row.parent_index ==
 									PLAYER_SNAPSHOT_NO_PARENT &&
 								row.type != ITEM_CONTAINER;
