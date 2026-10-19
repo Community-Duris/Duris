@@ -1,10 +1,12 @@
 #include "flatfile/flatfile_auction_repository.h"
+#include "flatfile/flatfile_shop_trade_materialization.h"
 
 #include "economy/auction_command.h"
 #include "flatfile/flatfile_authority_transaction.h"
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_player_domain_repository.h"
 #include "flatfile/flatfile_store.h"
+#include "flatfile/flatfile_identity_repository.h"
 
 #include <algorithm>
 #include <array>
@@ -621,13 +623,51 @@ critical_apply_result make_result(const auction_operation &operation, uint64_t r
 		return { critical_apply_outcome::terminal_failure, revision, EILSEQ };
 	critical_apply_result result = {
 		operation.result_code ? critical_apply_outcome::terminal_failure : success,
-		durable_revision(operation.result, revision), operation.result_code
+		durable_revision(operation.result, operation.result.catalog_revision ?
+							   operation.result.catalog_revision :
+							   revision),
+		operation.result_code
 	};
 	result.result_size = encoded.size();
 	std::copy(encoded.begin(), encoded.end(), result.result_payload.begin());
 	return result;
 }
 } // namespace
+
+bool flatfile_auction_load_ram(const std::string &root, std::vector<auction_ram_listing> *listings,
+			       std::vector<std::pair<uint32_t, auction_ram_pickup>> *pickups,
+			       uint64_t *revision, std::string *error)
+{
+	if (!listings || !pickups || !revision)
+		return false;
+	auction_catalog catalog;
+	if (query_catalog(root, &catalog, error) != flatfile_auction_query_result::ok)
+		return false;
+	listings->clear();
+	pickups->clear();
+	for (const auto &entry : catalog.listings)
+	{
+		auction_ram_listing listing{ entry.id,
+					     entry.seller_pid,
+					     entry.winner_pid,
+					     entry.status,
+					     entry.current_price,
+					     entry.buy_price,
+					     entry.revision,
+					     entry.end_time,
+					     entry.seller_account,
+					     {} };
+		listing.object_blob = entry.object_blob;
+		for (const auto &item : entry.items)
+			listing.items.push_back({ item.uid, item.revision, item.vnum,
+						  item.claim_pid, item.claimed });
+		listings->push_back(std::move(listing));
+	}
+	for (const auto &entry : catalog.money)
+		pickups->push_back({ entry.pid, { entry.amount, entry.revision } });
+	*revision = catalog.revision;
+	return true;
+}
 
 flatfile_auction_query_result
 flatfile_auction_list_open(const std::string &root,
@@ -840,8 +880,17 @@ critical_apply_result flatfile_auction_repository_apply(const std::string &root,
 	    critical_command_encode(command, &encoded_command) != critical_command_codec_result::ok)
 		return { critical_apply_outcome::terminal_failure, 0, EINVAL };
 	SHA256(encoded_command.data(), encoded_command.size(), digest.data());
-	flatfile_authority_lock lock;
 	std::string error;
+	std::string actor_name = payload.actor_name.data();
+	if (payload.action == auction_action::bid && actor_name.empty())
+	{
+		flatfile_identity_record actor;
+		if (flatfile_identity_lookup_pid(root, payload.actor_pid, &actor, &error) !=
+		    flatfile_identity_result::ok)
+			return { critical_apply_outcome::retryable_failure, 0, EIO };
+		actor_name = actor.name;
+	}
+	flatfile_authority_lock lock;
 	if (!lock.acquire(root, &error))
 		return { critical_apply_outcome::retryable_failure, 0, EIO };
 	const auto recovered = flatfile_authority_transaction_recover(root, lock, &error);
@@ -877,6 +926,14 @@ critical_apply_result flatfile_auction_repository_apply(const std::string &root,
 	    catalog.revision == std::numeric_limits<uint64_t>::max())
 		return { critical_apply_outcome::terminal_failure, catalog.revision, ENOSPC };
 
+	const bool sealed = command.schema_version == CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION;
+	auction_command_result frozen{};
+	if (sealed && !auction_command_decode_result(command.outcome_payload.data(),
+						     command.outcome_payload.size(), &frozen))
+		return { critical_apply_outcome::terminal_failure, 0, EINVAL };
+	const bool website = command.source_site == critical_source_site::website;
+	const uint64_t decision_time = sealed ? command.accepted_at_usec / 1000000 :
+						static_cast<uint64_t>(time(nullptr));
 	auction_command_result result = {};
 	result.action = payload.action;
 	unsigned int result_code = 0;
@@ -925,7 +982,8 @@ critical_apply_result flatfile_auction_repository_apply(const std::string &root,
 		    (payload.buy_price && payload.buy_price < payload.start_price) ||
 		    !payload.object_blob_size)
 			result_code = EINVAL;
-		const uint32_t id = listing_id(command.operation_id);
+		const uint32_t id = sealed ? auction_command_listing_id(command.operation_id) :
+					     listing_id(command.operation_id);
 		if (!result_code && find_listing(&catalog, id))
 			result_code = EEXIST;
 		if (!result_code)
@@ -1004,6 +1062,7 @@ critical_apply_result flatfile_auction_repository_apply(const std::string &root,
 			std::string actor_account;
 			if (!canonical_account(payload.account_name.data(), &actor_account) ||
 			    listing->status != auction_status_open ||
+			    (sealed && listing->end_time <= decision_time) ||
 			    listing->seller_pid == payload.actor_pid ||
 			    listing->seller_account == actor_account)
 				result_code = EACCES;
@@ -1027,12 +1086,14 @@ critical_apply_result flatfile_auction_repository_apply(const std::string &root,
 							       bid - listing->current_price :
 							       bid;
 				const uint32_t previous = listing->winner_pid;
+				if (sealed && previous && previous != payload.actor_pid)
+					result.refund = listing->current_price;
 				if (previous && previous != payload.actor_pid &&
 				    !stage_money(&catalog, previous, listing->current_price))
 					return { critical_apply_outcome::retryable_failure, 0,
 						 ENOMEM };
 				listing->winner_pid = payload.actor_pid;
-				listing->winner_name = payload.actor_name.data();
+				listing->winner_name = actor_name;
 				listing->current_price = bid;
 				++listing->revision;
 				const bool sold = listing->buy_price > 0 &&
@@ -1045,7 +1106,9 @@ critical_apply_result flatfile_auction_repository_apply(const std::string &root,
 							   &proceeds))
 						result_code = EINVAL;
 					else if (!stage_money(&catalog, listing->seller_pid,
-							      proceeds))
+							      website && sealed ?
+								      frozen.seller_proceeds :
+								      proceeds))
 						return { critical_apply_outcome::retryable_failure,
 							 0, ENOMEM };
 					if (!result_code)
@@ -1053,6 +1116,8 @@ critical_apply_result flatfile_auction_repository_apply(const std::string &root,
 							if (!item.claimed && !item.claim_pid)
 								item.claim_pid = payload.actor_pid;
 				}
+				else if (website && sealed)
+					listing->end_time = frozen.end_time;
 				else if (previous != payload.actor_pid &&
 					 payload.bid_extension_seconds)
 				{
@@ -1086,7 +1151,7 @@ critical_apply_result flatfile_auction_repository_apply(const std::string &root,
 		else if (listing->status != auction_status_open)
 			result_code = EALREADY;
 		else if (payload.action == auction_action::finalize &&
-			 listing->end_time > static_cast<uint64_t>(time(nullptr)))
+			 listing->end_time > decision_time)
 			result_code = EAGAIN;
 		else if (listing->revision == std::numeric_limits<uint64_t>::max())
 			result_code = ERANGE;
@@ -1132,7 +1197,7 @@ critical_apply_result flatfile_auction_repository_apply(const std::string &root,
 	else if (!result_code && payload.action == auction_action::claim_money)
 	{
 		money_pickup *pickup = find_money(&catalog, payload.actor_pid);
-		if (!pickup || pickup->amount <= 0 || pickup->amount > INT_MAX)
+		if (!pickup || pickup->amount <= 0 || pickup->amount > UINT_MAX)
 			result_code = ENOENT;
 		else if (pickup->revision == std::numeric_limits<uint64_t>::max())
 			result_code = ERANGE;
@@ -1239,6 +1304,21 @@ critical_apply_result flatfile_auction_repository_apply(const std::string &root,
 			result.bank_revision = wallet.bank_revision;
 		}
 	}
+	if (!result_code && sealed)
+	{
+		const auto *listing = find_listing(&catalog, result.auction_id);
+		if (listing)
+			result.end_time = listing->end_time;
+		if (result.event_type == auction_event_type::sold &&
+		    !sale_proceeds(result.final_price, payload.closing_fee_basis_points,
+				   &result.seller_proceeds))
+			return { critical_apply_outcome::terminal_failure, 0, EINVAL };
+		if (website)
+			result.seller_proceeds = frozen.seller_proceeds;
+		if (payload.action == auction_action::remove && result.winner_pid)
+			result.refund = result.final_price;
+		result.catalog_revision = catalog.revision + 1;
+	}
 	if (result_code)
 	{
 		mutation_applied = false;
@@ -1279,6 +1359,20 @@ critical_apply_result flatfile_auction_repository_apply(const std::string &root,
 	try
 	{
 		images.push_back({ catalog_filename, std::move(catalog_bytes) });
+		if (sealed && mutation_applied && !result_code &&
+		    (payload.action == auction_action::list ||
+		     payload.action == auction_action::claim_item))
+		{
+			item_transfer_payload transfer{};
+			flatfile_shop_trade_materialization_mutation materialization;
+			if (!auction_item_payload(payload, result.auction_id, &transfer) ||
+			    flatfile_item_transfer_materialization_prepare(
+				    root, lock, command.operation_id, transfer, &materialization,
+				    &error) != flatfile_shop_trade_materialization_result::ok)
+				return { critical_apply_outcome::terminal_failure,
+					 catalog.revision - 1, EILSEQ };
+			images.push_back(std::move(materialization.after_image));
+		}
 		if (mutation_applied && item_mutation.after_image.bytes.size())
 			images.push_back(std::move(item_mutation.after_image));
 		if (mutation_applied)

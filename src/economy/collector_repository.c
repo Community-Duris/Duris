@@ -2317,6 +2317,8 @@ bool collector_repository_execute(MYSQL *connection, const critical_command &com
 	result->record_present = true;
 	result->catalog_revision = catalog_revision;
 	result->entry = updated;
+	if (command.schema_version == CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION)
+		result->materialized_item_id = 0;
 	*mutation_applied = true;
 	return true;
 }

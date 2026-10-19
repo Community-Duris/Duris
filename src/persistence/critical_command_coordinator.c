@@ -66,6 +66,7 @@ critical_apply_fn apply_callback = nullptr;
 void *apply_context = nullptr;
 critical_log_submit_fn log_submit = nullptr;
 critical_log_lookup_fn log_lookup = nullptr;
+critical_log_reject_fn log_reject = nullptr;
 std::deque<std::string> awaiting_prepare;
 bool admission_uncertain = false;
 critical_drain_observer_fn drain_observer = nullptr;
@@ -395,6 +396,8 @@ static void prepare_next()
 	critical_command command;
 	critical_apply_fn prepare = nullptr;
 	critical_log_submit_fn append = nullptr;
+	critical_log_reject_fn reject = nullptr;
+	critical_log_lookup_fn lookup = nullptr;
 	void *context = nullptr;
 	{
 		std::lock_guard<std::mutex> lock(coordinator_mutex);
@@ -419,12 +422,22 @@ static void prepare_next()
 		}
 		prepare = apply_callback;
 		append = log_submit;
+		reject = log_reject;
+		lookup = log_lookup;
 		context = apply_context;
 	}
 	critical_apply_result result{};
 	try
 	{
-		result = prepare(command, context);
+		// A failed acknowledgement may still have durably installed a negative
+		// receipt. Resolve it before re-running a decision against newer RAM.
+		const auto existing = lookup ? lookup(command, &result) :
+					       critical_receipt_status::missing;
+		if (existing == critical_receipt_status::unavailable ||
+		    existing == critical_receipt_status::identity_conflict)
+			return;
+		if (existing == critical_receipt_status::missing)
+			result = prepare(command, context);
 		if (result.outcome == critical_apply_outcome::retryable_failure)
 			return;
 		if (result.outcome == critical_apply_outcome::applied)
@@ -449,7 +462,11 @@ static void prepare_next()
 			if (submitted != critical_submit_result::accepted)
 				return;
 		}
-		else if (result.outcome != critical_apply_outcome::terminal_failure)
+		else if (result.outcome != critical_apply_outcome::terminal_failure &&
+			 result.outcome != critical_apply_outcome::already_applied)
+			return;
+		else if (result.outcome == critical_apply_outcome::terminal_failure && reject &&
+			 !reject(command, result))
 			return;
 	}
 	catch (const std::bad_alloc &)
@@ -458,7 +475,8 @@ static void prepare_next()
 	}
 	std::lock_guard<std::mutex> lock(coordinator_mutex);
 	auto &state = *operations.at(identity);
-	state.durable = result.outcome == critical_apply_outcome::applied;
+	state.durable = result.outcome == critical_apply_outcome::applied ||
+			result.outcome == critical_apply_outcome::already_applied;
 	critical_completion completion{};
 	completion.operation_id = command.operation_id;
 	completion.type = command.type;
@@ -504,13 +522,15 @@ bool critical_command_coordinator_init(critical_apply_fn apply, void *context)
 
 bool critical_command_coordinator_init_ram(critical_apply_fn prepare, void *context,
 					   critical_log_submit_fn append,
-					   critical_log_lookup_fn lookup)
+					   critical_log_lookup_fn lookup,
+					   critical_log_reject_fn reject)
 {
 	if (!append || !lookup || !critical_command_coordinator_init(prepare, context))
 		return false;
 	std::lock_guard<std::mutex> lock(coordinator_mutex);
 	log_submit = append;
 	log_lookup = lookup;
+	log_reject = reject;
 	return true;
 }
 
@@ -528,6 +548,7 @@ void critical_command_coordinator_shutdown(void)
 	apply_context = nullptr;
 	log_submit = nullptr;
 	log_lookup = nullptr;
+	log_reject = nullptr;
 	awaiting_prepare.clear();
 	admission_uncertain = false;
 	++generation;
@@ -587,7 +608,8 @@ static critical_submit_result submit_command(critical_command command,
 				critical_completion completion{};
 				completion.operation_id = command.operation_id;
 				completion.type = command.type;
-				completion.outcome = critical_apply_outcome::already_applied;
+				completion.outcome = receipt.outcome;
+				completion.error_code = receipt.error_code;
 				completion.durable_revision = receipt.durable_revision;
 				completion.result_size = receipt.result_size;
 				completion.result_payload = receipt.result_payload;
@@ -715,6 +737,28 @@ bool critical_command_coordinator_acknowledge_publication(const critical_operati
 	++health.completed;
 	update_depth();
 	return true;
+}
+
+size_t critical_command_coordinator_pump(critical_completion *completions, size_t capacity,
+					 critical_drain_observer_fn observer, uint64_t budget_usec)
+{
+	if (!completions || !capacity || !observer)
+		return 0;
+	const auto started = std::chrono::steady_clock::now();
+	size_t total = 0;
+	do
+	{
+		const auto count =
+			critical_command_coordinator_pulse(completions + total, capacity - total);
+		observer(completions + total, count);
+		total += count;
+		if (!count)
+			break;
+	} while (total < capacity &&
+		 static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(
+					       std::chrono::steady_clock::now() - started)
+					       .count()) < budget_usec);
+	return total;
 }
 
 bool critical_command_coordinator_get_completed(const critical_operation_id &operation_id,

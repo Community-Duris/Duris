@@ -87,16 +87,16 @@ int main()
 	       prepared.max_item_revision == 6);
 	auto sidecar = move;
 	sidecar.corpse.present = true;
-	assert(item_ownership_runtime_prepare(sidecar, &prepared) == ENOTSUP);
+	assert(item_ownership_runtime_prepare(sidecar, &prepared) == 0);
 	sidecar = move;
 	sidecar.collector.present = true;
-	assert(item_ownership_runtime_prepare(sidecar, &prepared) == ENOTSUP);
+	assert(item_ownership_runtime_prepare(sidecar, &prepared) == 0);
 	sidecar = move;
 	sidecar.reason = item_transfer_reason::craft;
-	assert(item_ownership_runtime_prepare(sidecar, &prepared) == ENOTSUP);
+	assert(item_ownership_runtime_prepare(sidecar, &prepared) == EINVAL);
 	sidecar = move;
 	sidecar.from_owner = { item_owner_type::corpse, (uint64_t(42) << 32) | 1, 0 };
-	assert(item_ownership_runtime_prepare(sidecar, &prepared) == ENOTSUP);
+	assert(item_ownership_runtime_prepare(sidecar, &prepared) == ESTALE);
 	assert(prepared.from_owner_revision == 11 && prepared.to_owner_revision == 1 &&
 	       prepared.max_item_revision == 6);
 	item_ownership_runtime_entry before{};
@@ -505,7 +505,8 @@ int main()
 	corpse_lifecycle_result hostile_world_raised = {};
 	hostile_world_raised.save_id = 1100;
 	hostile_world_raised.action = corpse_lifecycle_action::raise_world_follower;
-	hostile_world_raised.catalog_revision = 7;
+	// Flat-file catalog clocks are independent of the room custody clock.
+	hostile_world_raised.catalog_revision = 97;
 	hostile_world_raised.corpse_owner_revision = 7;
 	hostile_world_raised.destruction_owner_revision = 1;
 	hostile_world_raised.max_item_revision = 6;

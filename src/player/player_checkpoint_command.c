@@ -58,6 +58,12 @@ critical_apply_result player_checkpoint_command_project(const critical_command &
 	    command.outcome_revision != snapshot.revision ||
 	    command.outcome_payload != receipt(snapshot))
 		return { critical_apply_outcome::terminal_failure, 0, EINVAL };
+	struct epoch_scope
+	{
+		uint64_t previous = player_checkpoint_projecting_epoch;
+		~epoch_scope() { player_checkpoint_projecting_epoch = previous; }
+	} scope;
+	player_checkpoint_projecting_epoch = command.accepted_at_usec / 1000000;
 	const auto applied = apply(snapshot, context);
 	if (applied.outcome == player_save_apply_outcome::retryable_failure ||
 	    applied.outcome == player_save_apply_outcome::ambiguous_commit)

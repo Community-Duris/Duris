@@ -28,6 +28,8 @@ direct_start = files.index("int writeShopKeeper(P_char ch)") if baseline else fi
 direct = files[direct_start:files.index("int deleteShopKeeper(", direct_start)]
 preamble = r'''
 #include "economy/shopkeeper_save_policy.h"
+#include "persistence/critical_command_coordinator.h"
+#include "item/item_transfer_command.h"
 #include <cassert>
 #include <cstdarg>
 #include <cstdio>
@@ -104,6 +106,17 @@ void logit(int, const char *fmt, ...) {
 }
 int begins=0, writes=0, commits=0, rollbacks=0;
 bool begin_ok=true, write_ok=true, commit_ok=true, item_ok=true;
+bool projection_ready=true, publication_fenced=false;
+bool economic_state_active() { return true; }
+bool operation_log_projection_caught_up() { return projection_ready; }
+uint64_t item_shopkeeper_owner_id(uint32_t shop_id) { return uint64_t(shop_id) + 1; }
+bool critical_command_coordinator_is_fenced(const critical_entity_key &key, critical_operation_id *) {
+    assert(key.type==critical_entity_type::shopkeeper);
+    return publication_fenced;
+}
+bool shop_trade_runtime_revision(uint32_t, uint64_t *revision) { *revision=1; return true; }
+bool shop_trade_runtime_seed_revision(uint32_t, uint64_t) { return true; }
+bool qry(const char *, ...) { return write_ok; }
 bool sql_begin_transaction() { ++begins; return begin_ok; }
 bool sql_run_query(const char *) { ++writes; return write_ok; }
 bool sql_commit() { ++commits; return commit_ok; }
@@ -117,6 +130,11 @@ main = r'''
 int main() {
     Character keeper;
     Character duplicate;
+    projection_ready=false;
+    assert(!sql_save_shopkeeper(&keeper,0) && begins==0);
+    projection_ready=true; publication_fenced=true;
+    assert(!sql_save_shopkeeper(&keeper,0) && begins==0);
+    publication_fenced=false;
     mob_index[0].virtual_number = 200;
     mob_index[1].virtual_number = 201;
     character_list = world[0].people = &keeper;

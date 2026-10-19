@@ -415,12 +415,12 @@ bool currency_transaction_publish_balances(P_char character, const char *account
 					   const currency_vector &bank, uint64_t wallet_revision,
 					   uint64_t bank_revision)
 {
-	if (!character || !character->only.pc || !account_name)
+	if ((character && !character->only.pc) || !account_name)
 		return false;
 	for (int64_t amount : bank.amount)
 		if (amount < 0 || amount > INT_MAX)
 			return false;
-	if (!currency_transaction_publish_wallet(character, wallet, wallet_revision))
+	if (character && !currency_transaction_publish_wallet(character, wallet, wallet_revision))
 		return false;
 	return publish_bank(character, account_name, racewar, bank, bank_revision);
 }

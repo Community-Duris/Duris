@@ -17,6 +17,8 @@
 #include "guild/artifact_guild_command.h"
 #include "guild/artifact_guild_repository.h"
 #include "economy/boon_reward_command.h"
+#include "economy/boon_shop_command.h"
+#include "economy/shop_trade_repository.h"
 #include "economy/boon_reward_repository.h"
 #include "world/zone_touch_command.h"
 #include "world/zone_touch_repository.h"
@@ -1090,6 +1092,8 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	combat_outcome_payload combat_payload = {};
 	artifact_guild_payload artifact_payload = {};
 	boon_reward_payload boon_payload = {};
+	boon_shop_payload boon_shop_payload_value = {};
+	shop_trade_payload shop_payload = {};
 	zone_touch_payload zone_payload = {};
 	session_audit_payload audit_payload = {};
 	coin_transfer_payload coin_payload = {};
@@ -1112,13 +1116,16 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	const bool artifact_guild_command =
 		artifact_guild_command_decode_payload(command, &artifact_payload);
 	const bool boon_command = boon_reward_command_decode_payload(command, &boon_payload);
+	const bool boon_shop_command =
+		boon_shop_command_decode_payload(command, &boon_shop_payload_value);
+	const bool shop_command = shop_trade_command_decode_payload(command, &shop_payload);
 	const bool zone_command = zone_touch_command_decode_payload(command, &zone_payload);
 	const bool audit_command = session_audit_command_decode_payload(command, &audit_payload);
 	if (!connection ||
 	    (!test_command && !epic_command && !currency_command && !coin_command &&
 	     !corpse_command && !restitution_command && !item_command && !auction_command &&
 	     !collector_command && !combat_command && !artifact_guild_command && !boon_command &&
-	     !zone_command && !audit_command) ||
+	     !zone_command && !audit_command && !boon_shop_command && !shop_command) ||
 	    !critical_command_valid(command))
 		return { critical_apply_outcome::terminal_failure, 0, EINVAL };
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> command_hash = {}, keys_hash = {};
@@ -1563,7 +1570,7 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 		std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> result_payload = {};
 		uint64_t durable_revision =
 			std::max({ item_result.from_owner_revision, item_result.to_owner_revision,
-				   item_result.max_item_revision });
+				   item_result.max_item_revision, item_result.corpse_revision });
 		durable_revision = std::max(durable_revision, collector_revision);
 		bool outbox_ok = item_transfer_command_encode_result(item_result, &result_payload);
 		if (outbox_ok && mutation_applied)
@@ -1674,6 +1681,10 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 			{ collector_result.catalog_revision, collector_result.from_owner_revision,
 			  collector_result.to_owner_revision, collector_result.wallet_revision,
 			  collector_result.bank_revision,
+			  command.schema_version == CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION &&
+					  collector_result.record_present ?
+				  collector_result.entry.revision :
+				  0,
 			  collector_result.record_present ? collector_result.entry.item_revision :
 							    0 });
 		if (!collector_command_encode_result(collector_result, &result_payload) ||
@@ -1803,6 +1814,95 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 						  durable_revision, result_code };
 		applied.result_size = result_payload.size();
 		std::copy(result_payload.begin(), result_payload.end(),
+			  applied.result_payload.begin());
+		return applied;
+	}
+	if (shop_command)
+	{
+		shop_trade_result result;
+		if (!shop_trade_repository_execute(connection, command, &result) ||
+		    !finish_inbox(connection, command, command.outcome_revision, 0,
+				  command.outcome_payload.data(), command.outcome_payload.size()))
+		{
+			const auto error = database_error(connection);
+			const auto code = error ? error : errno;
+			rollback(connection);
+			return failure(code);
+		}
+		if (!execute(connection, "COMMIT"))
+		{
+			const auto error = mysql_errno(connection);
+			if (!connection_error(error))
+				rollback(connection);
+			return { connection_error(error) ?
+					 critical_apply_outcome::ambiguous_commit :
+					 failure(error).outcome,
+				 command.outcome_revision, error };
+		}
+		critical_apply_result applied{ critical_apply_outcome::applied,
+					       command.outcome_revision, 0 };
+		applied.result_size = command.outcome_payload.size();
+		std::copy(command.outcome_payload.begin(), command.outcome_payload.end(),
+			  applied.result_payload.begin());
+		return applied;
+	}
+	if (boon_shop_command)
+	{
+		boon_shop_result result{};
+		if (command.schema_version != CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION ||
+		    !boon_shop_command_decode_result(command.outcome_payload.data(),
+						     command.outcome_payload.size(), &result) ||
+		    result.pid != boon_shop_payload_value.pid ||
+		    result.stat_index != boon_shop_payload_value.stat_index ||
+		    !result.stat_revision || result.remaining_stat_points < 0 ||
+		    result.stat_value < 1 || result.stat_value > 100)
+		{
+			rollback(connection);
+			return failure(EINVAL);
+		}
+		static constexpr const char *columns[]{ "base_str", "base_dex", "base_agi",
+							"base_con", "base_pow", "base_int",
+							"base_wis", "base_cha", "base_kar",
+							"base_luk" };
+		const std::string pid = std::to_string(result.pid);
+		const std::string sql =
+			"UPDATE player_data SET " + std::string(columns[result.stat_index]) + "=" +
+			std::to_string(result.stat_value) +
+			",base_stat_revision=" + std::to_string(result.stat_revision) +
+			" WHERE pid=" + pid +
+			" AND base_stat_revision=" + std::to_string(result.stat_revision - 1);
+		if (!execute(connection, sql.c_str()) || mysql_affected_rows(connection) != 1)
+		{
+			const auto error = mysql_errno(connection);
+			rollback(connection);
+			return failure(error ? error : ESTALE);
+		}
+		const std::string debit =
+			"UPDATE boons_shop SET stats=" +
+			std::to_string(result.remaining_stat_points) + " WHERE pid=" + pid +
+			" AND stats=" + std::to_string(result.remaining_stat_points + 1);
+		if (!execute(connection, debit.c_str()) || mysql_affected_rows(connection) != 1 ||
+		    !finish_inbox(connection, command, result.stat_revision, 0,
+				  command.outcome_payload.data(), command.outcome_payload.size()))
+		{
+			const auto error = mysql_errno(connection);
+			rollback(connection);
+			return failure(error ? error : ESTALE);
+		}
+		if (!execute(connection, "COMMIT"))
+		{
+			const auto error = mysql_errno(connection);
+			if (!connection_error(error))
+				rollback(connection);
+			return { connection_error(error) ?
+					 critical_apply_outcome::ambiguous_commit :
+					 failure(error).outcome,
+				 result.stat_revision, error };
+		}
+		critical_apply_result applied{ critical_apply_outcome::applied,
+					       result.stat_revision, 0 };
+		applied.result_size = command.outcome_payload.size();
+		std::copy(command.outcome_payload.begin(), command.outcome_payload.end(),
 			  applied.result_payload.begin());
 		return applied;
 	}

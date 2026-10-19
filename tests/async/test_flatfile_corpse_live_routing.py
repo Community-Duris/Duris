@@ -105,8 +105,7 @@ assert "corpse_lifecycle_transaction_note_item_transfer" in ACTOBJ
 assert "persistence_defer_corpse_room_release(obj)" in decay
 assert decay.index("persistence_defer_corpse_room_release(obj)") < decay.index(
     "if (OBJ_ROOM(obj))")
-assert "PERSISTENCE_MODE_MARIADB_PRIMARY" in durable_lifecycle
-assert "PERSISTENCE_MODE_FLATFILE_PRIMARY" in durable_lifecycle
+assert "economic_state_active()" in durable_lifecycle
 assert "durable_corpse_lifecycle_enabled()" in deferred_release
 assert "corpse_lifecycle_transaction_busy" in deferred_release
 busy_check = deferred_release.index("corpse_lifecycle_transaction_busy")

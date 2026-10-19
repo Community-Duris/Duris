@@ -253,9 +253,9 @@ def journal_capture(stage, p, capacity_base=None):
             service_lock = name == "critical" and relative in {
                 "locker-identification/.service-lock", "critical-command.lock"}
             if operation_receipt:
-                # DOR1: ID, request hash, revision, bounded result and checksum.
+                # DOR1 success / DOR2 rejection: identity, hash and bounded result.
                 # Native restore qualification also verifies the filename identity.
-                require(94 < metadata["bytes"] <= 94 + 4096, "journal_operation_receipt_size")
+                require(94 < metadata["bytes"] <= 98 + 4096, "journal_operation_receipt_size")
             elif name == "critical" and receipt:
                 require(int(receipt[1]) <= 2147483647, "journal_receipt_pid")
                 # Match the native format's bound before copying. The restore

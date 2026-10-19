@@ -1,9 +1,12 @@
 #include "economy/auction_command.h"
+#include "item/item_transfer_command.h"
+#include "player/player_snapshot_codec.h"
 
 #include <algorithm>
 #include <cstring>
 #include <limits>
 #include <new>
+#include <openssl/sha.h>
 
 namespace
 {
@@ -243,6 +246,11 @@ bool auction_command_encode_result(const auction_command_result &result,
 			append_le<uint64_t>(&bytes, result.item_uids[index]);
 			append_le<uint64_t>(&bytes, result.item_revisions[index]);
 		}
+		bytes.resize(288, 0);
+		append_le<uint64_t>(&bytes, result.end_time);
+		append_le<int64_t>(&bytes, result.refund);
+		append_le<int64_t>(&bytes, result.seller_proceeds);
+		append_le<uint64_t>(&bytes, result.catalog_revision);
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -292,7 +300,134 @@ bool auction_command_decode_result(const uint8_t *encoded, size_t size,
 		if (!read_le(&cursor, end, &result->item_uids[index]) ||
 		    !read_le(&cursor, end, &result->item_revisions[index]))
 			return false;
-	return result->action > auction_action::unknown && result->action <= auction_action::remove;
+	cursor = encoded + 288;
+	return read_le(&cursor, end, &result->end_time) && read_le(&cursor, end, &result->refund) &&
+	       read_le(&cursor, end, &result->seller_proceeds) &&
+	       read_le(&cursor, end, &result->catalog_revision) &&
+	       result->action > auction_action::unknown && result->action <= auction_action::remove;
+}
+
+uint32_t auction_command_listing_id(const critical_operation_id &operation_id)
+{
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest{};
+	SHA256(operation_id.bytes.data(), operation_id.bytes.size(), digest.data());
+	uint32_t id = 0;
+	for (size_t index = 0; index < sizeof(id); ++index)
+		id |= static_cast<uint32_t>(digest[index]) << (8 * index);
+	// auctions.id is a signed SQL INT in both supported engines.
+	id &= INT32_MAX;
+	return id ? id : 1;
+}
+
+bool auction_blob_parts(const auction_command_payload &payload, const uint8_t **legacy,
+			size_t *legacy_size, const uint8_t **runtime, size_t *runtime_size)
+{
+	if (!legacy || !legacy_size || !runtime || !runtime_size || !payload.object_blob_size ||
+	    payload.object_blob_size >= payload.object_blob.size())
+		return false;
+	*legacy = payload.object_blob.data();
+	*legacy_size = payload.object_blob_size;
+	*runtime = nullptr;
+	*runtime_size = 0;
+	if (payload.object_blob_size >= 8 && !memcmp(*legacy, "DURSAUC2", 8))
+	{
+		const uint8_t *cursor = *legacy + 8,
+			      *end = payload.object_blob.data() + payload.object_blob_size;
+		uint32_t old_size = 0, new_size = 0;
+		if (!read_le(&cursor, end, &old_size) || !read_le(&cursor, end, &new_size) ||
+		    !old_size || !new_size ||
+		    static_cast<size_t>(end - cursor) != static_cast<size_t>(old_size) + new_size)
+			return false;
+		*legacy = cursor;
+		*legacy_size = old_size;
+		*runtime = cursor + old_size;
+		*runtime_size = new_size;
+	}
+	// write_one_object is a binary format, including embedded zero bytes.
+	// Its stored length, rather than strlen or a terminator, bounds the envelope.
+	return *legacy_size != 0;
+}
+bool auction_blob_pack(auction_command_payload *payload, const std::vector<uint8_t> &runtime)
+{
+	const uint8_t *legacy = nullptr, *old_runtime = nullptr;
+	size_t legacy_size = 0, old_runtime_size = 0;
+	if (!payload || runtime.empty() ||
+	    !auction_blob_parts(*payload, &legacy, &legacy_size, &old_runtime, &old_runtime_size) ||
+	    16 + legacy_size + runtime.size() >= payload->object_blob.size())
+		return false;
+	std::vector<uint8_t> encoded{ 'D', 'U', 'R', 'S', 'A', 'U', 'C', '2' };
+	append_le<uint32_t>(&encoded, legacy_size);
+	append_le<uint32_t>(&encoded, runtime.size());
+	encoded.insert(encoded.end(), legacy, legacy + legacy_size);
+	encoded.insert(encoded.end(), runtime.begin(), runtime.end());
+	payload->object_blob_size = encoded.size();
+	std::copy(encoded.begin(), encoded.end(), payload->object_blob.begin());
+	return true;
+}
+bool auction_item_payload(const auction_command_payload &payload, uint32_t auction_id,
+			  item_transfer_payload *transfer)
+{
+	const uint8_t *legacy = nullptr, *runtime = nullptr;
+	size_t legacy_size = 0, runtime_size = 0;
+	std::vector<player_item_snapshot> captured, selected;
+	if (!transfer || !payload.item_count ||
+	    !auction_blob_parts(payload, &legacy, &legacy_size, &runtime, &runtime_size) ||
+	    !runtime_size ||
+	    player_item_snapshot_list_decode(runtime, runtime_size, &captured) !=
+		    player_snapshot_codec_result::ok)
+		return false;
+	if (captured.size() > AUCTION_COMMAND_MAX_ITEMS ||
+	    (payload.action == auction_action::list && captured.size() != payload.item_count))
+		return false;
+	for (size_t i = 0; i < captured.size(); ++i)
+	{
+		if (!captured[i].object_uid ||
+		    captured[i].parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+			return false;
+		for (size_t j = 0; j < i; ++j)
+			if (captured[i].object_uid == captured[j].object_uid)
+				return false;
+	}
+	*transfer = {};
+	const item_owner_identity player{ item_owner_type::player, payload.actor_pid, 0 };
+	const item_owner_identity auction{ item_owner_type::auction, auction_id, 0 };
+	const bool listing = payload.action == auction_action::list;
+	transfer->from_owner = listing ? player : auction;
+	transfer->to_owner = listing ? auction : player;
+	transfer->reason = listing ? item_transfer_reason::auction_list :
+				     item_transfer_reason::auction_claim;
+	transfer->multi_root = true;
+	transfer->selected_item_uid = payload.items[0].item_uid;
+	transfer->target_root_item_uid = payload.items[0].item_uid;
+	transfer->item_count = payload.item_count;
+	for (size_t i = 0; i < payload.item_count; ++i)
+	{
+		const auto &item = payload.items[i];
+		for (size_t j = 0; j < i; ++j)
+			if (item.item_uid == payload.items[j].item_uid)
+				return false;
+		const auto found = std::find_if(captured.begin(), captured.end(), [&](const auto &s)
+						{ return s.object_uid == item.item_uid; });
+		if (found == captured.end() || found->vnum != item.vnum ||
+		    found->parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+			return false;
+		selected.push_back(*found);
+		selected.back().equipment_slot = 0;
+		transfer->items[i] = { item.item_uid,
+				       item.item_uid,
+				       0,
+				       item.expected_item_revision,
+				       item.vnum,
+				       item_custody_state::active };
+	}
+	std::vector<uint8_t> bytes;
+	if (player_item_snapshot_list_encode(selected, &bytes) !=
+		    player_snapshot_codec_result::ok ||
+	    bytes.size() > transfer->item_blob.size())
+		return false;
+	transfer->item_blob_size = bytes.size();
+	std::copy(bytes.begin(), bytes.end(), transfer->item_blob.begin());
+	return true;
 }
 
 bool auction_command_build(critical_command *command, critical_operation_id operation_id,

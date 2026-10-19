@@ -5,6 +5,7 @@
 #include "flatfile/flatfile_shopkeeper_repository.h"
 #include "player/player_snapshot_codec.h"
 
+#include <algorithm>
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
@@ -194,7 +195,13 @@ int main(int argc, char **argv)
 	require(preview.outcome == critical_apply_outcome::applied && preview.result_size,
 		"could not prepare isolated sealed shop_trade result");
 	purchase_command.schema_version = CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION;
-	purchase_command.outcome_revision = preview.durable_revision;
+	const auto frozen = result_of(preview);
+	purchase_command.outcome_revision =
+		std::max({ frozen.wallet_revision, frozen.bank_revision, frozen.shop_revision,
+			   frozen.player_owner_revision, frozen.counterparty_owner_revision });
+	for (size_t i = 0; i < frozen.item_count; ++i)
+		purchase_command.outcome_revision =
+			std::max(purchase_command.outcome_revision, frozen.item_revisions[i]);
 	purchase_command.outcome_payload.assign(preview.result_payload.begin(),
 						preview.result_payload.begin() +
 							preview.result_size);

@@ -23,6 +23,9 @@
 #include "core/config.h"
 #include "persistence/deferred_save_policy.h"
 #include "persistence/corpse_lifecycle_transaction.h"
+#include "economy/economic_state.h"
+#include "player/player_save_worker.h"
+#include "persistence/operation_log.h"
 #include "flatfile/flatfile_character_delete.h"
 #include "flatfile/flatfile_corpse_restore.h"
 #include "flatfile/flatfile_item_repository.h"
@@ -1345,7 +1348,7 @@ void writeCorpse(P_obj corpse)
 		logit(LOG_DEBUG, "item wasn't a corpse in writeCorpse!");
 		return;
 	}
-	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+	if (economic_state_active() || persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
 	{
 		const bool present = OBJ_ROOM(corpse) ||
 				     (OBJ_CARRIED(corpse) && corpse->loc.carrying != NULL);
@@ -2018,6 +2021,14 @@ character_delete_result delete_character_result(P_char ch, bool bDeleteLocker)
 {
 	if (!ch || !GET_NAME(ch) || GET_PID(ch) <= 0)
 		return character_delete_result::refused;
+#ifndef _PFILE_
+	if (economic_state_active() &&
+	    (!operation_log_projection_caught_up() || !persistence_writer_wait_idle(0) ||
+	     critical_command_coordinator_is_fenced({ critical_entity_type::player,
+						      static_cast<uint64_t>(GET_PID(ch)) },
+						    nullptr)))
+		return character_delete_result::refused;
+#endif
 	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
 	{
 		if (!bDeleteLocker)
@@ -2066,6 +2077,9 @@ character_delete_result delete_character_result(P_char ch, bool bDeleteLocker)
 	}
 
 	// Durable cleanup has completed. These operations only release runtime state.
+#ifndef _PFILE_
+	economic_state_forget(GET_PID(ch));
+#endif
 	player_revision_forget(GET_PID(ch));
 	if (GET_ASSOC(ch))
 		GET_ASSOC(ch)->forget_deleted_member(ch);
@@ -2101,7 +2115,7 @@ void PurgeCorpseFile(P_obj corpse)
 		return;
 	}
 #ifndef _PFILE_
-	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+	if (economic_state_active() || persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
 	{
 		if (!skip_corpse_save && corpse->value[CORPSE_SAVEID] &&
 		    !stage_corpse_lifecycle(corpse, corpse_lifecycle_action::remove))

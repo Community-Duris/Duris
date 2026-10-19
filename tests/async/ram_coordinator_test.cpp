@@ -62,6 +62,15 @@ void pump()
 		jobs.pop_front();
 	}
 }
+
+void publish_batch(const critical_completion *batch, size_t count)
+{
+	for (size_t i = 0; i < count; ++i)
+	{
+		live = batch[i].result_payload[0];
+		assert(critical_command_coordinator_acknowledge_publication(batch[i].operation_id));
+	}
+}
 }
 
 extern "C" int __real_fsync(int);
@@ -201,6 +210,17 @@ int main(int argc, char **argv)
 	duplicate.payload[0] = 99;
 	assert(critical_command_coordinator_submit(duplicate) ==
 	       critical_submit_result::identity_conflict);
+	// A pulse may admit several dependent operations, but every next decision
+	// observes the predecessor's live publication. Capacity still bounds work.
+	for (unsigned i = 0; i < 3; ++i)
+		assert(critical_command_coordinator_submit_for_publication(command(1)) ==
+		       critical_submit_result::awaiting_durability);
+	critical_completion batch[3]{};
+	assert(critical_command_coordinator_pump(batch, 2, publish_batch, 1000000) == 2);
+	assert(live == 17 && batch[0].result_payload[0] == 16 && batch[1].result_payload[0] == 17);
+	assert(critical_command_coordinator_pump(batch, 3, publish_batch, 0) == 1);
+	assert(live == 18);
+	pump();
 	critical_command_coordinator_shutdown();
 	operation_log_shutdown();
 }

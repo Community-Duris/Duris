@@ -927,8 +927,10 @@ flatfile_player_domain_result flatfile_player_domain_prepare_wallet(
 	}
 	mutation->wallet_revision = player.record.domains.wallet_revision;
 	mutation->bank_revision = bank.revision;
-	if (mutation->wallet_revision != expected_wallet_revision ||
-	    mutation->bank_revision != expected_bank_revision)
+	if ((expected_wallet_revision != UINT64_MAX &&
+	     mutation->wallet_revision != expected_wallet_revision) ||
+	    (expected_bank_revision != UINT64_MAX &&
+	     mutation->bank_revision != expected_bank_revision))
 	{
 		*result_code = ESTALE;
 		return flatfile_player_domain_result::ok;

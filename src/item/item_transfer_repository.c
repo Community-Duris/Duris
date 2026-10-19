@@ -1,5 +1,6 @@
 #include "persistence/death_recovery_visibility.h"
 #include "item/item_transfer_repository.h"
+#include "persistence/corpse_lifecycle_repository.h"
 #include "core/defines.h"
 #include "player/player_snapshot_codec.h"
 #include "core/structs.h"
@@ -406,16 +407,64 @@ bool direct_player_projection_reason(item_transfer_reason reason)
 	       reason != item_transfer_reason::pet_return;
 }
 
-bool materialize_direct_player_items(MYSQL *connection, const item_transfer_payload &payload)
+bool materialize_direct_items(MYSQL *connection, const item_transfer_payload &payload,
+			      bool sealed = false)
 {
-	if (payload.to_owner.type != item_owner_type::player ||
-	    !direct_player_projection_reason(payload.reason))
+	if ((payload.to_owner.type != item_owner_type::player &&
+	     payload.to_owner.type != item_owner_type::shopkeeper &&
+	     payload.to_owner.type != item_owner_type::corpse &&
+	     payload.to_owner.type != item_owner_type::room) ||
+	    (!sealed && !direct_player_projection_reason(payload.reason)))
 		return true;
 	// Old journal records did not carry a payload. They remain replayable, but all
 	// live movement submissions do carry one and therefore publish atomically.
 	if (!payload.item_blob_size)
 		return true;
 
+	const bool shop = payload.to_owner.type == item_owner_type::shopkeeper;
+	const bool corpse = payload.to_owner.type == item_owner_type::corpse;
+	const bool room = payload.to_owner.type == item_owner_type::room;
+	const std::string items = shop	 ? "shopkeeper_items" :
+				  corpse ? "corpse_items" :
+				  room	 ? "saved_items" :
+					   "player_items";
+	const std::string prefix = shop	  ? "shopkeeper_item" :
+				   corpse ? "corpse_item" :
+				   room	  ? "saved_item" :
+					    "player_item";
+	const std::string owner_column = shop	? "shopkeeper_id" :
+					 corpse ? "corpse_id" :
+					 room	? "room_vnum" :
+						  "pid";
+	uint64_t owner_id = payload.to_owner.id;
+	if (shop)
+	{
+		std::vector<uint64_t> row;
+		if (!one_row(connection,
+			     "SELECT id FROM shopkeepers WHERE shop_id=" +
+				     std::to_string(owner_id - 1) + " FOR UPDATE",
+			     &row))
+		{
+			errno = ENOENT;
+			return false;
+		}
+		owner_id = row[0];
+	}
+	if (corpse)
+	{
+		std::vector<uint64_t> row;
+		if (!one_row(connection,
+			     "SELECT id FROM corpses WHERE value3=" +
+				     std::to_string(owner_id >> 32) + " AND save_id=" +
+				     std::to_string(static_cast<uint32_t>(owner_id)) +
+				     " FOR UPDATE",
+			     &row))
+		{
+			errno = ENOENT;
+			return false;
+		}
+		owner_id = row[0];
+	}
 	std::vector<player_item_snapshot> snapshots;
 	if (player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
 					     &snapshots) != player_snapshot_codec_result::ok ||
@@ -463,8 +512,8 @@ bool materialize_direct_player_items(MYSQL *connection, const item_transfer_payl
 	{
 		std::vector<uint64_t> row;
 		if (!one_row(connection,
-			     "SELECT id FROM player_items WHERE pid=" +
-				     std::to_string(payload.to_owner.id) + " AND obj_uid=" +
+			     "SELECT id FROM " + items + " WHERE " + owner_column + "=" +
+				     std::to_string(owner_id) + " AND obj_uid=" +
 				     std::to_string(payload.target_parent_item_uid) + " FOR UPDATE",
 			     &row))
 		{
@@ -478,8 +527,9 @@ bool materialize_direct_player_items(MYSQL *connection, const item_transfer_payl
 	// parentage. A missing row is repaired from the captured runtime snapshot.
 	for (const player_item_snapshot &snapshot : snapshots)
 	{
-		const std::string select = "SELECT id FROM player_items WHERE obj_uid=" +
-					   std::to_string(snapshot.object_uid) + " FOR UPDATE";
+		const std::string select = "SELECT id FROM " + items +
+					   " WHERE obj_uid=" + std::to_string(snapshot.object_uid) +
+					   " FOR UPDATE";
 		if (!run_sql(connection, select))
 			return false;
 		MYSQL_RES *rows = mysql_store_result(connection);
@@ -497,7 +547,7 @@ bool materialize_direct_player_items(MYSQL *connection, const item_transfer_payl
 			return false;
 		}
 		if (item_id &&
-		    (!run_sql(connection, "UPDATE player_items SET container_id=NULL WHERE id=" +
+		    (!run_sql(connection, "UPDATE " + items + " SET container_id=NULL WHERE id=" +
 						  std::to_string(item_id)) ||
 		     mysql_affected_rows(connection) > 1))
 			return false;
@@ -508,9 +558,12 @@ bool materialize_direct_player_items(MYSQL *connection, const item_transfer_payl
 	{
 		uint64_t &item_id = row_by_uid.at(snapshot.object_uid);
 		std::ostringstream values;
-		values << "pid=" << payload.to_owner.id << ",vnum=" << snapshot.vnum
-		       << ",equip_slot=" << snapshot.equipment_slot
-		       << ",quantity=1,weight=" << snapshot.weight << ",cost=" << snapshot.cost
+		values << owner_column << "=" << owner_id << ",vnum=" << snapshot.vnum;
+		if (!corpse && !room)
+			values << ",equip_slot=" << std::max<int16_t>(0, snapshot.equipment_slot);
+		if (room)
+			values << ",item_key='ram-" << snapshot.object_uid << "'";
+		values << ",quantity=1,weight=" << snapshot.weight << ",cost=" << snapshot.cost
 		       << ",timer=" << snapshot.timers[0] << ",extra_flags=" << snapshot.extra_flags
 		       << ",wear_flags=" << snapshot.wear_flags
 		       << ",item_type=" << static_cast<unsigned int>(snapshot.type);
@@ -530,14 +583,14 @@ bool materialize_direct_player_items(MYSQL *connection, const item_transfer_payl
 		       << ",item_condition=" << snapshot.condition;
 		if (item_id)
 		{
-			if (!run_sql(connection, "UPDATE player_items SET " + values.str() +
+			if (!run_sql(connection, "UPDATE " + items + " SET " + values.str() +
 							 " WHERE id=" + std::to_string(item_id)) ||
 			    mysql_affected_rows(connection) > 1)
 				return false;
 		}
 		else
 		{
-			if (!run_sql(connection, "INSERT INTO player_items SET " + values.str()))
+			if (!run_sql(connection, "INSERT INTO " + items + " SET " + values.str()))
 				return false;
 			item_id = mysql_insert_id(connection);
 			if (!item_id)
@@ -552,16 +605,16 @@ bool materialize_direct_player_items(MYSQL *connection, const item_transfer_payl
 		if (player_item_snapshot_list_encode({ standalone }, &runtime) !=
 			    player_snapshot_codec_result::ok ||
 		    !run_sql(connection,
-			     "INSERT INTO player_item_runtime_state(item_id,payload) VALUES(" +
+			     "INSERT INTO " + prefix + "_runtime_state(item_id,payload) VALUES(" +
 				     std::to_string(item_id) + "," +
 				     quote(connection, std::string(reinterpret_cast<const char *>(
 									   runtime.data()),
 								   runtime.size())) +
 				     ") ON DUPLICATE KEY UPDATE payload=VALUES(payload)"))
 			return false;
-		if (!run_sql(connection, "DELETE FROM player_item_affects WHERE item_id=" +
+		if (!run_sql(connection, "DELETE FROM " + prefix + "_affects WHERE item_id=" +
 						 std::to_string(item_id)) ||
-		    !run_sql(connection, "DELETE FROM player_item_extra_descr WHERE item_id=" +
+		    !run_sql(connection, "DELETE FROM " + prefix + "_extra_descr WHERE item_id=" +
 						 std::to_string(item_id)))
 			return false;
 		std::unordered_set<uint64_t> affects;
@@ -573,12 +626,12 @@ bool materialize_direct_player_items(MYSQL *connection, const item_transfer_payl
 				(static_cast<uint64_t>(static_cast<uint16_t>(affect[0])) << 32) |
 				static_cast<uint32_t>(affect[1]);
 			if (affects.insert(key).second &&
-			    !run_sql(
-				    connection,
-				    "INSERT INTO player_item_affects(item_id,location,modifier) VALUES(" +
-					    std::to_string(item_id) + "," +
-					    std::to_string(affect[0]) + "," +
-					    std::to_string(affect[1]) + ")"))
+			    !run_sql(connection,
+				     "INSERT INTO " + prefix +
+					     "_affects(item_id,location,modifier) VALUES(" +
+					     std::to_string(item_id) + "," +
+					     std::to_string(affect[0]) + "," +
+					     std::to_string(affect[1]) + ")"))
 				return false;
 		}
 		std::unordered_set<std::string> descriptions;
@@ -602,8 +655,9 @@ bool materialize_direct_player_items(MYSQL *connection, const item_transfer_payl
 			key += text;
 			if (descriptions.insert(std::move(key)).second &&
 			    !run_sql(connection,
-				     "INSERT INTO player_item_extra_descr(item_id,keyword,description) "
-				     "VALUES(" +
+				     "INSERT INTO " + prefix +
+					     "_extra_descr(item_id,keyword,description) "
+					     "VALUES(" +
 					     std::to_string(item_id) + "," +
 					     quote(connection, keyword) + "," +
 					     quote(connection, text) + ")"))
@@ -619,7 +673,7 @@ bool materialize_direct_player_items(MYSQL *connection, const item_transfer_payl
 			parent_id = row_by_uid.at(snapshots[snapshot.parent_index].object_uid);
 		const std::string parent = parent_id ? std::to_string(parent_id) : "NULL";
 		if (!run_sql(connection,
-			     "UPDATE player_items SET container_id=" + parent + " WHERE id=" +
+			     "UPDATE " + items + " SET container_id=" + parent + " WHERE id=" +
 				     std::to_string(row_by_uid.at(snapshot.object_uid))) ||
 		    mysql_affected_rows(connection) > 1)
 			return false;
@@ -1262,7 +1316,7 @@ bool insert_craft_snapshot_rows(MYSQL *connection, const std::vector<player_item
 					    ITEM_TRANSFER_ABSENT_REVISION,
 					    items[index].vnum,
 					    item_custody_state::absent };
-	return materialize_direct_player_items(connection, projection);
+	return materialize_direct_items(connection, projection);
 }
 
 bool insert_craft_ledger(MYSQL *connection, const critical_command &command,
@@ -1303,6 +1357,7 @@ bool execute_craft(MYSQL *connection, const critical_command &command,
 	};
 	*result_code = 0;
 	*mutation_applied = false;
+
 	if (failure_stage)
 		*failure_stage = item_transfer_failure_stage::none;
 	if (!sync_restitution_runtime_payload(connection, payload))
@@ -1421,6 +1476,8 @@ bool execute_craft(MYSQL *connection, const critical_command &command,
 		return true;
 	}
 	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
+	if (!ensure_owner(connection, destruction))
+		return false;
 	for (size_t index = 0; index < payload.item_count; ++index)
 	{
 		const current_item &stored = selected[index];
@@ -1675,6 +1732,7 @@ bool sync_restitution_runtime_payload(MYSQL *connection, const item_transfer_pay
 		errno = EBADMSG;
 		return false;
 	}
+
 	std::vector<player_item_snapshot> snapshots;
 	if (player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
 					     &snapshots) != player_snapshot_codec_result::ok)
@@ -1725,6 +1783,11 @@ bool item_transfer_repository_ensure_owner(MYSQL *connection, const item_owner_i
 	return ensure_owner(connection, owner);
 }
 
+bool item_transfer_repository_materialize(MYSQL *connection, const item_transfer_payload &payload)
+{
+	return materialize_direct_items(connection, payload, true);
+}
+
 bool item_transfer_repository_lock_owner(MYSQL *connection, const item_owner_identity &owner,
 					 uint64_t *revision)
 {
@@ -1763,6 +1826,39 @@ bool item_transfer_repository_execute_at_offset(MYSQL *connection, const critica
 	*result = { item_transfer_result_root(payload), payload.item_count, 0, 0, 0, 0 };
 	*result_code = 0;
 	*mutation_applied = false;
+	if (command.schema_version == CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION &&
+	    payload.corpse.present)
+	{
+		item_transfer_result frozen;
+		if (!item_transfer_command_decode_result(command.outcome_payload.data(),
+							 command.outcome_payload.size(), &frozen) ||
+		    !frozen.corpse_revision)
+		{
+			errno = EBADMSG;
+			return false;
+		}
+		const uint64_t key = payload.from_owner.type == item_owner_type::corpse ?
+					     payload.from_owner.id :
+					     payload.to_owner.id;
+		corpse_lifecycle_payload metadata;
+		metadata.owner_pid = static_cast<uint32_t>(key >> 32);
+		metadata.save_id = static_cast<uint32_t>(key);
+		metadata.expected_corpse_revision = frozen.corpse_revision - 1;
+		metadata.owner_name = payload.corpse.owner_name;
+		metadata.room_vnum = payload.corpse.room_vnum;
+		metadata.weight = payload.corpse.weight;
+		metadata.values = payload.corpse.values;
+		metadata.short_description = payload.corpse.short_description;
+		metadata.description = payload.corpse.description;
+		metadata.keywords = payload.corpse.keywords;
+		corpse_lifecycle_result updated;
+		if (!corpse_metadata_repository_execute(connection, metadata, &updated,
+							result_code))
+			return false;
+		if (*result_code)
+			return true;
+		result->corpse_revision = updated.corpse_revision;
+	}
 	if (failure_stage)
 		*failure_stage = item_transfer_failure_stage::none;
 	if (static_cast<size_t>(event_index_base) + payload.item_count > UINT16_MAX)
@@ -2012,8 +2108,33 @@ bool item_transfer_repository_execute_at_offset(MYSQL *connection, const critica
 	}
 	if (!move_pet_physical_items(connection, payload))
 		return false;
-	if (!materialize_direct_player_items(connection, payload))
+	if (!materialize_direct_items(connection, payload,
+				      command.schema_version ==
+					      CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION))
 		return false;
+	if (command.schema_version == CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION &&
+	    payload.from_owner.type != payload.to_owner.type)
+	{
+		const char *source_table =
+			payload.from_owner.type == item_owner_type::player ? "player_items" :
+			payload.from_owner.type == item_owner_type::corpse ? "corpse_items" :
+			payload.from_owner.type == item_owner_type::room   ? "saved_items" :
+			payload.from_owner.type == item_owner_type::shopkeeper ?
+									   "shopkeeper_items" :
+									   nullptr;
+		if (source_table)
+		{
+			std::string uids;
+			for (size_t i = 0; i < payload.item_count; ++i)
+				uids += (i ? "," : "") + std::to_string(payload.items[i].item_uid);
+			const std::string where = " WHERE obj_uid IN (" + uids + ")";
+			if (!run_sql(connection, std::string("UPDATE ") + source_table +
+							 " SET container_id=NULL" + where) ||
+			    !run_sql(connection,
+				     std::string("DELETE FROM ") + source_table + where))
+				return false;
+		}
+	}
 	if (!update_owner_revision(connection, payload.from_owner, from_revision) ||
 	    (!same_owner && !update_owner_revision(connection, payload.to_owner, to_revision)))
 		return false;

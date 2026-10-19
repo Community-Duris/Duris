@@ -23,13 +23,16 @@ struct critical_operation_id
 	std::array<uint8_t, CRITICAL_COMMAND_ID_BYTES> bytes;
 };
 
-constexpr size_t CRITICAL_RECEIPT_MAX_BYTES = 94 + CRITICAL_COMMAND_MAX_OUTCOME_BYTES;
+constexpr size_t CRITICAL_RECEIPT_MAX_BYTES = 98 + CRITICAL_COMMAND_MAX_OUTCOME_BYTES;
 struct critical_operation_receipt
 {
 	critical_operation_id operation_id{};
 	std::array<uint8_t, 32> request_digest{};
 	uint64_t outcome_revision = 0;
 	std::vector<uint8_t> outcome_payload;
+	// DOR2 retains conclusive rejections from pre-cutover journals. DOR1
+	// success receipts remain readable and are still written for success.
+	uint32_t error_code = 0;
 };
 bool critical_operation_receipt_encode(const critical_operation_receipt &receipt,
 				       std::vector<uint8_t> *encoded);
@@ -94,6 +97,7 @@ enum class critical_source_site : uint16_t
 	login,
 	recovery,
 	operator_repair,
+	website,
 };
 
 enum class critical_deadline_class : uint8_t

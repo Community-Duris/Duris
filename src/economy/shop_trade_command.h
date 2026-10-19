@@ -87,4 +87,7 @@ bool shop_trade_command_build(critical_command *command, critical_operation_id o
 			      const shop_trade_payload &payload, critical_source_site source_site,
 			      critical_deadline_class deadline_class);
 
+// Shared custody projection for RAM preparation, SQL, and live publication.
+bool shop_trade_item_payload(const shop_trade_payload &trade, item_transfer_payload *transfer);
+
 #endif

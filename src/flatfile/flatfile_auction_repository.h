@@ -2,6 +2,7 @@
 #define DURIS_FLATFILE_AUCTION_REPOSITORY_H
 
 #include "economy/auction_command.h"
+#include "economy/auction_ram.h"
 #include "persistence/critical_command_coordinator.h"
 #include "flatfile/flatfile_authority_transaction.h"
 
@@ -89,5 +90,9 @@ flatfile_auction_check_player_unreferenced(const std::string &root,
 
 critical_apply_result flatfile_auction_repository_apply(const std::string &root,
 							const critical_command &command);
+
+bool flatfile_auction_load_ram(const std::string &root, std::vector<auction_ram_listing> *listings,
+			       std::vector<std::pair<uint32_t, auction_ram_pickup>> *pickups,
+			       uint64_t *revision, std::string *error);
 
 #endif

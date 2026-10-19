@@ -5,6 +5,7 @@
 
 // Read I/O occurs on one refresh worker. Pulse and runtime publication are
 // game-thread only. A failed refresh retains the last authoritative runtime.
+void collector_catalog_cache_use_ram(bool enabled);
 bool collector_catalog_cache_refresh(void);
 // Request a read that is guaranteed to begin after the calling authority
 // commit. If an older read is already in flight, pulse schedules one more read

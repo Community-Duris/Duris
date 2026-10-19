@@ -24,6 +24,8 @@ bool item_transfer_repository_execute_coin(MYSQL *connection, const critical_com
 // Transaction-scoped owner primitives used by compound authority commands.
 // Callers must acquire every participating owner in canonical identity order.
 bool item_transfer_repository_ensure_owner(MYSQL *connection, const item_owner_identity &owner);
+// Caller owns the enclosing atomic transaction and custody transition.
+bool item_transfer_repository_materialize(MYSQL *, const item_transfer_payload &);
 bool item_transfer_repository_lock_owner(MYSQL *connection, const item_owner_identity &owner,
 					 uint64_t *revision);
 bool item_transfer_repository_advance_owner(MYSQL *connection, const item_owner_identity &owner,

@@ -70,12 +70,13 @@ bool request_digest(critical_command command, std::array<uint8_t, SHA256_DIGEST_
 	return true;
 }
 
-bool retain_receipt(const critical_command &command)
+bool retain_receipt(const critical_command &command, unsigned int error_code = 0)
 {
 	critical_operation_receipt receipt;
 	receipt.operation_id = command.operation_id;
 	receipt.outcome_revision = command.outcome_revision;
 	receipt.outcome_payload = command.outcome_payload;
+	receipt.error_code = error_code;
 	if (!request_digest(command, &receipt.request_digest))
 		return false;
 	std::vector<uint8_t> bytes;
@@ -127,7 +128,9 @@ critical_receipt_status lookup_locked(const critical_command &request,
 		return critical_receipt_status::unavailable;
 	if (expected != stored.request_digest)
 		return critical_receipt_status::identity_conflict;
-	*receipt = { critical_apply_outcome::already_applied, stored.outcome_revision, 0 };
+	*receipt = { stored.error_code ? critical_apply_outcome::terminal_failure :
+					 critical_apply_outcome::already_applied,
+		     stored.outcome_revision, stored.error_code };
 	receipt->result_size = stored.outcome_payload.size();
 	std::copy(stored.outcome_payload.begin(), stored.outcome_payload.end(),
 		  receipt->result_payload.begin());
@@ -150,15 +153,28 @@ bool replay(critical_command command, void *)
 		// adopting the resulting receipt; never submit a different schema to
 		// the materializer for an existing operation ID.
 		const auto result = projector(command, projector_context);
-		if ((result.outcome != critical_apply_outcome::applied &&
+		const bool rejected = result.outcome == critical_apply_outcome::terminal_failure &&
+				      result.error_code;
+		if ((!rejected && result.outcome != critical_apply_outcome::applied &&
 		     result.outcome != critical_apply_outcome::already_applied) ||
-		    result.error_code || !result.result_size ||
+		    (!rejected && (result.error_code || !result.result_size)) ||
 		    result.result_size > result.result_payload.size())
 			return false;
 		command.schema_version = CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION;
 		command.outcome_revision = result.durable_revision;
 		command.outcome_payload.assign(result.result_payload.begin(),
 					       result.result_payload.begin() + result.result_size);
+		if (rejected)
+			return (found != critical_receipt_status::found ||
+				(receipt.error_code == result.error_code &&
+				 receipt.durable_revision == result.durable_revision &&
+				 receipt.result_size == result.result_size &&
+				 std::equal(command.outcome_payload.begin(),
+					    command.outcome_payload.end(),
+					    receipt.result_payload.begin()))) &&
+			       retain_receipt(command, result.error_code) &&
+			       critical_command_journal_checkpoint(command.operation_id) ==
+				       critical_command_journal_result::ok;
 		return (found != critical_receipt_status::found ||
 			operation_log_result_matches(command, receipt)) &&
 		       retain_receipt(command) &&
@@ -363,6 +379,40 @@ critical_submit_result operation_log_submit_player(const critical_command &comma
 bool operation_log_ready()
 {
 	return ready;
+}
+bool operation_log_remember_rejection(const critical_command &request,
+				      const critical_apply_result &result)
+{
+	std::shared_lock<std::shared_mutex> lifetime(lifetime_mutex);
+	std::lock_guard<std::mutex> lock(admission_mutex);
+	if (!ready || request.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION ||
+	    !critical_command_valid(request) ||
+	    result.outcome != critical_apply_outcome::terminal_failure || !result.error_code ||
+	    result.result_size > result.result_payload.size())
+		return false;
+	try
+	{
+		critical_apply_result receipt;
+		const auto found = lookup_locked(request, &receipt);
+		if (found == critical_receipt_status::found)
+			return receipt.error_code == result.error_code &&
+			       receipt.durable_revision == result.durable_revision &&
+			       receipt.result_size == result.result_size &&
+			       std::equal(result.result_payload.begin(),
+					  result.result_payload.begin() + result.result_size,
+					  receipt.result_payload.begin());
+		if (found != critical_receipt_status::missing)
+			return false;
+		auto stored = request;
+		stored.outcome_revision = result.durable_revision;
+		stored.outcome_payload.assign(result.result_payload.begin(),
+					      result.result_payload.begin() + result.result_size);
+		return retain_receipt(stored, result.error_code);
+	}
+	catch (...)
+	{
+		return false;
+	}
 }
 bool operation_log_projection_caught_up()
 {

@@ -20,6 +20,7 @@ static int sync_failures = 0;
 static int sync_failure_at = 0;
 static std::atomic<bool> hold_projection{ false }, projection_entered{ false };
 static unsigned legacy_calls = 0;
+static bool legacy_rejection = false;
 static bool fail_receipt_allocation = false;
 static bool fail_next_allocation = false;
 extern "C" void *__real__Znwm(size_t);
@@ -84,6 +85,8 @@ static critical_apply_result project(const critical_command &command, void *cont
 	if (command.schema_version == CRITICAL_COMMAND_SCHEMA_VERSION)
 	{
 		++legacy_calls;
+		if (legacy_rejection)
+			return { critical_apply_outcome::terminal_failure, 0, EACCES };
 		auto reconciled = command;
 		reconciled.schema_version = CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION;
 		reconciled.outcome_revision = 1;
@@ -397,6 +400,24 @@ int main(int argc, char **argv)
 	operation_log_shutdown();
 
 	// Adopt an older journal without changing the identity sent to its backend.
+	assert(operation_log_init(argv[1], project, &state));
+	auto policy_rejection = transfer(48);
+	policy_rejection.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
+	policy_rejection.outcome_revision = 0;
+	policy_rejection.outcome_payload.clear();
+	const critical_apply_result rejected{ critical_apply_outcome::terminal_failure, 0, ENOSPC };
+	assert(operation_log_remember_rejection(policy_rejection, rejected));
+	assert(operation_log_remember_rejection(policy_rejection, rejected));
+	operation_log_shutdown();
+	assert(operation_log_init(argv[1], project, &state));
+	assert(operation_log_lookup(policy_rejection, &receipt) == critical_receipt_status::found);
+	assert(receipt.outcome == critical_apply_outcome::terminal_failure &&
+	       receipt.error_code == ENOSPC);
+	assert(!operation_log_remember_rejection(
+		policy_rejection, { critical_apply_outcome::terminal_failure, 0, EACCES }));
+	operation_log_shutdown();
+
+	// Adopt an older journal without changing the identity sent to its backend.
 	// A blocked reconciliation retains the legacy record, then the successful
 	// recovery keeps a receipt after that record is checkpointed away.
 	auto legacy = transfer(50);
@@ -416,6 +437,28 @@ int main(int argc, char **argv)
 	assert(critical_command_journal_health_copy().records == 0);
 	assert(operation_log_lookup(legacy, &receipt) == critical_receipt_status::found);
 	assert(receipt.result_payload[0] == 50 && receipt.durable_revision == 1);
+
+	// A conclusive old policy rejection must not block every future boot, or
+	// become a fresh request after its original WAL record is checkpointed.
+	operation_log_shutdown();
+	auto refused = transfer(49);
+	refused.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
+	refused.outcome_revision = 0;
+	refused.outcome_payload.clear();
+	assert(critical_command_journal_init(argv[1]));
+	assert(critical_command_journal_append(refused) == critical_command_journal_result::ok);
+	critical_command_journal_shutdown();
+	legacy_rejection = true;
+	assert(operation_log_init(argv[1], project, &state));
+	assert(critical_command_journal_health_copy().records == 0);
+	assert(operation_log_lookup(refused, &receipt) == critical_receipt_status::found);
+	assert(receipt.outcome == critical_apply_outcome::terminal_failure &&
+	       receipt.error_code == EACCES && !receipt.result_size);
+	operation_log_shutdown();
+	legacy_rejection = false;
+	assert(operation_log_init(argv[1], project, &state));
+	assert(operation_log_lookup(refused, &receipt) == critical_receipt_status::found &&
+	       receipt.error_code == EACCES);
 
 	// A damaged durable receipt must not be mistaken for a new request.
 	char receipt_name[CRITICAL_COMMAND_ID_HEX_SIZE]{};

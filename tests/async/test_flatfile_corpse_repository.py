@@ -47,6 +47,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-corpse-") as temporary:
             rel("flatfile_artifact_repository.c"),
             rel("flatfile_shopkeeper_repository.c"),
             rel("flatfile_auction_repository.c"),
+        rel("flatfile_identity_repository.c"),
             rel("flatfile_boon_repository.c"),
             rel("flatfile_player_domain_repository.c"),
             rel("flatfile_ip_activity_repository.c"),

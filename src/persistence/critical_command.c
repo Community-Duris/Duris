@@ -52,17 +52,21 @@ bool critical_operation_receipt_encode(const critical_operation_receipt &receipt
 				       std::vector<uint8_t> *encoded)
 {
 	if (!encoded || critical_operation_id_is_zero(receipt.operation_id) ||
-	    receipt.outcome_payload.empty() ||
+	    (receipt.outcome_payload.empty() && !receipt.error_code) ||
 	    receipt.outcome_payload.size() > CRITICAL_COMMAND_MAX_OUTCOME_BYTES)
 		return false;
 	try
 	{
 		std::vector<uint8_t> bytes{ 'D', 'O', 'R', '1' };
+		if (receipt.error_code)
+			bytes[3] = '2';
 		bytes.insert(bytes.end(), receipt.operation_id.bytes.begin(),
 			     receipt.operation_id.bytes.end());
 		bytes.insert(bytes.end(), receipt.request_digest.begin(),
 			     receipt.request_digest.end());
 		append_le<uint64_t>(bytes, receipt.outcome_revision);
+		if (receipt.error_code)
+			append_le<uint32_t>(bytes, receipt.error_code);
 		append_le<uint16_t>(bytes, receipt.outcome_payload.size());
 		bytes.insert(bytes.end(), receipt.outcome_payload.begin(),
 			     receipt.outcome_payload.end());
@@ -81,22 +85,28 @@ bool critical_operation_receipt_encode(const critical_operation_receipt &receipt
 bool critical_operation_receipt_decode(const uint8_t *encoded, size_t size,
 				       critical_operation_receipt *receipt)
 {
-	constexpr size_t prefix = 4 + CRITICAL_COMMAND_ID_BYTES + SHA256_DIGEST_LENGTH + 8 + 2;
-	constexpr size_t overhead = prefix + SHA256_DIGEST_LENGTH;
-	if (!encoded || !receipt || size <= overhead || size > CRITICAL_RECEIPT_MAX_BYTES ||
-	    memcmp(encoded, "DOR1", 4))
+	if (!encoded || !receipt || size < 4 ||
+	    (memcmp(encoded, "DOR1", 4) && memcmp(encoded, "DOR2", 4)))
+		return false;
+	const bool rejected = encoded[3] == '2';
+	const size_t prefix =
+		4 + CRITICAL_COMMAND_ID_BYTES + SHA256_DIGEST_LENGTH + 8 + 2 + (rejected ? 4 : 0);
+	const size_t overhead = prefix + SHA256_DIGEST_LENGTH;
+	if (size < overhead || size > CRITICAL_RECEIPT_MAX_BYTES)
 		return false;
 	critical_operation_receipt decoded{};
 	std::copy_n(encoded + 4, decoded.operation_id.bytes.size(),
 		    decoded.operation_id.bytes.begin());
 	std::copy_n(encoded + 4 + CRITICAL_COMMAND_ID_BYTES, decoded.request_digest.size(),
 		    decoded.request_digest.begin());
-	size_t cursor = prefix - 10;
+	size_t cursor = 4 + CRITICAL_COMMAND_ID_BYTES + SHA256_DIGEST_LENGTH;
 	uint16_t payload_size = 0;
 	if (critical_operation_id_is_zero(decoded.operation_id) ||
 	    !read_le(encoded, size, &cursor, &decoded.outcome_revision) ||
-	    !read_le(encoded, size, &cursor, &payload_size) || !payload_size ||
-	    size != overhead + payload_size)
+	    (rejected &&
+	     (!read_le(encoded, size, &cursor, &decoded.error_code) || !decoded.error_code)) ||
+	    !read_le(encoded, size, &cursor, &payload_size) || (!payload_size && !rejected) ||
+	    payload_size > CRITICAL_COMMAND_MAX_OUTCOME_BYTES || size != overhead + payload_size)
 		return false;
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest{};
 	SHA256(encoded, prefix + payload_size, digest.data());
@@ -236,7 +246,7 @@ bool critical_command_valid(const critical_command &command)
 	    command.type < critical_command_type::test ||
 	    command.type > critical_command_type::player_checkpoint ||
 	    command.source_site < critical_source_site::command ||
-	    command.source_site > critical_source_site::operator_repair ||
+	    command.source_site > critical_source_site::website ||
 	    command.deadline_class < critical_deadline_class::interactive ||
 	    command.deadline_class > critical_deadline_class::recovery ||
 	    !command.accepted_at_usec || command.keys.empty() ||

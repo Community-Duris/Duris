@@ -31,4 +31,8 @@ shop_trade_runtime_build_payload(P_char player, P_obj selected, P_obj stock, P_o
 				 shop_trade_payload *payload);
 bool shop_trade_runtime_object_matches_payload(P_obj selected, const shop_trade_payload &payload);
 
+bool shop_trade_runtime_seed_revision(uint32_t shop_id, uint64_t revision);
+unsigned int shop_trade_runtime_prepare(const shop_trade_payload &payload,
+					shop_trade_result *result);
+
 #endif

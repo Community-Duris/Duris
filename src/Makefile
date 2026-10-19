@@ -334,7 +334,16 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence/critical_command_coordinator.o \
 				 persistence/operation_log.o \
 				 player/player_checkpoint_command.o \
-				 persistence/ram_command.o \
+				 player/player_checkpoint_ram.o \
+				 player/player_restitution_ram.o \
+				 player/artifact_restitution_ram.o \
+				 persistence/corpse_ram.o persistence/ram_command.o \
+				 persistence/ram_runtime.o \
+				 economy/economic_state.o \
+				 economy/economic_state_repository.o \
+				 economy/collector_ram.o economy/boon_ram.o economy/auction_ram.o \
+				 economy/auction_ram_runtime.o \
+				 economy/auction_website.o \
 				 persistence/critical_command_repository.o \
 				 persistence/player_death_restitution_command.o \
 				 persistence/player_death_restitution_repository.o \
@@ -348,6 +357,7 @@ OBJS =  $(SHIP_OBJS) \
 				 item/item_movement_transaction.o \
 				 economy/shop_trade_transaction.o \
 				 economy/shop_trade_runtime.o \
+                 economy/shop_trade_repository.o \
 				 item/item_transfer_repository.o \
 				 item/item_transfer_synthetic.o \
 				 item/item_uid_allocator.o \

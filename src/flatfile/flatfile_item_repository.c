@@ -3047,3 +3047,33 @@ flatfile_critical_command_repository_apply_selected(const critical_command &comm
 		return flatfile_player_domain_apply(root, command);
 	return { critical_apply_outcome::terminal_failure, 0, ENOTSUP };
 }
+
+bool flatfile_item_repository_ram_bootstrap(
+	const std::string &root, std::vector<std::pair<item_owner_identity, uint64_t>> *owners,
+	std::vector<item_ownership_runtime_entry> *items, std::string *error)
+{
+	if (!owners || !items)
+		return false;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return false;
+	ownership_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_item_repository_result::ok &&
+	    loaded != flatfile_item_repository_result::not_found)
+		return false;
+	owners->clear();
+	items->clear();
+	for (const auto &owner : catalog.owners)
+		owners->emplace_back(owner.owner, owner.revision);
+	for (const auto &item : catalog.items)
+	{
+		const auto *owner = find_owner(&catalog, item.owner);
+		if (!owner)
+			return false;
+		items->push_back({ item.item_uid, item.root_item_uid, item.parent_item_uid,
+				   item.owner, item.item_revision, owner->revision, item.vnum,
+				   item.state });
+	}
+	return true;
+}

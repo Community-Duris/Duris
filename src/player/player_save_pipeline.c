@@ -11,6 +11,8 @@
 #include "flatfile/flatfile_player_repository.h"
 #include "player/player_save_journal.h"
 #include "player/player_checkpoint_command.h"
+#include "player/player_checkpoint_ram.h"
+#include "persistence/persistence_mode.h"
 #include "persistence/operation_log.h"
 #include "player/player_save_worker.h"
 #include "player/player_snapshot_capture.h"
@@ -86,6 +88,8 @@ std::set<int32_t> custody_recapture_armed;
 
 player_save_apply_fn selected_snapshot_apply()
 {
+	if (!persistence_mode_requires_mysql())
+		return flatfile_player_snapshot_apply_selected;
 #ifdef __NO_MYSQL__
 	return flatfile_player_snapshot_apply_selected;
 #else
@@ -301,9 +305,19 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
 		{
 			if (!player_checkpoint_command_build(snapshot, &command))
 				return player_save_pipeline_result::capture_failed;
+			player_checkpoint_ram_change change;
+			if (!player_checkpoint_ram_prepare(snapshot, command.accepted_at_usec,
+							   !persistence_mode_requires_mysql(),
+							   &change))
+				return player_save_pipeline_result::capture_failed;
 			const auto submitted = operation_log_submit_player(command, snapshot);
 			if (submitted != critical_submit_result::accepted)
 				return player_save_pipeline_result::unavailable;
+			if (!player_checkpoint_ram_publish(&change))
+			{
+				critical_command_coordinator_quiesce();
+				return player_save_pipeline_result::unavailable;
+			}
 		}
 		catch (const std::bad_alloc &)
 		{

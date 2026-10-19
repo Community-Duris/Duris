@@ -1,95 +1,136 @@
-# RAM authority implementation status
+# RAM authority runtime
 
-This branch is a draft continuation of PR #717. The runtime cutover is disabled.
-Do not deploy it as a completed RAM-authoritative persistence implementation.
+PR #718 enables the RAM authority runtime. The game thread decides economic
+outcomes, records their complete accepted results in the durable atomic operation
+log, and then publishes them to live state. A single ordered writer materializes
+those decisions and player checkpoints. No accounting features are enabled.
 
-## Contract
+## Runtime and recovery
 
-The game thread decides economic outcomes from authoritative live state. A
-durable atomic operation log records the complete accepted outcome before live
-publication and success acknowledgement. A single ordered writer materializes
-those outcomes and player checkpoints. Recovery completes before hydration or
-new economic admission. No accounting features are part of this migration.
+Startup replays the legacy player journal and outstanding critical operations
+before loading wallets, shared account banks, custody, auctions, corpses, collector
+state, rewards, and immutable death evidence. Admission stays closed if recovery
+or hydration fails. World-boot artifact registration is reconciled before opening
+admission. Shutdown drains the coordinator and ordered writer before releasing
+the operation-log lease.
 
-Website bidding requires a running MUD but supports logged-out characters. See
-[the website contract](RAM_AUTHORITY_WEBSITE_CONTRACT.md) for ownership, retry,
-login/logout and read-projection requirements.
+A sealed operation includes its exact result bytes and revision. SQL adapters
+check them before committing; flat-file adapters check them before publishing
+staged after-images. Projection failure or divergence retains the record and
+prevents later writes from overtaking it. Ambiguous append does not publish
+success and requires recovery. Live publication failures retain their fences.
 
-## Foundation implemented
+Player checkpoints share the ordered log with economic operations. Their capture
+revision and death evidence are staged before append; accepted death checkpoints
+quarantine the captured items in RAM. Recovery applies the complete recorded
+outcome, rather than recalculating prices, deadlines, or refunds at replay time.
 
-- Versioned sealed command outcomes and bounded player-checkpoint records.
-- Exclusive journal ownership and ordered writer admission before durable append.
-- Retention after uncertain append or divergent projection, without publishing a
-  successful gameplay result or allowing following writes to overtake it.
-- Exact result-byte and revision checks before discarding a projected log record;
-  revision divergence retains recovery evidence both live and during cold replay.
-- Durable bounded receipts are consulted before preparation, including after
-  completed-cache eviction and restart. Conflicting ID reuse is rejected. An
-  arrival timestamp is not part of a RAM request's identity.
-- Receipt persistence precedes WAL checkpointing. Faults at either boundary retain
-  the redo record. Successful legacy journal requests are reconciled using their
-  original schema before their resulting receipts are adopted.
-- Allocation failures during fence checks or after projection retain the writer
-  job for retry, including receipt construction after a backend commit.
-- Operation-log shutdown waits for active projector callbacks; callbacks retained
-  from a previous log lifetime cannot touch a newly opened journal.
-- Pure RAM preparation for basic currency, epic and item/coin commands.
-- A coordinator path that prepares on the game thread and publishes only after
-  durable admission, plus stronger currency and epic publication retention.
-- The coordinator's native regression uses the actual ordered persistence writer
-  and covers publication fences, ambiguous retry ordering, capacity and restart
-  of the worker/coordinator. Conflicting active publication modes are rejected.
-- SQL finalization checks the sealed revision and bytes before commit. Flat-file
-  epic, wallet/bank, item, coin, auction and shop transactions do the same before
-  publishing any candidate state. Coin receipts now include their actual materialized revision.
-- Backup capture retains the journal lease file and operation receipts. Native
-  restore qualification verifies receipt checksums, IDs, sizes and private files.
-- Focused codec, journal fault, crash-replay, ordering and publication regressions.
+The coordinator processes up to 64 completions within a 10 ms scheduling budget,
+with each live publication observed before preparing the next decision. A single
+durable filesystem sync can exceed that budget; storage latency still matters.
 
-These components have passed focused tests and a full development build, but
-that is not evidence that the runtime migration below is complete.
+## Integrated domains
 
-## Required before activation
+- Wallets, shared account banks, coin transfers, epics, combat rewards, and zone
+  claims use RAM preparation and sealed outcomes.
+- Shops log payment, stock/custody changes, complete item snapshots, and collector
+  boundaries as one operation. Existing stock, produced stock, stored sales,
+  destroyed sales, and invalid-stock removal use the same path.
+- Auctions log bidder debits, escrow, outbid refunds, buyouts, seller proceeds,
+  item claims, and removal/expiry outcomes together. Expiry and pickup selection
+  use the RAM catalog. Distinct items in a stacked listing retain their own UIDs,
+  condition, affects, and runtime data through listing and pickup recovery.
+- Corpse lifecycle and item transfers preserve physical item data and custody.
+  Collector decisions use the recovered RAM catalog. Death restitution checks
+  immutable evidence, quarantine state, exact artifacts, and competing custody
+  before admission.
+- Boon rewards and permanent-stat changes retain their revisioned outcomes and
+  override older login projections.
+- Session audit events use the ordered operation path on SQL backends.
 
-- Migration of historical receipts already checkpointed out of the legacy
-  journals. SQL stores the old request hash, not the complete request or its
-  acceptance timestamp; it cannot simply be rehashed into the new identity
-  contract. Historical IDs must not be treated as newly admitted RAM requests.
-- Wire startup replay before world/player hydration, integrate the separate
-  player journal transition, and qualify the runtime shutdown ordering. The
-  operation-log APIs are tested but are not invoked by normal server startup.
-- Complete atomic trade and auction preparation/materialization, including
-  offline wallets, item custody, escrow/refunds and deterministic deadlines.
-- Completion of item sidecar handling for corpse, collector and crafting paths.
-  The basic item reducer now explicitly refuses these unsupported semantics.
-- Read and login boundaries that cannot replace newer authoritative RAM with a
-  lagging database projection.
-- Extend sealed preparation/materialization to the remaining domain adapters;
-  the projection guards do not supply the missing RAM auction/shop/sidecar reducers.
-- Crash-boundary and lifecycle tests across real runtime adapters, including the
-  website contract's logged-out bidding and duplicate-request journeys.
-- Qualify admission throughput and world-pulse latency: preparation currently
-  permits one decision per pulse and its durable append is synchronous.
-- A documented rollout/recovery procedure: an older binary cannot simply ignore
-  accepted records written by the new log.
+Administrative artifact maintenance and older artifact lifecycle registration
+remain synchronous compatibility boundaries. They drain the ordered projector
+before reading legacy rows and refresh the artifact RAM state and revision before
+returning to command admission. Failed drainage or refresh fences admission. This
+prevents maintenance from overwriting a logged feed while it waits for SQL. It is
+not a claim that every administrative or world-data write in the server has been
+converted into a new economic command.
 
-The RAM coordinator no longer has a database-decision fallback. Unsupported
-operations fail explicitly. This is a guard against an accidental mixed-authority
-cutover, not a replacement for implementing the remaining domains.
+The flat-file backend retains its existing unsupported domains: artifact/guild
+outcomes, session audit, zone claims, and death restitution are refused before
+append. World-corpse follower raises containing artifacts retain the prior
+unsupported transition and are also refused before durable acceptance. Unsupported
+operations never silently fall back to database decision-making.
 
-## Receipt storage and recovery
+## Offline characters and website bids
 
-`CRITICAL_COMMAND_JOURNAL_DIR/receipts/<32-lowercase-hex-operation-id>` holds each
-success receipt after its redo record is checkpointed. The versioned `DOR1` codec
-contains the operation ID, SHA-256 request digest, exact outcome revision, bounded
-result bytes, and a SHA-256 checksum over those fields. It retains no second copy
-of a player's full snapshot or an item's full tree. The complete request digest
-includes its operation ID, keys, expected revisions and payload, with acceptance
-time normalized. For ordinary requests, sealed result fields are excluded from
-the request digest; checkpoint identity includes the complete captured checkpoint.
+The economy owns one wallet per PID and one bank per account/racewar, independent
+of character descriptors. Recovered offline wallets remain available while the
+MUD runs. Login takes current balances and revisions from that owner, even if its
+SQL load began before an accepted website bid. Logout does not create another
+spendable wallet. Offline completions refresh shared-bank revisions for online
+characters on the same account.
 
-Receipts must be backed up and restored with the journal and projections. They
-must not be pruned merely because the in-process cache evicted an operation or its
-projection completed. Corrupt receipts stop admission; failed or divergent replay
-retains evidence. A receipt format or retention change requires a migration that
-preserves deduplication. An older deployment must not ignore these records.
+The authenticated MUD bridge implements `durisweb_auction_bid`, including stable
+request identity and explicit pending/committed/rejected/unavailable replies.
+See [the bridge contract](RAM_AUTHORITY_WEBSITE_CONTRACT.md). The separate website
+repositories still need their bid/buy routes changed to use this command; their
+direct database mutation gates must remain closed.
+
+## Receipts and historical operations
+
+`CRITICAL_COMMAND_JOURNAL_DIR/receipts/<32-lowercase-hex-operation-id>` retains
+checksummed receipts after redo records are checkpointed. DOR1 success receipts
+remain readable; DOR2 also records durable rejections. Receipt persistence precedes
+WAL checkpointing. Requests retain the same identity across retries, reconnects,
+cache eviction, and restart. Acceptance time is excluded from ordinary request
+identity; different intent under an existing ID is rejected.
+
+Historical SQL inbox IDs are loaded at startup. An old checkpointed operation
+whose original request cannot be reconstructed is refused as an identity conflict,
+never executed again. Outstanding legacy records replay under their original
+schema before their receipts are adopted. Flat-file repositories retain their
+historical operation catalogs; the new website request namespace starts with this
+runtime.
+
+Receipts, journals, and projections must be backed up and restored together.
+Receipts cannot be pruned because a request has aged out of the process cache.
+Corruption stops admission, and divergent replay retains evidence for repair.
+
+## Rollout and rollback
+
+1. Stop admission and shut down the existing MUD using its normal shutdown path.
+   Preserve its pending journals; do not clear them to make startup succeed.
+2. Take a consistent backup of the database/flat-file authority, both configured
+   journal directories, operation receipts, and other required world state.
+3. Apply the guarded immutable migrations through `0032_ram_authority` with the
+   repository migration runner against the intended environment. This adds shop
+   clocks and runtime item extensions for shops, corpses, saved items, and pets,
+   plus the permanent-stat revision. Do not manually edit migration history.
+4. Start the new binary with the same durable journal locations and exclusive
+   ownership. Recovery and full economic hydration must succeed before admission.
+5. Connect the website bridge only after the server is ready. Retry pending bids
+   using their original request IDs; never replace a timeout with direct SQL.
+
+After the new binary has accepted operations, do not start an older binary against
+its journals. Prefer repairing/rolling forward with a reader for these records.
+A rollback needs a consistent pre-cutover backup of all authorities and an explicit
+plan for every subsequently accepted operation; deleting the log loses outcomes.
+
+## Validation
+
+Focused native tests cover pure RAM decisions, abandoned preparation, immutable
+checkpoint/restitution evidence, exact artifact preconditions, custody, publication
+retention, replay, receipt backup/restore, and source routing. The assembled-runtime
+SQL harness links the actual server objects and uses an isolated database. It
+exercises offline bids with a paused projector, stale login, abrupt exit after
+acknowledgement, cold recovery, duplicate/conflicting request IDs, outbid refunds,
+buyouts, stacked item claims, artifact maintenance ordering, and each shop action.
+
+Use `python3 tests/async/test_ram_authority_runtime_mysql.py` only with explicit
+`TEST_DB_HOST=127.0.0.1`, `TEST_DB_PORT`, `TEST_DB_USER`, and `TEST_DB_PASSWORD` for an
+isolated test service. It creates and drops only its own random test schema and
+never reads `.env`. `RAM_RUNTIME_BIN_ROOT` may point to an already-built server;
+otherwise it builds the default tree. Run the focused `test_*_ram.py` regressions
+and the existing transaction, journal, load/save, and flat-file suites alongside
+`make -C src`.

@@ -14,6 +14,9 @@ critical_submit_result operation_log_submit_player(const critical_command &outco
 						   const player_snapshot &snapshot);
 bool operation_log_ready();
 bool operation_log_projection_caught_up();
+// Rejections have no state mutation to replay, but their request identity and
+// result still survive retries, cache eviction and restart.
+bool operation_log_remember_rejection(const critical_command &, const critical_apply_result &);
 // Consult durable identity before preparing an outcome, including after cache
 // eviction/restart. The request's acceptance timestamp is not its identity.
 critical_receipt_status operation_log_lookup(const critical_command &request,

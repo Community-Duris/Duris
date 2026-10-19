@@ -31,6 +31,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-shop-trade-") as temporary:
         rel("flatfile_shop_trade_materialization.c"),
         rel("flatfile_shopkeeper_repository.c"),
         rel("flatfile_auction_repository.c"),
+        rel("flatfile_identity_repository.c"),
         rel("flatfile_boon_repository.c"),
         rel("flatfile_item_repository.c"),
         rel("flatfile_collector_repository.c"),

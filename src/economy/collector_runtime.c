@@ -96,6 +96,9 @@ struct catalog_projection
 	size_t available = 0;
 };
 
+catalog_projection staged_projection;
+uint64_t staged_revision = 0, staged_next_listing = 1;
+
 bool build_projection(const collector::catalog &catalog, catalog_projection *projection)
 {
 	if (!projection || !collector::valid_catalog(catalog))
@@ -392,6 +395,37 @@ bool collector_runtime_snapshot(collector::catalog *catalog)
 	return true;
 }
 
+bool collector_runtime_deaths(std::vector<collector_death_snapshot> *deaths)
+{
+	if (!deaths)
+		return false;
+	deaths->clear();
+	for (const auto &[identity, death] : deaths_by_identity)
+		deaths->push_back(death);
+	return true;
+}
+
+bool collector_runtime_stage(const collector::catalog &catalog,
+			     const std::vector<collector_death_snapshot> &deaths)
+{
+	catalog_projection projection;
+	if (!build_projection(catalog, &projection) ||
+	    !build_death_projection(deaths.data(), deaths.size(), &projection))
+		return false;
+	staged_projection = std::move(projection);
+	staged_revision = catalog.revision;
+	staged_next_listing = catalog.next_listing;
+	return true;
+}
+
+void collector_runtime_commit_staged() noexcept
+{
+	collector::catalog metadata;
+	metadata.revision = staged_revision;
+	metadata.next_listing = staged_next_listing;
+	install_projection(metadata, &staged_projection);
+}
+
 bool collector_runtime_available_for(uint32_t beneficiary, size_t limit,
 				     std::vector<collector::record> *entries)
 {
@@ -502,4 +536,13 @@ bool collector_publish_committed_event(const collector_command_result &result,
 				       unsigned long long outbox_id)
 {
 	return outbox_id && collector_runtime_publish(result);
+}
+
+bool collector_runtime_has_candidates(const std::vector<uint64_t> &uids)
+{
+	for (const auto &[id, entry] : records)
+		if (entry.status == collector::state::candidate &&
+		    std::find(uids.begin(), uids.end(), entry.uid) != uids.end())
+			return true;
+	return false;
 }
