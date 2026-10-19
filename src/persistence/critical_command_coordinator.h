@@ -92,11 +92,17 @@ struct critical_coordinator_health
 };
 
 using critical_apply_fn = critical_apply_result (*)(const critical_command &command, void *context);
+using critical_log_submit_fn = critical_submit_result (*)(const critical_command &outcome);
 using critical_drain_observer_fn = void (*)(const critical_completion *completions, size_t count);
 
 // Commands run on the one persistence writer (player_save_worker.h), which must be
 // running.
 bool critical_command_coordinator_init(critical_apply_fn apply, void *context);
+// Preparation executes on the world thread. The log callback durably accepts
+// the prepared outcome and independently schedules its materialization.
+bool critical_command_coordinator_init_ram(critical_apply_fn prepare, void *context,
+					   critical_log_submit_fn append,
+					   critical_apply_fn service_apply = nullptr);
 void critical_command_coordinator_shutdown(void);
 critical_submit_result critical_command_coordinator_submit(critical_command command);
 size_t critical_command_coordinator_pulse(critical_completion *completions, size_t capacity);
@@ -127,15 +133,12 @@ critical_submit_result
 critical_command_coordinator_submit_for_publication(critical_command command);
 bool critical_command_coordinator_acknowledge_publication(const critical_operation_id &operation_id);
 
-inline critical_command_durability
-critical_command_coordinator_durability(const critical_operation_id &)
-{
-	return critical_command_durability::durable;
-}
+critical_command_durability critical_command_coordinator_durability(const critical_operation_id &);
 
 inline bool critical_command_coordinator_recover_uncertain(void)
 {
-	return true;
+	// Ambiguous durable admission requires ordered startup recovery.
+	return false;
 }
 
 bool critical_command_coordinator_get_completed(const critical_operation_id &operation_id,

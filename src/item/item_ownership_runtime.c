@@ -4,6 +4,7 @@
 #include "player/player_snapshot_codec.h"
 
 #include <algorithm>
+#include <cerrno>
 #include <limits>
 #include <new>
 #include <unordered_map>
@@ -763,6 +764,108 @@ bool item_ownership_runtime_apply(const item_transfer_payload &payload,
 			owner_revisions.erase(payload.from_owner);
 		return false;
 	}
+}
+
+unsigned int item_ownership_runtime_prepare(const item_transfer_payload &payload,
+					    item_transfer_result *result)
+{
+	if (!result || !payload.item_count || payload.item_count > ITEM_TRANSFER_MAX_ITEMS ||
+	    !item_owner_identity_valid(payload.from_owner) ||
+	    !item_owner_identity_valid(payload.to_owner))
+		return EINVAL;
+	uint64_t from = 0, to = 0;
+	item_ownership_runtime_peek_owner_revision(payload.from_owner, &from);
+	item_ownership_runtime_peek_owner_revision(payload.to_owner, &to);
+	if (from != payload.expected_from_revision || to != payload.expected_to_revision)
+		return ESTALE;
+	if (from == UINT64_MAX || to == UINT64_MAX)
+		return ERANGE;
+	item_transfer_result candidate{
+		item_transfer_result_root(payload), payload.item_count, from + 1, to + 1, 0, 0
+	};
+	const bool creation = payload.from_owner.type == item_owner_type::system;
+	std::unordered_set<uint64_t> selected;
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		const auto &item = payload.items[index];
+		if (!selected.insert(item.item_uid).second)
+			return EINVAL;
+		const auto found = entries.find(item.item_uid);
+		if (creation)
+		{
+			if (found != entries.end() ||
+			    item.expected_state != item_custody_state::absent ||
+			    item.expected_item_revision != ITEM_TRANSFER_ABSENT_REVISION)
+				return EEXIST;
+			candidate.max_item_revision = 1;
+		}
+		else
+		{
+			if (found == entries.end())
+				return ENOENT;
+			const auto &current = found->second;
+			if (!item_owner_identity_equal(current.owner, payload.from_owner) ||
+			    current.item_revision != item.expected_item_revision ||
+			    current.root_item_uid != item.root_item_uid ||
+			    current.parent_item_uid != item.parent_item_uid ||
+			    current.vnum != item.vnum || current.state != item.expected_state)
+				return ESTALE;
+			if (current.item_revision == UINT64_MAX)
+				return ERANGE;
+			candidate.max_item_revision =
+				std::max(candidate.max_item_revision, current.item_revision + 1);
+		}
+	}
+	if (!creation)
+	{
+		// A caller may not move a container while omitting one of its live
+		// descendants. No database ownership lookup participates in admission.
+		for (const auto &[uid, item] : entries)
+		{
+			if (!item_owner_identity_equal(item.owner, payload.from_owner) ||
+			    item.state != item_custody_state::active || selected.count(uid))
+				continue;
+			uint64_t ancestor = item.parent_item_uid;
+			for (size_t depth = 0; ancestor; ++depth)
+			{
+				if (depth >= PLAYER_SNAPSHOT_MAX_DEPTH)
+					return EINVAL;
+				if (selected.count(ancestor))
+					return EINVAL;
+				const auto parent = entries.find(ancestor);
+				if (parent == entries.end())
+					break;
+				ancestor = parent->second.parent_item_uid;
+			}
+		}
+	}
+	if (payload.target_parent_item_uid)
+	{
+		const auto parent = entries.find(payload.target_parent_item_uid);
+		if (selected.count(payload.target_parent_item_uid) || parent == entries.end() ||
+		    !item_owner_identity_equal(parent->second.owner, payload.to_owner) ||
+		    parent->second.root_item_uid != payload.target_root_item_uid ||
+		    parent->second.item_revision != payload.expected_target_parent_revision ||
+		    parent->second.state != item_custody_state::active)
+			return ESTALE;
+	}
+	if (payload.reason == item_transfer_reason::craft)
+	{
+		std::vector<player_item_snapshot> outputs;
+		if (payload.item_blob_size &&
+		    player_item_snapshot_list_decode(payload.item_blob.data(),
+						     payload.item_blob_size,
+						     &outputs) != player_snapshot_codec_result::ok)
+			return EINVAL;
+		for (const auto &item : outputs)
+			if (entries.count(item.object_uid))
+				return EEXIST;
+		if (!outputs.empty())
+			candidate.max_item_revision =
+				std::max(candidate.max_item_revision, uint64_t(1));
+	}
+	*result = candidate;
+	return 0;
 }
 
 namespace

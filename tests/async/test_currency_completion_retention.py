@@ -79,12 +79,14 @@ bool critical_command_coordinator_is_fenced(const critical_entity_key &, critica
     // A final coordinator notification can release its fence before domain publication.
     return false;
 }
-critical_submit_result critical_command_coordinator_submit(critical_command command)
+critical_submit_result critical_command_coordinator_submit_for_publication(critical_command command)
 {
     submitted = std::move(command);
     ++submissions;
     return admission;
 }
+bool critical_command_coordinator_acknowledge_publication(const critical_operation_id &)
+{ return true; }
 bool critical_command_coordinator_get_completed(const critical_operation_id &, critical_completion *)
 {
     return false;

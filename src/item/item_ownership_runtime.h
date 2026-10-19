@@ -40,6 +40,10 @@ bool item_ownership_runtime_peek_owner_revision(const item_owner_identity &owner
 bool item_ownership_runtime_owner_revision(const item_owner_identity &owner, uint64_t *revision);
 bool item_ownership_runtime_apply(const item_transfer_payload &payload,
 				  const item_transfer_result &result);
+// Validate custody and the complete selected subtree against live RAM, and
+// compute its next clocks without publishing any part of the transfer.
+unsigned int item_ownership_runtime_prepare(const item_transfer_payload &payload,
+					    item_transfer_result *result);
 bool item_ownership_runtime_apply_collector(const collector_command_payload &payload,
 					    const collector_command_result &result);
 bool item_ownership_runtime_apply_corpse_release(uint32_t owner_pid, uint32_t save_id,

@@ -230,9 +230,8 @@ bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator fo
 			pending.insert(std::move(node));
 			return false;
 		}
-		// The authority already owns this result. Never report a rejected debit or
-		// refund it merely because a live container vanished. Retire the hot retry;
-		// the durable command and custody payload remain available for recovery.
+		// Stop hot retries, but retain both endpoints' fences. A later checkpoint
+		// must not persist the half-published live graph over a durable transfer.
 		++health.publication_abandoned;
 		char operation[33];
 		critical_operation_id_to_hex(finished.completed.operation_id, operation,
@@ -256,7 +255,11 @@ bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator fo
 			send_to_char(
 				"Your coin transfer was saved, but its items could not be updated here. Please contact staff for recovery.\r\n",
 				actor);
+		finished.publication_state = currency_publication_state::blocked_receipt;
+		pending.insert(std::move(node));
+		return false;
 	}
+	critical_command_coordinator_acknowledge_publication(finished.completed.operation_id);
 	if (committed)
 		++health.committed;
 	else
@@ -303,6 +306,7 @@ bool publish(std::unordered_map<std::string, pending_currency>::iterator found, 
 	// context independently and release this publication guard before calling it.
 	auto node = pending.extract(found);
 	const auto &finished = node.mapped();
+	critical_command_coordinator_acknowledge_publication(completion.operation_id);
 	if (committed)
 		++health.committed;
 	else
@@ -490,8 +494,6 @@ bool currency_transaction_can_submit_nonrebasable(P_char character)
 static bool pending_affects_character(const pending_currency &entry, uint32_t pid, uint8_t racewar,
 				      bool account_known, const char *account_name)
 {
-	if (entry.coin && entry.coin_wallets_published)
-		return false;
 	if (entry.coin)
 	{
 		for (const auto *endpoint : { &entry.coin->source, &entry.coin->destination })
@@ -658,7 +660,8 @@ bool currency_transaction_submit_coin(P_char actor, const coin_transfer_payload 
 	{
 		return false;
 	}
-	const auto submitted = critical_command_coordinator_submit(std::move(command));
+	const auto submitted =
+		critical_command_coordinator_submit_for_publication(std::move(command));
 	if (!critical_submit_result_keeps_operation(submitted))
 	{
 		pending.erase(key);
@@ -797,7 +800,7 @@ bool currency_transaction_submit_prepared(P_char character, const critical_comma
 	critical_submit_result submitted;
 	try
 	{
-		submitted = critical_command_coordinator_submit(command);
+		submitted = critical_command_coordinator_submit_for_publication(command);
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -958,7 +961,7 @@ void currency_transaction_handle_completions(const critical_completion *completi
 		auto found = pending.find(operation_key(ready[index]));
 		if (found == pending.end())
 			continue;
-		P_char character = find_player_by_pid(found->second.pid);
+		P_char character = coin_wallet_by_pid(found->second.pid);
 		if (character || found->second.coin)
 			publish(found, character);
 		else

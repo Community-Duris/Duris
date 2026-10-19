@@ -44,6 +44,7 @@ struct operation_state
 	uint64_t attachments;
 	bool retain_until_publication = false;
 	bool publication_pending = false;
+	bool durable = false;
 	critical_completion completion = {};
 };
 
@@ -63,6 +64,10 @@ std::deque<std::string> completed_order;
 size_t completed_cache_bytes = 0;
 critical_apply_fn apply_callback = nullptr;
 void *apply_context = nullptr;
+critical_log_submit_fn log_submit = nullptr;
+critical_apply_fn service_apply_callback = nullptr;
+std::deque<std::string> awaiting_prepare;
+bool admission_uncertain = false;
 critical_drain_observer_fn drain_observer = nullptr;
 critical_coordinator_health health = {};
 // Each writer job has its own owner, so none replaces another.
@@ -129,6 +134,7 @@ void update_depth()
 	health.inflight = 0;
 	health.blocked = 0;
 	health.publication_pending = 0;
+	health.awaiting_durability = 0;
 	health.retained_bytes = 0;
 	uint64_t oldest = 0;
 	const uint64_t now = now_usec();
@@ -138,6 +144,8 @@ void update_depth()
 		++health.inflight;
 		if (state->publication_pending)
 			++health.publication_pending;
+		if (log_submit && !state->durable)
+			++health.awaiting_durability;
 		health.retained_bytes += state->retained_bytes;
 		if (!oldest || state->queued_at_usec < oldest)
 			oldest = state->queued_at_usec;
@@ -289,6 +297,8 @@ critical_submit_result reserve_locked(const std::string &identity, const critica
 			 generation };
 		operations.emplace(identity, std::move(state));
 		add_fences(identity, command);
+		if (log_submit)
+			awaiting_prepare.push_back(identity);
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -348,6 +358,121 @@ bool queue_on_writer(const std::string &identity, writer_job job)
 
 } // namespace
 
+// At most one world decision per pulse. Its domain publishes before the next
+// decision is prepared, including successive rewards that share a wallet.
+static void prepare_next()
+{
+	std::string identity;
+	critical_command command;
+	critical_apply_fn prepare = nullptr;
+	critical_apply_fn service_apply = nullptr;
+	critical_log_submit_fn append = nullptr;
+	void *context = nullptr;
+	uint64_t job_generation = 0, job_owner = 0;
+	{
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		if (!log_submit || admission_uncertain || awaiting_prepare.empty() ||
+		    completion_delivery.size(critical_completion_channel::execution) ||
+		    !completion_delivery.has_capacity())
+			return;
+		try
+		{
+			identity = awaiting_prepare.front();
+			command = operations.at(identity)->command;
+			for (const auto &key : command.keys)
+			{
+				const auto found = fences.find(entity_key(key));
+				if (found != fences.end() && found->second.front() != identity)
+					return;
+			}
+		}
+		catch (const std::bad_alloc &)
+		{
+			return;
+		}
+		prepare = apply_callback;
+		append = log_submit;
+		context = apply_context;
+		service_apply = service_apply_callback;
+		job_generation = generation;
+		job_owner = ++writer_sequence;
+	}
+	critical_apply_result result{};
+	try
+	{
+		result = prepare(command, context);
+		if (result.outcome == critical_apply_outcome::terminal_failure &&
+		    result.error_code == ENOTSUP && service_apply)
+		{
+			writer_job job{ command, service_apply, context, now_usec(),
+					job_generation };
+			const size_t bytes = sizeof(job) + command.payload.size();
+			// Offline service catalogs keep their existing atomic transactions.
+			// They share this writer and entity fences with logged RAM outcomes.
+			const auto submitted = persistence_writer_submit(
+				persistence_job_kind::critical, job_owner, bytes,
+				[job = std::move(job)] { return execute(job); });
+			if (submitted == player_save_submit_result::accepted)
+			{
+				std::lock_guard<std::mutex> lock(coordinator_mutex);
+				awaiting_prepare.pop_front();
+			}
+			return;
+		}
+		if (result.outcome == critical_apply_outcome::retryable_failure)
+			return;
+		if (result.outcome == critical_apply_outcome::applied)
+		{
+			if (!result.result_size ||
+			    result.result_size > result.result_payload.size())
+				return;
+			command.schema_version = CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION;
+			command.outcome_revision = result.durable_revision;
+			command.outcome_payload.assign(result.result_payload.begin(),
+						       result.result_payload.begin() +
+							       result.result_size);
+			const auto submitted = append(command);
+			if (submitted == critical_submit_result::journal_uncertain)
+			{
+				std::lock_guard<std::mutex> lock(coordinator_mutex);
+				admission_uncertain = true;
+				health.accepting = false;
+				++health.admission_uncertain;
+				return;
+			}
+			if (submitted != critical_submit_result::accepted)
+				return;
+		}
+		else if (result.outcome != critical_apply_outcome::terminal_failure)
+			return;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return;
+	}
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	auto &state = *operations.at(identity);
+	state.durable = result.outcome == critical_apply_outcome::applied;
+	critical_completion completion{};
+	completion.operation_id = command.operation_id;
+	completion.type = command.type;
+	completion.outcome = result.outcome;
+	completion.durable_revision = result.durable_revision;
+	completion.error_code = result.error_code;
+	completion.failure_stage = result.failure_stage;
+	completion.attempt = state.attempt;
+	completion.queued_at_usec = state.queued_at_usec;
+	completion.started_at_usec = completion.completed_at_usec = now_usec();
+	completion.result_size = result.result_size;
+	completion.result_payload = result.result_payload;
+	// Reservation limits guarantee space; delivery uses fixed storage and cannot
+	// allocate after the log's acknowledgement.
+	completion_delivery.enqueue(critical_completion_channel::execution, completion);
+	awaiting_prepare.pop_front();
+	if (result.outcome == critical_apply_outcome::applied)
+		++health.durable_admissions;
+}
+
 bool critical_command_coordinator_init(critical_apply_fn apply, void *context)
 {
 	if (!apply)
@@ -371,6 +496,18 @@ bool critical_command_coordinator_init(critical_apply_fn apply, void *context)
 	return true;
 }
 
+bool critical_command_coordinator_init_ram(critical_apply_fn prepare, void *context,
+					   critical_log_submit_fn append,
+					   critical_apply_fn service_apply)
+{
+	if (!append || !critical_command_coordinator_init(prepare, context))
+		return false;
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	log_submit = append;
+	service_apply_callback = service_apply;
+	return true;
+}
+
 void critical_command_coordinator_shutdown(void)
 {
 	std::lock_guard<std::mutex> lock(coordinator_mutex);
@@ -383,6 +520,10 @@ void critical_command_coordinator_shutdown(void)
 	health = {};
 	apply_callback = nullptr;
 	apply_context = nullptr;
+	log_submit = nullptr;
+	service_apply_callback = nullptr;
+	awaiting_prepare.clear();
+	admission_uncertain = false;
 	++generation;
 }
 
@@ -440,6 +581,11 @@ static critical_submit_result submit_command(critical_command command,
 		if (reserved != critical_submit_result::accepted)
 			return reserved;
 		operations.at(identity)->retain_until_publication = retain_until_publication;
+		if (log_submit)
+		{
+			++health.accepted;
+			return critical_submit_result::awaiting_durability;
+		}
 	}
 	return queue_on_writer(identity, std::move(job)) ? critical_submit_result::accepted :
 							   critical_submit_result::unavailable;
@@ -459,6 +605,8 @@ size_t critical_command_coordinator_pulse(critical_completion *completions, size
 {
 	if (capacity && !completions)
 		return 0;
+	if (capacity)
+		prepare_next();
 	std::lock_guard<std::mutex> lock(coordinator_mutex);
 	size_t published = 0;
 	while (published < capacity &&
@@ -488,6 +636,8 @@ size_t critical_command_coordinator_pulse(critical_completion *completions, size
 			continue;
 		}
 		operation_state &state = *found->second;
+		state.durable = completion.outcome == critical_apply_outcome::applied ||
+				completion.outcome == critical_apply_outcome::already_applied;
 		if (completion.outcome == critical_apply_outcome::terminal_failure)
 			++health.terminal_failures;
 		completions[published++] = completion;
@@ -509,18 +659,20 @@ size_t critical_command_coordinator_pulse(critical_completion *completions, size
 bool critical_command_coordinator_acknowledge_publication(const critical_operation_id &operation_id)
 {
 	std::lock_guard<std::mutex> lock(coordinator_mutex);
-	std::string identity;
-	try
-	{
-		identity = operation_key(operation_id);
-	}
-	catch (const std::bad_alloc &)
-	{
-		return false;
-	}
-	auto found = operations.find(identity);
+	// Publication has already happened. Releasing its fence cannot require a
+	// fresh string allocation; the bounded operation table owns the key already.
+	auto found = std::find_if(operations.begin(), operations.end(),
+				  [&](const auto &entry) {
+					  return critical_operation_id_equal(
+						  entry.second->command.operation_id, operation_id);
+				  });
 	if (found == operations.end())
-		return completed_cache.count(identity) != 0;
+		return std::any_of(completed_cache.begin(), completed_cache.end(),
+				   [&](const auto &entry) {
+					   return critical_operation_id_equal(
+						   entry.second.command.operation_id, operation_id);
+				   });
+	const auto &identity = found->first;
 	const operation_state &state = *found->second;
 	if (!state.publication_pending)
 		return false;
@@ -578,8 +730,34 @@ void critical_command_coordinator_quiesce(void)
 void critical_command_coordinator_resume(void)
 {
 	std::lock_guard<std::mutex> lock(coordinator_mutex);
-	if (health.initialized)
+	if (health.initialized && !admission_uncertain)
 		health.accepting = true;
+}
+
+critical_command_durability critical_command_coordinator_durability(const critical_operation_id &id)
+{
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	const auto identity = operation_key(id);
+	if (const auto completed = completed_cache.find(identity);
+	    completed != completed_cache.end())
+		return completed->second.completion.outcome ==
+				       critical_apply_outcome::terminal_failure ?
+			       critical_command_durability::failed :
+			       critical_command_durability::durable;
+	const auto found = operations.find(identity);
+	if (found == operations.end())
+		return critical_command_durability::unknown;
+	if (admission_uncertain && !awaiting_prepare.empty() &&
+	    awaiting_prepare.front() == identity)
+		return critical_command_durability::uncertain;
+	if (std::find(awaiting_prepare.begin(), awaiting_prepare.end(), identity) !=
+	    awaiting_prepare.end())
+		return critical_command_durability::awaiting_durability;
+	if (found->second->publication_pending &&
+	    found->second->completion.outcome == critical_apply_outcome::terminal_failure)
+		return critical_command_durability::failed;
+	return found->second->durable ? critical_command_durability::durable :
+					critical_command_durability::awaiting_durability;
 }
 
 bool critical_command_coordinator_drain(uint64_t timeout_msec)

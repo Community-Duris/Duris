@@ -16,6 +16,7 @@ HARNESS = r'''
 #include "economy/collector_command.h"
 
 #include <cassert>
+#include <cerrno>
 
 int main()
 {
@@ -79,6 +80,17 @@ int main()
 	move.item_count = 1;
 	move.items[0] = { 100, 100, 0, 5, 7, item_custody_state::active };
 	const item_transfer_result committed = { 100, 1, 11, 1, 6, 0 };
+	move.expected_from_revision = 10;
+	item_transfer_result prepared{};
+	assert(item_ownership_runtime_prepare(move, &prepared) == 0);
+	assert(prepared.from_owner_revision == 11 && prepared.to_owner_revision == 1 &&
+	       prepared.max_item_revision == 6);
+	item_ownership_runtime_entry before{};
+	assert(item_ownership_runtime_lookup(100, &before) && before.item_revision == 5);
+	auto stale_move = move;
+	stale_move.expected_from_revision = 9;
+	assert(item_ownership_runtime_prepare(stale_move, &prepared) == ESTALE);
+	assert(item_ownership_runtime_lookup(100, &before) && before.item_revision == 5);
 	assert(item_ownership_runtime_apply(move, committed));
 
 	item_ownership_runtime_entry untouched = {};
@@ -106,6 +118,14 @@ int main()
 	assert(item_ownership_runtime_lookup(200, &created));
 	assert(created.root_item_uid == 101 && created.parent_item_uid == 101 &&
 	       created.owner_revision == 12);
+	// A root-only request cannot strand an omitted child in the source inventory.
+	item_transfer_payload incomplete = move;
+	incomplete.expected_from_revision = 12;
+	incomplete.expected_to_revision = 1;
+	incomplete.selected_item_uid = incomplete.target_root_item_uid = 101;
+	incomplete.items[0] = {101, 101, 0, 3, 8, item_custody_state::active};
+	assert(item_ownership_runtime_prepare(incomplete, &prepared) == EINVAL);
+	assert(item_ownership_runtime_lookup(200, &before) && before.owner.id == player.id);
 	creation.selected_item_uid = 201;
 	creation.items[0].item_uid = 201;
 	creation.expected_target_parent_revision = 2;

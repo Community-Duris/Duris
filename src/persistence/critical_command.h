@@ -7,11 +7,16 @@
 #include <vector>
 
 constexpr uint32_t CRITICAL_COMMAND_SCHEMA_VERSION = 1;
+constexpr uint32_t CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION = 2;
+constexpr size_t CRITICAL_COMMAND_MAX_OUTCOME_BYTES = 4096;
 constexpr size_t CRITICAL_COMMAND_ID_BYTES = 16;
 constexpr size_t CRITICAL_COMMAND_ID_HEX_SIZE = 33;
 constexpr size_t CRITICAL_COMMAND_MAX_KEYS = 3003;
 constexpr size_t CRITICAL_COMMAND_MAX_PAYLOAD_BYTES = 384 * 1024;
 constexpr size_t CRITICAL_COMMAND_MAX_ENCODED_BYTES = 512 * 1024;
+constexpr size_t CRITICAL_CHECKPOINT_MAX_PAYLOAD_BYTES = 4 * 1024 * 1024;
+constexpr size_t CRITICAL_CHECKPOINT_MAX_ENCODED_BYTES =
+	CRITICAL_CHECKPOINT_MAX_PAYLOAD_BYTES + 4096;
 
 struct critical_operation_id
 {
@@ -64,6 +69,7 @@ enum class critical_command_type : uint16_t
 	collector,
 	// Appended so existing durable command type numbers stay unchanged.
 	player_death_restitution,
+	player_checkpoint,
 };
 
 enum class critical_source_site : uint16_t
@@ -135,6 +141,10 @@ struct critical_command
 	std::vector<critical_entity_key> keys;
 	std::vector<critical_expected_revision> expected_revisions;
 	std::vector<uint8_t> payload;
+	// Schema 2 seals the outcome decided by the world thread. The materializer
+	// must reproduce these bytes atomically; it cannot reject or revise gameplay.
+	uint64_t outcome_revision = 0;
+	std::vector<uint8_t> outcome_payload = {};
 };
 
 enum class critical_command_codec_result : uint8_t
