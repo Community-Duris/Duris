@@ -318,12 +318,10 @@ query_result apply_replacement_rows(MYSQL *connection, const player_snapshot &sn
 						  << ",0))";
 				      });
 	if (result.ok && (snapshot.components & PLAYER_COMPONENT_TIMERS))
-		result = replace_rows(connection, snapshot.pid, "player_timers",
-				      "timer_id,timer_value", snapshot.timers,
-				      [](auto &sql, const auto &row) {
-					      sql << row.index << ",FROM_UNIXTIME(NULLIF("
-						  << row.value << ",0))";
-				      });
+		result = replace_rows(
+			connection, snapshot.pid, "player_timers", "timer_id,timer_value",
+			snapshot.timers, [](auto &sql, const auto &row)
+			{ sql << row.index << ",FROM_UNIXTIME(NULLIF(" << row.value << ",0))"; });
 	if (result.ok && (snapshot.components & PLAYER_COMPONENT_UNDEAD_SLOTS))
 		result = replace_rows(connection, snapshot.pid, "player_undead_slots",
 				      "circle,slots", snapshot.undead_slots,
@@ -1440,7 +1438,6 @@ player_save_apply_result player_snapshot_repository_apply_from_pool(const player
 		MYSQL *replacement = sql_pool_replace_connection(connection);
 		if (!replacement)
 		{
-			sql_pool_release(connection);
 			return applied;
 		}
 		connection = replacement;

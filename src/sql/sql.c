@@ -1474,6 +1474,18 @@ int initialize_mysql()
 	{
 		return -1;
 	}
+	// This connection holds the runtime lock and may remain idle between queries.
+	// MariaDB closes a connection idle past wait_timeout (8 hours by
+	// default), which would release the lock and stop every write; 31536000 seconds is
+	// the most it takes.
+	if (!sql_connection_execute(DB, "SET SESSION wait_timeout=31536000"))
+	{
+		logit(LOG_STATUS,
+		      "FATAL: could not keep the main database connection open; aborting boot");
+		mysql_close(DB);
+		DB = NULL;
+		return -1;
+	}
 	if (!duris_sql_exclusion_guard_acquire(DB))
 	{
 		logit(LOG_STATUS,

@@ -6678,6 +6678,13 @@ void ac_stopAllFromIgnoring(P_char ch)
 	}
 }
 
+// anti2_flags holds one bit for each of races 1-32. Other races have none: no
+// deny list names them, and every allow list leaves them out.
+static bool obj_race_bit_set(P_obj obj, int race)
+{
+	return race >= 1 && race <= 32 && IS_SET(obj->anti2_flags, 1U << (race - 1));
+}
+
 int can_char_use_item(P_char ch, P_obj obj)
 {
 	if (!ch || !obj)
@@ -6698,16 +6705,14 @@ int can_char_use_item(P_char ch, P_obj obj)
 
 	if (!IS_SET(obj->extra_flags, ITEM_ALLOWED_RACES))
 	{
-		if (GET_RACE(ch) <= RACE_PLAYER_MAX &&
-		    IS_SET(obj->anti2_flags, 1 << (GET_RACE(ch) - 1)))
+		if (obj_race_bit_set(obj, GET_RACE(ch)))
 		{
 			return FALSE;
 		}
 	}
 	else
 	{
-		if (GET_RACE(ch) > RACE_PLAYER_MAX ||
-		    !IS_SET(obj->anti2_flags, 1 << (GET_RACE(ch) - 1)))
+		if (!obj_race_bit_set(obj, GET_RACE(ch)))
 		{
 			return FALSE;
 		}
@@ -6845,12 +6850,10 @@ int can_prime_class_use_item(P_char ch, P_obj obj)
 
 	if (!IS_SET(obj->extra_flags, ITEM_ALLOWED_RACES))
 	{
-		if (GET_RACE(ch) <= RACE_PLAYER_MAX &&
-		    IS_SET(obj->anti2_flags, 1 << (GET_RACE(ch) - 1)))
+		if (obj_race_bit_set(obj, GET_RACE(ch)))
 			return FALSE;
 	}
-	else if (GET_RACE(ch) > RACE_PLAYER_MAX ||
-		 !IS_SET(obj->anti2_flags, 1 << (GET_RACE(ch) - 1)))
+	else if (!obj_race_bit_set(obj, GET_RACE(ch)))
 		return FALSE;
 
 	if (!IS_SET(obj->extra_flags, ITEM_ALLOWED_CLASSES))

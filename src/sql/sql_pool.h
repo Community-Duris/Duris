@@ -56,12 +56,14 @@ extern "C"
 
 	/* Replace a pooled connection with a fresh handle after it has become
  * unusable. Returns the replacement handle on success, or NULL if the
- * pool is unavailable or reconnect fails. */
+ * pool is unavailable or reconnect fails. A failed replacement releases the
+ * old handle back to the pool for a later retry; the caller must not use or
+ * release that handle again. */
 	MYSQL *sql_pool_replace_connection(MYSQL *conn);
 
 	/* ---- Stats (debug / monitoring) ---- */
 
-	int sql_pool_is_active(void); /* whether a usable pool was initialised */
+	int sql_pool_is_active(void); /* usable pool with no confirmed runtime lock loss */
 	int sql_pool_available(void);
 	int sql_pool_in_use(void); /* how many are currently borrowed */
 	int sql_pool_total(void); /* total pool size (0 before init) */

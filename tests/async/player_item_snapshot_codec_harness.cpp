@@ -56,6 +56,37 @@ static std::vector<player_item_snapshot> fixture()
 
 int main()
 {
+	player_snapshot status = {};
+	status.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
+	status.pid = 42;
+	status.revision = 1;
+	status.components = PLAYER_COMPONENT_STATUS;
+	status.encoded_size_bound = 4096;
+	status.status_integers.push_back({ player_status_field::level, 1, 0, false });
+	status.status_strings.push_back({ player_status_string_field::name, "Fixture" });
+	std::vector<uint8_t> status_bytes;
+	require(player_snapshot_encode(status, &status_bytes) == player_snapshot_codec_result::ok,
+		"status fixture did not encode");
+	player_snapshot decoded_status;
+	require(player_snapshot_decode(status_bytes.data(), status_bytes.size(), &decoded_status) ==
+				player_snapshot_codec_result::ok &&
+			decoded_status.pid == status.pid,
+		"status fixture did not decode");
+	// Header, integer row count, then the first uint16 field identifier.
+	constexpr size_t integer_field_offset = 4 + 4 + 8 + 8 + 4 + 4 + 8 + 4;
+	// One integer row has a field, two 64-bit values and a boolean, then string count.
+	constexpr size_t string_field_offset = integer_field_offset + 2 + 8 + 8 + 1 + 4;
+	for (size_t offset : { integer_field_offset, string_field_offset })
+	{
+		auto malformed = status_bytes;
+		malformed[offset] = 255;
+		decoded_status.pid = -123;
+		require(player_snapshot_decode(malformed.data(), malformed.size(),
+					       &decoded_status) ==
+					player_snapshot_codec_result::invalid_value &&
+				decoded_status.pid == -123,
+			"invalid status identifier reported success or modified the output");
+	}
 	const auto original = fixture();
 	std::vector<uint8_t> encoded;
 	require(player_item_snapshot_list_encode(original, &encoded) ==
@@ -130,6 +161,18 @@ int main()
 	require(player_item_snapshot_list_encode(too_deep, &encoded) ==
 			player_snapshot_codec_result::invalid_value,
 		"over-depth item tree was encoded");
+	// The world's longest item description, 8411 bytes, is saved like any other.
+	auto described = original;
+	described[0].extra_descriptions[0].spellbook = false;
+	described[0].extra_descriptions[0].spell_ids.clear();
+	described[0].extra_descriptions[0].description.assign(8411, 'x');
+	require(player_item_snapshot_list_encode(described, &encoded) ==
+				player_snapshot_codec_result::ok &&
+			player_item_snapshot_list_decode(encoded.data(), encoded.size(),
+							 &decoded) ==
+				player_snapshot_codec_result::ok &&
+			decoded[0].extra_descriptions[0].description.size() == 8411,
+		"an 8411-byte item description did not round trip");
 	auto oversized = original;
 	oversized[0].name.assign(PLAYER_SNAPSHOT_MAX_STRING_BYTES + 1, 'x');
 	require(player_item_snapshot_list_encode(oversized, &encoded) ==
