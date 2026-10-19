@@ -73,6 +73,12 @@ player_save_apply_result apply_snapshot(const player_snapshot &snapshot, void *)
 {
     std::unique_lock<std::mutex> lock(state.mutex);
     ++state.attempts[snapshot.pid];
+    if (snapshot.pid == 20)
+    {
+        assert(snapshot.schema_version == PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION);
+        assert(snapshot.death && snapshot.death->corpse_room_vnum == 3001);
+        assert(snapshot.output_preferences == "death disposition must survive admission refusal");
+    }
     if (snapshot.pid == 1 && snapshot.revision == 1)
     {
         state.first_started = true;
@@ -165,8 +171,10 @@ static void test_admission_allocation_failure()
     bool admitted = false;
     for (int index = 0; index < 8; ++index)
     {
+        auto retained = snapshot_for(14, 1);
+        retained.output_preferences = "retain this complete payload after either allocation fails";
         allocation_fail_after = index;
-        const auto result = player_save_worker_submit(snapshot_for(14, 1));
+        const auto result = player_save_worker_submit_retained(&retained);
         allocation_fail_after = -1;
         if (result == player_save_submit_result::accepted)
         {
@@ -175,7 +183,9 @@ static void test_admission_allocation_failure()
         }
         ++failures;
         errors_reported = errors_reported && errno == ENOMEM;
-        assert(result == player_save_submit_result::unavailable);
+        assert(result == player_save_submit_result::capacity_exceeded);
+        assert(retained.pid == 14 && retained.revision == 1);
+        assert(retained.output_preferences == "retain this complete payload after either allocation fails");
         assert(!player_save_worker_pid_pending(14));
         assert(persistence_writer_pending_owners().size() == 1);
         const auto health = player_save_worker_health_copy();
@@ -208,8 +218,75 @@ static void test_admission_allocation_failure()
     state.first_started = state.release_first = false;
 }
 
+static unsigned int journal_acks = 0;
+static unsigned int journal_appends = 0;
+static bool append_snapshot(const player_snapshot &, void *) { ++journal_appends; return true; }
+static bool acknowledge_snapshot(int pid, player_revision_t revision, void *context)
+{
+    assert(pid == 20 && revision == 2 && context == &journal_acks);
+    return ++journal_acks > 1; // A failed checkpoint must be retried before completion.
+}
+
+static void test_journal_and_death_admission()
+{
+    player_save_worker_reset_for_tests();
+    auto death = snapshot_for(20, 2);
+    death.schema_version = PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
+    death.death.emplace();
+    death.death->corpse_room_vnum = 3001;
+    death.output_preferences = "death disposition must survive admission refusal";
+    assert(player_save_worker_submit_retained(&death) == player_save_submit_result::worker_unavailable);
+    assert(death.death && death.death->corpse_room_vnum == 3001);
+    assert(death.output_preferences == "death disposition must survive admission refusal");
+    assert(player_save_worker_init(apply_snapshot, nullptr));
+    assert(player_save_worker_set_journal_hooks(append_snapshot, acknowledge_snapshot, &journal_acks));
+    std::mutex gate_mutex;
+    std::condition_variable gate_changed;
+    bool started = false, release = false;
+    assert(persistence_writer_submit(persistence_job_kind::log, 99,
+        PLAYER_SAVE_WORKER_MAX_PENDING_BYTES, [&] {
+            std::unique_lock<std::mutex> lock(gate_mutex);
+            started = true;
+            gate_changed.notify_all();
+            gate_changed.wait(lock, [&] { return release; });
+            return player_save_apply_result{player_save_apply_outcome::applied, 0, 0};
+        }) == player_save_submit_result::accepted);
+    {
+        std::unique_lock<std::mutex> lock(gate_mutex);
+        gate_changed.wait(lock, [&] { return started; });
+    }
+    assert(player_save_worker_submit_retained(&death) == player_save_submit_result::capacity_exceeded);
+    assert(death.death && death.death->corpse_room_vnum == 3001);
+    assert(death.output_preferences == "death disposition must survive admission refusal");
+    {
+        std::lock_guard<std::mutex> lock(gate_mutex);
+        release = true;
+        gate_changed.notify_all();
+    }
+    assert(persistence_writer_wait_idle(5000));
+    drain();
+    // Schema and optional death payload must agree; neither malformed combination is admitted.
+    auto malformed = death;
+    malformed.death.reset();
+    assert(player_save_worker_submit(malformed) == player_save_submit_result::invalid);
+    malformed = death;
+    malformed.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
+    assert(player_save_worker_submit(malformed) == player_save_submit_result::invalid);
+    assert(player_save_worker_submit_retained(&death) == player_save_submit_result::accepted);
+    assert(persistence_writer_wait_idle(5000));
+    const auto completed = drain();
+    assert(completed.size() == 1 && completed[0].pid == 20 && completed[0].revision == 2);
+    assert(completed[0].outcome == player_save_apply_outcome::applied);
+    assert(journal_acks == 2 && journal_appends == 2);
+    assert(state.attempts[20] == 2);
+    player_save_worker_reset_for_tests();
+    state.order.clear();
+    state.attempts.clear();
+}
+
 int main()
 {
+    test_journal_and_death_admission();
     test_admission_allocation_failure();
     player_save_worker_reset_for_tests();
     assert(player_save_worker_init(apply_snapshot, nullptr));
@@ -405,7 +482,7 @@ assert "PLAYER_SAVE_WORKER_DEFAULT_THREADS = 1" in WORKER_HEADER
 assert "std::thread writer;" in WORKER
 assert "std::vector<std::thread>" not in WORKER
 assert "player_revision_" not in WORKER
-assert "journal" not in WORKER
+assert "journal_ack_callback" in WORKER
 for kind in ("player,", "corpse,", "locker,", "saved_item,"):
     assert kind in WORKER_HEADER
 print("[PASS] the writer is one thread with player, corpse, locker and saved-item jobs")

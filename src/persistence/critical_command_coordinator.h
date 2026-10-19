@@ -112,25 +112,20 @@ void critical_command_coordinator_reset_for_tests(void);
 
 using critical_replay_observer_fn = bool (*)(const critical_command &command, void *context);
 
-inline bool critical_command_coordinator_init(const char * /*journal_directory*/,
-					       critical_apply_fn apply, void *context,
-					       unsigned int /*workers*/ = CRITICAL_COORDINATOR_DEFAULT_WORKERS,
-					       critical_replay_observer_fn /*replay_observer*/ = nullptr,
-					       void * /*replay_context*/ = nullptr)
+inline bool
+critical_command_coordinator_init(const char * /*journal_directory*/, critical_apply_fn apply,
+				  void *context,
+				  unsigned int /*workers*/ = CRITICAL_COORDINATOR_DEFAULT_WORKERS,
+				  critical_replay_observer_fn /*replay_observer*/ = nullptr,
+				  void * /*replay_context*/ = nullptr)
 {
 	return critical_command_coordinator_init(apply, context);
 }
 
-inline critical_submit_result
-critical_command_coordinator_submit_for_publication(critical_command command)
-{
-	return critical_command_coordinator_submit(std::move(command));
-}
-
-inline bool critical_command_coordinator_acknowledge_publication(const critical_operation_id &)
-{
-	return true;
-}
+// These callers retain their entity fences through deferred or failed live publication.
+critical_submit_result
+critical_command_coordinator_submit_for_publication(critical_command command);
+bool critical_command_coordinator_acknowledge_publication(const critical_operation_id &operation_id);
 
 inline critical_command_durability
 critical_command_coordinator_durability(const critical_operation_id &)
@@ -143,11 +138,8 @@ inline bool critical_command_coordinator_recover_uncertain(void)
 	return true;
 }
 
-inline bool critical_command_coordinator_get_completed(const critical_operation_id & /*operation_id*/,
-						       critical_completion * /*completion*/)
-{
-	return false;
-}
+bool critical_command_coordinator_get_completed(const critical_operation_id &operation_id,
+						critical_completion *completion);
 
 struct critical_recovery_case
 {
@@ -161,7 +153,7 @@ struct critical_recovery_case
 };
 
 inline size_t critical_command_coordinator_recovery_copy(critical_recovery_case *, size_t,
-							size_t *total, size_t = 0)
+							 size_t *total, size_t = 0)
 {
 	if (total)
 		*total = 0;

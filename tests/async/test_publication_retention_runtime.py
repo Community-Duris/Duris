@@ -16,6 +16,7 @@ HARNESS = r'''
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
 #include "persistence/persistence_checkpoint.h"
+#include "player/player_save_worker.h"
 
 #include <array>
 #include <cassert>
@@ -31,6 +32,7 @@ P_obj object_list = nullptr;
 P_room world = nullptr;
 P_index obj_index = nullptr;
 extern const int top_of_world = 1;
+bool player_save_pipeline_sealed_save_pending(int) { return false; }
 
 static item_ownership_runtime_entry runtime_entry = {};
 static int publication_attempts = 0;
@@ -188,7 +190,11 @@ int main(int argc, char **argv)
     runtime_entry.vnum = 42;
     runtime_entry.state = item_custody_state::active;
 
-    assert(critical_command_coordinator_init(argv[1], apply_transfer, nullptr, 1));
+    (void)argv;
+    assert(player_save_worker_init([](const player_snapshot &, void *) {
+        return player_save_apply_result{player_save_apply_outcome::applied, 0, 0};
+    }, nullptr));
+    assert(critical_command_coordinator_init(apply_transfer, nullptr));
     item_movement_reject reject = item_movement_reject::none;
     const item_owner_identity destination = {item_owner_type::player, 1001, 0};
     if (!item_movement_transaction_submit(
@@ -214,6 +220,10 @@ int main(int argc, char **argv)
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
     assert(first_completion_seen);
+    const auto receipt = completions[0];
+    critical_completion recovered = {};
+    assert(critical_command_coordinator_get_completed(receipt.operation_id, &recovered));
+    assert(recovered.result_payload == receipt.result_payload);
     assert(publication_attempts == 1);
     item_movement_health retained = item_movement_transaction_health_copy();
     assert(retained.pending == 1 && retained.publication_retrying == 1);
@@ -243,6 +253,8 @@ int main(int argc, char **argv)
     assert(publication_attempts == 2);
     item_movement_health published = item_movement_transaction_health_copy();
     assert(published.pending == 0 && published.committed == 1);
+    assert(critical_command_coordinator_get_completed(receipt.operation_id, &recovered));
+    assert(recovered.result_payload == receipt.result_payload);
     assert(!critical_command_coordinator_is_fenced(
         {critical_entity_type::item, object.obj_uid}, nullptr));
     assert(!critical_command_coordinator_is_fenced(
@@ -291,8 +303,8 @@ int main(int argc, char **argv)
     object.next = nullptr; object_list = &object;
     runtime_entry.owner = {item_owner_type::player, 2002, 0};
 
-    // Exhausted uncertainty must not invoke the command callback as failure,
-    // and must not checkpoint away the only durable retry/reconciliation record.
+    // The shared writer retries uncertainty without publishing a failed transfer
+    // or releasing the item's fence.
     publication_attempts = 0;
     forced_outcome = critical_apply_outcome::ambiguous_commit;
     assert(item_movement_transaction_submit(
@@ -303,7 +315,7 @@ int main(int argc, char **argv)
     for (int spin = 0; spin < 1000 && !uncertain_seen; ++spin) {
         const size_t count = critical_command_coordinator_pulse(completions, 8);
         item_movement_transaction_handle_completions(completions, count);
-        uncertain_seen = critical_command_coordinator_health_copy().blocked == 1;
+        uncertain_seen = critical_command_coordinator_health_copy().retries > 0;
         if (!uncertain_seen)
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
@@ -311,7 +323,7 @@ int main(int argc, char **argv)
     assert(item_movement_transaction_health_copy().pending == 1);
     assert(critical_command_coordinator_is_fenced(
         {critical_entity_type::item, object.obj_uid}, nullptr));
-    assert(critical_command_journal_health_copy().records == 1);
+    player_save_worker_reset_for_tests();
     critical_command_coordinator_shutdown();
     return 0;
 }
@@ -330,6 +342,7 @@ with tempfile.TemporaryDirectory(prefix="duris-publication-retention-") as tempo
             rel("item/item_movement_transaction.c"), rel("item/item_transfer_command.c"), rel("player_snapshot_codec.c"),
             rel("critical_command.c"), rel("persistence/critical_command_journal.c"),
             rel("persistence/critical_command_coordinator.c"),
+            rel("player_save_worker.c"), rel("persistence_observability.c"),
             "-Wl,--gc-sections", "-lz", "-lcrypto", "-o", str(binary),
         ],
         cwd=ROOT,

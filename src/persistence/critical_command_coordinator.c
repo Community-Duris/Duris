@@ -31,7 +31,7 @@
 
 // Commands run on the one persistence writer, queued at submit, so each lands in
 // capture order with the saves around it. The operation table holds a command's entity
-// fences until the game thread takes its completion.
+// fences until the game thread publishes its completion when requested by the caller.
 namespace
 {
 struct operation_state
@@ -42,12 +42,16 @@ struct operation_state
 	// The writer retries a command itself, so every completion is the first attempt's.
 	unsigned int attempt;
 	uint64_t attachments;
+	bool retain_until_publication = false;
+	bool publication_pending = false;
+	critical_completion completion = {};
 };
 
 struct completed_state
 {
 	critical_command command;
 	size_t encoded_size;
+	critical_completion completion;
 };
 
 std::mutex coordinator_mutex;
@@ -124,6 +128,7 @@ void update_depth()
 	health.queued = 0;
 	health.inflight = 0;
 	health.blocked = 0;
+	health.publication_pending = 0;
 	health.retained_bytes = 0;
 	uint64_t oldest = 0;
 	const uint64_t now = now_usec();
@@ -131,6 +136,8 @@ void update_depth()
 	{
 		(void)identity;
 		++health.inflight;
+		if (state->publication_pending)
+			++health.publication_pending;
 		health.retained_bytes += state->retained_bytes;
 		if (!oldest || state->queued_at_usec < oldest)
 			oldest = state->queued_at_usec;
@@ -141,7 +148,8 @@ void update_depth()
 	health.completed_cache = completed_cache.size();
 }
 
-void remember_completed(const std::string &identity, const critical_command &command)
+void remember_completed(const std::string &identity, const critical_command &command,
+			const critical_completion &completion)
 {
 	std::vector<uint8_t> encoded;
 	if (critical_command_encode(command, &encoded) != critical_command_codec_result::ok)
@@ -164,7 +172,8 @@ void remember_completed(const std::string &identity, const critical_command &com
 	try
 	{
 		completed_cache.emplace(identity, completed_state{ .command = command,
-								   .encoded_size = retained_size });
+								   .encoded_size = retained_size,
+								   .completion = completion });
 		completed_order.push_back(identity);
 		completed_cache_bytes += retained_size;
 	}
@@ -377,7 +386,8 @@ void critical_command_coordinator_shutdown(void)
 	++generation;
 }
 
-critical_submit_result critical_command_coordinator_submit(critical_command command)
+static critical_submit_result submit_command(critical_command command,
+					     bool retain_until_publication)
 {
 	const bool supplied_acceptance_time = command.accepted_at_usec != 0;
 	if (!supplied_acceptance_time)
@@ -429,9 +439,20 @@ critical_submit_result critical_command_coordinator_submit(critical_command comm
 			reserve_locked(identity, command, encoded.size(), &job);
 		if (reserved != critical_submit_result::accepted)
 			return reserved;
+		operations.at(identity)->retain_until_publication = retain_until_publication;
 	}
 	return queue_on_writer(identity, std::move(job)) ? critical_submit_result::accepted :
 							   critical_submit_result::unavailable;
+}
+
+critical_submit_result critical_command_coordinator_submit(critical_command command)
+{
+	return submit_command(std::move(command), false);
+}
+
+critical_submit_result critical_command_coordinator_submit_for_publication(critical_command command)
+{
+	return submit_command(std::move(command), true);
 }
 
 size_t critical_command_coordinator_pulse(critical_completion *completions, size_t capacity)
@@ -451,7 +472,8 @@ size_t critical_command_coordinator_pulse(critical_completion *completions, size
 		completion_delivery.pop_front(critical_completion_channel::execution);
 		const std::string identity = operation_key(completion.operation_id);
 		auto found = operations.find(identity);
-		if (found == operations.end() || found->second->attempt != completion.attempt)
+		if (found == operations.end() || found->second->attempt != completion.attempt ||
+		    found->second->publication_pending)
 		{
 			++health.stale_completions;
 			continue;
@@ -460,13 +482,57 @@ size_t critical_command_coordinator_pulse(critical_completion *completions, size
 		if (completion.outcome == critical_apply_outcome::terminal_failure)
 			++health.terminal_failures;
 		completions[published++] = completion;
+		if (state.retain_until_publication)
+		{
+			state.completion = completion;
+			state.publication_pending = true;
+			continue;
+		}
 		remove_fences(identity, state.command);
-		remember_completed(identity, state.command);
+		remember_completed(identity, state.command, completion);
 		++health.completed;
 		operations.erase(found);
 	}
 	update_depth();
 	return published;
+}
+
+bool critical_command_coordinator_acknowledge_publication(const critical_operation_id &operation_id)
+{
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	const auto identity = operation_key(operation_id);
+	auto found = operations.find(identity);
+	if (found == operations.end())
+		return completed_cache.count(identity) != 0;
+	const operation_state &state = *found->second;
+	if (!state.publication_pending)
+		return false;
+	remember_completed(identity, state.command, state.completion);
+	remove_fences(identity, state.command);
+	operations.erase(found);
+	++health.completed;
+	update_depth();
+	return true;
+}
+
+bool critical_command_coordinator_get_completed(const critical_operation_id &operation_id,
+						critical_completion *completion)
+{
+	if (!completion)
+		return false;
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	const auto identity = operation_key(operation_id);
+	const auto pending = operations.find(identity);
+	if (pending != operations.end() && pending->second->publication_pending)
+	{
+		*completion = pending->second->completion;
+		return true;
+	}
+	const auto completed = completed_cache.find(identity);
+	if (completed == completed_cache.end())
+		return false;
+	*completion = completed->second.completion;
+	return true;
 }
 
 bool critical_command_coordinator_is_fenced(const critical_entity_key &key,

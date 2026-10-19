@@ -702,6 +702,15 @@ void player_save_pipeline_pulse(void)
 		health.completions += completed;
 		for (size_t index = 0; index < completed; ++index)
 		{
+			const auto &completion = completions[index];
+			if (completion.kind != persistence_job_kind::player)
+				continue;
+			if ((completion.outcome == player_save_apply_outcome::applied ||
+			     completion.outcome == player_save_apply_outcome::already_applied ||
+			     completion.outcome == player_save_apply_outcome::stale_revision) &&
+			    completion.durable_revision >= completion.revision)
+				player_revision_acknowledge_durable(
+					completion.pid, completion.revision, completion.components);
 			if (completions[index].outcome == player_save_apply_outcome::applied ||
 			    completions[index].outcome ==
 				    player_save_apply_outcome::already_applied)
@@ -754,8 +763,7 @@ void player_save_pipeline_pulse(void)
 				    player_save_apply_outcome::terminal_failure &&
 			    completions[index].error_code !=
 				    PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH &&
-			    completions[index].error_code != ENOENT &&
-			    completions[index].pid > 0)
+			    completions[index].error_code != ENOENT && completions[index].pid > 0)
 			{
 				player_revision_snapshot revision = {};
 				player_revision_snapshot_copy(completions[index].pid, &revision);

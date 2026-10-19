@@ -105,6 +105,7 @@ PRELUDE = r'''
 #include "core/utils.h"
 #include "account/account.h"
 #include "economy/currency_transaction.h"
+#include "economy/economic_event_outbox.h"
 #include "sql/sql_player.h"
 #include "item/item_ownership_runtime.h"
 #include "item/item_movement_transaction.h"
@@ -112,6 +113,7 @@ PRELUDE = r'''
 #include "player/player_snapshot_codec.h"
 #include "player/player_load_items.h"
 #include "world/vnum.obj.h"
+#include "magic/spells.h"
 #include "classes/necromancy.h"
 #include "net/comm.h"
 
@@ -179,6 +181,8 @@ P_char character_list = NULL;
 P_desc descriptor_list = NULL;
 static room_data test_rooms[2] = {};
 P_room world = test_rooms;
+extern const int top_of_world = 1;
+void economic_event_record(uint32_t, EconomicAction, int64_t, uint32_t, uint32_t, const char *) {}
 static critical_command submitted_command = {};
 static bool coordinator_fenced = false;
 static bool item_pending = false;
@@ -192,6 +196,7 @@ void persistence_alert(int, const char *, const char *, const char *, const char
 }
 void __free(void *memory, const char *, int) { free(memory); }
 void gmcp_char_vitals(P_char) {}
+bool affected_by_spell(P_char, int) { return false; }
 
 [[noreturn]] int panic_corruption_int(const char *, const char *, ...)
 {
@@ -207,6 +212,14 @@ P_char find_player_by_pid(int pid)
 {
 	for (P_char character = character_list; character; character = character->next)
 		if (character->only.pc && GET_PID(character) == pid)
+			return character;
+	return nullptr;
+}
+
+P_char find_character_by_runtime_id(uint64_t runtime_id)
+{
+	for (P_char character = character_list; character; character = character->next)
+		if (character->runtime_id == runtime_id)
 			return character;
 	return nullptr;
 }
@@ -411,6 +424,7 @@ void finish_bulk_get(P_char, uint32_t pid)
     bulk_gets.erase(pid);
 }
 '''
+            + extract(SRC / "actobj.c", "static bool get_can_continue(")
             + extract(SRC / "actobj.c", "static bool bulk_get_source_available(")
             + extract(SRC / "actobj.c", "static bool bulk_get_corpse_source_available(")
             + extract(SRC / "actobj.c", "static bool finish_bulk_get_after_commit(")
@@ -600,6 +614,8 @@ int main()
 	player.bank_revision = 1;
 	char_data actor = {};
 	actor.only.pc = &player;
+	actor.runtime_id = 42;
+	actor.specials.position = STAT_NORMAL | POS_STANDING;
 	actor.player.racewar = 1;
 	char account_name[] = "queue_account";
 	acct_entry account = {};
@@ -1143,8 +1159,18 @@ int main()
 	pile_ack(false);
 	assert(bag.contains->value[0] == 350 && GET_GOLD(&actor) == gold_before && put_announcements == 3);
 	const int before_pickup = submission_count;
+	const std::array<int, 4> wallet_before_pickup = {GET_COPPER(&actor), GET_SILVER(&actor),
+		GET_GOLD(&actor), GET_PLATINUM(&actor)};
 	assert(submit_coin_get(&actor, bag.contains, &bag, 1));
 	assert(bag.contains->value[0] == 350 && submission_count == before_pickup + 1);
+	// Delayed completion must reserve both the pile and the wallet. Repeated get
+	// attempts cannot enqueue additional rewards against the same untouched pile.
+	for (int retry = 0; retry < 5; ++retry)
+	{
+		assert(!submit_coin_get(&actor, bag.contains, &bag, 1));
+		assert(submission_count == before_pickup + 1 && bag.contains->value[0] == 350);
+		assert(std::equal(wallet_before_pickup.begin(), wallet_before_pickup.end(), actor.points.cash));
+	}
 	pile_ack(true);
 	assert(bag.contains == nullptr);
 	assert(GET_COPPER(&actor) + 10 * GET_SILVER(&actor) + 100 * GET_GOLD(&actor) + 1000 * GET_PLATINUM(&actor) == 1000);

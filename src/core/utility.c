@@ -51,7 +51,6 @@ using namespace std;
 #include <limits>
 #include <mutex>
 #include "persistence/persistence_checkpoint.h"
-#include "economy/economic_event_outbox.h"
 #include "persistence/latency_trace.h"
 #include "classes/specializations.h"
 #include "magic/spells.h"
@@ -3065,15 +3064,7 @@ static void currency_adjustment_committed(P_char ch, bool committed,
 					  unsigned int error_code, const uint8_t *context,
 					  size_t context_size);
 
-static inline uint32_t char_room_vnum(P_char ch)
-{
-	if (!ch || ch->in_room < 0 || ch->in_room > top_of_world)
-		return 0;
-	return world[ch->in_room].number;
-}
-
-static void add_money_internal(P_char ch, int amount, const char *committed_message,
-			       bool record_event, const char *reason)
+void ADD_MONEY(P_char ch, int amount, const char *committed_message)
 {
 	int t = 0;
 
@@ -3085,8 +3076,32 @@ static void add_money_internal(P_char ch, int amount, const char *committed_mess
 
 	if (amount == 0)
 		return;
-
-	const int original_amount = amount;
+	const size_t message_size = committed_message ? strlen(committed_message) + 1 : 0;
+	if (message_size > CURRENCY_PENDING_CONTEXT_MAX_BYTES)
+	{
+		logit(LOG_WIZ, "ADD_MONEY: credit acknowledgement exceeds context capacity");
+		return;
+	}
+	if (IS_PC(ch) && GET_PID(ch) > 0)
+	{
+		if (!currency_transaction_submit_wallet_value(
+			    ch, amount, currency_reason_type::wallet_reward, 0,
+			    critical_source_site::command, critical_deadline_class::interactive,
+			    currency_adjustment_committed, committed_message, message_size))
+		{
+			logit(LOG_WIZ, "ADD_MONEY: wallet transaction submission failed for pid %d",
+			      GET_PID(ch));
+			if (insert_money_pickup(GET_PID(ch), amount))
+				send_to_char(
+					"Your coin credit is waiting at the auction house.\r\n",
+					ch);
+			else
+				send_to_char("Your coin credit is pending staff review.\r\n", ch);
+		}
+		else if (committed_message)
+			send_to_char("Your coin credit is pending confirmation.\r\n", ch);
+		return;
+	}
 
 	/* plat is a bit rarer, and thus is returned as change less often */
 	if (amount > 999)
@@ -3111,25 +3126,12 @@ static void add_money_internal(P_char ch, int amount, const char *committed_mess
 		GET_COPPER(ch) += amount;
 
 	if (IS_PC(ch))
-	{
 		mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
-		if (record_event)
-		{
-			economic_event_record(GET_PID(ch), EconomicAction::WALLET_ADD, original_amount,
-					      char_room_vnum(ch), 0,
-					      reason ? reason : "wallet_add");
-		}
-	}
 
 	/* Update web client */
 	gmcp_char_vitals(ch);
 	if (committed_message)
 		send_to_char(committed_message, ch);
-}
-
-void ADD_MONEY(P_char ch, int amount, const char *committed_message)
-{
-	add_money_internal(ch, amount, committed_message, true, "wallet_add");
 }
 
 /* TOWARDS BANK MONEY
@@ -3207,12 +3209,6 @@ void publish_account_bank_balances_revision(const char *account_name, int racewa
 	}
 }
 
-// Note: Retained for transactional compatibility and contract scanners.
-[[maybe_unused]] static bool (*unused_tx_wallet_value_ptr)(P_char, int64_t, currency_reason_type, int64_t,
-							     critical_source_site, critical_deadline_class,
-							     currency_completion_fn, const void *,
-							     size_t) = currency_transaction_submit_wallet_value;
-
 static void currency_adjustment_committed(P_char ch, bool committed,
 					  const currency_command_result & /*result*/,
 					  unsigned int error_code, const uint8_t *context,
@@ -3254,8 +3250,13 @@ int SUB_MONEY(P_char ch, int amount, int mode)
 		return -1;
 	if (mode != 0)
 		return -1;
-
-	const int original_amount = amount;
+	if (IS_PC(ch) && GET_PID(ch) > 0)
+		return currency_transaction_submit_wallet_value(
+			       ch, -(int64_t)amount, currency_reason_type::wallet_spend, 0,
+			       critical_source_site::command, critical_deadline_class::interactive,
+			       currency_adjustment_committed, nullptr, 0) ?
+			       0 :
+			       -1;
 
 	if (amount > GET_COPPER(ch))
 	{
@@ -3266,11 +3267,7 @@ int SUB_MONEY(P_char ch, int amount, int mode)
 	{
 		GET_COPPER(ch) -= amount;
 		if (IS_PC(ch))
-		{
 			mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
-			economic_event_record(GET_PID(ch), EconomicAction::WALLET_SUB, -original_amount,
-					      char_room_vnum(ch), 0, "wallet_sub");
-		}
 		gmcp_char_vitals(ch);
 		return 0;
 	}
@@ -3321,15 +3318,13 @@ int SUB_MONEY(P_char ch, int amount, int mode)
 		}
 	}
 	if (amount < 0)
-		add_money_internal(ch, -(amount), nullptr, false, nullptr);
-
-	if (IS_PC(ch))
+		ADD_MONEY(ch, -(amount));
+	else
 	{
-		mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
-		economic_event_record(GET_PID(ch), EconomicAction::WALLET_SUB, -original_amount,
-				      char_room_vnum(ch), 0, "wallet_sub");
+		if (IS_PC(ch))
+			mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
+		gmcp_char_vitals(ch);
 	}
-	gmcp_char_vitals(ch);
 
 	return 0;
 }

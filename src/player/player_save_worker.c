@@ -61,6 +61,9 @@ std::deque<player_save_completion> results;
 std::thread writer;
 player_save_apply_fn apply_callback = nullptr;
 void *apply_context = nullptr;
+player_save_journal_append_fn journal_append_callback = nullptr;
+player_save_journal_ack_fn journal_ack_callback = nullptr;
+void *journal_context = nullptr;
 player_save_worker_health health = {};
 size_t queued_bytes = 0;
 bool stop_requested = false;
@@ -85,8 +88,10 @@ void update_max(uint64_t &target, uint64_t candidate)
 
 bool valid_snapshot(const player_snapshot &snapshot)
 {
-	return snapshot.schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION && snapshot.pid > 0 &&
-	       snapshot.revision && snapshot.components &&
+	const bool valid_schema =
+		snapshot.death ? snapshot.schema_version == PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION :
+				 snapshot.schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION;
+	return valid_schema && snapshot.pid > 0 && snapshot.revision && snapshot.components &&
 	       !(snapshot.components & ~PLAYER_CHECKPOINT_COMPONENT_ALL) &&
 	       snapshot.encoded_size_bound &&
 	       snapshot.encoded_size_bound <= PLAYER_SNAPSHOT_MAX_BYTES;
@@ -122,7 +127,22 @@ player_save_apply_result write_job(const queued_job &job)
 	try
 	{
 		if (job.kind == persistence_job_kind::player)
-			return apply_callback(job.snapshot, apply_context);
+		{
+			// Pipeline captures are already journaled. Optional standalone callers
+			// may append here, on the writer rather than the game thread.
+			if (journal_append_callback &&
+			    !journal_append_callback(job.snapshot, journal_context))
+				return { player_save_apply_outcome::retryable_failure, 0, EIO };
+			const auto applied = apply_callback(job.snapshot, apply_context);
+			if (succeeded(applied.outcome) && journal_ack_callback &&
+			    !journal_ack_callback(job.snapshot.pid,
+						  applied.durable_revision ?
+							  applied.durable_revision :
+							  job.snapshot.revision,
+						  journal_context))
+				return { player_save_apply_outcome::retryable_failure, 0, EIO };
+			return applied;
+		}
 		return job.write();
 	}
 	catch (const std::bad_alloc &)
@@ -245,7 +265,7 @@ void writer_main()
 	writer_idle.notify_all();
 }
 
-player_save_submit_result enqueue(queued_job job)
+player_save_submit_result enqueue(queued_job &job)
 {
 	std::lock_guard<std::mutex> lock(worker_mutex);
 	if (!health.running || stop_requested)
@@ -256,7 +276,8 @@ player_save_submit_result enqueue(queued_job job)
 	const persistence_job_owner key = { job.kind, job.owner };
 	const auto found = queued_by_owner.find(key);
 	const bool replace_tail = found != queued_by_owner.end() &&
-				  found->second == std::prev(queue.end());
+				  found->second == std::prev(queue.end()) && !job.snapshot.death &&
+				  !found->second->snapshot.death;
 	const size_t retained_bytes = queued_bytes + (inflight ? inflight->bytes : 0) -
 				      (replace_tail ? found->second->bytes : 0);
 	const size_t pending_jobs = queue.size() + (inflight ? 1 : 0) + results.size();
@@ -282,7 +303,8 @@ player_save_submit_result enqueue(queued_job job)
 		}
 		else
 		{
-			queue.push_back(std::move(job));
+			// Allocate both indexes before moving the caller's retained payload.
+			queue.emplace_back();
 			try
 			{
 				queued_by_owner.insert_or_assign(key, std::prev(queue.end()));
@@ -292,6 +314,7 @@ player_save_submit_result enqueue(queued_job job)
 				queue.pop_back();
 				throw;
 			}
+			queue.back() = std::move(job);
 		}
 		queued_bytes += bytes;
 	}
@@ -373,6 +396,18 @@ bool player_save_worker_init(player_save_apply_fn apply, void *context)
 	return true;
 }
 
+bool player_save_worker_set_journal_hooks(player_save_journal_append_fn append,
+					  player_save_journal_ack_fn acknowledge, void *context)
+{
+	std::lock_guard<std::mutex> lock(worker_mutex);
+	if ((append && !acknowledge) || !queue.empty() || inflight)
+		return false;
+	journal_append_callback = append;
+	journal_ack_callback = acknowledge;
+	journal_context = context;
+	return true;
+}
+
 void player_save_worker_shutdown(void (*interrupt)(void))
 {
 	bool writing = false;
@@ -418,14 +453,24 @@ player_save_submit_result player_save_worker_submit(player_snapshot snapshot)
 	job.owner = static_cast<uint64_t>(snapshot.pid);
 	job.bytes = snapshot.encoded_size_bound;
 	job.snapshot = std::move(snapshot);
-	return enqueue(std::move(job));
+	return enqueue(job);
 }
 
 player_save_submit_result player_save_worker_submit_retained(player_snapshot *snapshot)
 {
-	if (!snapshot)
+	if (!snapshot || !valid_snapshot(*snapshot))
 		return player_save_submit_result::invalid;
-	return player_save_worker_submit(std::move(*snapshot));
+	queued_job job;
+	job.kind = persistence_job_kind::player;
+	job.owner = static_cast<uint64_t>(snapshot->pid);
+	job.bytes = snapshot->encoded_size_bound;
+	job.snapshot = std::move(*snapshot);
+	const auto submitted = enqueue(job);
+	if (submitted != player_save_submit_result::unavailable)
+		return submitted;
+	*snapshot = std::move(job.snapshot);
+	return errno == ESHUTDOWN ? player_save_submit_result::worker_unavailable :
+				    player_save_submit_result::capacity_exceeded;
 }
 
 player_save_submit_result persistence_writer_submit(persistence_job_kind kind, uint64_t owner,
@@ -440,7 +485,7 @@ player_save_submit_result persistence_writer_submit(persistence_job_kind kind, u
 	job.owner = owner;
 	job.bytes = bytes;
 	job.write = std::move(write);
-	return enqueue(std::move(job));
+	return enqueue(job);
 }
 
 size_t player_save_worker_pulse(player_save_completion *completions_out, size_t capacity)
@@ -531,6 +576,9 @@ void player_save_worker_reset_for_tests(void)
 	queued_by_owner.clear();
 	inflight.reset();
 	results.clear();
+	journal_append_callback = nullptr;
+	journal_ack_callback = nullptr;
+	journal_context = nullptr;
 	queued_bytes = 0;
 	stop_requested = false;
 	health = {};

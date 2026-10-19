@@ -37,6 +37,8 @@ prelude = r'''
 #include <unordered_map>
 #include <vector>
 #include <utility>
+struct item_owner_identity { int type = 0; uint64_t id = 0; };
+enum class item_transfer_reason { unknown };
 #define MAX_STRING_LENGTH 65536
 #define FALSE 0
 #define LOWEST_MAT_VNUM 1000
@@ -88,6 +90,8 @@ static bool item_command_object_is_takeable(P_char, P_obj object)
 }
 static bool checkgetput(P_char, P_obj) { return false; }
 static void writeCorpse(P_obj) {}
+static P_obj find_live_item_uid(uint64_t) { return nullptr; }
+static bool item_command_uses_durable_ownership(P_obj) { return false; }
 static void send_to_char(const char *message, P_char) { output += message; }
 '''
 

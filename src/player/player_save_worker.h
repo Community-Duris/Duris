@@ -174,18 +174,13 @@ bool player_save_worker_init(player_save_apply_fn apply, void *context);
 using player_save_journal_append_fn = bool (*)(const player_snapshot &snapshot, void *context);
 using player_save_journal_ack_fn = bool (*)(int pid, player_revision_t revision, void *context);
 
-inline bool player_save_worker_set_journal_hooks(player_save_journal_append_fn append,
-						 player_save_journal_ack_fn acknowledge,
-						 void *context)
-{
-	(void)context;
-	if (append && !acknowledge)
-		return false;
-	return true;
-}
+bool player_save_worker_set_journal_hooks(player_save_journal_append_fn append,
+					  player_save_journal_ack_fn acknowledge, void *context);
 
 void player_save_worker_shutdown(void (*interrupt)(void) = nullptr);
 player_save_submit_result player_save_worker_submit(player_snapshot snapshot);
+// Refused admission preserves every snapshot field for retry by the pipeline.
+// Returns worker_unavailable or capacity_exceeded for retryable refusal.
 player_save_submit_result player_save_worker_submit_retained(player_snapshot *snapshot);
 // Capacity refusal returns unavailable with errno=ENOSPC, preserving admitted jobs.
 player_save_submit_result persistence_writer_submit(persistence_job_kind kind, uint64_t owner,

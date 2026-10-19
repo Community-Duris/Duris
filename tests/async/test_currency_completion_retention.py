@@ -19,6 +19,7 @@ HARNESS = r'''
 #include "persistence/persistence_checkpoint.h"
 #include "economy/auction_houses.h"
 #include "economy/currency_transaction.h"
+#include "economy/economic_event_outbox.h"
 #include "sql/sql_player.h"
 
 #include <algorithm>
@@ -35,6 +36,9 @@ HARNESS = r'''
 
 static P_char online = nullptr, online_other = nullptr;
 P_char character_list = nullptr;
+P_room world = nullptr;
+extern const int top_of_world = -1;
+void economic_event_record(uint32_t, EconomicAction, int64_t, uint32_t, uint32_t, const char *) {}
 static critical_command submitted;
 static critical_submit_result admission = critical_submit_result::accepted;
 static bool pickup_available = false;

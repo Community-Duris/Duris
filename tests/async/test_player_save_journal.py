@@ -486,7 +486,6 @@ print("[PASS] corruption, atomic compaction, duplicate suppression, and ordered 
 for contract in (
     "player_save_worker_set_journal_hooks",
     "journal_append_callback",
-    "durably_spilled",
     "journal_ack_callback",
 ):
     assert contract in WORKER

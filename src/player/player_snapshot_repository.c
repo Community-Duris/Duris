@@ -238,9 +238,13 @@ query_result apply_status(MYSQL *connection, const player_snapshot &snapshot)
 	sql << ",output_preferences=" << quote(connection, snapshot.output_preferences);
 	for (const player_snapshot_integer &row : snapshot.status_integers)
 	{
-		// The wallet is memory's and the save writes it; epics and frags still belong
-		// to their transactions.
-		if (row.field == player_status_field::epics ||
+		// Transaction-owned balances may advance after capture, before publication.
+		// A delayed checkpoint must never overwrite those committed balances.
+		if (row.field == player_status_field::copper ||
+		    row.field == player_status_field::silver ||
+		    row.field == player_status_field::gold ||
+		    row.field == player_status_field::platinum ||
+		    row.field == player_status_field::epics ||
 		    row.field == player_status_field::frags ||
 		    row.field == player_status_field::old_frags)
 			continue;
@@ -314,10 +318,12 @@ query_result apply_replacement_rows(MYSQL *connection, const player_snapshot &sn
 						  << ",0))";
 				      });
 	if (result.ok && (snapshot.components & PLAYER_COMPONENT_TIMERS))
-		result = replace_rows(
-			connection, snapshot.pid, "player_timers", "timer_id,timer_value",
-			snapshot.timers, [](auto &sql, const auto &row)
-			{ sql << row.index << ",FROM_UNIXTIME(NULLIF(" << row.value << ",0))"; });
+		result = replace_rows(connection, snapshot.pid, "player_timers",
+				      "timer_id,timer_value", snapshot.timers,
+				      [](auto &sql, const auto &row) {
+					      sql << row.index << ",FROM_UNIXTIME(NULLIF("
+						  << row.value << ",0))";
+				      });
 	if (result.ok && (snapshot.components & PLAYER_COMPONENT_UNDEAD_SLOTS))
 		result = replace_rows(connection, snapshot.pid, "player_undead_slots",
 				      "circle,slots", snapshot.undead_slots,
