@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Prove container weights remain conserved and normalized across locker sort and load lifecycles."""
 from pathlib import Path
+from _paths import extract_function
 import os
 import subprocess
 import tempfile
@@ -51,197 +52,292 @@ obj_from_obj_idx = handler_c.index("void obj_from_obj(P_obj obj)")
 obj_from_obj_body = handler_c[obj_from_obj_idx:handler_c.index("/* Safe here and nowhere earlier", obj_from_obj_idx)]
 assert "add_weight(obj_from, -(GET_OBJ_WEIGHT(obj)));" in obj_from_obj_body
 
-# 2. Runtime C++ simulation test
-test_cpp_source = r'''
-#include "item/encumbrance_policy.h"
+# Include the complete production weight implementation, including its local helpers.
+weight_function = extract_function("world/handler.c", "void add_weight(P_obj obj, int weight)\n{")
+weight_start = handler_c.index("// A little more complicated than it would first seem.")
+weight_code = handler_c[weight_start:handler_c.index(weight_function) + len(weight_function)]
+
+# Compile production movement and sorting; unrelated world services are stubbed.
+handler = "\n".join(
+    weight_code if signature.startswith("void add_weight") else
+    extract_function("world/handler.c", signature) for signature in (
+    "static bool obj_is_container_type(",
+    "static int obj_prototype_weight(",
+    "static int container_weight_reduction_pct(",
+    "static int sum_direct_contents_weight(",
+    "static void encumbrance_adjust(",
+    "void recalc_container_weight(",
+    "static void resync_reducing_container(",
+    "void add_weight(P_obj obj, int weight)\n{",
+    "bool obj_can_nest(",
+    "bool obj_is_in_container(",
+    "void obj_to_obj(",
+    "static void append_obj_to_list(",
+    "void obj_to_obj_at_end(",
+    "void obj_from_obj(",
+))
+chests = "\n".join(extract_function("item/storage_lockers.c", signature) for signature in (
+    "bool locker_eq_type_fits_for_storage(",
+    "bool ComboChest::ItemFits(",
+    "bool EqApplyChest::ItemFits(",
+    "bool EqAffectChest::ItemFits(",
+))
+harness = r'''
+#include "core/prototypes.h"
+#include "core/utils.h"
+#include "core/files.h"
+#include "item/storage_lockers.h"
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <map>
+#include <string>
+#include <vector>
 
-#define ITEM_CONTAINER 15
-#define ITEM_CORPSE    27
-#define ITEM_OTHER     8
-#define ITEM_HOLD      (1 << 14)
-#define ITEM_WEAR_WAIST (1 << 11)
+void world_activity_object_enter(P_obj) {}
+void world_activity_object_leave(P_obj) {}
+int top_of_objt = 1000;
+static index_data indices[10] = {};
+P_index obj_index = indices;
+static int prototype_weights[] = {0, 5, -3000, 20, 10, 4};
 
-struct MockObj {
-    int type = ITEM_OTHER;
-    int wear_flags = 0;
-    unsigned int extra_flags = 0;
-    unsigned int anti_flags = 0;
-    int weight = 0;
-    int proto_weight = 0;
-    int value[8] = {0};
-    MockObj *contains = nullptr;
-    MockObj *next_content = nullptr;
-    MockObj *inside = nullptr;
-};
-
-#define GET_OBJ_WEIGHT(obj) (((obj)->weight > 0) ? (obj)->weight : 0)
-
-static int sum_direct_contents_weight(MockObj *cont) {
-    int w = 0;
-    for (MockObj *o = cont->contains; o; o = o->next_content) {
-        w += GET_OBJ_WEIGHT(o);
+int real_object(const int vnum) { return vnum; }
+P_obj read_object(int rnum, int) {
+    assert(rnum >= 0 && rnum < 6);
+    P_obj obj = new obj_data{};
+    obj->R_num = rnum;
+    obj->type = rnum == 3 ? ITEM_TREASURE : ITEM_CONTAINER;
+    obj->weight = prototype_weights[rnum];
+    obj->loc_p = LOC_NOWHERE;
+    return obj;
+}
+void extract_obj(P_obj obj, int) {
+    while (obj->contains) {
+        P_obj child = obj->contains;
+        obj->contains = child->next_content;
+        extract_obj(child, TRUE);
     }
-    int pct = cont->value[4];
-    if (pct > 90) pct = 90;
-    if (pct > 0 && w > 0) {
-        w -= (int)((long)w * pct / 100);
+    delete obj;
+}
+void logit(const char *, const char *, ...) {}
+int panic_corruption_int(const char *, const char *, ...) { std::abort(); }
+char *str_dup(const char *) { std::abort(); }
+P_char training_dummy_item_owner(P_obj) { return nullptr; }
+void obj_to_room(P_obj, int) { std::abort(); }
+static void mark_container_dirty(P_obj) {}
+void artifact_update_location_sql(P_obj) {}
+void writeSavedItem(P_obj) { std::abort(); }
+void add_weight(P_obj, int);
+
+LockerChest::~LockerChest() {}
+void LockerChest::FillExtraDescBuf(char *) {}
+ComboChest::~ComboChest() {}
+void ComboChest::FillExtraDescBuf(char *) {}
+
+// PRODUCTION
+
+struct SlotChest : EqSlotChest { SlotChest() : EqSlotChest(ITEM_HOLD, "held", "held") {} };
+struct WearChest : EqWearChest { WearChest() : EqWearChest(1, "warrior", "warrior") {} };
+struct ApplyChest : EqApplyChest { ApplyChest() : EqApplyChest(APPLY_STR, "str", "str") {} };
+struct AffectChest : EqAffectChest { AffectChest() : EqAffectChest(1, 1, "affect", "affect") {} };
+struct TestOreChest : OreChest { TestOreChest() : OreChest("", "ore", "ore") {} };
+struct TestComboChest : ComboChest { TestComboChest() : ComboChest(nullptr) {} };
+
+static void sorting() {
+    SlotChest slot;
+    WearChest wear;
+    ApplyChest apply;
+    AffectChest affect;
+    TestOreChest ore;
+    TestComboChest combo;
+    LockerChest *chests[] = {&slot, &wear, &apply, &affect, &ore, &combo};
+    char name[] = "test_ore_";
+    obj_data obj = {};
+    obj.name = name;
+    obj.wear_flags = ITEM_HOLD;
+    obj.affected[0].location = APPLY_STR;
+    obj.affected[0].modifier = 1;
+    obj.bitvector = 1;
+    for (int type : {ITEM_CONTAINER, ITEM_CORPSE}) {
+        obj.type = type;
+        for (LockerChest *chest : chests) assert(!chest->ItemFits(&obj));
     }
-    return w;
-}
-
-static void add_weight(MockObj *obj, int weight) {
-    if (!obj || !weight) return;
-    obj->weight += weight;
-    if (obj->inside) {
-        add_weight(obj->inside, weight);
+    obj.type = ITEM_TREASURE;
+    for (LockerChest *chest : chests) {
+        assert(chest->ItemFits(&obj));
+        assert(!chest->ItemFits(nullptr));
     }
 }
 
-static void recalc_container_weight(MockObj *cont) {
-    if (!cont || cont->type != ITEM_CONTAINER) return;
-    int shell = cont->proto_weight;
-    int contents = sum_direct_contents_weight(cont);
-    int new_weight = shell + contents;
-    int delta = new_weight - cont->weight;
-    if (!delta) return;
-    add_weight(cont, delta);
-}
-
-static void obj_to_obj(MockObj *obj, MockObj *obj_to) {
-    obj->inside = obj_to;
-    obj->next_content = obj_to->contains;
-    obj_to->contains = obj;
-    add_weight(obj_to, GET_OBJ_WEIGHT(obj));
-    if (obj_to->value[4] > 0) recalc_container_weight(obj_to);
-}
-
-static void obj_from_obj(MockObj *obj) {
-    MockObj *obj_from = obj->inside;
-    if (!obj_from) return;
-    if (obj_from->contains == obj) {
-        obj_from->contains = obj->next_content;
-    } else {
-        MockObj *cur = obj_from->contains;
-        while (cur && cur->next_content != obj) cur = cur->next_content;
-        if (cur) cur->next_content = obj->next_content;
-    }
-    obj->inside = nullptr;
-    obj->next_content = nullptr;
-    add_weight(obj_from, -(GET_OBJ_WEIGHT(obj)));
-    if (obj_from->value[4] > 0) recalc_container_weight(obj_from);
-}
-
-// Chest fit checks
-static bool EqSlotChest_ItemFits(MockObj *obj, unsigned int eqBit) {
-    if (!obj || obj->type == ITEM_CONTAINER || obj->type == ITEM_CORPSE) return false;
-    return (obj->wear_flags & eqBit) != 0;
-}
-
-static bool EqWearChest_ItemFits(MockObj *obj, unsigned int wearClass) {
-    if (!obj || obj->type == ITEM_CONTAINER || obj->type == ITEM_CORPSE) return false;
-    return (obj->anti_flags & wearClass) == 0;
-}
-
-int main() {
-    // 1. Verify chest ItemFits rejects containers even if wear flags match
-    MockObj bag;
-    bag.type = ITEM_CONTAINER;
-    bag.wear_flags = ITEM_HOLD | ITEM_WEAR_WAIST;
-    bag.anti_flags = 0;
-    assert(!EqSlotChest_ItemFits(&bag, ITEM_HOLD));
-    assert(!EqSlotChest_ItemFits(&bag, ITEM_WEAR_WAIST));
-    assert(!EqWearChest_ItemFits(&bag, 1)); // Warrior chest
-
-    // Ordinary item matches
-    MockObj ring;
-    ring.type = ITEM_OTHER;
-    ring.wear_flags = ITEM_HOLD;
-    assert(EqSlotChest_ItemFits(&ring, ITEM_HOLD));
-
-    // 2. Weight-reducing container behavior (50% reduction gathering bag)
-    MockObj gbag;
-    gbag.type = ITEM_CONTAINER;
-    gbag.proto_weight = 5;
-    gbag.weight = 5;
-    gbag.value[4] = 50; // 50% reduction
-
-    MockObj ore1, ore2;
-    ore1.type = ITEM_OTHER; ore1.weight = 20; ore1.proto_weight = 20;
-    ore2.type = ITEM_OTHER; ore2.weight = 20; ore2.proto_weight = 20;
-
-    obj_to_obj(&ore1, &gbag);
-    // 20 lbs with 50% discount = 10 lbs, + 5 shell = 15 lbs
-    assert(gbag.weight == 15);
-
-    obj_to_obj(&ore2, &gbag);
-    // 40 lbs with 50% discount = 20 lbs, + 5 shell = 25 lbs
-    assert(gbag.weight == 25);
-
-    // 3. Hydration recalculation idempotence: simulating SQL load with raw serialized weight
-    // Suppose DB stored gbag.weight = 25 (which included contents)
-    // Upon load:
-    MockObj loaded_gbag;
-    loaded_gbag.type = ITEM_CONTAINER;
-    loaded_gbag.proto_weight = 5;
-    loaded_gbag.weight = 25; // Loaded directly from SQL row[weight]
-    loaded_gbag.value[4] = 50;
-    // Attach children directly (as sql_load does)
-    loaded_gbag.contains = &ore1;
-    ore1.next_content = &ore2;
-    ore2.next_content = nullptr;
-    ore1.inside = &loaded_gbag;
-    ore2.inside = &loaded_gbag;
-
-    // Recalculate container weight
-    recalc_container_weight(&loaded_gbag);
-    assert(loaded_gbag.weight == 25); // Remains exactly 25, no double-counting!
-
-    // If loaded without discount in DB (e.g. 45 lbs stale)
-    loaded_gbag.weight = 45;
-    recalc_container_weight(&loaded_gbag);
-    assert(loaded_gbag.weight == 25); // Normalized cleanly to 25 lbs!
-
-    // 4. Weightless container (Portable Hole with proto_weight = -3000)
-    MockObj hole;
-    hole.type = ITEM_CONTAINER;
-    hole.proto_weight = -3000;
-    hole.weight = -3000;
-
-    MockObj chest;
+static void movement(bool append) {
+    obj_data chest = {};
     chest.type = ITEM_CONTAINER;
-    chest.proto_weight = 0;
-    chest.weight = 0;
-
-    // Putting portable hole into chest adds GET_OBJ_WEIGHT(hole) = 0
-    obj_to_obj(&hole, &chest);
-    assert(chest.weight == 0);
-
-    // Taking hole out of chest leaves chest at 0
-    obj_from_obj(&hole);
-    assert(chest.weight == 0);
-
-    std::puts("locker container weight lifecycle and stability PASS");
-    return 0;
+    chest.R_num = 4;
+    chest.weight = 10;
+    char_data carrier = {};
+    chest.loc_p = LOC_CARRIED;
+    chest.loc.carrying = &carrier;
+    GET_CARRYING_W(&carrier) = 10;
+    P_obj hole = read_object(2, REAL);
+    P_obj item = read_object(3, REAL);
+    auto put = append ? obj_to_obj_at_end : obj_to_obj;
+    for (int i = 0; i < 50; ++i) {
+        put(hole, &chest);
+        assert(chest.weight == 10 && GET_CARRYING_W(&carrier) == 10);
+        put(item, &chest);
+        assert(chest.weight == 30 && GET_CARRYING_W(&carrier) == 30);
+        obj_from_obj(hole);
+        assert(chest.weight == 30 && GET_CARRYING_W(&carrier) == 30);
+        obj_from_obj(item);
+        assert(chest.weight == 10 && GET_CARRYING_W(&carrier) == 10);
+    }
+    extract_obj(hole, TRUE);
+    extract_obj(item, TRUE);
 }
-'''
+
+static void worn_movement(bool append, bool nested) {
+    auto put = append ? obj_to_obj_at_end : obj_to_obj;
+    for (int reduction : {0, 50}) {
+        // Model the four-pound #494 gathering bag, directly worn or inside
+        // another worn container. Preserve eleven pounds of unrelated load.
+        char_data carrier = {};
+        obj_data outer = {};
+        outer.type = ITEM_CONTAINER;
+        outer.R_num = 4;
+        outer.weight = 10;
+        outer.loc_p = LOC_WORN;
+        outer.loc.wearing = &carrier;
+        P_obj bag = read_object(5, REAL);
+        bag->value[4] = reduction;
+        bag->loc_p = LOC_WORN;
+        bag->loc.wearing = &carrier;
+        GET_CARRYING_W(&carrier) = 11 + (nested ? 5 : 2);
+        if (nested) {
+            bag->loc_p = LOC_NOWHERE;
+            put(bag, &outer);
+        }
+        auto check = [&](int count) {
+            const int bag_weight = 4 + count * 2 - count * 2 * reduction / 100;
+            const int worn_weight = (nested ? 10 : 0) + bag_weight;
+            assert(bag->weight == bag_weight);
+            if (nested) assert(outer.weight == worn_weight);
+            assert(GET_CARRYING_W(&carrier) == 11 + worn_weight / 2);
+        };
+        for (int cycle = 0; cycle < 50; ++cycle) {
+            P_obj items[3];
+            for (int i = 0; i < 3; ++i) {
+                items[i] = read_object(3, REAL);
+                items[i]->weight = 2;
+                put(items[i], bag);
+                check(i + 1);
+            }
+            for (int i = 2; i >= 0; --i) {
+                obj_from_obj(items[i]);
+                check(i);
+                extract_obj(items[i], TRUE);
+            }
+        }
+        if (nested) {
+            obj_from_obj(bag);
+            assert(outer.weight == 10 && GET_CARRYING_W(&carrier) == 16);
+        }
+        extract_obj(bag, TRUE);
+    }
+}
+
+static void weight_changes(bool worn) {
+    char_data carrier = {};
+    obj_data obj = {};
+    obj.weight = -3;
+    obj.loc_p = worn ? LOC_WORN : LOC_CARRIED;
+    if (worn) obj.loc.wearing = &carrier;
+    else obj.loc.carrying = &carrier;
+    GET_CARRYING_W(&carrier) = 11;
+    for (int cycle = 0; cycle < 50; ++cycle) {
+        int expected = -3;
+        for (int delta : {2, 2, 1, 1, -1, -1, -2, -2, 4, -4}) {
+            expected += delta;
+            add_weight(&obj, delta);
+            assert(obj.weight == expected);
+            assert(GET_CARRYING_W(&carrier) == 11 + (expected > 0 ? expected : 0) / (worn ? 2 : 1));
+        }
+        assert(obj.weight == -3 && GET_CARRYING_W(&carrier) == 11);
+    }
+    add_weight(nullptr, 1);
+    add_weight(&obj, 0);
+    assert(obj.weight == -3 && GET_CARRYING_W(&carrier) == 11);
+}
+
+static void worn_recalculation() {
+    char_data carrier = {};
+    P_obj bag = read_object(5, REAL);
+    bag->loc_p = LOC_WORN;
+    bag->loc.wearing = &carrier;
+    for (int stale : {7, 1, -3}) {
+        bag->weight = stale;
+        GET_CARRYING_W(&carrier) = 11 + (stale > 0 ? stale : 0) / 2;
+        recalc_container_weight(bag);
+        assert(bag->weight == 4 && GET_CARRYING_W(&carrier) == 13);
+        recalc_container_weight(bag);
+        assert(bag->weight == 4 && GET_CARRYING_W(&carrier) == 13);
+    }
+    extract_obj(bag, TRUE);
+
+    // Loaded children are linked before their serialized container is normalized.
+    bag = read_object(1, REAL);
+    bag->value[4] = 50;
+    bag->contains = read_object(3, REAL);
+    bag->contains->next_content = read_object(3, REAL);
+    for (P_obj child = bag->contains; child; child = child->next_content) {
+        child->loc_p = LOC_INSIDE;
+        child->loc.inside = bag;
+    }
+    for (int stale : {25, 45}) {
+        bag->weight = stale;
+        recalc_container_weight(bag);
+        assert(bag->weight == 25);
+        recalc_container_weight(bag);
+        assert(bag->weight == 25);
+    }
+    extract_obj(bag, TRUE);
+}
+
+int main(int argc, char **argv) {
+    assert(argc == 2);
+    if (!strcmp(argv[1], "sorting")) sorting();
+    else if (!strcmp(argv[1], "insert")) movement(false);
+    else if (!strcmp(argv[1], "append")) movement(true);
+    else if (!strcmp(argv[1], "worn-insert")) worn_movement(false, false);
+    else if (!strcmp(argv[1], "worn-append")) worn_movement(true, false);
+    else if (!strcmp(argv[1], "worn-nested-insert")) worn_movement(false, true);
+    else if (!strcmp(argv[1], "worn-nested-append")) worn_movement(true, true);
+    else if (!strcmp(argv[1], "worn-weight-changes")) weight_changes(true);
+    else if (!strcmp(argv[1], "carried-weight-changes")) weight_changes(false);
+    else if (!strcmp(argv[1], "worn-recalculation")) worn_recalculation();
+    else std::abort();
+    std::printf("locker container weight %s PASS\n", argv[1]);
+}
+'''.replace("// PRODUCTION", handler + "\n" + chests)
 
 build = ROOT / "bin/tests"
 build.mkdir(parents=True, exist_ok=True)
 with tempfile.TemporaryDirectory(prefix="locker-container-weight-", dir=build) as tmp:
     path = Path(tmp)
-    source_path = path / "test.cpp"
+    source = path / "test.cpp"
     binary = path / "test"
-    source_path.write_text(test_cpp_source)
+    source.write_text(harness)
     subprocess.run([
         "g++", "-std=c++20", "-g", "-Wall", "-Wextra", "-Werror",
         "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie",
-        "-I", str(ROOT / "src"), str(source_path), "-o", str(binary),
+        "-I", str(ROOT / "src"), str(source), "-o", str(binary),
     ], check=True)
-    subprocess.run([str(binary)], check=True,
-                   env={**os.environ, "ASAN_OPTIONS": "detect_leaks=1:halt_on_error=1"})
-
-print("all locker container weight lifecycle contract and runtime checks passed")
+    failed = []
+    for case in ("sorting", "insert", "append",
+                 "worn-insert", "worn-append", "worn-nested-insert", "worn-nested-append",
+                 "worn-weight-changes", "carried-weight-changes", "worn-recalculation"):
+        result = subprocess.run([str(binary), case], timeout=20,
+                                env={**os.environ, "ASAN_OPTIONS": "detect_leaks=1:halt_on_error=1"})
+        if result.returncode:
+            failed.append(case)
+    assert not failed, f"locker container weight regressions: {failed}"

@@ -369,7 +369,7 @@ void do_fire(P_char ch, char *argument, int cmd)
 	int i, j, dir = -1, to_hit, room, range, result;
 	int shots, speed_per_shot;
 	double dam = 0;
-	int wallcheck = 0, weight = 0;
+	int wallcheck = 0;
 	int speed, strength, carrow, actual;
 	float delay;
 	char buf[256];
@@ -731,10 +731,7 @@ void do_fire(P_char ch, char *argument, int cmd)
 
 		if (!carrow)
 		{
-			// GET_CARRYING_W(ch) -= GET_OBJ_WEIGHT(quiver);
 			obj_from_obj(missile);
-			// GET_CARRYING_W(ch) += GET_OBJ_WEIGHT(quiver);
-			weight += GET_OBJ_WEIGHT(missile);
 			quiver->value[3]--;
 		}
 
@@ -1069,9 +1066,6 @@ void do_fire(P_char ch, char *argument, int cmd)
 			act(buf, FALSE, ch, 0, victim, TO_ROOM | ACT_TERSE);
 		}
 	}
-
-	// WTH does this do?  Loss of weight of arrow?  What about cursed arrows?
-	GET_CARRYING_W(ch) -= (int)((weight + (weight % 2)) / 2);
 
 	if (should_retaliate && IS_NPC(victim))
 	{
