@@ -29,6 +29,7 @@
 #include "cmd/interp.h"
 #include "core/utility.h"
 #include "core/utils.h"
+#include <algorithm>
 #include <arpa/inet.h>
 #include <ctype.h>
 #include <errno.h>
@@ -3474,7 +3475,7 @@ void nonblock(int s)
         * old/new socket code. 9/18/95  JAB                                                                                                                                                            \
         */
 
-static int proxy_peer_is_trusted(int desc)
+int proxy_peer_is_trusted(int desc)
 {
 	const char *trusted_ip = getenv("DURIS_TRUSTED_PROXY_IP");
 	struct sockaddr_storage peer;
@@ -3504,52 +3505,54 @@ static int parse_proxy_protocol(int desc, char *real_ip, size_t ip_len)
 	int src_port, dst_port;
 	struct in_addr src4, dst4;
 	struct in6_addr src6, dst6;
-	ssize_t n;
-	int i;
 
-	/* peek first 6 bytes to check for "PROXY " */
-	n = recv(desc, buf, 6, MSG_PEEK);
-	if (n < 6 || strncmp(buf, "PROXY ", 6) != 0)
+	const ssize_t n = recv(desc, buf, sizeof(buf) - 1, MSG_PEEK | MSG_DONTWAIT);
+	if (n <= 0)
+		return n == 0 ? -1 : 2;
+	if (memcmp(buf, "PROXY ", std::min<ssize_t>(n, 6)) != 0)
 		return 0;
-
-	/* read full line up to \r\n */
-	for (i = 0; i < (int)sizeof(buf) - 1; i++)
-	{
-		n = recv(desc, &buf[i], 1, 0);
-		if (n <= 0)
-			return 0;
-		if (buf[i] == '\n')
-		{
-			buf[i + 1] = '\0';
-			break;
-		}
-	}
-	buf[i] = '\0';
-	if (i > 0 && buf[i - 1] == '\r')
-		buf[i - 1] = '\0';
+	buf[n] = '\0';
+	char *end = strstr(buf, "\r\n");
+	if (!end)
+		return n == static_cast<ssize_t>(sizeof(buf) - 1) ? -1 : 2;
+	const size_t bytes = static_cast<size_t>(end - buf) + 2;
+	*end = '\0';
 
 	if (sscanf(buf, "PROXY %7s %45s %45s %d %d %c", proto, src_ip, dst_ip, &src_port, &dst_port,
 		   &trailing) != 5)
-		return 0;
+		return -1;
 	if (src_port < 1 || src_port > 65535 || dst_port < 1 || dst_port > 65535)
-		return 0;
+		return -1;
 	if (strcmp(proto, "TCP4") == 0)
 	{
 		if (inet_pton(AF_INET, src_ip, &src4) != 1 ||
 		    inet_pton(AF_INET, dst_ip, &dst4) != 1)
-			return 0;
+			return -1;
 	}
 	else if (strcmp(proto, "TCP6") == 0)
 	{
 		if (inet_pton(AF_INET6, src_ip, &src6) != 1 ||
 		    inet_pton(AF_INET6, dst_ip, &dst6) != 1)
-			return 0;
+			return -1;
 	}
 	else
-		return 0;
+		return -1;
 
-	strncpy(real_ip, src_ip, ip_len - 1);
-	real_ip[ip_len - 1] = '\0';
+	strlcpy(real_ip, src_ip, ip_len);
+	return recv(desc, buf, bytes, MSG_DONTWAIT) == static_cast<ssize_t>(bytes) ? 1 : -1;
+}
+
+// Called only for the first WebSocket input from a trusted proxy. The descriptor
+// is already linked, so the count includes this connection.
+int process_proxy_protocol(P_desc d)
+{
+	char client_ip[46];
+	const int result = parse_proxy_protocol(d->descriptor, client_ip, sizeof(client_ip));
+	if (result != 1)
+		return result;
+	strlcpy(d->host, client_ip, sizeof(d->host));
+	d->proxy_named_client = 1;
+	resolve_descriptor_hostname_async(strip_ansi(d->host).c_str(), d->descriptor);
 	return 1;
 }
 
@@ -3659,6 +3662,7 @@ int new_descriptor(int s, int conn_type)
 	socklen_t size;
 	sockaddr_in6 sock;
 	gnutls_session_t sslses = 0;
+	bool shared_address = false;
 
 	if ((desc = new_connection(s)) < 0)
 		return (-1);
@@ -3729,13 +3733,9 @@ int new_descriptor(int s, int conn_type)
 			memmove(newd->host, mapped, strlen(mapped) + 1);
 		}
 
-		/* check for proxy protocol on websocket connections */
-		if (conn_type == 2 && proxy_peer_is_trusted(desc))
-		{
-			char proxy_ip[46];
-			if (parse_proxy_protocol(desc, proxy_ip, sizeof(proxy_ip)))
-				strlcpy(newd->host, proxy_ip, sizeof newd->host);
-		}
+		// A trusted proxy is shared until its client address arrives in the input
+		// stream. WebSocket input handles fragmented PROXY headers after accept.
+		shared_address = proxy_peer_is_trusted(desc);
 
 		/*
 		 * things got ugly, 20k+ sites, so, split it into 2 files, a
@@ -3769,7 +3769,10 @@ int new_descriptor(int s, int conn_type)
 	newd->descriptor = desc;
 	// newd->connected = CON_HOST_LOOKUP;
 	newd->wait = 1;
-	resolve_descriptor_hostname_async(strip_ansi(newd->host).c_str(), desc);
+	// WebSocket proxy metadata will supply the client address on input. Looking
+	// up the shared proxy now would compete with that client's bounded DNS worker.
+	if (!shared_address || conn_type != 2)
+		resolve_descriptor_hostname_async(strip_ansi(newd->host).c_str(), desc);
 	*newd->host2 = '\0';
 	newd->prompt_mode = FALSE;
 	*newd->buf = '\0';

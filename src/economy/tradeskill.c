@@ -2483,6 +2483,10 @@ void do_refine(P_char ch, char *arg, int /*cmd*/)
 		}
 	}
 
+	char mat_name[MAX_INPUT_LENGTH];
+	strlcpy(mat_name, (obj && obj->short_description) ? obj->short_description : "material",
+		sizeof(mat_name));
+
 	i = 2;
 	for (t_obj = ch->carrying; t_obj; t_obj = nextobj)
 	{
@@ -2498,7 +2502,7 @@ void do_refine(P_char ch, char *arg, int /*cmd*/)
 				ch);
 			i--;
 		}
-		if (o && (input_vnum > 193) && (input_vnum < 234))
+		else if (o && (input_vnum > 193) && (input_vnum < 234))
 		{
 			o--;
 			orechance = input_vnum - 194;
@@ -2515,20 +2519,20 @@ void do_refine(P_char ch, char *arg, int /*cmd*/)
 		if (plat)
 		{
 			act("&+W$n &+Ltakes their &+Wcoins&+L and begins to &+rh&+Rea&+Yt &+Lit in the &+yforge&+L.\r\n"
-			    "&+W$n &+Lgently removes the &+rm&+Ro&+Ylt&+Re&+rn &+ymetal &+Land starts to spread it about their $ps&+L, which &-L&+Rshatters&n &+Lfrom the intense &+rheat&+L!&N",
-			    TRUE, ch, obj, 0, TO_ROOM);
+			    "&+W$n &+Lgently removes the &+rm&+Ro&+Ylt&+Re&+rn &+ymetal &+Land starts to spread it about their $T&+L, which &-L&+Rshatters&n &+Lfrom the intense &+rheat&+L!&N",
+			    TRUE, ch, nullptr, mat_name, TO_ROOM);
 			act("&+LYou &+Ltake your &+Wcoins&+L and &+rh&+Rea&+Yt &+Lit in the &+yforge&+L.\r\n"
-			    "&+LYou &+Lgently remove the &+rm&+Ro&+Ylt&+Re&+rn &+ymetal &+Land start to spread it about your $ps&+L, which &-L&+Rshatters&n &+Lfrom the intense &+rheat&+L!&N",
-			    FALSE, ch, obj, 0, TO_CHAR);
+			    "&+LYou &+Lgently remove the &+rm&+Ro&+Ylt&+Re&+rn &+ymetal &+Land start to spread it about your $T&+L, which &-L&+Rshatters&n &+Lfrom the intense &+rheat&+L!&N",
+			    FALSE, ch, nullptr, mat_name, TO_CHAR);
 		}
 		else
 		{
 			act("&+W$n &+Ltakes their &+yore&+L and begins to &+rh&+Rea&+Yt &+Lit in the &+yforge&+L.\r\n"
-			    "&+W$n &+Lgently removes the &+rm&+Ro&+Ylt&+Re&+rn &+yore &+Land starts to spread it about their $ps&+L, which &-L&+Rshatters&n &+Lfrom the intense &+rheat&+L!&N",
-			    TRUE, ch, obj, 0, TO_ROOM);
+			    "&+W$n &+Lgently removes the &+rm&+Ro&+Ylt&+Re&+rn &+yore &+Land starts to spread it about their $T&+L, which &-L&+Rshatters&n &+Lfrom the intense &+rheat&+L!&N",
+			    TRUE, ch, nullptr, mat_name, TO_ROOM);
 			act("&+LYou &+Ltake your &+yore&+L and &+rh&+Rea&+Yt &+Lit in the &+yforge&+L.\r\n"
-			    "&+LYou &+Lgently remove the &+rm&+Ro&+Ylt&+Re&+rn &+yore &+Land start to spread it about your $ps&+L, which &-L&+Rshatters&n &+Lfrom the intense &+rheat&+L!&N",
-			    FALSE, ch, obj, 0, TO_CHAR);
+			    "&+LYou &+Lgently remove the &+rm&+Ro&+Ylt&+Re&+rn &+yore &+Land start to spread it about your $T&+L, which &-L&+Rshatters&n &+Lfrom the intense &+rheat&+L!&N",
+			    FALSE, ch, nullptr, mat_name, TO_CHAR);
 		}
 		return;
 	}

@@ -1773,6 +1773,7 @@ struct descriptor_data
 
 	/* WebSocket support */
 	int websocket;
+	int proxy_named_client; /* a PROXY header gave host; X-Forwarded-For may not change it */
 	int ws_state;
 	int ws_handshake_done;
 	int ws_error_code;

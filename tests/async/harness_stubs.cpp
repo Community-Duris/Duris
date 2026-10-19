@@ -43,6 +43,10 @@ HARNESS_STUB bool persistence_log_submit(const char *)
 	return true;
 }
 HARNESS_STUB void sql_log(P_char, const char *, const char *, ...) {}
+HARNESS_STUB int process_proxy_protocol(P_desc)
+{
+	return 0;
+}
 HARNESS_STUB void persistence_alert(int, const char *, const char *, const char *, const char *,
 				    const char *, const char *, ...)
 {
