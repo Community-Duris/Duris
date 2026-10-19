@@ -14,6 +14,7 @@ from _paths import ROOT, extract_function, rel
 PRELUDE = r'''
 #include "core/utils.h"
 #include "core/prototypes.h"
+#include "world/handler.h"
 #include "classes/necromancy.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
@@ -101,7 +102,7 @@ P_char find_player_by_pid(int pid)
             return ch;
     return nullptr;
 }
-void obj_to_char(P_obj obj, P_char ch)
+obj_to_char_result obj_to_char_checked(P_obj obj, P_char ch)
 {
     assert(OBJ_NOWHERE(obj));
     // Execute the production publication guard; only the world-list mutation
@@ -116,6 +117,11 @@ void obj_to_char(P_obj obj, P_char ch)
     obj->loc.carrying = ch;
     obj->next_content = ch->carrying;
     ch->carrying = obj;
+    return obj_to_char_result::placed;
+}
+void obj_to_char(P_obj obj, P_char ch)
+{
+    (void)obj_to_char_checked(obj, ch);
 }
 void obj_from_char(P_obj obj)
 {
@@ -763,7 +769,7 @@ int main()
 
 
 def main() -> int:
-    to_char = extract_function("handler.c", "void obj_to_char(")
+    to_char = extract_function("handler.c", "obj_to_char_result obj_to_char_checked(")
     guard = to_char[to_char.index("// A persisted generic item"):
                     to_char.index("if (ch->carrying &&")]
     harness = "\n".join([PRELUDE.replace("PUBLICATION_GUARD", guard), extract_function(
