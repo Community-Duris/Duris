@@ -1,0 +1,3927 @@
+{
+  "source_commit": "c500ac51b8cd26540943257e7ca4e9807263ef74",
+  "snapshot_date": "2026-10-22",
+  "includes_uncommitted_research": true,
+  "files": [
+    {
+      "path": "docs/design/quest-story-followups/ACCESS_AND_DELIVERY_CHAINS.md",
+      "sha256": "7f935bd05c64e351c921eca27cea606c88266b06ff04a386d570ab23cff803dc"
+    },
+    {
+      "path": "docs/design/quest-story-followups/AEON_GH_AUDIT_REVIEW.md",
+      "sha256": "f671d22ec8ab7ec80a1f6909f6fe6f6acdf0d3129a3527d340bd506fee4f57e0"
+    },
+    {
+      "path": "docs/design/quest-story-followups/AFTERLIFE_GH_AUDIT_REVIEW.md",
+      "sha256": "234d55967300be8bc1273c5d0e850d720c12c9d087038b45270ae31aa9560429"
+    },
+    {
+      "path": "docs/design/quest-story-followups/AFTERLIFE_OP2_AUDIT_REVIEW.md",
+      "sha256": "278f35c498be12c7deb1f67183dde57f2deab84679ec460f753d259758270281"
+    },
+    {
+      "path": "docs/design/quest-story-followups/AFTERLIFE_OP_AUDIT_REVIEW.md",
+      "sha256": "73b407b7d2680ac5607d0cfa88777b12a53a5c0aecc821566c9ec1ee07add076"
+    },
+    {
+      "path": "docs/design/quest-story-followups/AIRSHIPGRAVE_AUDIT_REVIEW.md",
+      "sha256": "e8b26988b371778c08e21c81220b3ef944ae7760a68c8d14f8cf3b5478f5196c"
+    },
+    {
+      "path": "docs/design/quest-story-followups/AKO_AUDIT_REVIEW.md",
+      "sha256": "ca92f506ea649f29a92caea90af7415646eca20c758f76f8a69f7ed9ad256621"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ALATORIN_AUDIT_REVIEW.md",
+      "sha256": "7dcbbce4f002f410823f5fd5c0ddc094f7dc009c42eca8354eac44c4c5575f4f"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ALATORIN_OBJECTS_AUDIT_REVIEW.md",
+      "sha256": "e9cde31e8e51105b5fd1617dc2366775cffa92fc4bc81486b994f03fdd14eee6"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ALTAR_OF_THE_FIRESWORN_AUDIT_REVIEW.md",
+      "sha256": "a776f7cf622cf180c5a827bdf5a202a0fdddcd62474aa0d3f6663b7804cdf7e1"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ALTERIAN_MOUNTAINS_AUDIT_REVIEW.md",
+      "sha256": "5c6fd795df253bd64aefd148549e27ae423a6cbe966306c30d2d43ac24f366e6"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ALTERIAN_WILDERNESS_AUDIT_REVIEW.md",
+      "sha256": "2d9fea6bede849ad329ea94bf4cf18bedcc4bf9638cb78e2afa81bb9bc72f48e"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ANCIENTB_AUDIT_REVIEW.md",
+      "sha256": "2895df90bfc7989bd73fb08c5a26cd86296a16877674cbc985be14e8efaf8e8d"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ANTS_AUDIT_REVIEW.md",
+      "sha256": "4d4756c72a7243bf6c655cf99eb05fe5122a294d3637f4430a4483222cb71388"
+    },
+    {
+      "path": "docs/design/quest-story-followups/AOD_GH_AUDIT_REVIEW.md",
+      "sha256": "a7bdc30759c9913ec5aa2f4457b894e4928b91c384d6de73538a390c9d4d1b21"
+    },
+    {
+      "path": "docs/design/quest-story-followups/AOPAL_AUDIT_REVIEW.md",
+      "sha256": "a06585c3a230d582bf9ba418edd478311f836fa04735f01d1928de4c195017d5"
+    },
+    {
+      "path": "docs/design/quest-story-followups/APOCALYPSE_CASTLE_AUDIT_REVIEW.md",
+      "sha256": "c5642f72363dd32f7b86146410b3b4469a1628249a87094b55bc75eb9a7ed8ad"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ARACGUIL_AUDIT_REVIEW.md",
+      "sha256": "24e54e38aeaeeca819787446db730d6353ff536c9e49457d1e0f071288e72233"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ARAC_WEB_AUDIT_REVIEW.md",
+      "sha256": "657bcdf9429fab9b2288980d0f6d1f69ae47a8bf48d8a046f25a88b2739db68e"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ARAC_WEB_BUILDER_QUESTIONS.md",
+      "sha256": "30412713a9586557e5567a7236863255c1a049c360a24c65c64c448fb7867445"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ARAC_WILD_AUDIT_REVIEW.md",
+      "sha256": "3e3e9fd81da6f6599a0add6cde9a6ec71f243a8e4e52aaa4f670837386c5dc54"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ARCANEUM_AUDIT_REVIEW.md",
+      "sha256": "4bc419714abb2e8279388ebd85c78104db871b6328df32d3e177b1d4c2ac00de"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ARCIUM_AUDIT_REVIEW.md",
+      "sha256": "baccb4aeb886266b895ba37cd6cdbd84d660eae91de320815c57d117e4d6553a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ARDGRAL_AUDIT_REVIEW.md",
+      "sha256": "40334e3d3fab461ec6f10e9655c8d3bf392848335349bbafb25faa3a04302a00"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ARENA_AUDIT_REVIEW.md",
+      "sha256": "5ead8ad9aa30e8670bc59a515a1238b57cf2b3348d32838eaeb522bbc99461d7"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ASHRUMITE_AUDIT_REVIEW.md",
+      "sha256": "dd98760aba87a91139f85fedd139423660e8bc0e14a1f0e2f1860ee9ccd11f41"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ASTRAL_AREAS_AUDIT_REVIEW.md",
+      "sha256": "8cc96c1505fb3b6debaf5b8ec67495cd65bf37e157cebad123af5c98a0657254"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ASTRAL_AUDIT_REVIEW.md",
+      "sha256": "e37f6fc041bdbf95e1b75ba485a38b6b0936a97f9df9a9f40cf6d763a553bef9"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ASTRAL_MAIN_AUDIT_REVIEW.md",
+      "sha256": "39a4a786b657410c801e51dc461e2b587034ffbe4100c30700fb4e87ae405c31"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ASTRAL_TIAMAT_AUDIT_REVIEW.md",
+      "sha256": "616c12ec003122a76062f52ac626e927017bd7e0bd7f901333cf2d98e17cf3e7"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ASUNWA_AUDIT_REVIEW.md",
+      "sha256": "bfb62243148db250d28f28ce1492c9795392516d91fba4cbe1a9c74e80d33418"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ASYLUM_AUDIT_REVIEW.md",
+      "sha256": "8d9555e749b10e83313d4d0bec1b1c01f4299324896a411e5558c8e5e50242ac"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ATTIC_CANDIDATE_DEPENDENCY_REGISTER.csv",
+      "sha256": "a1719f987663db2c26907f894fe69d9dd0458c04b4624dbb476394ab308535d1"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ATTIC_MIGRATION_PLAN.md",
+      "sha256": "1ee4846f4de0d92603a940e4f4f6d619199f0d0c04266d77315c119b2b9c3562"
+    },
+    {
+      "path": "docs/design/quest-story-followups/AVERNUS_AUDIT_REVIEW.md",
+      "sha256": "deeb762d0dabbb6e5f2c1849b7c24a654dc8312284dd2e4f2569205463ea0eeb"
+    },
+    {
+      "path": "docs/design/quest-story-followups/AZHURAL_AUDIT_REVIEW.md",
+      "sha256": "bfbaa88e6a8c56dc70fdfebf3619cbdaefa8a771fa3c0cf53db37bbd4c810a0b"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BAHAMUT_AUDIT_REVIEW.md",
+      "sha256": "f88489ce566ce6f9dd989ed7f0bbd32e9e5c552addf30d32df0246924743186c"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BANDIT_CAMP_AUDIT_REVIEW.md",
+      "sha256": "38459832e3d10e595817bbd268dab3579e28ddb46e87804c760be06fd88010ce"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BANDIT_CANYONS_AUDIT_REVIEW.md",
+      "sha256": "da0ac512f1bb4483e9a8a26a086d0df8e04f031dc8a067d59d71c88577670710"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BAROVIA2_AUDIT_REVIEW.md",
+      "sha256": "d18860aef8cfe66bb02797547d7e16437a9ac6cfa584d97dd8bdd81f895dd13f"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BASIN_WASTES_AUDIT_REVIEW.md",
+      "sha256": "f7c50452c60b91a47d8d19c6d23ae5d0452edcf1d3d1e3bc90ef189302ed4c99"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BASTARD_AUDIT_REVIEW.md",
+      "sha256": "1e7354c001c6abd4c6fa5e17b7199845a5474795b199ea4dee782fec42b86188"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BASTINE_AUDIT_REVIEW.md",
+      "sha256": "b5051b9ca531c84bd415037ac0b66436b8b6fe0dbbf02cc4a1598e86a893b7b4"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BATTLEFIELD_AUDIT_REVIEW.md",
+      "sha256": "63b04a6e2b0672bb48f6ed01c6b214e39bd2a18e636e2f8b9b3c18e76cb76ed2"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BB_GH_AUDIT_REVIEW.md",
+      "sha256": "eedcaa4bb6b4885aca4f994d0c874903574ff586caf8cb7c9566c4ea6dc61a52"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BCTDL_AUDIT_REVIEW.md",
+      "sha256": "cec00896718beea98eeff02304b31e91033947175064e8dfb47096a87171c7b8"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BGTK_AUDIT_REVIEW.md",
+      "sha256": "01b2e2324f5aa357c0885ed11764188157df60ae3ff00d4fa8f38994d9755a65"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BGTK_BUILDER_QUESTIONS.md",
+      "sha256": "9f510657985de4a7f31c1cb50e472e36aca4d79748a1278b70ae79b98bf044fc"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BLACKPEARL_AUDIT_REVIEW.md",
+      "sha256": "c32c1232a7b2d9a2d202457ecc1b0f705adede53ff1c4a1de35c3720fab8e339"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BLACK_TUNNELS_AUDIT_REVIEW.md",
+      "sha256": "f5cf1386007beb8d3437c7952007b8225a369f193d9f1082d50b5fa33c1914e6"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BLOODY_PLAINS_AUDIT_REVIEW.md",
+      "sha256": "86669496ee5206daeaa7e30827854c384bb18d8784e476df183365ab4b26eb83"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BOGENTOK_AUDIT_REVIEW.md",
+      "sha256": "bfa9e2514c39dd6912a3b05392cf78fa8f389325b9e955e0afaea968605d69fc"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BORDELLO_AUDIT_REVIEW.md",
+      "sha256": "19c31955433dda1fdb45c364a6791ee1a496a15d47c091e56dae881aea1c6ace"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BRADDISTOCK_MANSION_AUDIT_REVIEW.md",
+      "sha256": "5eba73e86edd8f1e3a322fdfcb74debcc3a8fd8886c7f34b62634c940af2ec61"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BRADDISTOCK_ZONE13_AUDIT_REVIEW.md",
+      "sha256": "53959a2c4d2c27e0fa18b102908054e736cb2a2f5881b110e6007ea77dfe7bd9"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BRASS_AUDIT_REVIEW.md",
+      "sha256": "3c27e74cca60a5bd0e6191d13d969661ee2033969ed271369035ef29b7f5ee80"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BRASS_OLD_1_AUDIT_REVIEW.md",
+      "sha256": "1186f2c847bfef6334fa5e381617444bc6ccb2c4f52c1942d16ccce1473f6900"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BRASS_OLD_1_BUILDER_QUESTIONS.md",
+      "sha256": "0ffc0f2128dfc31f44da8767f06ecb49e069a03ff74c462cd1c85948ef3a0e5c"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BRASS_OLD_2_AUDIT_REVIEW.md",
+      "sha256": "78ecee2e452cffbafac731b364732094dd614a2bcb32566e724833bc447bc3c9"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BRASS_OLD_2_BUILDER_QUESTIONS.md",
+      "sha256": "fbf1c4082134ebd77cfb9e998d5a2c35797cdae7bf4ba1d91cc84a8cee6aa5d6"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BRASS_OLD_3_AUDIT_REVIEW.md",
+      "sha256": "dd5a4fd7c71269ba43fb8677d5a85a6076a21c4a9c26d8fd864e845a187ccdf5"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BRASS_OLD_3_BUILDER_QUESTIONS.md",
+      "sha256": "c17b407026edbaa608122646d97414f4055dd7389779751e55fb95764a61253c"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BREALE_AUDIT_REVIEW.md",
+      "sha256": "04f6b658bd168ba2f96d42676346971719a4681abfb29f7134ce4f896bbeab9d"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BRIMEFORGE_AUDIT_REVIEW.md",
+      "sha256": "2d4d663888fee02a5c87692561cb26ecd9e241908dbd12401e80f78f699a1ffe"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BSGHOP_AUDIT_REVIEW.md",
+      "sha256": "a98c36b91266856607fe2413c9e10afe751f132d223f769115ef30cd5a6318b4"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BSGHOP_BUILDER_QUESTIONS.md",
+      "sha256": "585d1d49574ea5550d649dbd20254ea9ff7825b119fe576130fe36d1f96946e5"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BS_AUDIT_REVIEW.md",
+      "sha256": "e34f93c2e06268fa87730a7e72c199a0c0c3968183463af15f99d2949d83b971"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BUGENTOLEN_AUDIT_REVIEW.md",
+      "sha256": "f65083752c1d0d5c255449ecfa1c89578e646efd6ee19ecdda1e5e7eb1a87937"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BUGGER_AUDIT_REVIEW.md",
+      "sha256": "bb9db2056320205e577cfbe2b51705b0cbfb5e4743e7df1e1cfeb8564cddb603"
+    },
+    {
+      "path": "docs/design/quest-story-followups/BUILDINGS_AUDIT_REVIEW.md",
+      "sha256": "fcbc5077ad99038e271f27ab2c9e4b14043b31e52175e75cd775e0ea11c74a04"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CABAL_GUILDHALL_AUDIT_REVIEW.md",
+      "sha256": "23099e53c296b46fa78afa7005ce6a0fda3c0b6dc138296b6a5d790b21c1991f"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CABAL_GUILDHALL_BUILDER_QUESTIONS.md",
+      "sha256": "68e517153b9c1836ed02ad946d8e4d9fd1d274382610f28ace6068bdbdce9e25"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CABAL_HALL_AUDIT_REVIEW.md",
+      "sha256": "4f455524be63971467fa2affa3926c4d56d39389a2df5e453017b2a5b3093ca7"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CABAL_HALL_BUILDER_QUESTIONS.md",
+      "sha256": "90a3f1245c2294e40fa34f041fad636d83283d274363c8e4abba8df4fe81483c"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CAERTANNAD_AUDIT_REVIEW.md",
+      "sha256": "f5b53f0b3b569264e32dafe3817bad1532fae7e1fd31d0fb810cd5027692d4c1"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CASINO_AUDIT_REVIEW.md",
+      "sha256": "ecfadc52f5fc820ca7f5e3b437916ec7d05ec5cdbe610bf1e64f6dcdead4cd1a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CASINO_BUILDER_QUESTIONS.md",
+      "sha256": "e2ca15d680fbad8dc612cbb2fec519b74879e7112e616cba745970bb38df59cf"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CASTLE_AUDIT_REVIEW.md",
+      "sha256": "ced555e147c21b1f815e3637a777b4f3d83b0cb8537949392a847171308ffe31"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CAVES_OF_MT_SKELENAK_AUDIT_REVIEW.md",
+      "sha256": "cc16c1c47e8b98e6bfddbe220b775e76b52921c639ce1db33f7efb9c21b5e0ed"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CBL_HALL_AUDIT_REVIEW.md",
+      "sha256": "b9112d880330f09ed571d22e9dbe8cddad7e4f376609e618c13f611d89579791"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CBL_OUTPOST2_AUDIT_REVIEW.md",
+      "sha256": "11bb0d30e68a84549601829d12ea4f7265b50c17c9d2377b6a411eb6aecce26b"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CBL_OUTPOST2_BUILDER_QUESTIONS.md",
+      "sha256": "86fb3e9f466212023a7e9bd8664d8158b8ff67a0db39e5ff552ed2586a2f9b1e"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CBR_HALL_AUDIT_REVIEW.md",
+      "sha256": "c07e6cf605eff69fb78032df904d6df3491fb2ef52a6ec47428fcc133952ee6d"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CBR_HALL_BUILDER_QUESTIONS.md",
+      "sha256": "3583db1cd34aff225d70398d93ef30349eab536c23e0e43aecacf988cbb33e6b"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CELESTIA_AUDIT_REVIEW.md",
+      "sha256": "9b80ec5584cd102a3e83365a5dd7d9109acd8cd47db2d5c1dfa8ec5135d354bf"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CENTAUR_VILLAGES_AUDIT_REVIEW.md",
+      "sha256": "de563d25331fcc86baab34f7648c635dcf7d1c2d8db1561da90b6135bc96bcb5"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CEOTHIA_AUDIT_REVIEW.md",
+      "sha256": "3710664a572fbbe9daf1d2728bcaa1514a1fe37a624a38b88ae8182330252e49"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CHARING_AUDIT_REVIEW.md",
+      "sha256": "19d2a0d130ebd1c89c0957af39c36d210dad289df93d2b9cf07b93608c5d0b80"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CHARING_STORY_REVIEW.md",
+      "sha256": "c7d81bad7f629d9b5d663164f18f8ac8683cd5d577135963fd3a8c48b972705f"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CHURCH_AUDIT_REVIEW.md",
+      "sha256": "f98fe25de5adbbb794436c05ecc957b55dc867154e7688fc7264f5a5d5cc6b41"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CIMMERIAN_NOMAD_ENCAMPMENT_AUDIT_REVIEW.md",
+      "sha256": "3618e2560d5c092387d079c40c7f8c0a510a7b5c19d7132bb73372e7ba96c6ca"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CIRCLEGH_AUDIT_REVIEW.md",
+      "sha256": "fbad56f0eaf5c3bf544be77e5baa7478dab9a3671ec75027bb13af62a96c6cec"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CIRCLEGH_BUILDER_QUESTIONS.md",
+      "sha256": "043444a60f6fceffeeab9b94ffd4688e33a4c5d2a56ec07bfb8c66d9054d83e5"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CIRCLE_OP_AUDIT_REVIEW.md",
+      "sha256": "d322f79eaecdbf0de8a3153787672f6e6fe338390a01294691b245e690f47dd3"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CIRCLE_OP_BUILDER_QUESTIONS.md",
+      "sha256": "78535282e1b524fd2bb1866d78bc04b8dd00073ef4fca4c650d6a24912ec5e03"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CITADEL_AUDIT_REVIEW.md",
+      "sha256": "ac0c1f5144a42fc0c615227c42a3dadaaa98a4f4125a49d30cf5092ab66e7cdb"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CITYRUIN_AUDIT_REVIEW.md",
+      "sha256": "84b0d50e6f9a4094723bdc8ab98220d281625a0ea78d12fc8eeb2d72a3c6ce06"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CITYRUIN_STORY_REVIEW.md",
+      "sha256": "3e5997814f11876a8051e532d0498c1e9abaee01bccd77ba193a75b6604ed93a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CLOISTER_AUDIT_REVIEW.md",
+      "sha256": "66d354a678614d5b9fd0ce7014500609453f4280155981f9c112f46af4d8eb91"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CLOUD_GIANT_KINGDOM_AUDIT_REVIEW.md",
+      "sha256": "9de24a24e42d2b026758fd5df61a5eb33c44c05f634edff75c964592d8265569"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CLWCVRN_AUDIT_REVIEW.md",
+      "sha256": "8a5b6ca0639b56243dc8e882ff1b547063c487130d5690e9b15adca34e04f6ee"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CONNECTORZONES_AUDIT_REVIEW.md",
+      "sha256": "0d3413b5a4387e96be5b639fa8281da1ad559a5e6bb3d3c4e485c11de3e7dd7e"
+    },
+    {
+      "path": "docs/design/quest-story-followups/COSMIC_AUDIT_REVIEW.md",
+      "sha256": "fbcf475c7820476401f576963694031fa5f0a0de4868d1f43fcfb76344ad09ab"
+    },
+    {
+      "path": "docs/design/quest-story-followups/COURT_AUDIT_REVIEW.md",
+      "sha256": "98da69d508c455b8d4840aa6591f786fbfa974a40b704bc439f28e32e9597703"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CRAKKARO_AUDIT_REVIEW.md",
+      "sha256": "90c7aa4414573caf04174f2e331099c91617beaa6139ac9c94026823daec0fe6"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CRIPT_AUDIT_REVIEW.md",
+      "sha256": "ec1fedb218ffe82dd8ca614832c511eba4f8a5629237d1901144fe7dc05360b1"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CRIPT_BUILDER_QUESTIONS.md",
+      "sha256": "d8bccbba0e02d8a760e9defa1bdb160107632783a0f763d1e54e78915289ccbd"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CRYSTALSPYRE_MOUNTAINS_AUDIT_REVIEW.md",
+      "sha256": "bf64e40432dba78a0de73641382ea8a5f7dd386cc26e24c545c1c0b2c3eab53b"
+    },
+    {
+      "path": "docs/design/quest-story-followups/CYRICTUNNEL_AUDIT_REVIEW.md",
+      "sha256": "c4eb0dd29395484b1dba28920c75f85671a9f1e973618e0dbb86ec9c85bf7181"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DALVIK_AUDIT_REVIEW.md",
+      "sha256": "6589a515029625e058a9978a0a0ff85ce7c8de8ccd8b1c1cf33870138f64d0b3"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DALVIK_BUILDER_QUESTIONS.md",
+      "sha256": "85abac417c8d0883883ad6ae9b0f7e0fbb7d0eb46fd241c2527d71e38b72400b"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DARKFALL_AUDIT_REVIEW.md",
+      "sha256": "ca60e7961f7cd00c8690facae9c9272d949f362049346246d3c4d821de5c66fa"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DARKOP_AUDIT_REVIEW.md",
+      "sha256": "1145cb3c3daa592d8f931a74d128c64ef99d78098642d41c651a1493de239be7"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DARKOP_BUILDER_QUESTIONS.md",
+      "sha256": "20074515bcc90cc2e7873a85a9389e0f8602cf2ecf659d650cd851d86ff353ef"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DARK_AND_TWISTED_WOOD_AUDIT_REVIEW.md",
+      "sha256": "d16606d37c9f912a2a255c31970ed8673daf4ae00e844eb78ff8b799e2bfbf6b"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DARK_AUDIT_REVIEW.md",
+      "sha256": "b19ad34aa78ebb6f3e98dbb300d11caa3f68f13968eadaaf554b26221239f2b3"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DARK_BUILDER_QUESTIONS.md",
+      "sha256": "33b767e6369490518c3d3781fbea436aa0db670e328b8c34a3d8040542f04c24"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DARK_FOREST_AUDIT_REVIEW.md",
+      "sha256": "408449ddfac7ce6fabff8b59f560487c2cc884fb8a884b8b71aac295bb0633b2"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DARK_GH_AUDIT_REVIEW.md",
+      "sha256": "bfe6f94df3da890d7bde7c81625a98c380afa8af8cd1c3ee2b322cbf4c848ba8"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DARK_GH_BUILDER_QUESTIONS.md",
+      "sha256": "d08b23ae95acae591feed37a760987d8c51461ab863c6e3b7cddd780825a4111"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DDGUILD_AUDIT_REVIEW.md",
+      "sha256": "752e6b26fd113e2d6071ebb7f0573cb8fba0224811354df51138ef4d99e8b321"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DDGUILD_BUILDER_QUESTIONS.md",
+      "sha256": "48178ea0b03be811a807715290574f65d93da6026250b7aa8214420d9b2ea5e0"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DEEP_RAVINE_AUDIT_REVIEW.md",
+      "sha256": "8c79bbb4278a63bb64fdd7c3aec15f34539313147b2f22967f0eca2de799d4b4"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DELWYN_AUDIT_REVIEW.md",
+      "sha256": "39ff7f12897c8f8b723f0b69136e9e747ff44ef98ba9bfb8112144dbef0e19fd"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DESERT_CITY_AUDIT_REVIEW.md",
+      "sha256": "cff537c3fc231056d620e74ca5442444bfcee0538756948d4886535846bea672"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DESOLATE_AUDIT_REVIEW.md",
+      "sha256": "5e9da8d14babb8ebbf12a2b988784ec56c24d1cc1a758871559d2d7f0734c1dd"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DESOLATE_UNDER_FIRE_AUDIT_REVIEW.md",
+      "sha256": "2db2bbe624dee1d70a7975378f735af1f7b1a23b40e18821b4809e400f847d75"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DIRKN_AUDIT_REVIEW.md",
+      "sha256": "0c769d369cd344df56bd83cf2cc1c64ffb038062ea25dc2b14fafe04b47733cf"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DIVHOME_AUDIT_REVIEW.md",
+      "sha256": "8c99fabb4674856dafda148d6ecfb54818cda5846dde1868a43132abfb1dce90"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DLSC_AUDIT_REVIEW.md",
+      "sha256": "3abf86f8d186ace75654828530cbd0ece9334ef0bf3d23faa254b8fd2af51ab7"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DRACOPIT_AUDIT_REVIEW.md",
+      "sha256": "32d977cc28d7feaf014352d6272dad2804aefe1dbf43d10aeac8ecfc93f7c5b2"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DRAGONNIA_AUDIT_REVIEW.md",
+      "sha256": "acca140307bdde5fd736c94c60f58b5e902d3a0cd01cbdf7714f993600528f4e"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DRAG_AUDIT_REVIEW.md",
+      "sha256": "74e6b879cf5d586a22a8ee0a07c8d6bf84e7e22e3c8e779c62277ed175da66c7"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DRAG_BUILDER_QUESTIONS.md",
+      "sha256": "31fdc5a60dfa7558101fea5e89a37fd37deaf9385c7b04b1832afacf1d20100e"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DRANQUEST_AUDIT_REVIEW.md",
+      "sha256": "539fbebd1dd5396c8e887df9665c958e8ca5215f77740aee19f4298e1d54e8ff"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DRANQUEST_BUILDER_QUESTIONS.md",
+      "sha256": "d881896ea6ad0966a0debcb0498351ebb4d47933c2c8be78bce277bbbb411970"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DREGGAN_WOOD_AUDIT_REVIEW.md",
+      "sha256": "4cb6629e100a4afc4e37deafc9db99a9e880ba9dfdaa00c8d8ad9e4fa7dc5b02"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DRIFTING_REALM_AUDIT_REVIEW.md",
+      "sha256": "694d6f62ceb575057afdf8f3d1d6f5d8a925cf8f3de75d2220ef9d354bc733f8"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DRST_AUDIT_REVIEW.md",
+      "sha256": "3dfbf5c1626c9575c3c39b09f8c9f297b5fbc933d6eed2889bfa2a3630af3230"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DUPLICATE_AND_REPLACED_ZONES.md",
+      "sha256": "50a2800da006017149a1d57bf4ebd395d4ec33bff6f1623e1ed782e0a61e514d"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DURIAN_UNDERDARK_AUDIT_REVIEW.md",
+      "sha256": "bc8f1585e32bec4f9175f4097a735bde6aca0c1d6e3f9ae5b62b1f1aec470d1f"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DURIS3_AUDIT_REVIEW.md",
+      "sha256": "0f1e2fef8c7e6871d10d6da6d820ff5de4cfde6a154f1c2540b085afd2daad53"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DURIS3_BUILDER_QUESTIONS.md",
+      "sha256": "aefba2a857769971b88ec7930db7688f08da25ed24900a87e91708b6b8bcd602"
+    },
+    {
+      "path": "docs/design/quest-story-followups/DU_MAATHE_CASTLE_AUDIT_REVIEW.md",
+      "sha256": "a1385c09720920eb9d90829358cfd3797affc3bd598aa48c3e0f23977814406b"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ELEMENTAL_GROVES_AUDIT_REVIEW.md",
+      "sha256": "44ccf2e241fe2763aba7c5be3dc9ce4357dd7db7928bc795f3b6955d1a304569"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ELFTOMB_AUDIT_REVIEW.md",
+      "sha256": "b161d7016512548c99756ffefc8ffb926b1211eb31c6bd4d22814ffa451224b5"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ELVISH_AUDIT_REVIEW.md",
+      "sha256": "84b879c041d1bff74c8ded02f3ae65ee931a6f8dc3fad1a6a00eb1c10cb7679a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/END_OF_THE_WORLD_AUDIT_REVIEW.md",
+      "sha256": "88069d774a93576b4240ca570016d888753de0a01bd72d0c666ff4903356276e"
+    },
+    {
+      "path": "docs/design/quest-story-followups/EOO_AUDIT_REVIEW.md",
+      "sha256": "66541d224d9314c70c2647cc4553316da4416a94db1b806443376c5d32543679"
+    },
+    {
+      "path": "docs/design/quest-story-followups/EOO_BUILDER_QUESTIONS.md",
+      "sha256": "09835d731c821462ad1c464d66eb1ebdf6d1392534e7a33e1b025162541eb357"
+    },
+    {
+      "path": "docs/design/quest-story-followups/EOO_OP2_AUDIT_REVIEW.md",
+      "sha256": "1c12c9a95361a791968d59156fa1ba16a485b0b0fdaf0945650d7fc7aab292b5"
+    },
+    {
+      "path": "docs/design/quest-story-followups/EOO_OP2_BUILDER_QUESTIONS.md",
+      "sha256": "af2013b59efd7c7d888800cb03a41ae6f9e3247e0e4bd9ed39e4ec2b8cb02ec3"
+    },
+    {
+      "path": "docs/design/quest-story-followups/EOO_OP_AUDIT_REVIEW.md",
+      "sha256": "51fad5fb50c09c51f6eb3e353fa69c31392b9a4394c1c599067553703d73800a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/EOO_OP_BUILDER_QUESTIONS.md",
+      "sha256": "1518a6e56d66067092c8d28c9110ace5c169bdf6b254a00dbbfaf610916b8e05"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ESKULL_HALL_AUDIT_REVIEW.md",
+      "sha256": "9dd90bd22061aa0afe6c6d8c2f62804956e7e91a469a1308c2da5f4629ce9f1b"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ESKULL_HALL_BUILDER_QUESTIONS.md",
+      "sha256": "a74b0aadcaa6339b0e646849852e07a083adb7425333a3cf9c054d724fcc2933"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ETH2_AUDIT_REVIEW.md",
+      "sha256": "768e29cdbd6fcce0b50cba96e9686ba6e90a6f285fd9ea1a71f55908a2a48608"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ETHDAWN_OP_AUDIT_REVIEW.md",
+      "sha256": "0db7b95d742b10268a2089f9f666f4c3892275a1711a643bee221076803e85e2"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ETHDAWN_OP_BUILDER_QUESTIONS.md",
+      "sha256": "6ee78bfc39c905cc2f94e12dc7eff78efbd2633486d0dd4101e2d062745a9e88"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ETHEREAL_MAIN_AUDIT_REVIEW.md",
+      "sha256": "61c7bc16d5ad0d337022445553862611fbc011e65b29cffae8a8c2fbcfdb1247"
+    },
+    {
+      "path": "docs/design/quest-story-followups/EVKEEP_AUDIT_REVIEW.md",
+      "sha256": "fcc055350192d61cb003e487c60f6da54007ce25f2a8864d593284b59a3405c9"
+    },
+    {
+      "path": "docs/design/quest-story-followups/FAANG_STORY_REVIEW.md",
+      "sha256": "0703985500bfbdd9e3287843afe011d2c3b7a1f85ab65a706f0306de5902510a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/FAERIE_REALM_AUDIT_REVIEW.md",
+      "sha256": "fb8647a2965187a72db7a7d44b8e2adda2c5a7a9703352a86878662c35e63b76"
+    },
+    {
+      "path": "docs/design/quest-story-followups/FATEFUL_FALLS_AUDIT_REVIEW.md",
+      "sha256": "73518a66ce2bd43470766ffb2ce95f8544a1e8153de2a3043e39279d12e0bde6"
+    },
+    {
+      "path": "docs/design/quest-story-followups/FIELDS_BETWEEN_AUDIT_REVIEW.md",
+      "sha256": "3aa8a6f4b5f6bf83435bc2e5b5b87f74bbcb877f039584f4b711a1198e9d7fcc"
+    },
+    {
+      "path": "docs/design/quest-story-followups/FIREP_AUDIT_REVIEW.md",
+      "sha256": "00c5ee1356d1683ec62428cec860d300416d81d8b1c72e7d943afb02e1751753"
+    },
+    {
+      "path": "docs/design/quest-story-followups/FISHERMANS_WHARF_AUDIT_REVIEW.md",
+      "sha256": "eca48146d20f72297b3652e72e1386900af99390ed4527e330d7bc18fd45a147"
+    },
+    {
+      "path": "docs/design/quest-story-followups/FISTS_GH_AUDIT_REVIEW.md",
+      "sha256": "48fe39a5d6cf06b5ff948513de9504052c95cdc1d893e1373600a57aabe7446e"
+    },
+    {
+      "path": "docs/design/quest-story-followups/FISTS_GH_BUILDER_QUESTIONS.md",
+      "sha256": "dc37bc3969534407a21c0a5ef9af9d5097932a705865e2e6e42e09a129d53439"
+    },
+    {
+      "path": "docs/design/quest-story-followups/FLIND_AUDIT_REVIEW.md",
+      "sha256": "2e9768928734f9ce95e8434161313dd467116280ac6d981399328043f25afc58"
+    },
+    {
+      "path": "docs/design/quest-story-followups/FOGGY_WOODS_AUDIT_REVIEW.md",
+      "sha256": "c19739837723725d46b8d7a5050e6067f4a0f4e0cb3e13d515650a2d4459700a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/FOOQUEST_AUDIT_REVIEW.md",
+      "sha256": "047e2ab59bc15a204d3b371edb9ed465031e054a9ce7cfafc57252054524c54e"
+    },
+    {
+      "path": "docs/design/quest-story-followups/FOOQUEST_BUILDER_QUESTIONS.md",
+      "sha256": "49543b74f2c702f15695c70dc788903134070de2c63e64d39c10cbc22914d83a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/FORESTB_AUDIT_REVIEW.md",
+      "sha256": "a2a790004eb352288faabcec789f1cfe6079057fd96199cabae4a2e66e93c350"
+    },
+    {
+      "path": "docs/design/quest-story-followups/FORESTB_BUILDER_QUESTIONS.md",
+      "sha256": "ac3c3ed28055768c18f27c0c35f8c8ebf8b04c6c26d0cad4231c19fbd0d86541"
+    },
+    {
+      "path": "docs/design/quest-story-followups/FOREST_CITY_OF_ARAVNE_AUDIT_REVIEW.md",
+      "sha256": "67b27f973c06ba9c14b1a126af00477ef679ca9a0266701f4e544ab94aae4c2f"
+    },
+    {
+      "path": "docs/design/quest-story-followups/FORGOTTEN_FOREST_AUDIT_REVIEW.md",
+      "sha256": "0fab0797efd9e6851f978d5b8418613c8be746e21fc0672ccfb6f83adc56f9bf"
+    },
+    {
+      "path": "docs/design/quest-story-followups/FOROFCON_AUDIT_REVIEW.md",
+      "sha256": "6a6189587612ef5d071e8ef6d24e88853534b247681e5dbf0c978f4ccec543e1"
+    },
+    {
+      "path": "docs/design/quest-story-followups/FOROFCON_BUILDER_QUESTIONS.md",
+      "sha256": "e27302e84f6339cdd5ae233e9d6d43d2fbc16d2e1c4750dbc69529af9a2304d4"
+    },
+    {
+      "path": "docs/design/quest-story-followups/FORT_BOYARD_STORY_REVIEW.md",
+      "sha256": "c3713b76dbc55903e618501a1dd06ee5970f2c8c84ad2f54566d48714d98eb2b"
+    },
+    {
+      "path": "docs/design/quest-story-followups/FUTURE_CEOTHIA_AUDIT_REVIEW.md",
+      "sha256": "617ea5b5bfd0f3cd1e1f09038ffdd1654041c216be33e66372ed6256ad823d7b"
+    },
+    {
+      "path": "docs/design/quest-story-followups/GAGGA_JOBO_CAVE_SYSTEM_AUDIT_REVIEW.md",
+      "sha256": "b96ae514bca12e970484c3f07e33dab9b8fbbb64b0de4f48eb97ec06afbd575a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/GENESIS_AUDIT_REVIEW.md",
+      "sha256": "c76400e6b5730972da0a25e312dced68bffe66c18ea2e3d3e0edf106aa81fd32"
+    },
+    {
+      "path": "docs/design/quest-story-followups/GENESIS_BUILDER_QUESTIONS.md",
+      "sha256": "c225019565628013885e7963dd49682c8865656475e1bf733253b119f01aab9c"
+    },
+    {
+      "path": "docs/design/quest-story-followups/GENIANTHOU_AUDIT_REVIEW.md",
+      "sha256": "317915938a5ea532ec5dbeba5a3474c07859890281ffe93919c26631c9417648"
+    },
+    {
+      "path": "docs/design/quest-story-followups/GENIANTHOU_BUILDER_QUESTIONS.md",
+      "sha256": "dd3c413d2371cddbb6f8ca52d7b03b1ae90ba0869cd5ea4070b63b99f832d54b"
+    },
+    {
+      "path": "docs/design/quest-story-followups/GENOCIDE_GH_AUDIT_REVIEW.md",
+      "sha256": "6c18344e27d56c2863779964095d6afd149e410ddda78938c5ac3b4acffa951e"
+    },
+    {
+      "path": "docs/design/quest-story-followups/GENOCIDE_GH_BUILDER_QUESTIONS.md",
+      "sha256": "cf9560999973bd59a8e144e039af4c9f08d612a0ba89b57792999583ed01bfc5"
+    },
+    {
+      "path": "docs/design/quest-story-followups/GENOCIDE_HALL_AUDIT_REVIEW.md",
+      "sha256": "ef96d0b360bb0c13a656541ee7865d9305748b14a7fa9ffd26307bf908b753d4"
+    },
+    {
+      "path": "docs/design/quest-story-followups/GENOCIDE_HALL_BUILDER_QUESTIONS.md",
+      "sha256": "202100df9c4de12963ad8ad5a181480fbf2bf26e1e89df5e92250b3665e0b529"
+    },
+    {
+      "path": "docs/design/quest-story-followups/GHORE_STORY_REVIEW.md",
+      "sha256": "ee16a54d8633dbb643931d477778b1a582604b8467fd59e058b63ac567c0fd21"
+    },
+    {
+      "path": "docs/design/quest-story-followups/GIBBERLING_KING_AUDIT_REVIEW.md",
+      "sha256": "6ce8acb221afd9f1ddba41303a057323516dd3d8ac272f20d0253830e9643ae8"
+    },
+    {
+      "path": "docs/design/quest-story-followups/GITHYANKI_FORTRESS_STORY_REVIEW.md",
+      "sha256": "71c94a8215dce9431f3e3460a0555648ced66cbdfefde337fdb795a2135102cb"
+    },
+    {
+      "path": "docs/design/quest-story-followups/GITHZERAI_STRONGHOLD_AUDIT_REVIEW.md",
+      "sha256": "5d71abc30191f1d55d678a66e578566500f6261f58e56e7ca20201d7b909216e"
+    },
+    {
+      "path": "docs/design/quest-story-followups/GITH_HT_STORY_REVIEW.md",
+      "sha256": "45f1cde1019c18163ae8732a86399d06087b01d0710bdbc6a9d652bb66647455"
+    },
+    {
+      "path": "docs/design/quest-story-followups/GLACIER_AUDIT_REVIEW.md",
+      "sha256": "f743d6995a672d261b825d0e610d24a52ad53c37c4a2c95c4a770510d59f81e5"
+    },
+    {
+      "path": "docs/design/quest-story-followups/GOBLINCAMP_AUDIT_REVIEW.md",
+      "sha256": "0272f9682e58c36d538daa777bbf5314a25311e06e4325b164a8969fbe84949e"
+    },
+    {
+      "path": "docs/design/quest-story-followups/GOLDEN_HALL_OF_THE_CROWN_AUDIT_REVIEW.md",
+      "sha256": "cae3b18619404118b8fa393d8fc7db8a5a464a217fd0c2deee41cda7c5ff8a82"
+    },
+    {
+      "path": "docs/design/quest-story-followups/GRAVES_AUDIT_REVIEW.md",
+      "sha256": "75754dce695dc6b19847fb635122f433c4a475aa0004509f1156bbe2b57e7103"
+    },
+    {
+      "path": "docs/design/quest-story-followups/GRAVE_AUDIT_REVIEW.md",
+      "sha256": "a7ddabf41005f6c1e0cb634ec5b8302a756339ba5569ce42964f77c7e4381d7f"
+    },
+    {
+      "path": "docs/design/quest-story-followups/GREAT_SHABOATH_AUDIT_REVIEW.md",
+      "sha256": "f94e5e1e2c740c82c7a9f16a77931d8572c5eca6fc08a160fe4eacb1c366fc82"
+    },
+    {
+      "path": "docs/design/quest-story-followups/GRUMBARS_DOMAIN_AUDIT_REVIEW.md",
+      "sha256": "4f6de1c6e9bd7a0d2b706f67bbaa35fbb4ea4e2501d1efc845aa1785925a530b"
+    },
+    {
+      "path": "docs/design/quest-story-followups/GUILDHALLS_AUDIT_REVIEW.md",
+      "sha256": "366b3cfb49d0dee0be0832446a493f4bf7c8c1e0da0fa7255e58eaf672f8d1b4"
+    },
+    {
+      "path": "docs/design/quest-story-followups/GUILD_ROOMS_AUDIT_REVIEW.md",
+      "sha256": "81701e5401bb533127ad6c6e35ab195caf7798b0e40c655b8f2eed3d201672f0"
+    },
+    {
+      "path": "docs/design/quest-story-followups/GUILD_ROOMS_BUILDER_QUESTIONS.md",
+      "sha256": "c3689870fa74852101f0b5917e764655338e1894eefe43942420f52e6837663c"
+    },
+    {
+      "path": "docs/design/quest-story-followups/HALFCUT_HILLS_AUDIT_REVIEW.md",
+      "sha256": "8f97b64f561e3a1283b7166636862a302ad9dfa3417f5647fbd72ad0b34b64c0"
+    },
+    {
+      "path": "docs/design/quest-story-followups/HALFCUT_HILLS_BUILDER_QUESTIONS.md",
+      "sha256": "b3d762b9f12b6e58e5dee99a5b89625b6953eef7d611a8c60c6c277ed2037661"
+    },
+    {
+      "path": "docs/design/quest-story-followups/HALL_OF_THE_ANCIENTS_AUDIT_REVIEW.md",
+      "sha256": "5709f4bfd012c9ebd5f181bac8d88647ee92c658aa9bb1463b6e709d3472a49b"
+    },
+    {
+      "path": "docs/design/quest-story-followups/HANDOFF.md",
+      "sha256": "170e9a1d1ca3992fee1cc08f282a82a244add394706af636ec5226d8a3d3f57b"
+    },
+    {
+      "path": "docs/design/quest-story-followups/HARPYHT_AUDIT_REVIEW.md",
+      "sha256": "8f46f3d119ee8bbd452e65a56ea1f8eba047aff3a182a14e3ca980ac85c5ca4a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/HARROW_AUDIT_REVIEW.md",
+      "sha256": "133997a1738980e3adb31fbab7758611ef8577494b588ad2ea4e3cca4946c199"
+    },
+    {
+      "path": "docs/design/quest-story-followups/HEAVENS_AUDIT_REVIEW.md",
+      "sha256": "bb697b0fcc37ce6c942390eacfdea8d5d457f7e1e38794d86decf2485e423feb"
+    },
+    {
+      "path": "docs/design/quest-story-followups/HEAVENS_STORY_REVIEW.md",
+      "sha256": "8bd0e00c7980b21582d37c74fbc8704d95b724764923e4f14d0d2d1e45cee9b3"
+    },
+    {
+      "path": "docs/design/quest-story-followups/HELL_FOUR_PHLEGETHOS_AUDIT_REVIEW.md",
+      "sha256": "f8ea50426303ac5331fa7c67f463754599f01d2f3312f1ba5382dd696f52d86c"
+    },
+    {
+      "path": "docs/design/quest-story-followups/HELL_ONE_AVERNUS_AUDIT_REVIEW.md",
+      "sha256": "6d8d5791942f47d172e20cbe4cb93e3e22077901366da97da601fec7cc761604"
+    },
+    {
+      "path": "docs/design/quest-story-followups/HELL_THREE_MINAUROS_AUDIT_REVIEW.md",
+      "sha256": "2cc69218046450f37b4127d20d9cd9dd161b629e341e5b57708f9189c690fed9"
+    },
+    {
+      "path": "docs/design/quest-story-followups/HELL_TWO_DIS_AUDIT_REVIEW.md",
+      "sha256": "33b56e71cec876e4a2bc1b6d7ef926f7717ca2b77eb18b90ac1c0b58d4503f30"
+    },
+    {
+      "path": "docs/design/quest-story-followups/HERDERS_AUDIT_REVIEW.md",
+      "sha256": "5efc9a375f62d7ec9180e5137807c8d75182fc07525dd130ae29e44185e8ea3b"
+    },
+    {
+      "path": "docs/design/quest-story-followups/HIGHMOOR_AUDIT_REVIEW.md",
+      "sha256": "a7e099320cd86e12fc4ba011aede7ddd56387384c9e97bba9297f1d3c26452c1"
+    },
+    {
+      "path": "docs/design/quest-story-followups/HOSTEL_AUDIT_REVIEW.md",
+      "sha256": "862cb296c6e028d46c09ef99f52a0497b8316b62f2f75b2ebefd333ac967bdbd"
+    },
+    {
+      "path": "docs/design/quest-story-followups/HOSTEL_BUILDER_QUESTIONS.md",
+      "sha256": "81a6c434d9edcdb554388d9e3f6e571801af9870f2758a66491848bf52ece027"
+    },
+    {
+      "path": "docs/design/quest-story-followups/HUNT_AUDIT_REVIEW.md",
+      "sha256": "bc15fcb55f5b2f367969d521319d968f0e97a90ecc937735e9927131dcf6525f"
+    },
+    {
+      "path": "docs/design/quest-story-followups/HWOOD_AUDIT_REVIEW.md",
+      "sha256": "285c14b0ff4605bd17c277de6b827d0170796d81176ffac52ae999d32bb77e7f"
+    },
+    {
+      "path": "docs/design/quest-story-followups/IC3_AUDIT_REVIEW.md",
+      "sha256": "461d408c7cc07bbb1b15bafb8be564afbcbc5b5f611d6c54f6ff32edb79183f9"
+    },
+    {
+      "path": "docs/design/quest-story-followups/IC3_BUILDER_QUESTIONS.md",
+      "sha256": "2315e8763a688302f5198316ef7b665671ab0bbbf19a886027b66d1d4b83f3b8"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ICECRAG_AUDIT_REVIEW.md",
+      "sha256": "7b25602dbbc44af683671fa45baa1451ab9f572b83f3fdfd6e3c500b2c085f1e"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ICE_TOWER_AUDIT_REVIEW.md",
+      "sha256": "e1bb5f8ea850acf86e23fbc9de08ea92598ce8a80b975b3eab37ab1669555313"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ILLITHID_ARENA_AUDIT_REVIEW.md",
+      "sha256": "432968a7b334653539af924450bbb54d85126d9801e1c1f105dd09c006e17e85"
+    },
+    {
+      "path": "docs/design/quest-story-followups/INFERNAL_GH_AUDIT_REVIEW.md",
+      "sha256": "6575a5ed464922dbab5808864411cd373ba71778f7667ac503476fa2606e46bd"
+    },
+    {
+      "path": "docs/design/quest-story-followups/INFERNAL_GH_BUILDER_QUESTIONS.md",
+      "sha256": "4b7217c45b3d9bc4ce65635ca3d154ca155d71e747b7d4032b79fc3bce27c2f9"
+    },
+    {
+      "path": "docs/design/quest-story-followups/INTERSPACE_AUDIT_REVIEW.md",
+      "sha256": "be5b06d3439d230d8a394ea9b106b4b8b4c9b666a869ff40a87b92f0d231f8a3"
+    },
+    {
+      "path": "docs/design/quest-story-followups/IXARKON_AUDIT_REVIEW.md",
+      "sha256": "aca3422843e4825200e19ce9268899861bbc750a4d7a722c175ab13be57dab19"
+    },
+    {
+      "path": "docs/design/quest-story-followups/IXXILLIKOR_AUDIT_REVIEW.md",
+      "sha256": "453bfc0da48bdd5505918d325b37d9d91f0b777191a76f8d6fc5a2630102cca1"
+    },
+    {
+      "path": "docs/design/quest-story-followups/JADE_AUDIT_REVIEW.md",
+      "sha256": "aac12f1f7d41944c56adb471237115e95c6b1c398e6903f923d026a616850632"
+    },
+    {
+      "path": "docs/design/quest-story-followups/JINDON_DEATHWOOD_AUDIT_REVIEW.md",
+      "sha256": "8d0e86be67acfc47e25d7af273f7da5feb1da83c4045a0bf94b93681ad0f4f7f"
+    },
+    {
+      "path": "docs/design/quest-story-followups/JOTUN_AUDIT_REVIEW.md",
+      "sha256": "0bab6d15dd6d5433609c1541fb4214a02e4cbe50e539f28780402101fe0b4b13"
+    },
+    {
+      "path": "docs/design/quest-story-followups/JUIBLEX_AUDIT_REVIEW.md",
+      "sha256": "946933f7b3b576b9ce119023a9e360f6a5ca1edf3b189f7cf5123ed0d26bc8bb"
+    },
+    {
+      "path": "docs/design/quest-story-followups/JUNGLE_AUDIT_REVIEW.md",
+      "sha256": "c6a19382f0e44a55915d6b432373c3b6d4282673c491bddb8e36935648a55d32"
+    },
+    {
+      "path": "docs/design/quest-story-followups/JUNGLE_BUILDER_QUESTIONS.md",
+      "sha256": "2f0e92ef49102ffe6a902202272c2d3356800c292b78e5bfe726049f54c0ee5c"
+    },
+    {
+      "path": "docs/design/quest-story-followups/KASTLE_AUDIT_REVIEW.md",
+      "sha256": "0e6170930001aba8b37d453a569eb8d1ead9d15b58a39a45205e48726d8b45fe"
+    },
+    {
+      "path": "docs/design/quest-story-followups/KELEK_AUDIT_REVIEW.md",
+      "sha256": "afdfd0f9c546d0b6419a0b26da6f72eb482b5cc8f332d9bad713f80c12f80039"
+    },
+    {
+      "path": "docs/design/quest-story-followups/KHILDARAK_STRONGHOLD_AUDIT_REVIEW.md",
+      "sha256": "bcef236e16a6cc7ad08c828e2d5d4a5d27c7f3f23f86b98c1792967a12f8c8f3"
+    },
+    {
+      "path": "docs/design/quest-story-followups/KILFRAY_AUDIT_REVIEW.md",
+      "sha256": "f7233d0666ca39fca7a4fd9c5a3cdf6ea368781971fb15a05665915e6c2a50d8"
+    },
+    {
+      "path": "docs/design/quest-story-followups/KILFRAY_BUILDER_QUESTIONS.md",
+      "sha256": "8b2d54f6043fa623da7d9ca856ef54ed19042f440b3d7d289216d3da4537a49e"
+    },
+    {
+      "path": "docs/design/quest-story-followups/KILLING_FIELDS_AUDIT_REVIEW.md",
+      "sha256": "636997c0c0d53115a9a295aaa92ed108d2040fb3fc1b2ae957b2d69bf94e7785"
+    },
+    {
+      "path": "docs/design/quest-story-followups/KIMORDRIL_AUDIT_REVIEW.md",
+      "sha256": "98d8de12d338546a0d8fdf049580d72c60d0b922f352df574f8c9e77a82bc109"
+    },
+    {
+      "path": "docs/design/quest-story-followups/KNIGHT_AUDIT_REVIEW.md",
+      "sha256": "e541e3b31c870164d83a5e952de7ebf0cb1e746bb4eed43954da134252fb2ba7"
+    },
+    {
+      "path": "docs/design/quest-story-followups/KOBOLD_AUDIT_REVIEW.md",
+      "sha256": "6c504a34bd1b1ed112a18671465c8ef78ef9e070e255b08d6cb6afeb555da074"
+    },
+    {
+      "path": "docs/design/quest-story-followups/KRETHIK_AUDIT_REVIEW.md",
+      "sha256": "d75d16e95d32ca095031e17b7b6a947e4a5141309829fda7913341ce7c0fc1ed"
+    },
+    {
+      "path": "docs/design/quest-story-followups/KRIMMAN_AUDIT_REVIEW.md",
+      "sha256": "412cbf111cc01ee9e26f092fd91aa16dbe8eb5818e9ae8585b2035efadff5723"
+    },
+    {
+      "path": "docs/design/quest-story-followups/KUOTOA_AUDIT_REVIEW.md",
+      "sha256": "073ce698f6875198309180f465c6d502d1fa57a8e86bd2bc3c118360016c5bff"
+    },
+    {
+      "path": "docs/design/quest-story-followups/KVARKPASS_CONNECTOR_STORY_REVIEW.md",
+      "sha256": "1cda831e1f0a9bc8130601d830df9a0f18a5d41164ae17207a76d25809ea9439"
+    },
+    {
+      "path": "docs/design/quest-story-followups/KZKRKEEP_AUDIT_REVIEW.md",
+      "sha256": "b39de0ca1d62e0614728037d3253fb2ce2e87232a7b4f83f99dfd5ee7f62e369"
+    },
+    {
+      "path": "docs/design/quest-story-followups/KZKRKEEP_BUILDER_QUESTIONS.md",
+      "sha256": "11effb358f8f78f41b2fcd750d495d79eb6aca9075bf8e5ea1f0fb65e54ba05d"
+    },
+    {
+      "path": "docs/design/quest-story-followups/LABYRINTH_OF_NO_RETURN_AUDIT_REVIEW.md",
+      "sha256": "019f397045c3738940ce900edc8cd2ab91f4800929c0933acd7db4dddcf6ca87"
+    },
+    {
+      "path": "docs/design/quest-story-followups/LAB_AUDIT_REVIEW.md",
+      "sha256": "ef59c11cd45cb7cde5e506bf697fa983b15ab768d116f5cab74e728e6212a94d"
+    },
+    {
+      "path": "docs/design/quest-story-followups/LAIR_OF_THE_PURPLE_WORM_AUDIT_REVIEW.md",
+      "sha256": "9c6f26ae2805ad812808e2db829e7d13203491bcac2aa424e872ec35634a7174"
+    },
+    {
+      "path": "docs/design/quest-story-followups/LAVA_SPRINGS_AUDIT_REVIEW.md",
+      "sha256": "3919437d99a1055377576b8ad16d9649380d4b329568baece2c48c1170f1db5a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/LAVA_TUBES_AUDIT_REVIEW.md",
+      "sha256": "3906213bfbec0d9b8406854edaced1fb3603184cfcc6964a1dcad63ebe5ef2c2"
+    },
+    {
+      "path": "docs/design/quest-story-followups/LEGION_GUILDHALL_AUDIT_REVIEW.md",
+      "sha256": "0de5bc5857d5cf656c2a2c6e458b9a8dc328630364886bacaa72803f6addd2fb"
+    },
+    {
+      "path": "docs/design/quest-story-followups/LEGION_GUILDHALL_BUILDER_QUESTIONS.md",
+      "sha256": "4a227ac97351cdd68234b7312d205619f7b8ad07b15c5d0d9a30ce7f80409893"
+    },
+    {
+      "path": "docs/design/quest-story-followups/LIGHT_GH_AUDIT_REVIEW.md",
+      "sha256": "47067980df44d192a7e1645f770e17e8de1ccbe4d3fb7c2545f5930e0e84ceb2"
+    },
+    {
+      "path": "docs/design/quest-story-followups/LIGHT_GH_BUILDER_QUESTIONS.md",
+      "sha256": "6959cdd9936e52517c4d74756dd0722f4104ab0d8461cbaa50b09482258f060d"
+    },
+    {
+      "path": "docs/design/quest-story-followups/LIMBO_STORY_REVIEW.md",
+      "sha256": "68ce56cbc12fde7ab9ed13d679651d147d2befc022d5d2dec4437adb12a1ed60"
+    },
+    {
+      "path": "docs/design/quest-story-followups/LIZARDMAN_SWAMPS_AUDIT_REVIEW.md",
+      "sha256": "8f90a26aa0028cd2664a549e693e282a14f8d5794878561e28452848840194b4"
+    },
+    {
+      "path": "docs/design/quest-story-followups/LLYRATH_STORY_REVIEW.md",
+      "sha256": "e411492738a510a75091b020255b9def95d912868d726aa8404269691884d814"
+    },
+    {
+      "path": "docs/design/quest-story-followups/LLZAZAN_STORY_REVIEW.md",
+      "sha256": "3c53f52248a1996a09d52a3a385e246fb7258484ab17c75986759667001b4f3e"
+    },
+    {
+      "path": "docs/design/quest-story-followups/LOCKERS_STORY_REVIEW.md",
+      "sha256": "61ffd68c241f6d3158a936834110a6f68627b472280c70e1d1269b693bf3ba93"
+    },
+    {
+      "path": "docs/design/quest-story-followups/LOC_GH_AUDIT_REVIEW.md",
+      "sha256": "eeaa7e38ff2880537ae568913906d48c0fe0e633a093c5d574f44fe1c5a755d5"
+    },
+    {
+      "path": "docs/design/quest-story-followups/LOC_GH_BUILDER_QUESTIONS.md",
+      "sha256": "52f25187ffa0fd9fdccb69c567fe4de0f335b9f21390746637d09b76bcd980cd"
+    },
+    {
+      "path": "docs/design/quest-story-followups/LONGHOLLOW_AUDIT_REVIEW.md",
+      "sha256": "f3fd314c6751e1b6b277ef23cd6f2fde5a4779eeb47e257e7423f96e324babd3"
+    },
+    {
+      "path": "docs/design/quest-story-followups/LORNECRO_AUDIT_REVIEW.md",
+      "sha256": "e9879fe9e4148cc8506076a579e43a3d600f8e130a7514eec3c259695c8a9497"
+    },
+    {
+      "path": "docs/design/quest-story-followups/LORTOWER_AUDIT_REVIEW.md",
+      "sha256": "6250cf132d62d599cb1025a1aac3719a5262c1ff53427678f862c6967ca573c2"
+    },
+    {
+      "path": "docs/design/quest-story-followups/LUIREN_AUDIT_REVIEW.md",
+      "sha256": "b229fe2f57f5022f74b3f303f8063c3cf5975ce0b8ac119aedc572dc87ae716d"
+    },
+    {
+      "path": "docs/design/quest-story-followups/LUIREN_BUILDER_QUESTIONS.md",
+      "sha256": "2498d7c08271331dc9b6ecbcc7d67282adf2d0f9f8d7daf78abacc4659580593"
+    },
+    {
+      "path": "docs/design/quest-story-followups/LYLR_MEOP_AUDIT_REVIEW.md",
+      "sha256": "b1deb1dd556b1f22fcc40870605b00e221e604874624166f0bc642a42607ce5d"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MAGETOWER_AUDIT_REVIEW.md",
+      "sha256": "02f97439146526b216a564fc6ef312c2dbcb0cb3698dbc6b5e39b6384db99cd2"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MAGETOWER_BUILDER_QUESTIONS.md",
+      "sha256": "bd9c2eb4ed134024106cf4df72b5795f856c849ac4fa48d64782211c4f637917"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MAGMA_AUDIT_REVIEW.md",
+      "sha256": "26d2d957ff36b100e43d83938c65daa10dd071a749b1d4f80890066c77b59f16"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MALCH_AUDIT_REVIEW.md",
+      "sha256": "621873b3b7457e36fc31db3cab13b7e4356e523886bc447e8a52f064f7cd5712"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MANSION_AUDIT_REVIEW.md",
+      "sha256": "4f086f96058db86e930ac0704de8bae52718d5d5f6683d964360feec0c2ba0b3"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MAP1_AUDIT_REVIEW.md",
+      "sha256": "0fe0e61c9bf3092a9ebe6f49197fab53bd07a3ab329a9d6c18ae1ab5ecf0651a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MAP1_BUILDER_QUESTIONS.md",
+      "sha256": "5b97cb1eb1d78118fb76d6f1777abec9d8357da46e7fe8ae59f3e6a8116afc4c"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MAP22_AUDIT_REVIEW.md",
+      "sha256": "58aa44c48d516a0e1b27150b14915d5420dab964a11a3e6b21138fbce62b3f29"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MAP22_BUILDER_QUESTIONS.md",
+      "sha256": "b1ce68bdbddb39a16a81622827e06292d648d7fe96e911ea975abc5d0498a155"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MAP5_AUDIT_REVIEW.md",
+      "sha256": "bd286c7bff56195905e565fce0ba7cd162aa55d8c3e13d4b4c023d83bc018fd5"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MAP5_BUILDER_QUESTIONS.md",
+      "sha256": "891df2b3a1649f50ae06ededd4ffcfa1e666d2da18f6de6700cbf60d98cbc3cd"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MAP8_AUDIT_REVIEW.md",
+      "sha256": "c28bc181928d411862cb0aff4a4b18c81c2b2bf5e570ff0133f43c410f39dc9d"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MAP8_BUILDER_QUESTIONS.md",
+      "sha256": "7b1671a95cc24d5fc6bd70b13643845e0e52b5e1bbd4d0b8dd713928a1e64952"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MARA_GH_AUDIT_REVIEW.md",
+      "sha256": "96960bfa5fe71c0fc6e04f0fb81f5d9045891ec60d5404d069298ff8a8aa6453"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MARA_GH_BUILDER_QUESTIONS.md",
+      "sha256": "efda729fb3803dce91c50f23dd31191e4ff4999ba02d745ed7a01174bd710cd6"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MARA_OP_AUDIT_REVIEW.md",
+      "sha256": "acf3c195842b8056bef67501d991610815768f3c78e9bffed5ec2ab9000ee014"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MARA_OP_BUILDER_QUESTIONS.md",
+      "sha256": "ea04e342d0e49afbddf7b955552124e44ee39cddc44e5b1b97130f2049c24222"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MARIGOT_STORY_REVIEW.md",
+      "sha256": "10643046e3d49e3b297f84f24d7e2a523119e4acbb089749709c72026a972dbd"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MATERIAL_AND_TIMED_CHAINS.md",
+      "sha256": "7ab110ae80d80cf298c5069ff1d135a903fc0158c1e7bd4956222eddcf907c40"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MAVULSK_AUDIT_REVIEW.md",
+      "sha256": "4a934483dbc973dc7ec19021c4437009ab1198d6c51a2857f24de2679f528be6"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MAVULSK_BUILDER_QUESTIONS.md",
+      "sha256": "9e5438d0f531f2fbf88aa13003ccddb64188535b881541f4c8eb3e76598a9f36"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MAZE_OF_UNDEAD_ARMY_AUDIT_REVIEW.md",
+      "sha256": "14bf24e38db676fbe896e7e2cfa2de26b193981f49116fbd8f6741b3915ef48d"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MAZZOLIN_AUDIT_REVIEW.md",
+      "sha256": "3f339d0e91503ea47cc6363c2d2860bbc9e81b3fb9fafa37cd014ad4f8423fd1"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MENDEN_AUDIT_REVIEW.md",
+      "sha256": "7d2d11ea16c6b5a8b03a0a1878995cd0d1afb3f0c87527befb04c8ed2baf4fd5"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MENTIRI_AUDIT_REVIEW.md",
+      "sha256": "324387e6b2fb8507482c9cc62198a7edd6a0db830fb91930d3ecfc112c86c75c"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MENTIRI_BUILDER_QUESTIONS.md",
+      "sha256": "2b812257a801563579b56c18d3bd83b22dffc5ceea0ce2a23cb914a73ce8ec61"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MIAERIL_AUDIT_REVIEW.md",
+      "sha256": "0828bc6de0329ee7dcea9750913eea06cd9d4905b50387d1d6ed65dd968c13fe"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MINING_AUDIT_REVIEW.md",
+      "sha256": "824e7cacf177374e1bf70e8b91cfca32a5d79235095d15ad78bf9c5e421e1c0a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MINIZONES_AUDIT_REVIEW.md",
+      "sha256": "b205dafa65e97d2136726c069431dfe25b4e0bd0901621a423210dd2047a897b"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MIR_AUDIT_REVIEW.md",
+      "sha256": "9c2a4d75b6560672701f1cb70ad593040fbeca55c7fb25dfbe37a9f2009f0f4f"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MISTYWOOD_AUDIT_REVIEW.md",
+      "sha256": "79e7241976f62186ac9d3023e360c333d5fd5cec1585bf66696f2bfd46f57529"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MIST_CHASM_AUDIT_REVIEW.md",
+      "sha256": "3e9817b2d6de6e990688b15273c2cefeb9492abb06490ab0a3137df7c372370c"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MITASHI_AUDIT_REVIEW.md",
+      "sha256": "aef2418b3429b434bc9ede1396527a7786b89a20c12be671cd3764abb3323921"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MOBS_SURF_AUDIT_REVIEW.md",
+      "sha256": "e94f1cbdda66965e410a876b8caaf3097183396dcb554c6585efc6015e3cabd0"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MOBS_UNDERDARK_AUDIT_REVIEW.md",
+      "sha256": "45bb952693bc26cfa88401d39064c21e1c0ad93e36f6d5bde7cdcc25a354049e"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MOBS_UNDERDARK_STORY_REVIEW.md",
+      "sha256": "6cb9a6d1a8df1c3cc704fef8741f53bb36d5e2d2e5fd0cf0791580eb56b7fc69"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MONSTERI_AUDIT_REVIEW.md",
+      "sha256": "31292b8e9a39ce4ea5b0fdffd811d4e106bc830e18fe67c567142fe5ca72cf7d"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MONSTERI_BUILDER_QUESTIONS.md",
+      "sha256": "b712c121353cb026ea7cc6b4ff8a63193ad5836325f5ff0921f09e6bf5550002"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MOONSHAE_ISLAND_AUDIT_REVIEW.md",
+      "sha256": "83f2de0c766105fb7f88c30de1b3c0ee37f7404baa844a22c9badfd4e4baa315"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MOREGEETH_AUDIT_REVIEW.md",
+      "sha256": "824ac6154585fa5afddc2a8159c04656c2f917b5b57685047670880462f8564f"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MORG_AUDIT_REVIEW.md",
+      "sha256": "b859fa80d19668a17642a27ab52a98c53434e502cb6c54e42a05f6daccb33345"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MORIATST_AUDIT_REVIEW.md",
+      "sha256": "799c820a7a623b5279ea6ccd26d6e9bb1f763c9c46d429d0d84e327a05fe7a97"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MORIATST_BUILDER_QUESTIONS.md",
+      "sha256": "ef5fc164d551f7524793b82cbcf89e630b16f1b8bd870ca8493cee87a6ef609d"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MORIA_AUDIT_REVIEW.md",
+      "sha256": "e8e301c83a5fe73d57aef527af08b0f8f1afa423fc059ab382d1eaa4fe51f0a5"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MOSSWOOD_AUDIT_REVIEW.md",
+      "sha256": "2b5007dbcb7075ef3b672dce17fec84ca14b5d732d73aa1aa46f2cbc832f31a9"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MOUNTAIN_OF_THE_BANISHED_AUDIT_REVIEW.md",
+      "sha256": "40f9e874612ae538b9740f1e10ee7c765915afda12d616dcd1ba64fd513e20c9"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MOUNTAIN_QST_AUDIT_REVIEW.md",
+      "sha256": "91c229aed3c29ec4a59fda1699d8628677c76c4e189365c8b0aa09cee4fba550"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MOUNTAIN_QST_BUILDER_QUESTIONS.md",
+      "sha256": "bb444b9409b3386a8a068ecd51ab7f2040201633549b758547aee364c5c99f14"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MOUNTAIN_TRACTS_AUDIT_REVIEW.md",
+      "sha256": "37390ab32e13541063ca3e8612f46cd841f7fab1a13ca49137382aac6ebb554e"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MTNCASTL_AUDIT_REVIEW.md",
+      "sha256": "4719553ec0b5aedbbe948b2832e5a2e4ff396ca6dc45de7ac1183c6fc70a7f8f"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MTNCASTL_BUILDER_QUESTIONS.md",
+      "sha256": "05ae1c452282ddc5d45542eaf0fb08aa5561593ef0e6a49ee82c31e8c045bb2e"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MULTICLASS_TEMPLE_AUDIT_REVIEW.md",
+      "sha256": "54a9b2210a0ab6c5a17c0851b0f7ace3b1eb53b7fa9f51908c74cb6c0ea54a9a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MUSHROOM_CAVERNS_AUDIT_REVIEW.md",
+      "sha256": "385aec83d5f18d0507b5fc5fa6e09e93739caf5bac4f0bcac7b6ece960c36a9a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MUSHROOM_FOREST_AUDIT_REVIEW.md",
+      "sha256": "428ccfb8eb377b3efe5ae0c1722b9657f1d1b03f630079e7abb71033acc5f5fc"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MYCONID_AUDIT_REVIEW.md",
+      "sha256": "fd689583edef0b6e86df29ca0d1bdd99ad77a95aa8ee5022b12a80116e492358"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MYRABOLUS_AUDIT_REVIEW.md",
+      "sha256": "9c7f2530ea1384350c5f04245075e7b2de80373b6cbed3180319f76298094a96"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MYRANTH1_AUDIT_REVIEW.md",
+      "sha256": "7141122d0bb1c140be1245452bb6eeb3b2b6d57a3613217c9b3a418f136929ff"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MYRANTH1_BUILDER_QUESTIONS.md",
+      "sha256": "9ca47acde2033df6e06274a3bc08178016d4d2199a26fee3d8b492151a128f26"
+    },
+    {
+      "path": "docs/design/quest-story-followups/MYRLOCH_VALE_AUDIT_REVIEW.md",
+      "sha256": "c571b372eb1f165c4472a90eab29a357b9cba4c71f1d98195f2414a2eeab2ec4"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NAH_AUDIT_REVIEW.md",
+      "sha256": "e364f0cb446ac40b7ce4327d3538e43d38b5a88cacfa5e0df81b299e1b6b2f3a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NAH_BUILDER_QUESTIONS.md",
+      "sha256": "df195846e5275cc7013836537dd83125a5aaa98b14daf18274fcb58f4f0546c1"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NAKRALS_CRYPT_AUDIT_REVIEW.md",
+      "sha256": "47c009e9c87f1076b4e5c78729b43a4a3916a97a9bf1a99130197c3aad32432a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NARRATIVE_BOUNDARY_CHAINS.md",
+      "sha256": "6b05a053df1aa327f1175beef9fd8452e493c0963446c84c3a939d7e9b3d6924"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NAX_AUDIT_REVIEW.md",
+      "sha256": "93964eefe0368774edd8329bfc51b941ed0523d7bc7a78e7b7ec640863fae8dc"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NAX_STORY_REVIEW.md",
+      "sha256": "067dcbc9372a85a0807d421927dccc3fefee1aada6d35aa617c7a608903f2b34"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NEGATIVE_MATERIAL_PLANE_AUDIT_REVIEW.md",
+      "sha256": "030f9433f69ac81c601178a4536910b33cb4809df971f5de349fff3bacc24d6b"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NEVERWIND_VALLEY_AUDIT_REVIEW.md",
+      "sha256": "a4c487523558e88105a8841ddc92aea209573758f192702a81992ca0d6e07baa"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NEWBIE2_AUDIT_REVIEW.md",
+      "sha256": "6d85e5da3e03d723f3d709d595cea2ac0d86dbec35efe9fc88d2fb5f6410bd78"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NEWBIEMAPS_AUDIT_REVIEW.md",
+      "sha256": "8a5539f1f40683e13b988cf75bb58b1a4fefdb21f07bd9c0b446800c795c7b22"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NEWBIEMAPS_BUILDER_QUESTIONS.md",
+      "sha256": "7026a6da77b39cae145cd6844e4de84dbb9ffea9e4c7bf22683d1eea3e24d6ed"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NEWBIE_AUDIT_REVIEW.md",
+      "sha256": "719b47c608cb8cfd6e870adeec1da467152a94944d5f8cd5a818c12cee83418f"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NEWFOR_AUDIT_REVIEW.md",
+      "sha256": "b577c9e8a90d3f24a4a387e4d6f7813d9c30b8248e854d1a9cc96f63836c78c6"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NEWHAVEN_AUDIT_REVIEW.md",
+      "sha256": "6147e930de58677d03f7c676b3de0a755c97115a79d8c61fb12b2d8d7011c59a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NEWHOPE_AUDIT_REVIEW.md",
+      "sha256": "a896f16157096a06fd7bb423026d9506755fcac3da85c90f07b293ffc37a0d4c"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NEW_CAVECITY_AUDIT_REVIEW.md",
+      "sha256": "077320a4ee5efbe01e7b6d40ab4305e5173d8f9bbfacaea64e72c3386ad7d863"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NEXUS56_AUDIT_REVIEW.md",
+      "sha256": "f44b2cdc03bb7a9661942f1f5fa4563394bb970c9203867bf48c939562b486c8"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NEXUS56_BUILDER_QUESTIONS.md",
+      "sha256": "4fd1c34d4042cc00b9a1c8174007dca18e5f5d0789130bbb63caac7034cabf93"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NEXUS_1_AUDIT_REVIEW.md",
+      "sha256": "a0e0870331a03396575aa7407ca3eb281423d3ddb684d69da40b02fee13b0859"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NEXUS_1_BUILDER_QUESTIONS.md",
+      "sha256": "6c76cb0a5a578af71c881d0285207dbd2ea74272fb3eb1e0370d97fbdf80f1bb"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NEXUS_AUDIT_REVIEW.md",
+      "sha256": "5a50926d3f964bdf3dc9f22fde1912dacf7c141034002a053164469e663cab0a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NEXUS_IC_AUDIT_REVIEW.md",
+      "sha256": "2f7519e1215bf08f192783c0db8ed3de2eda578fa65e8b3affce9dae305ca483"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NEXUS_ISLAND_AUDIT_REVIEW.md",
+      "sha256": "aba03e794c4127bef2d6a831fac322b8cc7b21525d3baaec6f1924760570b557"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NEXUS_ROPER_AUDIT_REVIEW.md",
+      "sha256": "1658a31c859573ff5736880c729f22b0ee65e80baeac871d09b6c71efd218ce4"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NEXUS_UC_AUDIT_REVIEW.md",
+      "sha256": "b047460ad18815a4f8a6ac04aa548563ed1cc439ab58170a587a0e3988c2d1d1"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NHAVAN_ISLAND_ONE_AUDIT_REVIEW.md",
+      "sha256": "14c49b519c7c7176b58fc57d8fe578ead0c36afb83eb40c70afe278abab2303b"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NIZARI_STORY_REVIEW.md",
+      "sha256": "df0a3f250e835fc5c7a9d9ab1618ad7135eda92f2d9030c1e2e8a7f2f7496d48"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NLAKES_AUDIT_REVIEW.md",
+      "sha256": "a00bd0a5d15e6d77f1bac4a8576bf2a9be0b6b2fffdad1c5eb6b7af5057d3a5b"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NORTHERN_WILDERNESS_AUDIT_REVIEW.md",
+      "sha256": "4b8cbcf0273eabeb1e4593b89a1f2bcfb50d4ef5033adf2d2985f5962201f63c"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NYNETH2_AUDIT_REVIEW.md",
+      "sha256": "96f6054b269b64081aa355278c09b416d58cc4e592dd949f197fc8b961f81d86"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NYNETH3_AUDIT_REVIEW.md",
+      "sha256": "2fa9a71722611c97980f64a30d21d91fafe54752707a8c5f3b4bd79cc7f61796"
+    },
+    {
+      "path": "docs/design/quest-story-followups/NYNETH_AUDIT_REVIEW.md",
+      "sha256": "98fa8c3c7625a24ac216fc5564af1a1d1f4157ad9e1b2b6b91cb7d02a851f3a7"
+    },
+    {
+      "path": "docs/design/quest-story-followups/OBCITA_AUDIT_REVIEW.md",
+      "sha256": "90b3c87ae6b17ae49f28482fbfe4bc7aca091e211e222e3728630fafdf77c088"
+    },
+    {
+      "path": "docs/design/quest-story-followups/OLDMAP8_AUDIT_REVIEW.md",
+      "sha256": "aa9bd8c75d98b9c1c55d3ee537c3cee34814a53bae4e407b1f260b30b915d854"
+    },
+    {
+      "path": "docs/design/quest-story-followups/OLDMAP8_BUILDER_QUESTIONS.md",
+      "sha256": "83172b23f78fe6de415f096a68193746f365183211319a5c400b171763cbf266"
+    },
+    {
+      "path": "docs/design/quest-story-followups/OLYMPUS_AUDIT_REVIEW.md",
+      "sha256": "7a5e819be0753deca6e6aa86ba37854c76f2b3bcb13326df678d8b53d12cc5ce"
+    },
+    {
+      "path": "docs/design/quest-story-followups/OPAL_PHOENIX_AUDIT_REVIEW.md",
+      "sha256": "b592892137ae4abed29d48b3713ae1c812b447b09b014ca7c4d9a44cc4161353"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ORCISH_SLAVE_CAMP_AUDIT_REVIEW.md",
+      "sha256": "4a2e5b85b44aacb27b936ea9435aced604aadfad45899717cab2bf3eebb24d70"
+    },
+    {
+      "path": "docs/design/quest-story-followups/OROGS_STORY_REVIEW.md",
+      "sha256": "20c3a3eadd8314f805dbd343ceb9eb54ac16bba2ff91aa2232338eba310aa685"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ORRAK_AUDIT_REVIEW.md",
+      "sha256": "8cc7235bb9aaa020c6bdce15ecf54287b6829e9049ea043cc50aac0795d3697a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/OTOWER_AUDIT_REVIEW.md",
+      "sha256": "84947a986dcf82a33c5ed7406b12272d26729f6c38a846470a69b9df34ede061"
+    },
+    {
+      "path": "docs/design/quest-story-followups/OUTPOST_AUDIT_REVIEW.md",
+      "sha256": "50177af0024b15af93b8ce12179dc0feb51ace4dfa08356a8a9ed641c3ffa3f7"
+    },
+    {
+      "path": "docs/design/quest-story-followups/PAST_CEOTHIA_AUDIT_REVIEW.md",
+      "sha256": "e0481c866a54fb246bdbf6209daee7e58dd99636766612777f258431f7d15008"
+    },
+    {
+      "path": "docs/design/quest-story-followups/PATROLS_AUDIT_REVIEW.md",
+      "sha256": "a7284a82bf165938f4f3090fab2f6607b4133cba6ead9b04f3abb55e7a3c0f35"
+    },
+    {
+      "path": "docs/design/quest-story-followups/PETRIFIED_CASTLE_AUDIT_REVIEW.md",
+      "sha256": "41f3ec8466a7fc37fce5cff4d58e39840f190132b2b5e49b4cb4d1eb0db89311"
+    },
+    {
+      "path": "docs/design/quest-story-followups/PETRIFIED_CASTLE_BUILDER_QUESTIONS.md",
+      "sha256": "8f31d2e6d90c0b40b6e2245c7d01d59fc5392e232fb8b3fe3266e11eee8b3985"
+    },
+    {
+      "path": "docs/design/quest-story-followups/PHARR_VALLEY_AUDIT_REVIEW.md",
+      "sha256": "cf6a16280efcba968ea086a32cc7933995cbb047de5a6d4d4c1de87c80fa89f7"
+    },
+    {
+      "path": "docs/design/quest-story-followups/PINE_HOLLOW_AUDIT_REVIEW.md",
+      "sha256": "a69d6aa13c14baea410e2eaea40b58401b4ca0aa57668873e3de56284585b14c"
+    },
+    {
+      "path": "docs/design/quest-story-followups/PITS_OF_CERBERUS_AUDIT_REVIEW.md",
+      "sha256": "47550b40580d483fe5f893de24312a63cd465e68fc9233acd17a1d1e933fec19"
+    },
+    {
+      "path": "docs/design/quest-story-followups/PLANE_AVERNUS_AUDIT_REVIEW.md",
+      "sha256": "b21b2a7cb0db5f4fcab5cdaa4b5b10b6a5dd7913fc3026ad851d8a904d34c7d2"
+    },
+    {
+      "path": "docs/design/quest-story-followups/PLANE_AVERNUS_BUILDER_QUESTIONS.md",
+      "sha256": "64d57c7769ab52c5060606f87d5abd866ecdc84cff2ee794b636443d0709b5f5"
+    },
+    {
+      "path": "docs/design/quest-story-followups/PLANE_OF_AIR_AUDIT_REVIEW.md",
+      "sha256": "e56c19540009d327a0ea4db13b2c91cb3a982269ba7388a03d6c215a086b8469"
+    },
+    {
+      "path": "docs/design/quest-story-followups/PLANE_OF_EARTH_AUDIT_REVIEW.md",
+      "sha256": "e622ea1b212690981d3b1891ac6e3d422ee1bf20ab33e1eed3c2a230d7a08f64"
+    },
+    {
+      "path": "docs/design/quest-story-followups/PLANE_OF_FIRE_AUDIT_REVIEW.md",
+      "sha256": "a5bd61b9b3f17336ee8eeabf987b92cd8dea50ce5ed2098909da94afea8f622a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/PLANE_OF_WATER_AUDIT_REVIEW.md",
+      "sha256": "30219cf2816e84e1e18f4f6b4b49e1a20c295597420f3dc4b61c74679e0edeaa"
+    },
+    {
+      "path": "docs/design/quest-story-followups/PLAYER_CASTLES_AUDIT_REVIEW.md",
+      "sha256": "d9084a511d5f00da7773253d82a41f03241c5dfc5ab2b8e0774f38816720f0f2"
+    },
+    {
+      "path": "docs/design/quest-story-followups/PLAYER_GUILDS_AUDIT_REVIEW.md",
+      "sha256": "e7c7994df8226ef201932fe150d6919f930f60f720fcb3119616505de874f41b"
+    },
+    {
+      "path": "docs/design/quest-story-followups/PLAYER_GUILDS_BUILDER_QUESTIONS.md",
+      "sha256": "b2cc009277049cccfecabcd1f5bf29953c9a7364932b1924589d39555e52638e"
+    },
+    {
+      "path": "docs/design/quest-story-followups/PODS_AUDIT_REVIEW.md",
+      "sha256": "8478eab210ccac8d8a413b07b20a6323db9ee691fef67d45b83ffd05dd88749f"
+    },
+    {
+      "path": "docs/design/quest-story-followups/PORTSKYTHIC_AUDIT_REVIEW.md",
+      "sha256": "3fcb55fc2cc7420ec782ac4aa91dc3a04c237fe9e14744bb5368a6364eec43ea"
+    },
+    {
+      "path": "docs/design/quest-story-followups/POTIONS_AUDIT_REVIEW.md",
+      "sha256": "c0ca41980de30f92d9de28d357a2af8846b8e271aeec0de438ab8516f88b08cc"
+    },
+    {
+      "path": "docs/design/quest-story-followups/PRAGTOG_AUDIT_REVIEW.md",
+      "sha256": "289a34331507f91324e41a67633a424b5ba70e2821e2e5607226ee1e49f657d6"
+    },
+    {
+      "path": "docs/design/quest-story-followups/PRISONS_OF_CARTHAPIA_AUDIT_REVIEW.md",
+      "sha256": "14c5f10193e7aaf62df127dfe4fa6f71c5b760cdcd0f4347c08a94af94c0a261"
+    },
+    {
+      "path": "docs/design/quest-story-followups/PRISON_OF_FORT_BOYARD_AUDIT_REVIEW.md",
+      "sha256": "346958b940a254517ad597ccff21b3b8a64ea184520bc8fed00c7ab49123bc83"
+    },
+    {
+      "path": "docs/design/quest-story-followups/QUEST_STORY_FOLLOWUP_REVIEW.md",
+      "sha256": "1f829af821ddcd24424dddce7fa117a4f7cd8c17b1c26dccb4b09ecea9202830"
+    },
+    {
+      "path": "docs/design/quest-story-followups/QUIETUS_QUAY_AUDIT_REVIEW.md",
+      "sha256": "289e6f64c24b1becd984536aa5401509d9fd83e47e6d3c78692dc5acfb762a7a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/RABBLE_AUDIT_REVIEW.md",
+      "sha256": "fed037339172eba8a0101b575d0f600907fd0b431869446115d9bc039ecf135a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/RAIDERS_AUDIT_REVIEW.md",
+      "sha256": "099f7a28446e4fb46dd0e2c544d9d2ddd7eb054e2cba806f3300be9ec9c49e48"
+    },
+    {
+      "path": "docs/design/quest-story-followups/RANDOMNESS_AUDIT_REVIEW.md",
+      "sha256": "50c2a7583f308d5356408075e4c508bdaa64fbe78b4064760682fa57c6d40178"
+    },
+    {
+      "path": "docs/design/quest-story-followups/RAVENLOFT2_AUDIT_REVIEW.md",
+      "sha256": "82a418074ddf810ce3b1439c479325e60308a2eb51903abc3f62c8c8f1e0ecbf"
+    },
+    {
+      "path": "docs/design/quest-story-followups/RAVENLOFT_AUDIT_REVIEW.md",
+      "sha256": "3c89afb6cc38903ac6c06d36813286bbc6f05133439ad3ec126e19489706a3b6"
+    },
+    {
+      "path": "docs/design/quest-story-followups/RAVENMIS_AUDIT_REVIEW.md",
+      "sha256": "55df0cb10987a1bef45c266447bebd730cad41d290c1678c135829ffba4afc2e"
+    },
+    {
+      "path": "docs/design/quest-story-followups/RAVENMIS_BUILDER_QUESTIONS.md",
+      "sha256": "f041176b203183fce04b03e02001d5e99040afea0aac2f00f2a69b88c0b439ca"
+    },
+    {
+      "path": "docs/design/quest-story-followups/RAXQUEST_AUDIT_REVIEW.md",
+      "sha256": "ef7f2b163b9b498647063333b7442042464ba03908923de6b9d6eef728202422"
+    },
+    {
+      "path": "docs/design/quest-story-followups/RAXQUEST_BUILDER_QUESTIONS.md",
+      "sha256": "265024e980bcda3830afee1bc45de575a87e68af55704c36e84701f5264bc1d6"
+    },
+    {
+      "path": "docs/design/quest-story-followups/REALMS_MASTER_AUDIT_REVIEW.md",
+      "sha256": "914e8910ae3ee3d123048fee3545e858d4e515a68a2bfa92c5c0df4dee57c307"
+    },
+    {
+      "path": "docs/design/quest-story-followups/REALMS_MASTER_BUILDER_QUESTIONS.md",
+      "sha256": "0f7928ab844f6b56bbb3a74b4b549489e14fbf7427ce94a592fc731fce664f3d"
+    },
+    {
+      "path": "docs/design/quest-story-followups/RETURNS_AUDIT_REVIEW.md",
+      "sha256": "30fd70277c8df510ebc9c52a7622d268342517690d8bcbd6ac95d4b368b2da0c"
+    },
+    {
+      "path": "docs/design/quest-story-followups/RETURNS_BUILDER_QUESTIONS.md",
+      "sha256": "c32e35cc1e2ad3a783d7a407805abadfde231a11af900ebaca36f41c09884a01"
+    },
+    {
+      "path": "docs/design/quest-story-followups/RFTJNGLE_AUDIT_REVIEW.md",
+      "sha256": "45879cd505fe1f6fd063a1c1b1c5190768be597f928a98d8eed453a554a2e597"
+    },
+    {
+      "path": "docs/design/quest-story-followups/RF_GH_AUDIT_REVIEW.md",
+      "sha256": "c3a384ad5d6dfc4f65a7f226421e1b7b7bd417a3daafee834001fa05fac199e0"
+    },
+    {
+      "path": "docs/design/quest-story-followups/RF_GH_BUILDER_QUESTIONS.md",
+      "sha256": "bc2c260f25355dc0ee3e0c0f85a3cc0fed19827831a704facc318ebe17b97170"
+    },
+    {
+      "path": "docs/design/quest-story-followups/RF_OP_AUDIT_REVIEW.md",
+      "sha256": "8390b83bdf36770c5c1d8787b33bc23b38749968911e5bfeb0d8356dab4859c8"
+    },
+    {
+      "path": "docs/design/quest-story-followups/RF_OP_BUILDER_QUESTIONS.md",
+      "sha256": "72ddbc45960fbc3f3930db88d02cdce6d8868b38d94d703b9c2937f4ff9a1334"
+    },
+    {
+      "path": "docs/design/quest-story-followups/RICE_FIELDS_AUDIT_REVIEW.md",
+      "sha256": "36e663d7832f8ce93f09afc6b1a7f75aa6a7c1e50c96380c5560c81e09947049"
+    },
+    {
+      "path": "docs/design/quest-story-followups/RIVER_STYX_AUDIT_REVIEW.md",
+      "sha256": "9a337ef9d6bdf538872a07662fbc120d5879db898c4ccb063e0b56baa6f9f509"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ROGUE_PLAINS_AUDIT_REVIEW.md",
+      "sha256": "cbd7fc548aa4cd3adaf7c3e9e9bb921befd348984d1a210f8309c73ee73cb507"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ROYAL_MAUSOLEUM_OF_CASTLE_ICECRAG_AUDIT_REVIEW.md",
+      "sha256": "db702304d2fc72a17346d976ed0da1a444ffc5db9eec29bab2d38dc0d9504ff9"
+    },
+    {
+      "path": "docs/design/quest-story-followups/RTUN_AUDIT_REVIEW.md",
+      "sha256": "5a570a60956d199458ab963f23064f1a54a9c9d419a9e81eef5e252c59ed3137"
+    },
+    {
+      "path": "docs/design/quest-story-followups/RTUN_STORY_REVIEW.md",
+      "sha256": "4bd7d527733731b8a1663c36c667d43f4eb9d573e723d258f30d8a180a31dae1"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SARMIZ_AUDIT_REVIEW.md",
+      "sha256": "a6f5376c45aed08e19223d4ef6b5997daa83a3fb6c6b4836d05fde18ffeb5c8f"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SAVANNAH_AUDIT_REVIEW.md",
+      "sha256": "c0ecbbdfca50dda9d62fda026ebc12c7096b35041702cd231f2ff04a09208929"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SCOPE_AND_COVERAGE_REGISTER.md",
+      "sha256": "a7d8e4e28f417813c9e7f96d29b2fbb2ffb51aee1d9f3506dd61413ead7e652a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SCORCHVALLEY_AUDIT_REVIEW.md",
+      "sha256": "81c25852261abfce93c651b3331716f23ff1f9db3b339f7bd50c6f16f5bdc45d"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SCRUBS_HALL_AUDIT_REVIEW.md",
+      "sha256": "74d4ca766a98a96c32d977184e6317d058a1c49847e391733eab009d74b7e30d"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SCRUBS_HALL_BUILDER_QUESTIONS.md",
+      "sha256": "703020e6eebe5d3ca8fd34e37b02848a1679fe4f482238c8c4b7bfd46380b30c"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SEACAVES_AUDIT_REVIEW.md",
+      "sha256": "2a43e312bc9ad712928cffbd3552f73b070fc2b707fe42c20f23dff8eff466e8"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SEAKNGDM_AUDIT_REVIEW.md",
+      "sha256": "3303f682e848e5e8893fe7501e2b008115fa9b374f40aae57822a8316a309ed4"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SEA_AUDIT_REVIEW.md",
+      "sha256": "ba4d20ad862152943d011892c012bcaa53d96dec2ccb8f6ce8d4f7d2aede7bee"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SEA_STORY_REVIEW.md",
+      "sha256": "16de26c784feea7303acc98a8e9504a2437dabd3870df206842f754eb9c8d0c9"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SEVENO_AUDIT_REVIEW.md",
+      "sha256": "d11db693835314da739fb146e976926e6e503c3233709f626e0a02b9b0d901af"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SFOREST_AUDIT_REVIEW.md",
+      "sha256": "5f8dde59d98ec6f61914b77ad5e9d0c2c77d631280ecb11bd04ededce6e0e1c0"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SHADAMEHR_KEEP_AUDIT_REVIEW.md",
+      "sha256": "ae37281200be80249edde2410da594edc190f04120318fd3e26417a4c7d26798"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SHADOWCL_AUDIT_REVIEW.md",
+      "sha256": "8c8cc7e3bacb17ea3d8a9465c1bf90d65b4b09c9fceac9def00b05340d9bdcbe"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SHADOW_FOREST_AUDIT_REVIEW.md",
+      "sha256": "f5337dd9b0278e55740660bcc6d8a4b806cfb3565a94de925f065ec3c0ef64d4"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SHADOW_HALL_AUDIT_REVIEW.md",
+      "sha256": "11bf5b8aead15091e702cf2a2a7059bfc2869f0ee429f1ca5f5555bd7218bdfc"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SHADOW_HALL_BUILDER_QUESTIONS.md",
+      "sha256": "1bab19d15fac31d236f60149499fd6d4b5631df4135b2efd34d596169a3db0fa"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SHADY2_AUDIT_REVIEW.md",
+      "sha256": "03ad827751e53c659caf27622251217ec20c01f3446864ee83d4a2adcb0064d8"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SHADY2_BUILDER_QUESTIONS.md",
+      "sha256": "9143a3ef35f04bbe2ed25171c4bae9b6139efc74383cc85a677d37a49db72b8a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SHADY_GROVE_AUDIT_REVIEW.md",
+      "sha256": "469cba141140d59c40a53e793944ec7c57871c1224bb082d08109af1b73c7eca"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SHAFTS_AUDIT_REVIEW.md",
+      "sha256": "e71560f6544c4e23554719d6e3c28069c7921bbea5516fc7341cfe8769a5df8d"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SHAUGHIN2_AUDIT_REVIEW.md",
+      "sha256": "9e56a6dddcec264d89bd0fe1b7a716ca22852fc96c45364b30b0fd01f8db558b"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SHAUGHIN_AUDIT_REVIEW.md",
+      "sha256": "557514b49e1961e8f065498a5c94ef3413bbcbae4e20ca0509bfe32ccea25279"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SHIP_AREA_AUDIT_REVIEW.md",
+      "sha256": "3c90960b6ba6a2ac0f860215b9ae6cfb6e564a83fb4dc6a9a2fcf08ce149ae53"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SHIP_YARDS_AUDIT_REVIEW.md",
+      "sha256": "7c6155d684b677c75023ba38982ac4c682200a248e88a2b62be4c573024af0a6"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SHORTB_AUDIT_REVIEW.md",
+      "sha256": "2615eb23c352377142f36c703ba4c214f362e6d6313ff93849daf58e53ad8a7d"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SIEGE_AUDIT_REVIEW.md",
+      "sha256": "6a905b92b5c4c52397513acb44175ba0acdfe469f112cf2eecd871f76541102d"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SKULLDRACH_AUDIT_REVIEW.md",
+      "sha256": "89a6ca9cad5a80154ed7684d67449b9769f15c96c96666acc6c0aec425655399"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SKY_GH_AUDIT_REVIEW.md",
+      "sha256": "fc11f16338778a36dd91171d6b7e7fe961a57996bb570428999674c75041fd03"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SKY_GH_BUILDER_QUESTIONS.md",
+      "sha256": "e5345b997625a31c3ccfd62ea9de7fec011bdc42861d8f3cbd7bd9cf17105f6e"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SMOKEV_AUDIT_REVIEW.md",
+      "sha256": "729f57054c98b2f22f276f51b005b2a783b58656c5df2bf1857f385cebdd3360"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SMOKE_AUDIT_REVIEW.md",
+      "sha256": "d5b25bd27529bb97c40a382a3b83ccf9889ef775831241b5e14509efb6d85b1d"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SNOGRES_AUDIT_REVIEW.md",
+      "sha256": "f8078de738bd90c3c457c53e4ad4e4122f89a5f5d7f3e7b3161455a7845e918f"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SOLONAR_AUDIT_REVIEW.md",
+      "sha256": "aaedf00d1d630bb754c298878ba6bdf5729442ea19cf9d8e9f117b068a3ee97d"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SOLSTICE_GH_AUDIT_REVIEW.md",
+      "sha256": "2e0fff239e525ed885bf6069413f5d87ff51a9dffb95c34a7a150eabc9370dcf"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SOLSTICE_GH_BUILDER_QUESTIONS.md",
+      "sha256": "d1bab724b919502e0a9fef8b036ff22b8e93760044c287625ff36abb673f12fc"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SOUTHERN_COASTAL_HIGHWAY_AUDIT_REVIEW.md",
+      "sha256": "b5f76a2c5628cc6ae29a63c936de415a139f1df4d8fbd7879949b6973eba998f"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SPIRES_OF_ELDER_EVIL_AUDIT_REVIEW.md",
+      "sha256": "acbe33ab52f515b95c021373d7f27566ea4d65399061bf6e2aaafbc182f48f5d"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SPLIT_SHIELD_AUDIT_REVIEW.md",
+      "sha256": "9ad81a9cdb33de3a30c4474062e3bd235c5330f4b23218a4d54030914c589df6"
+    },
+    {
+      "path": "docs/design/quest-story-followups/STORMPORT_AUDIT_REVIEW.md",
+      "sha256": "b65d74b58dd57ceb8498ac951d1b480e14c2f4f05506ac3311ce64a7525a2665"
+    },
+    {
+      "path": "docs/design/quest-story-followups/STORM_PORT_STRONGHOLD_AUDIT_REVIEW.md",
+      "sha256": "0983186306c3dd2e389b7cc53b254a81714108d696ee07dad9a22c531adc17ec"
+    },
+    {
+      "path": "docs/design/quest-story-followups/STRATHOR_VALLEY_AUDIT_REVIEW.md",
+      "sha256": "1d2f697a99e9e8fa5a600b9166c5c82de4adc55dea0af9cb5c322f792a04c9aa"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SUNHALL_AUDIT_REVIEW.md",
+      "sha256": "5d7b1bd4912f7a818d636d3753ca015443bda8e7983f3992dd5e2a5dbc7ac961"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SUNHALL_BUILDER_QUESTIONS.md",
+      "sha256": "0e9c2b79b985fa78aacd71d788c459d5f4a0af64f2508dadc53ccb3b14457e40"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SURFACE2011_AUDIT_REVIEW.md",
+      "sha256": "48ba1d4f330fb531bd76785fd700732039ff26421b011339b0a44006be8b80d1"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SURFACE2011_BUILDER_QUESTIONS.md",
+      "sha256": "66c2b506977cb1c9be0b81fea448b69712175e61446a6f480393fbcf0180f364"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SURFACE2011_TEMP_AUDIT_REVIEW.md",
+      "sha256": "eea26695b826998d297062b42a26db5ce79585b9f48c838fd31db8549d13ceaa"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SURFACE2011_TEMP_BUILDER_QUESTIONS.md",
+      "sha256": "b3996954cd25517384ed64974b1e44ad1bc02971b6863fc36c3b523ad5364148"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SURFACEKEEPS_AUDIT_REVIEW.md",
+      "sha256": "08b77872776c12ba8e187e430e90ec912b32bd2f8c2e8e5728f35c09f14eae17"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SURFACEKEEPS_OBJECTS_AUDIT_REVIEW.md",
+      "sha256": "a2d9922ab9da3a2d4da3bc865770857e72c78aa4b0469d3ff29a8d6e0c9f3ed3"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SURFACEKEEPS_OBJECTS_BUILDER_QUESTIONS.md",
+      "sha256": "84b8d4cf97e1f44cf17cee92d84a696c413ad19610dbfbb4c3c8a75e58cecd92"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SURFACEMINI_AUDIT_REVIEW.md",
+      "sha256": "aa827ac4cb4ecf81a91c51434d0b18344333218c255138985af83c0f4a6ecde7"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SURFACE_AUDIT_REVIEW.md",
+      "sha256": "5a9954cb4d560bbf6d5bd065d28a053c55982f81d0b92fed9495f851197737a1"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SURF_AUDIT_REVIEW.md",
+      "sha256": "5dc4df9e2845216de4659d672d18ee411900e79eb033bb8096499979576f86c4"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SURF_BUILDER_QUESTIONS.md",
+      "sha256": "fed1502a7cb276145075663a15ceb9915677f098308491ec1646dba6c17ce4db"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SWAMP_ONE_AUDIT_REVIEW.md",
+      "sha256": "10dfe2cd7f9c759ef29523c7f541ec3eccc37eb9f1ed4ed7dc53e4425c033df5"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SWAMP_TWO_AUDIT_REVIEW.md",
+      "sha256": "03807715b96bd73e4a87d9446de4a3668a6e53948d0a3126bce147156138705a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SYLVANDAWN_AUDIT_REVIEW.md",
+      "sha256": "7884f44964e2ff9fbc8d6a964c6d1146e7ad2d47c6d534caacb293aae9623b93"
+    },
+    {
+      "path": "docs/design/quest-story-followups/SYLVANDAWN_BUILDER_QUESTIONS.md",
+      "sha256": "2820f1cfe146e6b83d7c12f0782c8cd8f6c48ba32b14d7e8d9b12496809e70aa"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TCHAN_AUDIT_REVIEW.md",
+      "sha256": "91ce28129a3d91d234a8cda2e216e5e4e56619cb6a82ebfbd0929b6f3126a294"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TEKA2_AUDIT_REVIEW.md",
+      "sha256": "0b6c9bfc4d8146c5a4bd66ba5cadf0aadd55f04f92843d54af7d205057964c3a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TEMPEST_COURT_AUDIT_REVIEW.md",
+      "sha256": "58d92cea29c0c3e522bad4346acef8fc302b3ee43e5f0ea85dd52c692236f3ae"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TEMPLE2_AUDIT_REVIEW.md",
+      "sha256": "ab80860d6a07bcd0c2fa86670028d3bcc0d22b4cba0deb09355054b7afecf7f4"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TEMPLE2_BUILDER_QUESTIONS.md",
+      "sha256": "20987a5ab812c56b3bd2ed7a29b10a2386a922ec4bdede329517403fa21620db"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TEMPLE_AUDIT_REVIEW.md",
+      "sha256": "0493cddadb6f9ee852fcaf256a648f4699153f3b1c149f7c17d9d90b5224c200"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TEMPLE_LADUGUER_AUDIT_REVIEW.md",
+      "sha256": "0c8832ee1fee69cff10216eaaca7c4232ae86482bd41b217807f36439dfc7706"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TEMPLE_OF_THE_EARTH_AUDIT_REVIEW.md",
+      "sha256": "32177a8458b45ae49e63f14cbaad5d2a3acb093d5753b2a34bade83ac247519f"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TEMPLE_OF_THE_SUN_AUDIT_REVIEW.md",
+      "sha256": "09529d0634f946d8a3543d2affa8453ae8d9009aff772ef6f7beda28eea439ad"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TEMPLE_TO_SKRENTHERLOG_AUDIT_REVIEW.md",
+      "sha256": "b1e7c2cb56764c3b8ad0221c961b8fb208291ba3aefad186276b07fa8d20b3b2"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TENTRO2_AUDIT_REVIEW.md",
+      "sha256": "f9d48f7f321c94ea3053a81f9212498e331624cc215550aece2025d9a4eaebfc"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TEZCAT_AUDIT_REVIEW.md",
+      "sha256": "e9dbe3ecc87818aa97f080c5d80dbc995f53e7a92de8e9035824c631573fae4c"
+    },
+    {
+      "path": "docs/design/quest-story-followups/THARNADIA1_AUDIT_REVIEW.md",
+      "sha256": "17cc77631b81582932227c87045762a956aba6a090f2a92690a7088443ee51bb"
+    },
+    {
+      "path": "docs/design/quest-story-followups/THARNADIA1_BUILDER_QUESTIONS.md",
+      "sha256": "0d63da0a8866bec33e25afdf72ac11a0ef6ccd9772592b4e8eae9cb5849a8dbc"
+    },
+    {
+      "path": "docs/design/quest-story-followups/THARNADIAN_RUIN_AUDIT_REVIEW.md",
+      "sha256": "0810f976108b460139f7b9e4895fb0cac68c1fcbcdca6465e3e6634a092c5a17"
+    },
+    {
+      "path": "docs/design/quest-story-followups/THARNADIA_AUDIT_REVIEW.md",
+      "sha256": "27389f03eb57057f06b868e9e75615c27016aba8d5cfbb5807d19f281ad2ceb0"
+    },
+    {
+      "path": "docs/design/quest-story-followups/THARNRIFTS_AUDIT_REVIEW.md",
+      "sha256": "3c26a68bffc7499fc2bc03cbedd41f0c67615a1199c5408820b5669cceb3999c"
+    },
+    {
+      "path": "docs/design/quest-story-followups/THAROLD_AUDIT_REVIEW.md",
+      "sha256": "fb081a63f22fc396ab87c2360b57b1450ef64b3409fb6940cac1a284882e1c01"
+    },
+    {
+      "path": "docs/design/quest-story-followups/THAROLD_BUILDER_QUESTIONS.md",
+      "sha256": "8946aebceb6e4cc3e19ad3cae5b6463a719cdb707485f0aa765abd6c8e4f1cb6"
+    },
+    {
+      "path": "docs/design/quest-story-followups/THETIS_AUDIT_REVIEW.md",
+      "sha256": "e2df165e9cc25bd781e3fb1b88192dd273fa76ba2e2723cae75a01d7522ebd06"
+    },
+    {
+      "path": "docs/design/quest-story-followups/THEURGIST_AUDIT_REVIEW.md",
+      "sha256": "cafd312cd9af442fb2c951368f955438ab3aad2a7429844199363aa114562b1d"
+    },
+    {
+      "path": "docs/design/quest-story-followups/THEURGIST_BUILDER_QUESTIONS.md",
+      "sha256": "f84eb0f02d4fd26e538d4910abd97236428b549fa53c51fe0be8fa71b1fdcb30"
+    },
+    {
+      "path": "docs/design/quest-story-followups/THRI_STORY_REVIEW.md",
+      "sha256": "34af692ecb70f792581e79772a21b2288ba016a77546fac0275a7767fdc3b2ce"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TIAMATS_LAIR_AUDIT_REVIEW.md",
+      "sha256": "1fededfd23a09e6c34bdf25aed80f2d57e5ee6dc12cdad556fa3eee57635084a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TIAMATS_LAIR_BUILDER_QUESTIONS.md",
+      "sha256": "421c12c74f77681e2a87c7826d7f78247503023fb74f8607600c925f1fc34415"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TIAMAT_AUDIT_REVIEW.md",
+      "sha256": "7f224f8241b7dbf6c86b78630e2975fc19b315a4a3f33cedb4ef51b8a64a0890"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TIKITT_AUDIT_REVIEW.md",
+      "sha256": "c576754603f5f18755554021b89704905c7c692b1104c902487093743cb8faad"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TIKIT_AUDIT_REVIEW.md",
+      "sha256": "b6a2405befe1ab125dcf81558e7098968cfc14ddc51c502adbe0d7f830642c59"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TORG_AUDIT_REVIEW.md",
+      "sha256": "cc228d6643b39cf2cf5edce32d47db02bd27c57f11a9c0ad853628f9561c62b9"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TORRHAN_AUDIT_REVIEW.md",
+      "sha256": "e6913c945c04ef87a60210e12fd6268318663d6586f4b9736b95b70337678b21"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TORR_AUDIT_REVIEW.md",
+      "sha256": "e42d84d5101827f79e39e990e03897167ede74dcaf67765bdf6ae3e5fbe591c2"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TORR_BUILDER_QUESTIONS.md",
+      "sha256": "5f26bdb4afc3bf10e7b541e9eb5391f69a3257f9eb15526af3bc2c53b4e12671"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TORTURE_AUDIT_REVIEW.md",
+      "sha256": "7aeb344a44f0de52a1c65e9410bf9d8c8edfac0095e968d84a99b271e93a739a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TOWER_OF_HIGH_SORCERY_AUDIT_REVIEW.md",
+      "sha256": "ff6dbfdff8fe827ed458b36b97becc7960d7fd504afa63ddd9c3659dce94050e"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TRADESKILLS_AUDIT_REVIEW.md",
+      "sha256": "f6e5743efefebc2759d7f40924be36c4f57178017f8e5358531d9c13d22268d5"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TRADESKILLS_OLD_AUDIT_REVIEW.md",
+      "sha256": "50597aeb6d289e17f3904bb5601183aa5c9cce4a78443d73800089185971c37d"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TRADESKILLS_OLD_BUILDER_QUESTIONS.md",
+      "sha256": "19cc2aca62a3ba7bc2b0ae53ffedf4b1c726b729ed99f251d3ecd76abb7e5d67"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TRAKKIA_AUDIT_REVIEW.md",
+      "sha256": "5e3d4973bdb31cebf65a109a1e2fe06ca97f9543fba19f40f875f03c0140559b"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TRAOUL_AUDIT_REVIEW.md",
+      "sha256": "19d593d10c5a375179b2b187016c61bd2c0992cea74a3919b5358255c205e473"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TREASURE_CAVES_AUDIT_REVIEW.md",
+      "sha256": "6002a0f6795b0303df924b06e8ca575cdeb1a9044f8fa4e03943ad86568c0a81"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TRIBAL_FOREST_AUDIT_REVIEW.md",
+      "sha256": "fdb60cb0b556cf62af038cc8b778150e73c82290414fd08434406a4704ccc6b9"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TRIBAL_OASIS_AUDIT_REVIEW.md",
+      "sha256": "33bea37e9f03a1ec24628a32ababef14b2b715431814d728d233c7ff1e78f5c1"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TRNSPTOW_AUDIT_REVIEW.md",
+      "sha256": "45ea35e9b878e46ece4f3ea7553295d3b27e1c5a00bcc3c78bee275f0d894568"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TROLL_CAVES_AUDIT_REVIEW.md",
+      "sha256": "6e79aa9bb5e58d2fcaf28ce1cfd61c5008ba22047d0095d94c08b885c4c9d73d"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TROLL_HILLS_AUDIT_REVIEW.md",
+      "sha256": "18ef4489b7f89e132043bbee6e0377103eb254434c256153bdadffc4c9b73440"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TRUK_AUDIT_REVIEW.md",
+      "sha256": "a63f0dde654955ee01627f2b1d13a74e8ca1c6340713833738aaf25bdc038f58"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TUNDRA_AUDIT_REVIEW.md",
+      "sha256": "5ebdbd65dd79719c1541dc245df979a6c02b220083691ace0217266ac6e2777e"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TUROLOPOLIS_AUDIT_REVIEW.md",
+      "sha256": "4981a26f7f104d1cfbbf92ac3f45db10afed8ab7cc8bd301732e5fe1b818ae8b"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TUROLZOO_AUDIT_REVIEW.md",
+      "sha256": "30072a23160a24638b5121185d32668dd12d19ac54243f8779a33f7b8023c352"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TWINKEEP_AUDIT_REVIEW.md",
+      "sha256": "ff8e8bb00ad739b136343bd90007b2ac3f2f43bfe343c33b77f3e248280a74d0"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TWINKEEP_BUILDER_QUESTIONS.md",
+      "sha256": "0d22f2a73a3628c5e608242a4b35de102302b4d40095b69631b1d2d1afb5bd23"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TWIN_TOWERS_AUDIT_REVIEW.md",
+      "sha256": "d84d54028a5c04c9d200469fb336a9da6e82ed4813926857a13c51345f6bdca6"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TWIN_TOWERS_FOREST_AUDIT_REVIEW.md",
+      "sha256": "116f0fe3c94875bfbb7ae4885660347ecc1954cf3c84d6fd7f6ec8bd1d25a044"
+    },
+    {
+      "path": "docs/design/quest-story-followups/TWIN_TOWERS_FOREST_MILESTONES.md",
+      "sha256": "749e22429f12784b1a8515f33644d563ef8ae7020c27d292ac6f7bfaf87b9c58"
+    },
+    {
+      "path": "docs/design/quest-story-followups/UDMINI_AUDIT_REVIEW.md",
+      "sha256": "30973abca57891fb9c64d1a0f9e6bcfb4fa6caf7ee67bb43198162a1866bd1ff"
+    },
+    {
+      "path": "docs/design/quest-story-followups/UD_AUDIT_REVIEW.md",
+      "sha256": "2658d45be1ccf0106fe01d905cf5243609ce711f89543faa126b0038769be5ef"
+    },
+    {
+      "path": "docs/design/quest-story-followups/UD_BUILDER_QUESTIONS.md",
+      "sha256": "16d3f256c8777150154c956237c99d6e81fe1b1ef11cc3f988db398e5d2254f0"
+    },
+    {
+      "path": "docs/design/quest-story-followups/UD_INSIDE_AUDIT_REVIEW.md",
+      "sha256": "c993fa6b467a16d1f74e89a938b3968ab4271d04c206ac62be8fb12a0218d519"
+    },
+    {
+      "path": "docs/design/quest-story-followups/UD_INSIDE_BUILDER_QUESTIONS.md",
+      "sha256": "8f11133e56b0279bf13245ad6c2abe205e5815f77f7da1003ea7c334ae16450f"
+    },
+    {
+      "path": "docs/design/quest-story-followups/UD_MAP0_AUDIT_REVIEW.md",
+      "sha256": "0eca75c50afbbdb9f7efd72259ebecef3ac12fd6887979e37b9fff94181a2f06"
+    },
+    {
+      "path": "docs/design/quest-story-followups/UD_MAP0_BUILDER_QUESTIONS.md",
+      "sha256": "bf00e7a18d6f972afe20e6ad06be4cd25ed98c1b39f2bc653a8d4232cb630bba"
+    },
+    {
+      "path": "docs/design/quest-story-followups/UD_MAP1_AUDIT_REVIEW.md",
+      "sha256": "c178622a6f88faff545bf0f8deddd8c65537cd93b68e285c41e05585f2eec74b"
+    },
+    {
+      "path": "docs/design/quest-story-followups/UD_MAP1_BUILDER_QUESTIONS.md",
+      "sha256": "006c23acb34b15d2e016894020d305091429e515857370c6bd5c9f53631a5aaa"
+    },
+    {
+      "path": "docs/design/quest-story-followups/UD_MAP2_AUDIT_REVIEW.md",
+      "sha256": "544da6f9eb8887a19e57d3cf5a59cdaf1467c23ee58cb54be5d85e0753be1d70"
+    },
+    {
+      "path": "docs/design/quest-story-followups/UD_MAP2_BUILDER_QUESTIONS.md",
+      "sha256": "7925c36ca99d254be38a03e863eedbe019a100e735515fc5faa12dede3b483b8"
+    },
+    {
+      "path": "docs/design/quest-story-followups/UGTA_STORY_REVIEW.md",
+      "sha256": "9d93421c78a8e4ec8fb14b7919bcf1703462dac66a0e81ae720174d82a8ab23e"
+    },
+    {
+      "path": "docs/design/quest-story-followups/UNDERDARK2011_AUDIT_REVIEW.md",
+      "sha256": "9bd568fc845a07088e4ffdd930cad7bb7fe12eeee8796b251cbc9e78b25c61b0"
+    },
+    {
+      "path": "docs/design/quest-story-followups/UNDERDARK2011_BUILDER_QUESTIONS.md",
+      "sha256": "ac1bf834b8cf7b94e084826457569e43d3b9c6ee9000ecf2b367831b8b8df0c0"
+    },
+    {
+      "path": "docs/design/quest-story-followups/UNDERGROUND_LAVA_CAVES_AUDIT_REVIEW.md",
+      "sha256": "4a16df77b16b4a93183d7dfdd5af508746e22b20ad8ce5d01f9457f5c29ca575"
+    },
+    {
+      "path": "docs/design/quest-story-followups/UNDERMOUNTAIN_AUDIT_REVIEW.md",
+      "sha256": "6c5d32bc6c3456d59b849306cf2228f81913d59d8ae5b146e44bd6d4eddfe00f"
+    },
+    {
+      "path": "docs/design/quest-story-followups/UNDERWORLD2_AUDIT_REVIEW.md",
+      "sha256": "a2b160a8b3d68694cdc180d0c6952e4e0ff7487c3873b7849b55058b5e911122"
+    },
+    {
+      "path": "docs/design/quest-story-followups/UNDERWORLD2_BUILDER_QUESTIONS.md",
+      "sha256": "34b8ac86361ea81ac5efbc970f7ddab424e2ab943c78d9bca60a29a328a88327"
+    },
+    {
+      "path": "docs/design/quest-story-followups/UNDERWORLD3_AUDIT_REVIEW.md",
+      "sha256": "fe800c86c224656d9c3c75800b112127ce695189ad6021a0edc43b8bc8ed4100"
+    },
+    {
+      "path": "docs/design/quest-story-followups/UNDERWORLD_AUDIT_REVIEW.md",
+      "sha256": "dc64d6e6138077065e8cd3434a10cb681c624584a814ee0d7e3bfa8ad88f74c0"
+    },
+    {
+      "path": "docs/design/quest-story-followups/UNIQUE_AUDIT_REVIEW.md",
+      "sha256": "1136c1a639d166339f93ee1ce8db9530449a48a971ffd3dd1364a707de545d30"
+    },
+    {
+      "path": "docs/design/quest-story-followups/UNOUTPOST_AUDIT_REVIEW.md",
+      "sha256": "5ee0bfb88fceb4acda0e5b1d652b33d5d5ffebe06b4dcbcfb404ee2ace731b68"
+    },
+    {
+      "path": "docs/design/quest-story-followups/V2_AUDIT_REVIEW.md",
+      "sha256": "f8e11ed1ffc9d7bd12823f13447a3ec75828e101775e106c4d9b3f0f1991f48c"
+    },
+    {
+      "path": "docs/design/quest-story-followups/VALDRAK_AUDIT_REVIEW.md",
+      "sha256": "7ed3c74a7d9b7193cfe091601ceb8f7e22c8e1abb4a9a95112e4674b215b2825"
+    },
+    {
+      "path": "docs/design/quest-story-followups/VALINHAV_AUDIT_REVIEW.md",
+      "sha256": "1c165458baaf7facbd52023390d61031fff6bcaaa28175995ab3184ec02485cd"
+    },
+    {
+      "path": "docs/design/quest-story-followups/VALLEY_CRUSHK_AUDIT_REVIEW.md",
+      "sha256": "c6190ddeda80976ce9175e44aff760092d1b6db2f089c7d3db7fc5e42f91f6ca"
+    },
+    {
+      "path": "docs/design/quest-story-followups/VALOISIAN_CASTLE_AUDIT_REVIEW.md",
+      "sha256": "95c31d63c4f6d465788fb8e418a9af2efa2cc21def54a2e61b628ad0aa2026ac"
+    },
+    {
+      "path": "docs/design/quest-story-followups/VARGAN_AUDIT_REVIEW.md",
+      "sha256": "336127b089d6d597a5bc99647bc910b2299f6343a041e5d9bca1e470ce33cfa1"
+    },
+    {
+      "path": "docs/design/quest-story-followups/VECNAS_TOMB_AUDIT_REVIEW.md",
+      "sha256": "bd59497c8117818f1e05ac29d7a072b0b83280c3e8201af2737db8d975d7eee7"
+    },
+    {
+      "path": "docs/design/quest-story-followups/VEHICLES_AUDIT_REVIEW.md",
+      "sha256": "5f84c210559db2a37019e2055b8b5a34d6c38e493f956cd379d25db5ce5b4720"
+    },
+    {
+      "path": "docs/design/quest-story-followups/VEHICLES_STORY_REVIEW.md",
+      "sha256": "97bc05e82d79fa8151be963f03e8182180bf83a34e4e98232347a3d26fbb4250"
+    },
+    {
+      "path": "docs/design/quest-story-followups/VENOM_AUDIT_REVIEW.md",
+      "sha256": "386135cb36be8d8a3b5c9dbd58f2f5ad0a09e9252f69e585b47037cb8360277a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/VENOM_BUILDER_QUESTIONS.md",
+      "sha256": "ec6367fa87a7e497f383bd3c8da61aa87467d5ebe38460a70fcbeaa583daa488"
+    },
+    {
+      "path": "docs/design/quest-story-followups/VERSPIN_AUDIT_REVIEW.md",
+      "sha256": "d23c22b2d2874b24f20a62780a371853ef91b264e95cb8506654275c853a24e5"
+    },
+    {
+      "path": "docs/design/quest-story-followups/VILLAGE_OF_REFUGEES_AUDIT_REVIEW.md",
+      "sha256": "cffd6e12fd89bc431962105593e262477f65c50ed7fdf9a27260bc63bbf4e312"
+    },
+    {
+      "path": "docs/design/quest-story-followups/VODGH_AUDIT_REVIEW.md",
+      "sha256": "a633fabebf08c0bd8174c8a8e161ca262c8fe96f294c37bf083e5bec514a4dd3"
+    },
+    {
+      "path": "docs/design/quest-story-followups/VODGH_BUILDER_QUESTIONS.md",
+      "sha256": "22c414953691ae29d0224afd98376a2286735eedcdd10fc74eef63ea01397a20"
+    },
+    {
+      "path": "docs/design/quest-story-followups/VOID_GH_AUDIT_REVIEW.md",
+      "sha256": "d19e54ded0607e4931e2f23cbfb14be503a2cde80b41f563b2f59196c6b2b5a9"
+    },
+    {
+      "path": "docs/design/quest-story-followups/VOID_GH_BUILDER_QUESTIONS.md",
+      "sha256": "a777a6788e6988c80470720144feffff35636387b10ef7b636b3c3decdbee29c"
+    },
+    {
+      "path": "docs/design/quest-story-followups/WANDER_AUDIT_REVIEW.md",
+      "sha256": "6bc677aa5f9e36e52c015779e865eb9ae9c58f14cdfaa9a3e77657229afd1220"
+    },
+    {
+      "path": "docs/design/quest-story-followups/WATERPLANE_AUDIT_REVIEW.md",
+      "sha256": "82a802c04ac0fac4513747b88af56936d3c034bcd078be849f39327f7de40b0a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/WATERPLANE_BUILDER_QUESTIONS.md",
+      "sha256": "b6ac60175ef2c469764e1aab788cb3f0a956d3d331fddac7bd8e6c509f800077"
+    },
+    {
+      "path": "docs/design/quest-story-followups/WEMIC_AUDIT_REVIEW.md",
+      "sha256": "73e9484fb13df6a9a4c2b46ce516467171a8741f773b42ac4e8d9d9d6e10766a"
+    },
+    {
+      "path": "docs/design/quest-story-followups/WERRUN_AUDIT_REVIEW.md",
+      "sha256": "f39c808cdff39fd831e8c5c2b7c87e28a5e0af07e21be6178bed9109cf8fac04"
+    },
+    {
+      "path": "docs/design/quest-story-followups/WILDLAND_TRAILS_AUDIT_REVIEW.md",
+      "sha256": "7683ae4b582555cc0f8c9cc0e551ca724a197409faf62bcc066acbcc27b5ddbd"
+    },
+    {
+      "path": "docs/design/quest-story-followups/WINTERHAVEN_AUDIT_REVIEW.md",
+      "sha256": "ca117a16b4ff68975a033f9d14073d54161d31e61af033383816d81183129cb3"
+    },
+    {
+      "path": "docs/design/quest-story-followups/WLUST_GH_AUDIT_REVIEW.md",
+      "sha256": "a2c5f6787e7bffc6aaa76dc91239d1ad2cb7e7b7cd53f606535ba4512e7feb16"
+    },
+    {
+      "path": "docs/design/quest-story-followups/WLUST_GH_BUILDER_QUESTIONS.md",
+      "sha256": "f31989dec78babe39e7113703e0175095276bf704b3955b5a361c402a9618a3b"
+    },
+    {
+      "path": "docs/design/quest-story-followups/WOLFEN_AUDIT_REVIEW.md",
+      "sha256": "f37beed5f6a0dba7d3e316c97d2f49054e365abd378a9ded21da675d81f01459"
+    },
+    {
+      "path": "docs/design/quest-story-followups/WOODSEER_AUDIT_REVIEW.md",
+      "sha256": "055b77feb60988bfff657c08163782ae534b06edbc7580167b0ef177e6a77619"
+    },
+    {
+      "path": "docs/design/quest-story-followups/WORLD_CONNECTIVITY.md",
+      "sha256": "7004a668ba4aa640dcfb5ac4b72e6aacc7fde8ddd332a78df475d2abc70a990e"
+    },
+    {
+      "path": "docs/design/quest-story-followups/WORLD_CROSS_AREA_EXIT_REGISTER.csv",
+      "sha256": "a3acdd532f33af2d3e6b391f01198d3daea92b9f892f4f43a5c3f7ae5462eb07"
+    },
+    {
+      "path": "docs/design/quest-story-followups/WORLD_CROSS_AREA_PAIR_SUMMARY.csv",
+      "sha256": "86f331e861fceb11d874308b2dc16c154bf562f8df40b8f90533bca650c8902d"
+    },
+    {
+      "path": "docs/design/quest-story-followups/WORLD_UNRESOLVED_EXIT_REGISTER.csv",
+      "sha256": "07fc5ac937ac13d02bed233e63b29a9a0e83b4236571dd7385785bec01d66ed1"
+    },
+    {
+      "path": "docs/design/quest-story-followups/WORMS_AUDIT_REVIEW.md",
+      "sha256": "6f1323d065be46b683be33b7b615f503541566fb325d9083d1f78c96a4cc6637"
+    },
+    {
+      "path": "docs/design/quest-story-followups/YERDONIA_AUDIT_REVIEW.md",
+      "sha256": "49f0ed7acc5f07ff4d1a89dc301aa457f668cd592ef5f63a381d327ad3449ef8"
+    },
+    {
+      "path": "docs/design/quest-story-followups/YGG_AUDIT_REVIEW.md",
+      "sha256": "80d293a832d21b0f9d67c96d962a16fab87209b680e4ddf7e1ebc92e86f36fa6"
+    },
+    {
+      "path": "docs/design/quest-story-followups/YGG_BUILDER_QUESTIONS.md",
+      "sha256": "8507f43a80e848439d55deb5cd4cdd0dc105bcf5081e8112a493e3cc5953028b"
+    },
+    {
+      "path": "docs/design/quest-story-followups/YUAN_TI2_AUDIT_REVIEW.md",
+      "sha256": "81c24377e1ec8b886641603d6fbd8b8d828dcd165a9d7b6ef63d43a1473a19f1"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ZALKAPFAAN_AUDIT_REVIEW.md",
+      "sha256": "efac1bc31a70a28cc439e30ee77286bf5078d50e910bd3591741c6ecc5cd45be"
+    },
+    {
+      "path": "docs/design/quest-story-followups/ZONE_COVERAGE_REGISTER.csv",
+      "sha256": "e330be7fc1ec39b8bf58cb5f91c3bf8fa1864b95bf895caf5a2d707ecb719b86"
+    },
+    {
+      "path": "docs/design/zone-stories/ABANDONED_ELVEN_HOMESTEAD.md",
+      "sha256": "6b11d9bcb20ab2bc9aa135a8b32ea40414b6af6dc6127c2b029262af3373dddf"
+    },
+    {
+      "path": "docs/design/zone-stories/AEON_ORDER_GUILDHALL_BUILDER_QUESTIONS.md",
+      "sha256": "2dc20211ad261f86830c054c03c96f12d9350d91879a596b2075dee62247af6b"
+    },
+    {
+      "path": "docs/design/zone-stories/AFTERLIFE_GC_OP.md",
+      "sha256": "c10ac2c2d4bc922516a5911a9cad8b91e869348045c671e691d9636b2c19a24f"
+    },
+    {
+      "path": "docs/design/zone-stories/AFTERLIFE_GC_OP2.md",
+      "sha256": "e28a2b979dbb4efecbb79eabc901df158d8a28079e40842f18eeebdfc2e53add"
+    },
+    {
+      "path": "docs/design/zone-stories/AFTERLIFE_GC_OP2_BUILDER_QUESTIONS.md",
+      "sha256": "2ad0e9932f6120277fe46a02c3a430caf19078a253155c9c7d99c004d61569c8"
+    },
+    {
+      "path": "docs/design/zone-stories/AFTERLIFE_GC_OP_BUILDER_QUESTIONS.md",
+      "sha256": "31930b89f5cd7fefcfbe07324cb0180b79bb30365caff968d46ac31f60eea307"
+    },
+    {
+      "path": "docs/design/zone-stories/AFTERLIFE_GUILDHALL_BUILDER_QUESTIONS.md",
+      "sha256": "e190dfc75ef659ea64a3859b0011dea4f313c6c63e5b85bf24256ed9487726c8"
+    },
+    {
+      "path": "docs/design/zone-stories/AILVIO.md",
+      "sha256": "fe471e168660ce1bd38a85d919ddca62701cc7a4bbd9de4eae40337f9b66e733"
+    },
+    {
+      "path": "docs/design/zone-stories/AKO_VILLAGE.md",
+      "sha256": "3ff8265d8b92d4c0052595b68acbb9afc7c1299530f9a9902cc43f87f31a12ca"
+    },
+    {
+      "path": "docs/design/zone-stories/ALATORIN.md",
+      "sha256": "811ea7b95ff36a8ef6bb2e333070b2d4b0a382fab2605734780918c4de5bf10f"
+    },
+    {
+      "path": "docs/design/zone-stories/ALATORIN_OBJECTS.md",
+      "sha256": "f74c73b9464ded8961c2d6bcb13725b9d6a22ca2bbf52cf5916c2b7b03c2899c"
+    },
+    {
+      "path": "docs/design/zone-stories/ALATORIN_OBJECTS_BUILDER_QUESTIONS.md",
+      "sha256": "d6a5459710890d217146f718618e9a2f6fb2227a4945e841a82895b3426b8b8b"
+    },
+    {
+      "path": "docs/design/zone-stories/ALTERIAN_MOUNTAINS.md",
+      "sha256": "5320cf1553036a7469266a84f2621bdb523612e7f5756ad00b9c61d7c7607cb2"
+    },
+    {
+      "path": "docs/design/zone-stories/ALTERIAN_MOUNTAINS_BUILDER_QUESTIONS.md",
+      "sha256": "44e03a1929f499443dca6969c08a70a37fa2d137a8ccce8ed1f823852410d75e"
+    },
+    {
+      "path": "docs/design/zone-stories/ALTERIAN_WILDERNESS.md",
+      "sha256": "61884dc3c1e80e61c10f8bce9184d1ce9cbe79527c3fe814b28e90090cecd51c"
+    },
+    {
+      "path": "docs/design/zone-stories/ALTERIAN_WILDERNESS_BUILDER_QUESTIONS.md",
+      "sha256": "e91bfc0da14e5fcf190ba5957cd48ac14e9c7f2b29781a116b80a561b3771036"
+    },
+    {
+      "path": "docs/design/zone-stories/ANCIENT_BRIDGE.md",
+      "sha256": "9d6f2b5f293d3e6df3d15790b1afe69c398dbf9d28cd52caa7127582962fe022"
+    },
+    {
+      "path": "docs/design/zone-stories/ANT_FOREST.md",
+      "sha256": "3630d9a8a8d343bf10ab6d17a4dbd3f0528ff5e7c0744872964a30fc9a07e3c7"
+    },
+    {
+      "path": "docs/design/zone-stories/AOD_GH.md",
+      "sha256": "31d7ad3a6a3362b54aff561c385bdb8b44a1c12b6863e0a1b698732ba48369fa"
+    },
+    {
+      "path": "docs/design/zone-stories/AOD_GH_BUILDER_QUESTIONS.md",
+      "sha256": "4a893c14edb09553c2356d81c8e0da2115c6a81acfa267c601e42b32d3705fd3"
+    },
+    {
+      "path": "docs/design/zone-stories/AOPAL.md",
+      "sha256": "2669ebda0432e1e7fa444eabe69904c36822329c67c6f5e98494cd78916f1472"
+    },
+    {
+      "path": "docs/design/zone-stories/AOPAL_BUILDER_QUESTIONS.md",
+      "sha256": "4a4f81c7e34839fe95b0a275f806ed3ead2db18394a26c54c939f4dd29367f91"
+    },
+    {
+      "path": "docs/design/zone-stories/APOCALYPSE_CASTLE.md",
+      "sha256": "c80a29b349c673d1a6506c5645dce1ace4b4ea260f42443bcdd2538fec9fe027"
+    },
+    {
+      "path": "docs/design/zone-stories/ARAC-WEB.md",
+      "sha256": "46b541b3722a4afeaec7c4d7bc2318db191904d502725e5ccd2da19148cbfc4b"
+    },
+    {
+      "path": "docs/design/zone-stories/ARACHDRATHOS_GUILDS.md",
+      "sha256": "ac2088b28378f9988cf9b7a545868b0ff88e303c8697b0d6e6d6dff43034ee01"
+    },
+    {
+      "path": "docs/design/zone-stories/ARACHDRATHOS_WILDERNESS.md",
+      "sha256": "0be968b3eaea253fa37d8fa8e187e6fb18f10e437bb4d7e85df7e6e0c55310ce"
+    },
+    {
+      "path": "docs/design/zone-stories/ARCIUM.md",
+      "sha256": "e002a258d1df692283e5702c5bc45faee363f91caacc9b5a4ff9833fc1f1a384"
+    },
+    {
+      "path": "docs/design/zone-stories/ARDGRAL.md",
+      "sha256": "503d4c9ced64ce3a3f3964c87d085f760ec423ecf8280585d6285b5a0845883a"
+    },
+    {
+      "path": "docs/design/zone-stories/ARENA.md",
+      "sha256": "7e1c648165b3009dbc4c3d437fc751f7326ba501ef886f4982aff97d36d1bbd4"
+    },
+    {
+      "path": "docs/design/zone-stories/ASHRUMITE_VILLAGE.md",
+      "sha256": "23ce2633f6989ce11a7d8dae388baabc99e2bcd4a64cf2e8d11dc27959ea98fc"
+    },
+    {
+      "path": "docs/design/zone-stories/ASTRAL.md",
+      "sha256": "f90303b579f39406e7391ac2b9ceb171e6c910de67108aaea5a81012212b45d3"
+    },
+    {
+      "path": "docs/design/zone-stories/ASTRAL_AREAS.md",
+      "sha256": "abeb439e7eab95db1d93bbf8c12c5aa0b76779976327c9e51d1946bf203c9ec8"
+    },
+    {
+      "path": "docs/design/zone-stories/ASTRAL_BUILDER_QUESTIONS.md",
+      "sha256": "f64fae63c94962952d552bc0ede917635893e7b9824bfd4c2d2f481fb2fe7030"
+    },
+    {
+      "path": "docs/design/zone-stories/ASTRAL_MAIN.md",
+      "sha256": "db72f691fba6f2e1223817a802b49f03cd6421eef132b66006a05c602976dd3a"
+    },
+    {
+      "path": "docs/design/zone-stories/ASTRAL_TIAMAT.md",
+      "sha256": "34d75305c446d1765b7580e7e55a1bfd0cb34ef049211e97910825b17e0d0129"
+    },
+    {
+      "path": "docs/design/zone-stories/ASUNWA.md",
+      "sha256": "28a8ebeb3b1e873bb98400333c79a6ae25186a375032cb1ae843aa739871c44f"
+    },
+    {
+      "path": "docs/design/zone-stories/ASUNWA_BUILDER_QUESTIONS.md",
+      "sha256": "25892bf08b853bff8f24ce5bb790d8bde7a409b3535ca22c9e08ca747eedcfdb"
+    },
+    {
+      "path": "docs/design/zone-stories/ASYLUM.md",
+      "sha256": "4e424950cb6e23234e77f6cf467b2559ff6507613a157f1d78b6a712f53f6be0"
+    },
+    {
+      "path": "docs/design/zone-stories/AVERNUS.md",
+      "sha256": "08f777199327fe4dc9a8890d088b213286ac259694fe0eddbd959e5fbd2d9d63"
+    },
+    {
+      "path": "docs/design/zone-stories/AZHURAL.md",
+      "sha256": "1b12100d6abcaf2be96c2c1bbbe33555d9c2c42c360dfe03071d1bc4bc25845e"
+    },
+    {
+      "path": "docs/design/zone-stories/BAHAMUT_PALACE.md",
+      "sha256": "c75ec14194f8259c19da44d6e68965396ac4c795180aa0845e6d79b4f831ee98"
+    },
+    {
+      "path": "docs/design/zone-stories/BANDIT_CAMP.md",
+      "sha256": "5cb6ffb4434c2797d6253f18ab200158d531f12572ec8e9fcd08b52a81d07624"
+    },
+    {
+      "path": "docs/design/zone-stories/BANDIT_CANYONS.md",
+      "sha256": "e29822fe7eac71d8e5f0eacc5bc5ccc3343e06574a145b968e5b218b596da5b5"
+    },
+    {
+      "path": "docs/design/zone-stories/BARROW_OF_THE_QUIOSHO.md",
+      "sha256": "17de0ba725e99de63b930b5cd094e47238ab4b6093b812127e0eb5993b9eeef7"
+    },
+    {
+      "path": "docs/design/zone-stories/BASTARD.md",
+      "sha256": "d61f573a8afd67d42275fbf2b9bb853a7ed2216d033b50055fa78678b5a8c3e7"
+    },
+    {
+      "path": "docs/design/zone-stories/BASTARD_BUILDER_QUESTIONS.md",
+      "sha256": "9e55ae832ac36506431945c631d28feb90eb4556f5f9053965aa969c87dde65b"
+    },
+    {
+      "path": "docs/design/zone-stories/BASTINE_CASTLE.md",
+      "sha256": "120d6b2ed246487a8aebcf68040b680120474a71fade100e6336db477a9009a0"
+    },
+    {
+      "path": "docs/design/zone-stories/BB_GH.md",
+      "sha256": "797cf30102f32843759f9ffd4a29f315d7ec97bd0fb8408e4cfdca2881b1f5d0"
+    },
+    {
+      "path": "docs/design/zone-stories/BB_GH_BUILDER_QUESTIONS.md",
+      "sha256": "c3b3ba5ee5a87a8d79eeb737f3c5fb17f4d98f496981f2d5b72feeec45b55adc"
+    },
+    {
+      "path": "docs/design/zone-stories/BCTDL.md",
+      "sha256": "468498fb56adf5ed525e33ed998b9cc1adf234c350f881f3968481444ad2a802"
+    },
+    {
+      "path": "docs/design/zone-stories/BLACK_TUNNELS.md",
+      "sha256": "a46e3a620e3a3b8a0e1e6ab0d910a1861edacfafe193fb75be85c9759aa64a7b"
+    },
+    {
+      "path": "docs/design/zone-stories/BLOODSTONE_KEEP.md",
+      "sha256": "a80eae05eb33ec8889e3b0a569c80734526846d86e7c3dbeac22b3b7c254764b"
+    },
+    {
+      "path": "docs/design/zone-stories/BLOODY_PLAINS.md",
+      "sha256": "0a1dfa832354c32650474e44476ed5ec941bf1358c3bc950bc66aa34a578b5bf"
+    },
+    {
+      "path": "docs/design/zone-stories/BOGENTOK.md",
+      "sha256": "eeb5e055d4a6f9e335ff7920425395f8a87343e7f3ad700d3a9652f03611d062"
+    },
+    {
+      "path": "docs/design/zone-stories/BORDELLO.md",
+      "sha256": "8696f56cacf3942b527374f2ada1b95f7250b36cdb9183948584b5b4da4d39f4"
+    },
+    {
+      "path": "docs/design/zone-stories/BRADDISTOCK_MANSION.md",
+      "sha256": "f2f86555c2393e4668f06f717b22a871331fa9083dde6aae780180ae7bd5e1db"
+    },
+    {
+      "path": "docs/design/zone-stories/BRADDISTOCK_MANSION_1350.md",
+      "sha256": "e3825736ade5a9960684c5eabae8d8da5e0e192926b9265f02e83b1d66e1917a"
+    },
+    {
+      "path": "docs/design/zone-stories/BREALE.md",
+      "sha256": "2878f8ff4f817061f5fffa5c5aefe53b9a91ddd6bfc850a8d0e6206886eb2ec7"
+    },
+    {
+      "path": "docs/design/zone-stories/BRIMEFORGE.md",
+      "sha256": "739ff2e4dd5c1eb2ee555e3714febc704ae92877fa1b0ef62b768d692a66007a"
+    },
+    {
+      "path": "docs/design/zone-stories/BUGENTOLEN.md",
+      "sha256": "a16e5c28a10475eb2330d5d59f0aacfcc62af65ab7bac74577fe665b752693a5"
+    },
+    {
+      "path": "docs/design/zone-stories/BUGGER.md",
+      "sha256": "776a35271e7f7a4a37b83fdd1926b0e2905de228cfad211c7ee1702b763039a1"
+    },
+    {
+      "path": "docs/design/zone-stories/BUILDINGS.md",
+      "sha256": "63d3ab105d04973182f9bc6cc75928f45793f203ec09f2bfa1ed43a49bf7098f"
+    },
+    {
+      "path": "docs/design/zone-stories/CASTLE.md",
+      "sha256": "033b62fcf8a3282967e9d92aa1f5bf03825ac5baac372ad1ed3cfd0c08e80e01"
+    },
+    {
+      "path": "docs/design/zone-stories/CASTLE_RAVENLOFT.md",
+      "sha256": "5e334d05d924b853c5a3082eae5eab75df6f7b4a78547ff8ca2afdf19ab00767"
+    },
+    {
+      "path": "docs/design/zone-stories/CAVERNS_OF_ARMAGEDDON.md",
+      "sha256": "abb7e103ebe47264f8dc80cfd405a02251a2cb3d49af0e4deae391699819e2a3"
+    },
+    {
+      "path": "docs/design/zone-stories/CAVES_OF_MT_SKELENAK.md",
+      "sha256": "ef5a4b26681289930b1a1eeb7b3b8aee534101e7e340b352251c8ff670c9b553"
+    },
+    {
+      "path": "docs/design/zone-stories/CBL_HALL.md",
+      "sha256": "6b79a70d48d8315f842b7a20a78af60700eecc32060c52f353d06c07fdfc2ca8"
+    },
+    {
+      "path": "docs/design/zone-stories/CELESTIA.md",
+      "sha256": "803d70ee6c9d286a0eda2a21713e8bf264f996ed481f5789dc7af14ff34a2497"
+    },
+    {
+      "path": "docs/design/zone-stories/CENTAUR_VILLAGES.md",
+      "sha256": "43fd51f66a57b271f8547e9d27ed10cd5891f9017acc2f942cf44e4c26381e4d"
+    },
+    {
+      "path": "docs/design/zone-stories/CEOTHIA.md",
+      "sha256": "687c87ed2e66a0636ca7474376a5f6e3885b85e1f280697946459f1188bd7ed7"
+    },
+    {
+      "path": "docs/design/zone-stories/CHARCOAL_PALACE.md",
+      "sha256": "7e2d7b6eb6af7498b0b96d5a47bd9c926f8770a5c6a075c5b970150bb92a3146"
+    },
+    {
+      "path": "docs/design/zone-stories/CHARING.md",
+      "sha256": "0c5c3c502be1f09e9a989296c54f6cb99e2c535b3e26b89a274ebbd91a9a7b58"
+    },
+    {
+      "path": "docs/design/zone-stories/CHURCH_OF_THE_ETERNAL_DUSK.md",
+      "sha256": "7bf3fe30ee4a4c440f31ad2db0a7a9112a91756561a3329003f7940bd0b2443e"
+    },
+    {
+      "path": "docs/design/zone-stories/CITYRUIN.md",
+      "sha256": "c1a5b3e0d494c0f4f1572f7c2d5731d3121f1938cccfbb45a06fee58d19efdea"
+    },
+    {
+      "path": "docs/design/zone-stories/CITY_OF_TORRHAN.md",
+      "sha256": "3c560955d2e4f614b87bb239c489dc63bd19c860f6d77e2bac4b56f8127d916c"
+    },
+    {
+      "path": "docs/design/zone-stories/CLAN_STOUTDORF.md",
+      "sha256": "b9cb97cb890c9d05acf0d3d6a63701bb8e131078fa3c5f49355ff55d014b8dc7"
+    },
+    {
+      "path": "docs/design/zone-stories/CLOUD_GIANT_KINGDOM.md",
+      "sha256": "b7e66424d8e4942d0897182b4622b3f607a4e29cd49b6ad8c992882fb883d426"
+    },
+    {
+      "path": "docs/design/zone-stories/COURT_OF_THE_MUSE.md",
+      "sha256": "374e993326cfb12b5aa3e38b242b3bcad136e56f3fdac4d686a87f6586cdd8d6"
+    },
+    {
+      "path": "docs/design/zone-stories/CRAKKAROS_LIAR.md",
+      "sha256": "84c6fae94f4ea3c7394179187a9f50293b23fa491b20c6ed3d96b6b95792d4b8"
+    },
+    {
+      "path": "docs/design/zone-stories/CRYSTALSPYRE_MOUNTAINS_BUILDER_QUESTIONS.md",
+      "sha256": "d0e2bf308e181720b3d81da42e60487be42032074b8531fd9cfcff4d37cf3289"
+    },
+    {
+      "path": "docs/design/zone-stories/CRYSTALSPYRE_MOUNTAINS_STORY_REVIEW.md",
+      "sha256": "bab170f27688d9ea26a275a244fcb377c610d15b17da652625cfbf9690174241"
+    },
+    {
+      "path": "docs/design/zone-stories/CYRIC_TUNNELS.md",
+      "sha256": "67c8c7f7a00f70386687c482005fe3b3829dd89d142b5a9be0b5ed7b37c077a2"
+    },
+    {
+      "path": "docs/design/zone-stories/DARKFALL_FOREST.md",
+      "sha256": "ae7b76904b06e68e6b972d266e3e19b4166ee7959b597e0f3dc7773afe93d04d"
+    },
+    {
+      "path": "docs/design/zone-stories/DARK_AND_TWISTED_WOOD.md",
+      "sha256": "7510e3222766c21919ce1eb0c204a1230f7331a81d0e6f6b945fc69d7d75ce71"
+    },
+    {
+      "path": "docs/design/zone-stories/DARK_FOREST.md",
+      "sha256": "4edc834197018806eb180604a062e2feb01624057793b802fec26386dea01e08"
+    },
+    {
+      "path": "docs/design/zone-stories/DARK_STONE_TOWER.md",
+      "sha256": "b92a873a34e616bfa7c1fda1e9d509a013a3d30b306900244a241052965180fd"
+    },
+    {
+      "path": "docs/design/zone-stories/DEEP_RAVINE_OF_PASSAGE.md",
+      "sha256": "dd7592f8d28244cd08dea06771c4d8a5ce48ab70c3d3af3eb5b66d81d5c3f774"
+    },
+    {
+      "path": "docs/design/zone-stories/DEFENSE_OF_LONGHOLLOW.md",
+      "sha256": "c19b35dab0a9eb154757cfd71e8179c5860030c9205df66d30420e2d1c08e38f"
+    },
+    {
+      "path": "docs/design/zone-stories/DESERT_CITY_OF_VENAN_TRUT.md",
+      "sha256": "0bf5881ebd6be0b01a48a9edbe24771887788afa31d7699787d0221d347192e3"
+    },
+    {
+      "path": "docs/design/zone-stories/DESOLATE.md",
+      "sha256": "9a620f4a17bf70f83c04eed66c8bef222dba9b33e1073e367316a244db23a8c4"
+    },
+    {
+      "path": "docs/design/zone-stories/DESOLATE_UNDER_FIRE.md",
+      "sha256": "236d2ca85e7d5212f4cd5c933c88c74689983174d59fca60d092f2153380d3f1"
+    },
+    {
+      "path": "docs/design/zone-stories/DIRKN.md",
+      "sha256": "2d64bc0619f7ca2c19c0b73f0214fe102b06040c228dc8ec640c70b3476f2a7a"
+    },
+    {
+      "path": "docs/design/zone-stories/DOMAIN_OF_LOST_SOULS.md",
+      "sha256": "be9eb049489f2d2b37b4d0696156322aa6f7d680adf967947254402f08d0c627"
+    },
+    {
+      "path": "docs/design/zone-stories/DRACOPIT.md",
+      "sha256": "2ad4efe096270fd155a1199880d3504aacbbeb33b2f30243c3030ab8b9b412ac"
+    },
+    {
+      "path": "docs/design/zone-stories/DRAGONNIA.md",
+      "sha256": "ba5b209ebc9bb9ded41f54aec493dc0da6982a8cb94607912684548e954a669b"
+    },
+    {
+      "path": "docs/design/zone-stories/DREGGAN_WOODS.md",
+      "sha256": "9bafcd179debf253d1259e240516c5aac421ba12988114d8ca351f7b3efe89f5"
+    },
+    {
+      "path": "docs/design/zone-stories/DRIFTING_REALM.md",
+      "sha256": "2231cbdc49832e25619999ad425119c8babe384b4b13998ed6404f6a87b808f8"
+    },
+    {
+      "path": "docs/design/zone-stories/DRUSTLS_YERDONIA_ENSLAVED.md",
+      "sha256": "d74d37e2adbd0cbb872ff5b1900af24eb138f56b7934efbefa8d658bc8ffb0dd"
+    },
+    {
+      "path": "docs/design/zone-stories/DUKE_DELWYN.md",
+      "sha256": "6aa8b59951d5400b4acd18f03409134744055fb45597a2a526429215b39caef6"
+    },
+    {
+      "path": "docs/design/zone-stories/DURIAN_UNDERDARK.md",
+      "sha256": "a243d7f1d99c6f03b205689375f4776dae37ab9094272700d18b583cbc37430d"
+    },
+    {
+      "path": "docs/design/zone-stories/DU_MAATHE_CASTLE.md",
+      "sha256": "cdba006deb254f4702b62bb1484837437e2fc5f683abc68096eb3f36ae4e3dc7"
+    },
+    {
+      "path": "docs/design/zone-stories/FAERIE_REALM.md",
+      "sha256": "4a16147a8074a498a94323783389a663a61593de3d5da2de699e830ddb2698cd"
+    },
+    {
+      "path": "docs/design/zone-stories/FATEFUL_FALLS.md",
+      "sha256": "e6aa6a64ec9f10c387a6479862183e5d87978418a7959e5d2bd9b032bbc4113b"
+    },
+    {
+      "path": "docs/design/zone-stories/FATHER_TELS_HOLY_CLOISTER.md",
+      "sha256": "9ff3f4c1d4fab7c521666b4c3dd8301b27b3bee9692704e43501b0615d873864"
+    },
+    {
+      "path": "docs/design/zone-stories/FIELDS_BETWEEN.md",
+      "sha256": "d7d02166f3ebb649cac4a2d9070e0b4f604eb3e1706f424824debafe0a09172c"
+    },
+    {
+      "path": "docs/design/zone-stories/FISHERMANS_WHARF.md",
+      "sha256": "5c1336a115bd8519ce090de86b5f048b77c2cefa9962dc6e9668f12c2bef47ba"
+    },
+    {
+      "path": "docs/design/zone-stories/FLIND.md",
+      "sha256": "95ada0fbe5c1384dd37081f19bfadd54817282a2fdad309e0137a6a608d21e5e"
+    },
+    {
+      "path": "docs/design/zone-stories/FOGGY_WOODS.md",
+      "sha256": "b6740982f0d7ad9f68406c33af0f452248363e1dc070e020a4438e88c45c1f5b"
+    },
+    {
+      "path": "docs/design/zone-stories/FOREST_CITY_OF_ARAVNE.md",
+      "sha256": "b9f4b71145ccc1c50762b49eb6a34f96a1a609f9efa6bc8d5edeebb004675dbc"
+    },
+    {
+      "path": "docs/design/zone-stories/FOREST_OF_MIR.md",
+      "sha256": "9386e9f900255373e0feaf6e733c8b6f2dae9966afb9e0cffb22d1cc4a0f46e1"
+    },
+    {
+      "path": "docs/design/zone-stories/FORGOTTEN_FOREST.md",
+      "sha256": "6e60d88065260554be2ea09a779caf7fbb34b00fb407b362f29882cb09f6fab5"
+    },
+    {
+      "path": "docs/design/zone-stories/FUTURE_CEOTHIA.md",
+      "sha256": "6f1e0c82924210d125919c08a8f219861768bbf88fccd9901b316c253f581c77"
+    },
+    {
+      "path": "docs/design/zone-stories/GAGGA_JOBO_CAVE_SYSTEM.md",
+      "sha256": "6b10d4d679d5301baff41d7b75fc615a5fe33a8ddbe941ce4ded06a7b03226ca"
+    },
+    {
+      "path": "docs/design/zone-stories/GITHZERAI_STRONGHOLD.md",
+      "sha256": "ba20d7aa615403a34f2a101c751f77da11243aeb6a8c126c6719acaa4c0637e6"
+    },
+    {
+      "path": "docs/design/zone-stories/GOBLINCAMP.md",
+      "sha256": "0bab91381f7dbc7eec16f3861fb5cfa0b001e10a800f28571c237e1312d3cf22"
+    },
+    {
+      "path": "docs/design/zone-stories/GOBLIN_CITY.md",
+      "sha256": "aaa5483d23ba4263e1b47021144daffe118d805d25642eb6596c20cf41331dc2"
+    },
+    {
+      "path": "docs/design/zone-stories/GOLDEN_HALL_OF_THE_CROWN.md",
+      "sha256": "ce18d08427bcdb891f140c820c2f3e30390c637addfe61627f9e5550ca0f2317"
+    },
+    {
+      "path": "docs/design/zone-stories/GRUMBARS_DOMAIN.md",
+      "sha256": "424cd25b5a88ac1cbc4ed6c527c5eb96cd98270183ccadb25b011f2d5363d590"
+    },
+    {
+      "path": "docs/design/zone-stories/GUILDHALLS.md",
+      "sha256": "b89ff3a98c3f2a4402bcc90c60286cc75d636047a243c8f5a67aac8ceb7730f3"
+    },
+    {
+      "path": "docs/design/zone-stories/HALFLING_SILVER_MINE.md",
+      "sha256": "2d972904c336382737da2c93cb38c869d15ec4048750cf0ab82b859f90b47743"
+    },
+    {
+      "path": "docs/design/zone-stories/HALL_OF_KNIGHTHOOD.md",
+      "sha256": "3950352a758e9bf7f320a96e9a59705579cacbe95300d687db513b4cef93478f"
+    },
+    {
+      "path": "docs/design/zone-stories/HARROW_THE_GNOME_VILLAGE.md",
+      "sha256": "3741a7725761dc40e8ac9954b9761e5256f9a2770b306a09e0890bd27b885b68"
+    },
+    {
+      "path": "docs/design/zone-stories/HEADLESS_HORDE_BUILDER_QUESTIONS.md",
+      "sha256": "44e79efe922d5566f3a373e4c854a2b48eee5e1f41cc079e122eaf1f88914cdc"
+    },
+    {
+      "path": "docs/design/zone-stories/HELL_FOUR_PHLEGETHOS.md",
+      "sha256": "1326d80f3cc95c623359d253d27c0ed79c6986a84c5d12b4b35cb2c5b90af8e7"
+    },
+    {
+      "path": "docs/design/zone-stories/HELL_ONE_AVERNUS.md",
+      "sha256": "465ef9cb3b344158bd8b05a61e96d750483c9b24acec022384685b5754d52685"
+    },
+    {
+      "path": "docs/design/zone-stories/HELL_THREE_MINAUROS.md",
+      "sha256": "f3be9f31e8164ceb11a44fc32b70cc142d5bdbc73dbdb95ec63fd900a55925c1"
+    },
+    {
+      "path": "docs/design/zone-stories/HELL_TWO_DIS.md",
+      "sha256": "5cdfa572e018e83515afe703b3a4fecd6d9d53251ee313f5da5bee8958a4a51f"
+    },
+    {
+      "path": "docs/design/zone-stories/HOME_OF_THE_DIVINE.md",
+      "sha256": "2b893ea0a0ab366e9c85711da6720c6025e2a12bb998ae884c222a2f5c9c46ee"
+    },
+    {
+      "path": "docs/design/zone-stories/ICECRAG_CASTLE.md",
+      "sha256": "6474d12196fed219e2e24e6f1f8c9997f22b97675a7d73ee0cc90e327b45a04e"
+    },
+    {
+      "path": "docs/design/zone-stories/ICE_TOWER.md",
+      "sha256": "bf4dcd46267f277f3383341150bf700250fe40a71deaa69c930e1c1f7893396a"
+    },
+    {
+      "path": "docs/design/zone-stories/ILLITHID_ARENA.md",
+      "sha256": "b1bf08064c3e81afdcdc87777b27588c444b9a3969bffa79b6e2dc20497ee314"
+    },
+    {
+      "path": "docs/design/zone-stories/INTERSPACE.md",
+      "sha256": "80aeb5700df771a4c61891d14e51511913613ffb0449397af6fa52be467551bd"
+    },
+    {
+      "path": "docs/design/zone-stories/IXARKON.md",
+      "sha256": "f406e64ab0dce6ef5f2c20d45e98d8b48bcc9fa3d4dacc9297251e6ca2c36cc3"
+    },
+    {
+      "path": "docs/design/zone-stories/IXXILLIKOR.md",
+      "sha256": "530c488a7823d091ef41a14013686846d4654ed98c98cbe259b9872d29d695de"
+    },
+    {
+      "path": "docs/design/zone-stories/JINDON_DEATHWOOD.md",
+      "sha256": "268208087345abc888ee65d2ab45cfa11d1a358bb31c2beb786998eebbdaa655"
+    },
+    {
+      "path": "docs/design/zone-stories/JOTUNHEIM.md",
+      "sha256": "8052d9d6b5c89ba9e1042a4b216f42e416f20d6879067fafeb030045567b8c15"
+    },
+    {
+      "path": "docs/design/zone-stories/KEEP_OF_EVIL.md",
+      "sha256": "cb36e2bb348b0196e729791759d2ec26012b88a187a8e93916807bab92cf475b"
+    },
+    {
+      "path": "docs/design/zone-stories/KHILDARAK_STRONGHOLD.md",
+      "sha256": "ae088a9dc2bae63da61adbf384cba8221152276f7e7ca9245734eea1ac11e625"
+    },
+    {
+      "path": "docs/design/zone-stories/KILLING_FIELDS.md",
+      "sha256": "5adb8de55f62d1e3172e475d5df6456d2fe9946cc9bca262949dcb35fd134848"
+    },
+    {
+      "path": "docs/design/zone-stories/KIMORDRIL.md",
+      "sha256": "dc065a9481c5fa24c676236356ed2e745147688790794f8e04c21e5a18a4ef10"
+    },
+    {
+      "path": "docs/design/zone-stories/KOBOLD_SETTLEMENT.md",
+      "sha256": "8ba9d5ab7e7b8dd2408af09f713774ae7705eef7b95ea45e6e1022e52ef2eecb"
+    },
+    {
+      "path": "docs/design/zone-stories/KRETHIK_KEEP.md",
+      "sha256": "5c697d97b932a269e1e7306a97202d22ede5bbb8c1adaa1363554b2860875eb2"
+    },
+    {
+      "path": "docs/design/zone-stories/KRIMENEHAS_MANSION.md",
+      "sha256": "fa24ddc68fd654eadbeb82aaf89348dbcf8dfc0efa4f2f8ea970e8d132297e93"
+    },
+    {
+      "path": "docs/design/zone-stories/KUOTOA.md",
+      "sha256": "34ca557c9d22aa2924066615fbcbdafb16cbd8f8d677f1c717ad63f38f7c6e8a"
+    },
+    {
+      "path": "docs/design/zone-stories/LAB.md",
+      "sha256": "fd8f270e6e998a464e5f22f6d857bd297e4d60900fdfa29fc3916cbe6e8f3167"
+    },
+    {
+      "path": "docs/design/zone-stories/LABYRINTH_OF_NO_RETURN.md",
+      "sha256": "43c6a00c899a0c25639d4ab8b9a5ff14d7fa288bc497218bdad9fadd6f4d6bdb"
+    },
+    {
+      "path": "docs/design/zone-stories/LAIR_OF_THE_GIBBERLING_KING.md",
+      "sha256": "9805ec7532a93619d852cfbac0b4bcc457892afd3c8b226cdbfdc8d56b65b07f"
+    },
+    {
+      "path": "docs/design/zone-stories/LAIR_OF_THE_PURPLE_WORM.md",
+      "sha256": "b0838449401aa0a257ad840c4a2a900ceeba5f8618d6c0d8f517791666956b05"
+    },
+    {
+      "path": "docs/design/zone-stories/LAVA_SPRINGS.md",
+      "sha256": "d8b21d2861786b475814ba3c0cf9742cb8ac832db55f99a2b4229ac85e384b58"
+    },
+    {
+      "path": "docs/design/zone-stories/LAVA_TUBES.md",
+      "sha256": "eccff487fed3a81d337021ca34a511caba1ead91a1dd307f3bbb5c281a04b3c5"
+    },
+    {
+      "path": "docs/design/zone-stories/LIZARDMAN_SWAMPS_OF_CLAVIKORD.md",
+      "sha256": "d61ee17712fe2b22d874b7b265842f6c5bead1a5c47a5baee656352dc53fee0f"
+    },
+    {
+      "path": "docs/design/zone-stories/LOST_CITY_OF_TIKITZOPL.md",
+      "sha256": "0c34a9e6bce173ed6eecfb1c2cb1b606699d143b88721f7ef9609a3429884616"
+    },
+    {
+      "path": "docs/design/zone-stories/LOST_TEMPLE_OF_TIKITZOPL.md",
+      "sha256": "0c791a1be9a0e6f79c6c65683bd805d7c5d3d3ecaf6759ce9cfb5c6578bd9e45"
+    },
+    {
+      "path": "docs/design/zone-stories/LYLR_MEOP.md",
+      "sha256": "468cad3042d7867916f6041179f38d724f9fd7406940adfea8695a34347a365b"
+    },
+    {
+      "path": "docs/design/zone-stories/MAGMA.md",
+      "sha256": "eeaa06a96fa78dab411009132cceebabf992376ef78a2508e459a4fa511e9733"
+    },
+    {
+      "path": "docs/design/zone-stories/MAZE_OF_UNDEAD_ARMY.md",
+      "sha256": "620c470084ac9b4b5002f0b6eceb5124aef963eeda3938bc8de138b44a1a021e"
+    },
+    {
+      "path": "docs/design/zone-stories/MAZZOLIN.md",
+      "sha256": "7fb5c15c00e8036933144a440251f950785b0d8258d4c7ac97ed1c56b99a7964"
+    },
+    {
+      "path": "docs/design/zone-stories/MENDEN_ON_THE_DEEP.md",
+      "sha256": "321c805b89e87a5c1388eeaa47b808f3357da6d85cf92beb87195d085e29244c"
+    },
+    {
+      "path": "docs/design/zone-stories/MIAERIL_VILLAGE.md",
+      "sha256": "24ee33744e7cf6b04a8116aea350bb5fd2eb025465b6eebbf6c77511b06fdbe1"
+    },
+    {
+      "path": "docs/design/zone-stories/MINI_ZONES.md",
+      "sha256": "027adb2c9b9860589cdc773551766130fc674f11f09e10e6bea3d8fd4c509ca6"
+    },
+    {
+      "path": "docs/design/zone-stories/MISTYWOOD.md",
+      "sha256": "f9c34213a53ae8d0452c460c04e3da60f0f724e43ed1d003f42ce1976809e877"
+    },
+    {
+      "path": "docs/design/zone-stories/MITASHI.md",
+      "sha256": "fdf949ad01ef99f8151e5ac2e20c879db6ba5b8bffd8f8dc18b9a9c881e902a3"
+    },
+    {
+      "path": "docs/design/zone-stories/MOBS_SURF.md",
+      "sha256": "d3178abdc1a018a37cfee07bc4131607ea0012525049bc0a9596b3a842854bd1"
+    },
+    {
+      "path": "docs/design/zone-stories/MOBS_UNDERDARK.md",
+      "sha256": "5e5aaabc8f43eebfc4d8dda73381d5064ef188e4e1f933c9bea4c88022b11796"
+    },
+    {
+      "path": "docs/design/zone-stories/MOONSHAE_ISLAND.md",
+      "sha256": "75d9a76761f8378d71bb1579d508849e2894eac96f99d2f60ae2b9dfbecf2485"
+    },
+    {
+      "path": "docs/design/zone-stories/MORG.md",
+      "sha256": "15969d92ef6f9b7f08be5f0b3fc55ff62e2acf2baf97e15974fc7a4e82c6a1df"
+    },
+    {
+      "path": "docs/design/zone-stories/MOSSWOOD.md",
+      "sha256": "e32dbef9777077f79a30e5cfa0fd0264ac6dedb8b24f80ef45d1516e1af3268f"
+    },
+    {
+      "path": "docs/design/zone-stories/MOUNTAIN_TRACTS_OF_THE_UNTAMED.md",
+      "sha256": "ce80cdd287c51579a3a5427b9707c077dddbb3f934103ae6e8ca78ca8b38b400"
+    },
+    {
+      "path": "docs/design/zone-stories/MULTICLASS_TEMPLE.md",
+      "sha256": "b63b53a16b93d735697722e652919daa3510a35bd5f00f9c132386eb79ae4b3b"
+    },
+    {
+      "path": "docs/design/zone-stories/MUSHROOM_CAVERNS.md",
+      "sha256": "1692e82bcfc73f3005cab57aec42ef8a7ff517955992508aa0ef8fc3e9c9e071"
+    },
+    {
+      "path": "docs/design/zone-stories/MUSHROOM_FOREST.md",
+      "sha256": "75711bfd8b88505063980dd6c17f87dc7c8427288fc2cda0e464999c8a70accf"
+    },
+    {
+      "path": "docs/design/zone-stories/MYCONID.md",
+      "sha256": "27bed217a0355b123c15dd158959f8f1b71faefe503d5f24d27cc9c4f204c981"
+    },
+    {
+      "path": "docs/design/zone-stories/MYRABOLUS.md",
+      "sha256": "9403756027953b4097661c0fe9dfaac37b3bc5dbc1c2a1ce60687f43548cd02e"
+    },
+    {
+      "path": "docs/design/zone-stories/MYRLOCH_VALE.md",
+      "sha256": "a99e6d96a900f5ae1b8921387076effe527d07e56a9023e717637bb6901c17a9"
+    },
+    {
+      "path": "docs/design/zone-stories/NAKRALS_CRYPT.md",
+      "sha256": "2c52d797d3209bf8c7eb5692bb44c49f376ff1dabf05f7092db3db1f5c0a21b7"
+    },
+    {
+      "path": "docs/design/zone-stories/NEGATIVE_MATERIAL_PLANE.md",
+      "sha256": "9a54ef0db6d072465376a272f8cbf0acfc7ea4820704f68ab534f73f765c945c"
+    },
+    {
+      "path": "docs/design/zone-stories/NEVERWIND_VALLEY.md",
+      "sha256": "4602ef651f30ce004b0585114a29dd9a38615f97447adfdcb91534198ec0c32f"
+    },
+    {
+      "path": "docs/design/zone-stories/NEVERWINTER_WOODS.md",
+      "sha256": "fcbf7eae2a663339b2a217be070fc72437781a08169af8201879ddeb10719968"
+    },
+    {
+      "path": "docs/design/zone-stories/NEWHAVEN.md",
+      "sha256": "28231f5b06effe2433885fc45cd02e3dbc0bdf5015c03ef616fcf3f05ae94ab5"
+    },
+    {
+      "path": "docs/design/zone-stories/NEW_CAVE_CITY.md",
+      "sha256": "f879718115974d32907a1e08c10b28f3313d04e18ac1057fa60deca1ac9b1183"
+    },
+    {
+      "path": "docs/design/zone-stories/NEXUS_IC.md",
+      "sha256": "57700b1cca0eff69df2b238f6adeebec69a4e8ec6884350c26b36c50ae755677"
+    },
+    {
+      "path": "docs/design/zone-stories/NEXUS_ISLAND.md",
+      "sha256": "45ebfc9e43a9ad58fd4317db600f7ca681014269d129f8c60f740c45ca4fccc5"
+    },
+    {
+      "path": "docs/design/zone-stories/NEXUS_ROPER.md",
+      "sha256": "3ddf0cb2a7ef9cde37fb23ac2ef019f287b00975eea340f0cb279838a5ab04a3"
+    },
+    {
+      "path": "docs/design/zone-stories/NEXUS_UC.md",
+      "sha256": "a7c966b7da8c517868eb0d0983192b2685a7c070cea5c91656da31e31c5047e7"
+    },
+    {
+      "path": "docs/design/zone-stories/NHAVAN_ISLAND_ONE.md",
+      "sha256": "1e2165c7dc32ca16ee13f94567d40b7acb35deea569fe36b96da4b6c75c70893"
+    },
+    {
+      "path": "docs/design/zone-stories/NORTHERN_LAKES.md",
+      "sha256": "9711441569a21da64c5d4e5f2b36ce6fd94f768464613b9fddd4a5db058118b0"
+    },
+    {
+      "path": "docs/design/zone-stories/NORTHERN_WILDERNESS.md",
+      "sha256": "eab43096aad581e1f3bf94aa5ef3580537e2195686b88d5d581a9aae235d031b"
+    },
+    {
+      "path": "docs/design/zone-stories/NYNETH.md",
+      "sha256": "1702ff7f215e9388126dccd795f03f03c2038ee24ae9c0e50cef65da10ddd757"
+    },
+    {
+      "path": "docs/design/zone-stories/NYNETH2.md",
+      "sha256": "0075a69ea08c2758401a32542d6b888f2bdb78afceea03a292832f85d71f1e20"
+    },
+    {
+      "path": "docs/design/zone-stories/NYNETH3.md",
+      "sha256": "286d04f694f3cf31534bf93eff8732f4a49d8fcd5c1fcb9e0b3a85a7f9f516ed"
+    },
+    {
+      "path": "docs/design/zone-stories/OLYMPUS.md",
+      "sha256": "8d797661bd4c70f38057ff2204215a82a3409f5e2afa95fce7d0517c84e6acae"
+    },
+    {
+      "path": "docs/design/zone-stories/OPAL_PHOENIX.md",
+      "sha256": "caab9ed8c3250eaf7199cea1455e3eed755a3d24a902b3c18cdb5ca5c29f4cbd"
+    },
+    {
+      "path": "docs/design/zone-stories/ORRAK.md",
+      "sha256": "62127b624ebefc296e9120162481fbafebd4f4374427ccfa372f2066ff92a557"
+    },
+    {
+      "path": "docs/design/zone-stories/OTOWER.md",
+      "sha256": "14856bbd13e61a76c0ba49f604f6633870b0265d558f89d266cb9966f2f6e871"
+    },
+    {
+      "path": "docs/design/zone-stories/OUTPOST.md",
+      "sha256": "62ad2f906ae6e369ef28061d94d80162b1fb7d9bdcb89c0fa7113c90a3794b3c"
+    },
+    {
+      "path": "docs/design/zone-stories/PARA_ELEMENTAL_PLANE_OF_SMOKE.md",
+      "sha256": "25e8323583b314e54d51204cf1d30938b383d15fc13c42b98e7039d698122327"
+    },
+    {
+      "path": "docs/design/zone-stories/PAST_CEOTHIA.md",
+      "sha256": "f80d2efd090ff17df13e049f60f06a88f0f8745ce8be2161aa1625be595924b7"
+    },
+    {
+      "path": "docs/design/zone-stories/PATROLS.md",
+      "sha256": "0e8970905f932efb5ff0b37438a8e517e6dfd649fb06b74d21034dd20a372924"
+    },
+    {
+      "path": "docs/design/zone-stories/PHARR_VALLEY.md",
+      "sha256": "4544fe3fec942c67e9e5b3ff807daa007b290f2512239bdf456963c30dbc96e6"
+    },
+    {
+      "path": "docs/design/zone-stories/PHARR_VALLEY_SWAMP.md",
+      "sha256": "c4555b0a27e046405120e856d1f05dece4eec980bb2248e2a3872f904575eb11"
+    },
+    {
+      "path": "docs/design/zone-stories/PINE_HOLLOW.md",
+      "sha256": "9378ff5f2d8c46d660b0a293cc5fb208313652001b1efaaca8288b6f570563d4"
+    },
+    {
+      "path": "docs/design/zone-stories/PITS_OF_CERBERUS.md",
+      "sha256": "58c80e2167c2c08c5bb2e20aa90d778196a5dfc40d30c7783e464204ae214892"
+    },
+    {
+      "path": "docs/design/zone-stories/PLAINS_OF_LIFE.md",
+      "sha256": "6841fdf7935080bb9eef65db8a1e07f1f746e9a238cfb55f13a99082fe154bfa"
+    },
+    {
+      "path": "docs/design/zone-stories/PLANE_OF_AIR.md",
+      "sha256": "02d30f998fb3aacaac415185d4037d07e00d75b7d445910d3fa6ebcc68c0b479"
+    },
+    {
+      "path": "docs/design/zone-stories/PLANE_OF_EARTH.md",
+      "sha256": "2ae9783bf708e7f7c500ba89d2da04bdb4b01315fc5e40d240ad05c3915e4842"
+    },
+    {
+      "path": "docs/design/zone-stories/PLANE_OF_FIRE.md",
+      "sha256": "08b2b79ac7c6ea115d1eb02d77ca0f7dd2c567f4b470cb3be34e4b0b34a087e7"
+    },
+    {
+      "path": "docs/design/zone-stories/PLANE_OF_FIRE_BRASS.md",
+      "sha256": "b7b6c90f4d1a55fd71b44b0fd8f9ac432407457ed54ac85096bf709c3a8eb266"
+    },
+    {
+      "path": "docs/design/zone-stories/PLANE_OF_WATER.md",
+      "sha256": "c8777077ef417dcd35cb2257cd40dc29f922ac26b8865d26a26f8615b7451cc1"
+    },
+    {
+      "path": "docs/design/zone-stories/PLAYER_CASTLES.md",
+      "sha256": "961e422b5732cd8196759b1e7ece00a9fd5804b4817867ec50589a55312612bd"
+    },
+    {
+      "path": "docs/design/zone-stories/PORTSKYTHIC.md",
+      "sha256": "7e16f2373d54e13db0afecb2fc0734de1057cc291f40f8825b8cb11dff3dc745"
+    },
+    {
+      "path": "docs/design/zone-stories/POTIONS.md",
+      "sha256": "7c88f2ad56014fee8f0810595e5989752e339fdf8603be7118f477de88dc5b63"
+    },
+    {
+      "path": "docs/design/zone-stories/PRAGTOG.md",
+      "sha256": "5ed8cac8d3caea85a100725e8cb38c21544cd960a60de800ff4e4814819e9a79"
+    },
+    {
+      "path": "docs/design/zone-stories/PRISONS_OF_CARTHAPIA.md",
+      "sha256": "1d58a87f00c8f87dc95c93c812c9e53584697702f17348f901bbc11f6dc59f8c"
+    },
+    {
+      "path": "docs/design/zone-stories/PRISON_OF_FORT_BOYARD.md",
+      "sha256": "dd049fa2f7ec01fceb80ae613a39598d03f770297695b45398b0f55e06af279a"
+    },
+    {
+      "path": "docs/design/zone-stories/QUIETUS_QUAY.md",
+      "sha256": "c87e1e313d3496a6590fefc470dc5e4222ca04457b91803844f104cdd72d280c"
+    },
+    {
+      "path": "docs/design/zone-stories/RABBLE.md",
+      "sha256": "4c2acca0dc60570967f6cdd6784963211c5538243eb93d38e327669c25d66cb4"
+    },
+    {
+      "path": "docs/design/zone-stories/RAIDERS.md",
+      "sha256": "51ada147bed03ea12f2a2b0512e3812f8066d2db868cc0a62d2cf33e66ad9690"
+    },
+    {
+      "path": "docs/design/zone-stories/RANDOMNESS.md",
+      "sha256": "6e1ed81d2aa9af53ebdd31adf89f7537c9b68db72efad140f48c83a0c9d1ba6f"
+    },
+    {
+      "path": "docs/design/zone-stories/RANDOMNESS_BUILDER_QUESTIONS.md",
+      "sha256": "d705cef5fc710a6dcfbf7a1da021eb7dae13cc2bcf469c2aff9018f82e9a5a9b"
+    },
+    {
+      "path": "docs/design/zone-stories/RFTJNGLE.md",
+      "sha256": "8b67cb61bf62a48a41b4cc3e3fced60383ba439d7d7435322020f1cc4de6f24e"
+    },
+    {
+      "path": "docs/design/zone-stories/RICE_FIELDS.md",
+      "sha256": "0766c4c3f8a0aee709824ac6a4bfb542a9657880c31bd1a5806b3cef92fcbeb7"
+    },
+    {
+      "path": "docs/design/zone-stories/RIVER_STYX.md",
+      "sha256": "3e8b7a08dcc5c3c84cc2c82c812ebe5889d757ba04581c511fb2ca654d891691"
+    },
+    {
+      "path": "docs/design/zone-stories/ROGUE_PLAINS.md",
+      "sha256": "2592be47ab751752bd995bfd64bb74f248cb5f3874db126e058dac044d2b47b3"
+    },
+    {
+      "path": "docs/design/zone-stories/RUINS_OF_TUROLOPOLIS.md",
+      "sha256": "e50633f7e82be11c5180357feba91a2d2e5efba5ae3c4c6ab516c6c258e07ceb"
+    },
+    {
+      "path": "docs/design/zone-stories/RUINS_OF_TUROLOPOLIS_BUILDER_QUESTIONS.md",
+      "sha256": "31186e0f74b66909313f322a61e2f2bf40a9337da2ca7aa742db503632d7c366"
+    },
+    {
+      "path": "docs/design/zone-stories/SARMIZ_DUUL.md",
+      "sha256": "c14b4a4bd5e9aac57f07b4ab32dc71db332d6fe77074fa7e72c0ceae30b17f2f"
+    },
+    {
+      "path": "docs/design/zone-stories/SAVANNAH_OF_BROKEN_TRUSTS.md",
+      "sha256": "c451cc88fe35618e9ab4a1adae71a18065f07c656a6ae63b36511e1f8081e558"
+    },
+    {
+      "path": "docs/design/zone-stories/SEAKNGDM.md",
+      "sha256": "559b7f90475d6d3cd0099edd320873bc22a299982ef3867004b046d1a8bb8011"
+    },
+    {
+      "path": "docs/design/zone-stories/SEVENOAKS.md",
+      "sha256": "04451799de86a9281c9d8c2b6a33d091b1b900abdb3adfac4d94e9b06bd888cd"
+    },
+    {
+      "path": "docs/design/zone-stories/SFOREST.md",
+      "sha256": "a1cd0553b9a44f49086c80be4e47f0c8c0b03766a0cd78b1cf0a59b1a7629781"
+    },
+    {
+      "path": "docs/design/zone-stories/SHADAMEHR_KEEP.md",
+      "sha256": "73224ed100a4942ee8440252eaadfcb43156b233f7fd6b1b33f44cfe96266a72"
+    },
+    {
+      "path": "docs/design/zone-stories/SHADOWCLAVE.md",
+      "sha256": "a2e8ca33ca948a5235c23188c520d9b3949dc289b78845b9730a501f09d1143b"
+    },
+    {
+      "path": "docs/design/zone-stories/SHADOW_FOREST.md",
+      "sha256": "f2338438db1f0e34709732d06fdadf1f18865349537af5e61227f3f4f429fd88"
+    },
+    {
+      "path": "docs/design/zone-stories/SHADOW_SWAMP.md",
+      "sha256": "1a2d40d500ae3a9e73f93ad22b8c24e31e2a34e588f03ea2de9884e5dc88074b"
+    },
+    {
+      "path": "docs/design/zone-stories/SHADY_GROVE.md",
+      "sha256": "198d114c59b84ac0fcfa96bbd7dc75314d029b805012cdd244fab0073858c29a"
+    },
+    {
+      "path": "docs/design/zone-stories/SHAFTS.md",
+      "sha256": "74ac40236276b8dd98aa2a2c9a8a4539afa959ee6a51b4581556dbcf5a0c3597"
+    },
+    {
+      "path": "docs/design/zone-stories/SHAIRAK_AND_SMOKEVEIL_FOREST.md",
+      "sha256": "31e619b4db62e199353a7e6e9042c3abe2ec2f077933874a601fe227f097a61e"
+    },
+    {
+      "path": "docs/design/zone-stories/SHAUGHIN2_HUNTING_GROUNDS.md",
+      "sha256": "80e7152881a45ecceaa1f5ec277444555b69b1cda397902a1efcf6e62c829c00"
+    },
+    {
+      "path": "docs/design/zone-stories/SHAUGHIN_SETTLEMENT.md",
+      "sha256": "f17b8513c542571bb7958fc55530cd03271a1e157373d16bc41c161aa1cf959c"
+    },
+    {
+      "path": "docs/design/zone-stories/SHIP_RUNTIME_AREA.md",
+      "sha256": "9fb525333750ddc183ffa8bcdc4afaac9afa84c24e1a87e72fee95affa445abb"
+    },
+    {
+      "path": "docs/design/zone-stories/SHIP_YARDS.md",
+      "sha256": "4ba689b27f20ddbc4ec9b141922b460753e8088102f1a13312ed5efb39d6441c"
+    },
+    {
+      "path": "docs/design/zone-stories/SKULLDRACH.md",
+      "sha256": "485f0e89958c1ff6b31a5ce0959699c63d572e2c10bb15fd07e73b4b73851a8b"
+    },
+    {
+      "path": "docs/design/zone-stories/SOUTHERN_COASTAL_HIGHWAY.md",
+      "sha256": "5d8f3007573291c1c210ede96c4d2d2879a8ce35a7591d72827a5612203b6e78"
+    },
+    {
+      "path": "docs/design/zone-stories/SPIRES_OF_ELDER_EVIL.md",
+      "sha256": "04d8dcb4b99e3c8766c2c41e9d7169eead71a6b78694d1d9ff2f960540ab8b48"
+    },
+    {
+      "path": "docs/design/zone-stories/STONE_TOMB_OF_KELEK.md",
+      "sha256": "51ddd7fdc6a4b6cda7f8a794d6ad352e9213b3807f6327b939cd9951a74931e0"
+    },
+    {
+      "path": "docs/design/zone-stories/STORMPORT.md",
+      "sha256": "d88f2af8e2349a6823b150bd88c66de3d3572b67f9f5fc45846d56bed593aaf5"
+    },
+    {
+      "path": "docs/design/zone-stories/STORM_PORT_STRONGHOLD.md",
+      "sha256": "937fa2bf7dc68b05530208673dba114cf80be5bbe6792ae912eca2e609579730"
+    },
+    {
+      "path": "docs/design/zone-stories/STRATHOR_VALLEY.md",
+      "sha256": "9f0655a443cdbb9d0f35b03dfc2fc9700f73245a7604dc68a2a265caa9aaa47d"
+    },
+    {
+      "path": "docs/design/zone-stories/SURFACE_REALM.md",
+      "sha256": "58c0621687761e0d970844a470bb33ad88076d006554e2ac870aa41960144d46"
+    },
+    {
+      "path": "docs/design/zone-stories/SWAMP_TROLL_KING.md",
+      "sha256": "9a6029cc62ba2259a020811406b215c0809ff570546f6eadcce828851eef66be"
+    },
+    {
+      "path": "docs/design/zone-stories/TCHAN_MONASTERY.md",
+      "sha256": "ebe2a1d699eeeea564d2bf080acbd3fb9ab3a207a208d5cf09a49a59e1b59eb5"
+    },
+    {
+      "path": "docs/design/zone-stories/TEMPEST_COURT.md",
+      "sha256": "8bb6e1fcf1ada7d4ac16b68794eddbe7b0700c21cca1f25ed1a525dbae6e2764"
+    },
+    {
+      "path": "docs/design/zone-stories/TEMPLE_OF_FLAMES.md",
+      "sha256": "762bdb1929b0cae78eee8c254096b8d21f318fdac35a1dfe80d6aa1d8163380c"
+    },
+    {
+      "path": "docs/design/zone-stories/TEMPLE_OF_LADUGUER.md",
+      "sha256": "9a935bccdab2c31095c586b20820336fa1ea218b4ba0ea53c065ca94befffd83"
+    },
+    {
+      "path": "docs/design/zone-stories/TEMPLE_OF_THE_EARTH.md",
+      "sha256": "5cfff811761b6215af884419e03dd18ab670e4524c6375a258e996ee17d84918"
+    },
+    {
+      "path": "docs/design/zone-stories/TEMPLE_OF_THE_SUN.md",
+      "sha256": "f9b3801c6f2e7ad0f4c25ad796098f1dda347556b28d76e9d4891a8729dcee39"
+    },
+    {
+      "path": "docs/design/zone-stories/TENTRO.md",
+      "sha256": "3d3e5ff2dd6bd60aaa044e59bfcb9f55b7ca60754081c78538e73062451852e5"
+    },
+    {
+      "path": "docs/design/zone-stories/TEZCAT.md",
+      "sha256": "e660ca401d0146722aa62c1103e5842c57d0d77d449e89e682628735abb8b059"
+    },
+    {
+      "path": "docs/design/zone-stories/THARNADIA.md",
+      "sha256": "0f168ad0b34d146e3896201303a914d0c11bf09f09944c3d7c108518ebab05a2"
+    },
+    {
+      "path": "docs/design/zone-stories/THARNADIAN_RUIN.md",
+      "sha256": "b85edb1ef78dda842a4fd1901ffb34d1331bd1aa7e8c43589763c6ca83f5a8d0"
+    },
+    {
+      "path": "docs/design/zone-stories/THARNADIA_RIFTS.md",
+      "sha256": "27a21ed6f2d3c6376bc10d343e04520ae11277e33038d58ede5ad36c1bb29650"
+    },
+    {
+      "path": "docs/design/zone-stories/THETIS_REALM.md",
+      "sha256": "35de25736cf308f17c8e65338ddd2dca48d317faaeb8826a658f7b172f46f1b5"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_222ND_LAYER_OF_THE_ABYSS.md",
+      "sha256": "c68ca7854b2375602de248b91d38d44aed72bc06f3fd76307500591b0dfcdb72"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_AFTERLIFE_GUILDHALL.md",
+      "sha256": "8515e3ec24938e0e048bb0f718b6167d15b4dd07b301814ccab79b304ae13b1e"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_ALTAR_OF_THE_FIRESWORN.md",
+      "sha256": "41da986ac8c700d235940cc211dd74c8084bdb975183533cb237c33546b1c7c3"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_ANCIENT_HALLS_OF_IRONSTAR.md",
+      "sha256": "ce60879ac75112245a1cac703582606a9890d2b72d968f83362638d901d455f6"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_ARCANEUM_OF_LSRILLIZZIN.md",
+      "sha256": "d3bde2b472b8f685a99b57afeeadbc91d4bcf8bc972a111bd20c0ebdbfea8b63"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_BASIN_WASTES.md",
+      "sha256": "ec5d22f5cf43d6fc25ecbcbdf74245869b56b3d77508ba4a254a4aa22587c438"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_BATTLEFIELD.md",
+      "sha256": "88e56bbe8633ccfd173deddf3d9468921614f774bcc3246c813cf9563969a1c2"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_BEHEMOTH_HERDERS.md",
+      "sha256": "9347da8c7f0502c881958cfc56077c1d814e1d03b8c0b03541a2457be9ece8ca"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_BLACK_PEARL.md",
+      "sha256": "7f32e111cb25201ea87b65797577b6c12838ff149a10f7984f7456a0e58e9854"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_CAVERNS_OF_THE_WORMS.md",
+      "sha256": "500b3cee686b7ead08a14eea1aa0d33ec0782111e2f33bbad30de712fc02b6d6"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_CAVERNS_OF_THE_WORMS_BUILDER_QUESTIONS.md",
+      "sha256": "3d8d598a2415b3faffa75e91df55e601404aae0d7c660b80facbd88a842aac2b"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_CHASM_OF_THE_MISTY_VALE.md",
+      "sha256": "489ad6880c53bfa4b8dbc337e39958cc353b9f87a1f5de82eb29ca5128a87d16"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_CIMMERIAN_NOMAD_ENCAMPMENT.md",
+      "sha256": "05a70835ad383d9ad54e567dc6bcac1f13c1ca3aaff42481d726ab4057dcc766"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_CITADEL.md",
+      "sha256": "4cf32635e7cf6357c42646fdf300ef3b9080f8ea398c19d5b9a7a227dfc78f49"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_CLAWED_CAVERNS.md",
+      "sha256": "be846679734c0c5c2ef36a3619c9d9854763114ed4b33c693af3424d281004c8"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_CRYPTS_OF_RAYS.md",
+      "sha256": "9903cc716da319f614d6ab20c48270130337b52922488bf3b6aa8dd3eb05ee85"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_DEPTHS_OF_DURIS.md",
+      "sha256": "3a0befd14036b95fc4f1e956327a36d580149a4a83b6082fb7121632a802dde7"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_ELEMENTAL_GROVES.md",
+      "sha256": "b26063a5586587c9f4a24008b1604f9cdac08313783e175e0cc38c992e8efb9f"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_END_OF_THE_WORLD.md",
+      "sha256": "8187f18bd0d7a88f769c1bd4e016c0c52d07b8075a6f10da69a32772bb30ecfd"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_ETHEREAL_PLANE.md",
+      "sha256": "232f64a49da62124381d0defb29e52f932802e091e0df212e2937b6cc18f131e"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_FORGOTTEN_MANSION.md",
+      "sha256": "1b7d142e375467c096d564f3817146b0cae7162e7ba200e55cf857cb842eccc8"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_FORTRESS_OF_DREAMS.md",
+      "sha256": "38efa328725d9340d8660c693ab959f559188686f989aa7c1265ba199837d7bf"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_GREAT_REALM_OF_DURIS.md",
+      "sha256": "46f6fa0b1ca72ac0fc867a2d1f021d20882508e589baa5930e82b4f95904a9f3"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_GREAT_SHABOATH.md",
+      "sha256": "5f23d4503b9c70002cdad262767325403c6fbf89d03e462f2aa1ac7d9b400e71"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_HALFCUT_HILLS.md",
+      "sha256": "80cdf2a7b3e6f05abce2e460e08c774bd087b5e39aafb51c3cf6efb366cd9dfd"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_HALL_OF_THE_ANCIENTS.md",
+      "sha256": "c669a68cfbbe489c77f5b77128f9f526d321945642171e6e71b13ecc93c079f8"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_HAUNTED_WOODS.md",
+      "sha256": "32aab6b005b4d892b4eee23374e9531e4fa35f0bc3c9fa12861b3b90b9edf29c"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_HIGH_MOOR_FOREST.md",
+      "sha256": "364d290048ea29b2a0801fd3bf886388b29d4eacf8a9b771b06af9b471221ce8"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_JADE_EMPIRE.md",
+      "sha256": "bd2b0541e3e1eb73bca741fa7824028687006763a39feca2f3bc5bcd58246d4c"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_MINIZONES_OF_THE_SURFACE.md",
+      "sha256": "5be1722e8192fa582c694d24870de427ab50c4f13c7d483d6e52a614d02c3eb3"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_MOUNTAIN_OF_PERIL_PEAKS.md",
+      "sha256": "1ba809191bd1d1caa001f543ae4e712f2973fb6b1e1cbf82dfa81a4ff7d61a58"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_MOUNTAIN_OF_THE_BANISHED.md",
+      "sha256": "8a35e373e4f74b733093bbcad25be1d610e6d27e1f00d1ce29f9be5b1657a55b"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_MOUNTAIN_SETTLEMENT_OF_THE_HARPIES.md",
+      "sha256": "a599b2761eeb3ae08c83536838ad3471328be5403d98a4807c53e5c0979a8292"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_MOUNTAIN_VALLEY_OF_DAWNDALE.md",
+      "sha256": "57540e8c33ae5d77eabfdab94633db069ed217c8eb0cf67766c6deb27759233f"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_OBSIDIAN_CITADEL.md",
+      "sha256": "18f4b75f8b90d693b0bd845f8c871a0edf2077d634c2cfbca68c6d6665f33735"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_OLD_GRAVEYARD.md",
+      "sha256": "4abeb13c47d56beecfb5a3eb90722df3904f417cdd2c315b6ecae10586c82ca1"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_ORCISH_SLAVE_CAMP.md",
+      "sha256": "a61cdfb6945fd5029962fbdf24bd93b3dc5ffe3f25854a4cc86ba0aa0ba51ce5"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_RAVENLOFT_CATACOMBS.md",
+      "sha256": "10aa9286886dc02e9ea57c40e7f73724c88a4b0cdd705882e5b668c5c6c2d628"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_REALM_OF_BAROVIA.md",
+      "sha256": "9700661c91dc04cc1503ceb9c819c01d1621a1592fa56e720688bb3add028009"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_REALM_OF_BAROVIA_CONTINUED.md",
+      "sha256": "ecc4b01e42aaae18fad3ec9338de92ed30e0f6359848d8800871ea8138fab815"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_ROYAL_MAUSOLEUM_OF_CASTLE_ICECRAG.md",
+      "sha256": "24c0f34f74e64ae10fb81f65ec184d251e486668bb1ab78d261629d61bc83b8d"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_ROYAL_MAUSOLEUM_OF_CASTLE_ICECRAG_BUILDER_QUESTIONS.md",
+      "sha256": "d4d77646ff033690efa719e473f037a8075bc170d1f7b091a2ca8548e94aeeda"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_RUINS_OF_UNDERMOUNTAIN.md",
+      "sha256": "f61fbf27442247928a2f046bdf52b0016dfd72022ec94cf87a82970f5f1247cb"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_SCORCHED_VALLEY.md",
+      "sha256": "7f8bc6c60a49dd7c219966546febdddb039c9f15ff9905aefc737b2fb6ce872e"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_SEACAVES.md",
+      "sha256": "31bf5982d393c99fa6e7af5fdeadacc09ab2a8dbba7b5384359303716c924c61"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_TEMPLE_TO_SKRENTHERLOG.md",
+      "sha256": "c7bf6274f12509cedf70b01b3d10d4f7ea24ddc7efc249cb8167f7562a459996"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_TEMPLE_TO_SKRENTHERLOG_BUILDER_QUESTIONS.md",
+      "sha256": "746444eb326f389aab99328be306166ca90bac49029ac1b1ec32e46384095c46"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_TOWERING_GLACIER_OF_DAYEDENVALE.md",
+      "sha256": "26fdb0d7a1756f5e1cb860e49fbb2aa37800d3ed83bbdb79d6808bbafc58f90c"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_TOWN_OF_MOREGEETH.md",
+      "sha256": "ab44f681d6b45efad65b20638fa42c4aa15c2d97b5929b16b08f61206ac91106"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_UNDEAD_FOG.md",
+      "sha256": "119f177fddaddf360a53af3fbdc53d60c4ac917be8965137fd81351e684fd93b"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_UNDERGROUND_LAVA_CAVES.md",
+      "sha256": "926c3439be8d8dce89ac14abdf4bbb6146ed4ca1ca32b0b18301ed6dbd74ef96"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_VALOISIAN_CASTLE.md",
+      "sha256": "c1c1b5615532e72db2a658e6fab6d3e614600dfd7ebd980cbac35a43dcf48bac"
+    },
+    {
+      "path": "docs/design/zone-stories/THE_VILLAGE_OF_NEW_HOPE.md",
+      "sha256": "258ae53c3976e187ccdc0fc4665aa0b305e4f69af166a1fbc4e88fccbbf915fa"
+    },
+    {
+      "path": "docs/design/zone-stories/TIAMAT.md",
+      "sha256": "9dd314412fc7726b47194308daba5a9ed2a1a7db6aa29a9c69bf803c6d94e0d4"
+    },
+    {
+      "path": "docs/design/zone-stories/TORG.md",
+      "sha256": "649d42985adbcea004494444f87ca1ef6effb20310b64f393f87c660a0eb545b"
+    },
+    {
+      "path": "docs/design/zone-stories/TOWER_OF_DARKNESS.md",
+      "sha256": "b47c3705720be6d24b54b2213775ad70583a7418eb7e4ff53ed5f2deb39bd9fe"
+    },
+    {
+      "path": "docs/design/zone-stories/TOWER_OF_HIGH_SORCERY.md",
+      "sha256": "f19918dc3ebea571994236cfbf7999d024b77a807b74af8fe7019d1b1e6049d3"
+    },
+    {
+      "path": "docs/design/zone-stories/TRADESKILLS.md",
+      "sha256": "8c2c5bda22d239d712da22d0af62df55e60be5a21db92b3afdd8420b1fadca12"
+    },
+    {
+      "path": "docs/design/zone-stories/TRAKKIA_MOUNTAINS.md",
+      "sha256": "cd914c646bed5388ab1606d0ef19890434da98a20c5e5b0953f7482f6a69f816"
+    },
+    {
+      "path": "docs/design/zone-stories/TRAOULS_LAIR.md",
+      "sha256": "a764f78471063228f3c2e1b204e28c5c5f8dee2e61775392c3fa69b55bd1ead9"
+    },
+    {
+      "path": "docs/design/zone-stories/TREASURE_CAVES.md",
+      "sha256": "226a4e4e02ab7f8621512869b082a6440f733f87db1be4feef2945f294c5a7ae"
+    },
+    {
+      "path": "docs/design/zone-stories/TRIBAL_FOREST.md",
+      "sha256": "2793483a395c3427f0b2ce12a0d789a3aac00826ac747a4567631a26ab82f0fa"
+    },
+    {
+      "path": "docs/design/zone-stories/TRIBAL_OASIS.md",
+      "sha256": "c7ad06748194274262ea18012eab319649ac3ed2771bec6f0f0d583cd9d94983"
+    },
+    {
+      "path": "docs/design/zone-stories/TRNSPTOW.md",
+      "sha256": "03f67ff5c3a0e328b796464110e8157bffecfd1324e371748ec6263e0b2c35eb"
+    },
+    {
+      "path": "docs/design/zone-stories/TROLL_CAVES.md",
+      "sha256": "a9f99183d618d8f6698547ce52705d4322277234ec61ebe6ba0e4c6e146a2cbb"
+    },
+    {
+      "path": "docs/design/zone-stories/TROLL_HILLS.md",
+      "sha256": "035fffd1baf0c1982535732bc8bde3cde057bb901ca9c46d7bc92986e1a6f615"
+    },
+    {
+      "path": "docs/design/zone-stories/TROLL_SLAVE_COMPOUND.md",
+      "sha256": "22f42d37b9e2723ffb77175ceb0f8ad7fd594d6e71f9edffd4028919bb5566f8"
+    },
+    {
+      "path": "docs/design/zone-stories/TRUK.md",
+      "sha256": "890bfea8d72630617a6d374dacebc2988fbe8f9591fd2ed20f60493e3546ac8e"
+    },
+    {
+      "path": "docs/design/zone-stories/TUNDRA.md",
+      "sha256": "e81ff3f191e324e037087d1e5f2a5c4afad47ac45e3fccc086a37e0ce0cb7c9c"
+    },
+    {
+      "path": "docs/design/zone-stories/TUROLZOO.md",
+      "sha256": "94978a0660a7b9bcbd930c71d67d9449fb8fa67b3f3d07bb53426abbf5828bae"
+    },
+    {
+      "path": "docs/design/zone-stories/TWIN_KEEPS_OF_DEVASTATED_THARNADIA.md",
+      "sha256": "3301010a7669d26fe7e65e8121fa17a07ea3241cb5095cd04ecf82fd0469472a"
+    },
+    {
+      "path": "docs/design/zone-stories/TWIN_TOWERS.md",
+      "sha256": "5ca00684b26ea1d1c097be06d9501adc5a0f959bb69b40c223e3589a3caee8be"
+    },
+    {
+      "path": "docs/design/zone-stories/TWIN_TOWERS_FOREST.md",
+      "sha256": "b5e2c986bdadda8873471bf214a74bb41abc939abe5e94a9f11d07f5bf544ec1"
+    },
+    {
+      "path": "docs/design/zone-stories/UDMINI.md",
+      "sha256": "92f4b7d901277e8915f7140d269aa71a4896213408fb29a21f684261065e3645"
+    },
+    {
+      "path": "docs/design/zone-stories/ULTARIUM.md",
+      "sha256": "0567a907deda95956cb5e28585c70891b89c2b1433c5e57b794f4aca243dc254"
+    },
+    {
+      "path": "docs/design/zone-stories/UNDEAD_OUTPOST.md",
+      "sha256": "d28448e8b157b71f552eb2eb71e4b7248479e008d7d1122404b4f138e3e25b8e"
+    },
+    {
+      "path": "docs/design/zone-stories/UNDERWORLD.md",
+      "sha256": "4d1c0b5f090ee68d32786b2451c061cf9659a95c3291db4069000fe465127d97"
+    },
+    {
+      "path": "docs/design/zone-stories/UNDERWORLD3.md",
+      "sha256": "3630f7ca71322ee8bc2d2d6037953319f1a27c8179172839cb768871f2dc194f"
+    },
+    {
+      "path": "docs/design/zone-stories/UNIQUE.md",
+      "sha256": "59041c8b855b5a542a94f7c3f396e79c5af86468e118d1f3211c82feb2495c08"
+    },
+    {
+      "path": "docs/design/zone-stories/V2.md",
+      "sha256": "ab40807283a9700d64276d3f088c9427212c02cd433df811ebbbe99ffb6b304f"
+    },
+    {
+      "path": "docs/design/zone-stories/V2_BUILDER_QUESTIONS.md",
+      "sha256": "f0571826ae3bb20375e28f498b9837c842a6c7a47f18f1d163e7816672f654c1"
+    },
+    {
+      "path": "docs/design/zone-stories/VALDRAK.md",
+      "sha256": "bb38a0b5b65d763a7a0cad0bba016213ae959bbaec48d82920a67c537b05ae19"
+    },
+    {
+      "path": "docs/design/zone-stories/VALDRAK_BUILDER_QUESTIONS.md",
+      "sha256": "9f95e9f3cf3b2c0249cb09e5a93142e6be02944507387c911c040eb5bba30e19"
+    },
+    {
+      "path": "docs/design/zone-stories/VALINHAV.md",
+      "sha256": "2a53a3ed3cd30e2f3d7ab3ecee0737c64ecee07f5f43ddf5260150648f93b02c"
+    },
+    {
+      "path": "docs/design/zone-stories/VALINHAV_BUILDER_QUESTIONS.md",
+      "sha256": "55de3101b95594e8c3766719bf07d95690b256f9793c688563159a909d4135ab"
+    },
+    {
+      "path": "docs/design/zone-stories/VALLEY_CRUSHK.md",
+      "sha256": "1242d338bf65e9837e1d755d72b2ca7c8eafa925c465969cb6d6507ed0647808"
+    },
+    {
+      "path": "docs/design/zone-stories/VALLEY_CRUSHK_BUILDER_QUESTIONS.md",
+      "sha256": "e0a85a37bed618e724102074cbc61c5df220fd823cc3fdf77335152d36574a42"
+    },
+    {
+      "path": "docs/design/zone-stories/VALLEY_OF_THE_SNOW_OGRES.md",
+      "sha256": "8ba9544962b6b3fb703d050374d5e49a8edd4a4d9660a981c1e50100cf6826f3"
+    },
+    {
+      "path": "docs/design/zone-stories/VALOISIAN_CASTLE_BUILDER_QUESTIONS.md",
+      "sha256": "1306c5a8f6e6e7523df2db79603d8cc97487542952a92f0438c17cc29d31fca4"
+    },
+    {
+      "path": "docs/design/zone-stories/VARATHORN_KEEP.md",
+      "sha256": "d2696087cd6c215e896664769ea7b4ea12ebeff4315293ed907e0dfe856c8ca2"
+    },
+    {
+      "path": "docs/design/zone-stories/VARGAN.md",
+      "sha256": "4f050c713da43335e9f88aae2343b8520fbb507f1cfa4fc2478d547ba7864a1b"
+    },
+    {
+      "path": "docs/design/zone-stories/VARGAN_BUILDER_QUESTIONS.md",
+      "sha256": "289912f4b104a6e6b65e9151907b79e3fc8acc4d363c12f5b3f98e221e77cfff"
+    },
+    {
+      "path": "docs/design/zone-stories/VAST_HIDDEN_GROVE.md",
+      "sha256": "ddf32c7d88ba39864e3748bcf640da17f1342fb137ed4f8f8ff66a207aa221df"
+    },
+    {
+      "path": "docs/design/zone-stories/VECNAS_TOMB.md",
+      "sha256": "9cd6810cf29a015d2e9839415dfa0040fbe184673c6cb253eaf3c2a48f86b25b"
+    },
+    {
+      "path": "docs/design/zone-stories/VECNAS_TOMB_BUILDER_QUESTIONS.md",
+      "sha256": "4c9fd1c7881897f00523ca09b6c66f7a8d182abef196860c58f4b0ffb8fe0660"
+    },
+    {
+      "path": "docs/design/zone-stories/VEHICLES_BUILDER_QUESTIONS.md",
+      "sha256": "dcc0c08575d9492653e880e7af53fedc6d09515b924c7ed72a5e3aa3b203dad7"
+    },
+    {
+      "path": "docs/design/zone-stories/VERSPIN.md",
+      "sha256": "8e6f9bcf67132358f81e28e9469a758e42a70548cfa2f45943e20fe4b9ac72a8"
+    },
+    {
+      "path": "docs/design/zone-stories/VERSPIN_BUILDER_QUESTIONS.md",
+      "sha256": "2d67aa744ef3db09d25dc33dbd3b53ea0102e9d790799e57e1160ca6f0a4a4eb"
+    },
+    {
+      "path": "docs/design/zone-stories/VERZANAN_BUILDER_QUESTIONS.md",
+      "sha256": "f53e1986c4046b9ff1149d2ef5510581744465b39eb50130833960e26f9d36f6"
+    },
+    {
+      "path": "docs/design/zone-stories/VERZANAN_STORY_REVIEW.md",
+      "sha256": "ad1849001761e6fc3a6f5f3abb92de57c468a5cb2fdfd79a5217332679a6a9b0"
+    },
+    {
+      "path": "docs/design/zone-stories/VILLAGE_OF_REFUGEES.md",
+      "sha256": "edb6c191ebe43f61a000b91fb604504faebb6d710b8131eeb6811e534f54de59"
+    },
+    {
+      "path": "docs/design/zone-stories/VILLAGE_OF_SPLIT_SHIELD.md",
+      "sha256": "7a2e1608d0cde1b7681735492c850b72dadbc2074fe4161b7a9f6209d72b1bb5"
+    },
+    {
+      "path": "docs/design/zone-stories/VILLAGE_OF_WERRUN.md",
+      "sha256": "f4eddb52d1f6a8479fa649fb3f2c2f925349788b6a5dd6366cd98e9d8e08979f"
+    },
+    {
+      "path": "docs/design/zone-stories/VILLAGE_OF_WERRUN_BUILDER_QUESTIONS.md",
+      "sha256": "25321e6b809f81a55bf85bc3d080c8840a64e1a9b969acdbf86856d0823411ac"
+    },
+    {
+      "path": "docs/design/zone-stories/WANDERING_FIELDS_BUILDER_QUESTIONS.md",
+      "sha256": "ffa34110dcd61c0a0588133004310b7d3fff61f50e079bbc8525dbde54986654"
+    },
+    {
+      "path": "docs/design/zone-stories/WANDERING_FIELDS_STORY_REVIEW.md",
+      "sha256": "30b2a84e7534092b36182cbced1daec9f2b4bd41f666eb9fbc539afb15081e96"
+    },
+    {
+      "path": "docs/design/zone-stories/WELLVOLEN_BUILDER_QUESTIONS.md",
+      "sha256": "be78d66bd72925b59a4385d809de4c53eeb771c21fd24caaef917c62541d4110"
+    },
+    {
+      "path": "docs/design/zone-stories/WELLVOLEN_STORY_REVIEW.md",
+      "sha256": "0c1589fa1b7eebc477835c00a7b3352551649ed5b4c0fe0867b4ce669d813102"
+    },
+    {
+      "path": "docs/design/zone-stories/WILDLAND_TRAILS_BUILDER_QUESTIONS.md",
+      "sha256": "871b8fd1e351c9f3501eb959adf91f5205ce4c8aad95761b9cddd38fb3070981"
+    },
+    {
+      "path": "docs/design/zone-stories/WILDLAND_TRAILS_STORY_REVIEW.md",
+      "sha256": "5fc6fc2f6263a2a263424eef8c0a7dca99490b2e94b3f97c339fb55542bad548"
+    },
+    {
+      "path": "docs/design/zone-stories/WINTERHAVEN.md",
+      "sha256": "dd4cfab9c0e7d0c44f988715c6a9c40fbbc6c598d77adfaf2d2d5d14b6d609d2"
+    },
+    {
+      "path": "docs/design/zone-stories/WINTERHAVEN_BUILDER_QUESTIONS.md",
+      "sha256": "04ebdc99b28f59ffd2da28824f7de77643d70e50002d1a0d2aeb5083a23d017c"
+    },
+    {
+      "path": "docs/design/zone-stories/WOLFEN_BUILDER_QUESTIONS.md",
+      "sha256": "a2deda8d6725e918fb5430c49aee8fd2b709af1e295850b60593cd3516277068"
+    },
+    {
+      "path": "docs/design/zone-stories/WOLFEN_STORY_REVIEW.md",
+      "sha256": "4e1bed5623c637f6eccfc2950246fbd4b5310d46d0cc6288dd17a9523e1ad84e"
+    },
+    {
+      "path": "docs/design/zone-stories/WOODSEER.md",
+      "sha256": "d2237e82d0e69b33622dfb763bfa7bba255d21fe92270f606a552447ba9d2d6d"
+    },
+    {
+      "path": "docs/design/zone-stories/WOODSEER_BUILDER_QUESTIONS.md",
+      "sha256": "a22eefbf15b71dfbfcbb5a006d01a7b03d822794a69cceb209e07192f802e3da"
+    },
+    {
+      "path": "docs/design/zone-stories/YUAN_TI2.md",
+      "sha256": "99377905fbd581d4dcf5c26deb97ad79f16a3aca0a9c1c52d267a50bf63b4c0c"
+    },
+    {
+      "path": "docs/design/zone-stories/YUAN_TI2_BUILDER_QUESTIONS.md",
+      "sha256": "2e1b0126823021202ca9030ada30e8524f9c6dfe57fd87f069704498a839a5da"
+    },
+    {
+      "path": "docs/design/zone-stories/ZALKAPFAAN.md",
+      "sha256": "86d8e38c75fcc9811a59dad891393fc786cc1019313f300cf323439a565ac65c"
+    }
+  ]
+}

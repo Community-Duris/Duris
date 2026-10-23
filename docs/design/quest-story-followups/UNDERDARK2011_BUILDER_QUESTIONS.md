@@ -1,0 +1,39 @@
+# UnderDark 2011 builder questions
+
+These source-backed questions keep map, quest, runtime, and identity decisions with their owners. The recommendations preserve the current source files and numbers until those owners answer.
+
+| ID | Builder question | Conservative recommendation |
+| --- | --- | --- |
+| U11-01 | Is underdark2011 intended to remain a separate map, a map-editor copy, or a predecessor/successor of another source? | Keep its five files separate from active underdark, Surf, and Surface2011 until an owner identifies the source lineage. |
+| U11-02 | Is the shared normalized title Norabi Map intentional for both surface2011.zon and underdark2011.zon? | Keep the title collision visible; do not rename either zone based on the title alone. |
+| U11-03 | Why do all 15,482 candidate room IDs also occur in Surface2011 and 15,481 in Surf while all full room records differ? | Preserve each map’s VNUM set and source file identity; request a map-editor ownership decision. |
+| U11-04 | Are the 68 candidate mobile VNUMs intentionally duplicated by Surf and Surface2011 even though every full prototype differs? | Keep the MOB definitions isolated by source family and resolve which owner each reset or quest intends. |
+| U11-05 | Are the eight candidate object VNUMs intentionally duplicated by Surface2011 with different object records? | Preserve both object families and their QST contracts; do not treat shared numbers as interchangeable objects. |
+| U11-06 | Does the 2011 editor/renumber history describe a copy of active underdark, an independent map, or another export workflow? | Ask the map/editor owner; the commit message and matching dialogue do not state replacement or retirement. |
+| U11-07 | Is the candidate’s absence from areas/AREA intentional? | Keep it unlisted while deployment and runtime owners confirm whether it is meant to load. |
+| U11-08 | Is its absence from areas/qst/AREA intentional, and how would its QST enter areas/world.qst? | Do not advertise the candidate QST as live until the quest packaging owner identifies the generated input. |
+| U11-09 | Should zone #2000 keep reset mode 2 despite having no reset commands? | Leave its ZON header unchanged until the reset owner confirms the intended mode and population source. |
+| U11-10 | Are the 15 surf.zon mobile loads whose numbers overlap candidate MOBs intended for Surf’s own prototypes? | Preserve them as unlisted Surf-source resets and resolve by full prototype identity, not VNUM alone. |
+| U11-11 | Are the 62 surf.zon M-command room numbers that overlap candidate rooms intended for Surf’s map? | Keep them attributed to the source map pending editor ownership; they are not active UnderDark2011 placements. |
+| U11-12 | Which map, if any, should own the eleven active-source target VNUMs shared by Surf, Surface2011, and UnderDark2011? | Keep all eleven active exits unresolved until each source-area owner confirms the destination map. |
+| U11-13 | Should Ashrumite #66149 east target #224166 in this candidate, Surf, or Surface2011? | Preserve the active exit and ask both endpoint owners to select the intended map identity. |
+| U11-14 | Should the five Connectorzones exits to #218196, #218200, #270228, #261258, and #261263 target this map? | Keep the five unresolved records separate; confirm map and return endpoints with Connectorzones and map owners. |
+| U11-15 | Should Crypt #14568 up target #265588 in this source family? | Preserve the unresolved target and confirm whether the cavern map is intended. |
+| U11-16 | Which of the three #217609 room records is intended by Desolate Under Fire #77301 south? | Do not infer a destination from the number; resolve the conflicting titles and topology with all map owners. |
+| U11-17 | Should Patrols #30500/#30504 routes target #209935, #218475, and #222076 in this map? | Preserve the three unresolved records until Patrols and map owners confirm identity and returns. |
+| U11-18 | Are the ten exits to IceCrag, Divhome, Herders, Grave, Githzerai Stronghold, Troll Caves, Faang, and Kvarkpass intended as one-way routes? | Keep all ten source-only boundaries and ask destination owners to confirm both directions, access, and safe return. |
+| U11-19 | Should #253961 south and #255161 north continue to unlisted Jungle #67005 and #67087? | Preserve these two separate inactive-map routes while both map owners confirm their intended endpoints. |
+| U11-20 | What should happen to the 11,222 external records whose 6,826 target VNUMs occur in both Surf and Surface2011? | Retain them as unresolved alternate-map edges until a single destination map or deliberate duplication is documented. |
+| U11-21 | Is the complete absence of room long descriptions intentional across all 15,482 rooms? | Preserve the authored titles and exits; ask the narrative owner whether room prose is missing or deliberately omitted. |
+| U11-22 | What are the intended narrative boundaries between the mountainous, obsidian, worm-cave, mushroom-forest, Jade Empire, and Magma Mountain title clusters? | Ask the map/story owner to identify named subregions before writing or merging a story. |
+| U11-23 | Which zones or systems are meant to place the 68 candidate mobiles and eight objects, given that this ZON has no reset commands? | Keep reset and object placement unresolved; require exact source and prototype ownership for each placement. |
+| U11-24 | Is Kryz’kyssik #200036 meant to be spawned or quest-enabled by a separate source? | Do not infer availability from the QST header; identify the actual reset and quest-generation path. |
+| U11-25 | Does the roper-skin reward R C 100000 match the dialogue promise of fifty platinum coins? | Have the quest/currency owner verify coin units and revise only after confirming the intended reward. |
+| U11-26 | Are the two amulet halves supplied by Ozman’dyzus and Haz’on’wyz, and is the seal plus 250,000 experience the intended completion reward? | Confirm both item sources and completion semantics against the candidate OBJ and MOB owners. |
+| U11-27 | Is the ID-remapped QST under active underdark the intended successor, or does this candidate preserve a separate quest version? | Keep both source files and local IDs distinct until quest ownership and packaging are documented. |
+| U11-28 | Does the generic elfgate range intentionally include only the candidate’s #200000–#209999 slice and exclude its rooms #210000 and above? | Ask the code owner before any activation or renumber proposal; its current object bindings are commented out. |
+| U11-29 | Are editor exports, generated world files, scripts, deployments, or saved data tied to the #200000–#289999 room and prototype ranges? | Reserve the current IDs and request those owners’ inventories before any path or identity change. |
+| U11-30 | Should this source remain unlisted while its map, quest, reset, route, and persistence owners reconcile it? | Keep the manifests and paths as they are; retain in place and defer any activation, migration, merge, or archive decision. |
+| U11-31 | Do the same-number QST header and four OBJ operands within Surf’s #200000–#200321 mobile range belong to Surf? | Keep the header and item roles attached to `underdark2011.mob` and `underdark2011.obj`; neither source QST is listed in `areas/qst/AREA`, so do not assign ownership from numeric overlap alone. |
+
+See the [complete audit review](UNDERDARK2011_AUDIT_REVIEW.md), [connectivity checkpoint](WORLD_CONNECTIVITY.md#checkpoint-552-underdark2011-source-graph-and-boundaries), [identity checkpoint](DUPLICATE_AND_REPLACED_ZONES.md#checkpoint-552-underdark2011-map-and-prototype-identity), [retention plan](ATTIC_MIGRATION_PLAN.md#checkpoint-552-underdark2011-retained-with-ambiguous-map-identities), [candidate row 114](ATTIC_CANDIDATE_DEPENDENCY_REGISTER.csv#L115), and [coverage row 465](ZONE_COVERAGE_REGISTER.csv#L466).
