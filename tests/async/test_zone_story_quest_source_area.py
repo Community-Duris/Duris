@@ -16,6 +16,16 @@ catalog = catalog_module.production_catalog(ROOT)
 catalog["story_mappings"] = []
 evidence = inventory_module.area_evidence(ROOT, "Voluntown")
 assert evidence["zone"]["source_area"] == "Voluntown"
+vella = inventory_module.area_evidence(ROOT, "bordello")
+assert not vella["requests"] and not vella["candidate_link_items"]
+assert {d["giver_vnum"] for d in vella["scripted_outcomes"]} == {93602, 93603, 93611}
+vella_index = inventory_module.review_index(ROOT, "bordello")
+assert "## Declared scripted outcomes" in vella_index
+assert vella_index.count("`scripted:bordello:hire-companion`") == 3
+assert "service: Hire the sleazy worker" in vella_index
+inventory_text = inventory_module.markdown(ROOT)
+assert "2668 distinct Q contracts" in inventory_text
+assert "(`bordello`) | 3 | [bordello.story.json]" in inventory_text
 mapping = {
     "schema_version": 3,
     "revision": 1,

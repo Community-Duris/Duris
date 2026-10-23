@@ -247,16 +247,13 @@ def production_catalog(source_root, content_revision=2):
 
     if matched_owners != set(owners):
         raise ValueError("quest owners: unknown native contract")
-    definitions.sort(key=lambda item: (item["zone_number"], item["definition_id"]))
-    fingerprint_payload = json.dumps(definitions, sort_keys=True, separators=(",", ":")).encode()
     result = {
         "schema_version": 1,
         "content_revision": content_revision,
         "source": {
-            "kind": "legacy_static_qst",
+            "kind": "legacy_static_qst_and_scripted_outcomes",
             "area_list": "areas/AREA",
             "excludes": ["bartender_random_world_quests"],
-            "fingerprint_sha256": hashlib.sha256(fingerprint_payload).hexdigest(),
         },
         "zones": [zone for zone in zones if zone["zone_number"] >= 0],
         "definitions": definitions,
@@ -284,6 +281,12 @@ def production_catalog(source_root, content_revision=2):
         if path.is_file():
             for match in re.finditer(r"^#(\d+)\s*\n([^~]*)~", path.read_text(errors="replace"), re.M):
                 mobs[int(match[1])] = match[2].lower().split()
+    playable = {z["source_area"]: z for z in zones if z["discoverable"]}
+    for mapping in result["story_mappings"]:
+        definitions.extend(scripted_definitions(mapping, playable, content_revision))
+    definitions.sort(key=lambda item: (item["zone_number"], item["definition_id"]))
+    fingerprint_payload = json.dumps(definitions, sort_keys=True, separators=(",", ":")).encode()
+    result["source"]["fingerprint_sha256"] = hashlib.sha256(fingerprint_payload).hexdigest()
     story_units(result, items, mobs)
     return result
 
@@ -294,6 +297,49 @@ def unique_fields(pairs):
         if key in result:
             raise ValueError(f"duplicate JSON field: {key}")
         result[key] = value
+    return result
+
+
+def scripted_definitions(mapping, areas, content_revision):
+    """Declare outcomes only; native code must report actual scripted success."""
+    if mapping.get("schema_version") != 4:
+        return []
+    area = mapping.get("source_area")
+    if not isinstance(area, str) or area not in areas:
+        raise ValueError("scripted outcome: unknown source area")
+    outcomes = mapping.get("scripted_outcomes")
+    if not isinstance(outcomes, list) or len(outcomes) > 256:
+        raise ValueError("scripted outcome: invalid outcomes array")
+    contacts = mapping.get("contacts")
+    if not isinstance(contacts, list):
+        raise ValueError("scripted outcome: giver requires an authored contact")
+    result, seen = [], set()
+    for outcome in outcomes:
+        if not isinstance(outcome, dict) or set(outcome) != {"event", "giver_vnum", "repeatable"}:
+            raise ValueError("scripted outcome: unknown or missing fields")
+        event, giver = outcome["event"], outcome["giver_vnum"]
+        if (not isinstance(event, str) or not re.fullmatch(r"[a-z0-9_-]{1,64}", event)
+                or isinstance(giver, bool) or not isinstance(giver, (int, float))
+                or not 1 <= giver <= 2**31 - 1 or giver != int(giver)
+                or type(outcome["repeatable"]) is not bool):
+            raise ValueError("scripted outcome: invalid event, giver or repeatable flag")
+        if not any(isinstance(c, dict) and c.get("mob_vnum") == giver for c in contacts):
+            raise ValueError("scripted outcome: giver requires an authored contact")
+        giver = int(giver)
+        id = f"zone-story:scripted:{area}:{giver}:{event}"
+        if id in seen:
+            raise ValueError("scripted outcome: duplicate event and giver")
+        seen.add(id)
+        result.append({
+            "definition_id": id, "source_system": "zone_story",
+            "zone_number": areas[area]["zone_number"], "source_area": area,
+            "giver_vnum": giver,
+            "completion_key": f"scripted:{area}:{event}".encode().hex(),
+            "active": True, "eligible_for_zone_completion": True,
+            "repeatable": outcome["repeatable"], "daily_eligible": False,
+            "daily_exclusion": "Scripted outcome awaits daily review",
+            "prerequisites": [], "content_revision": content_revision,
+        })
     return result
 
 
@@ -350,10 +396,12 @@ def story_units(catalog, item_vnums=None, mob_keywords=None):
     for mapping in array(catalog.get("story_mappings", []), 0, 350):
         if not isinstance(mapping, dict):
             raise ValueError("story mapping: expected object")
-        schema = number(mapping.get("schema_version"), 1, 3)
+        schema = number(mapping.get("schema_version"), 1, 4)
         keys = {"schema_version", "revision", "source_area", "coverage", "stories", "exclusions"}
         if schema >= 2:
             keys |= {"introduction", "orientation", "contacts"}
+        if schema >= 4:
+            keys.add("scripted_outcomes")
         fields(mapping, keys)
         number(mapping["revision"], 1, 2**31 - 1)
         area = text(mapping, "source_area")
@@ -361,6 +409,10 @@ def story_units(catalog, item_vnums=None, mob_keywords=None):
             raise ValueError("story mapping: invalid or duplicate source_area")
         mapped_areas.add(area)
         zone = areas[area]["zone_number"]
+        scripted = scripted_definitions(mapping, areas, catalog["content_revision"])
+        for definition in scripted:
+            if definitions.get(definition["definition_id"]) != definition:
+                raise ValueError("scripted outcome: declaration differs from catalog")
         if text(mapping, "coverage") not in {"partial", "complete"}:
             raise ValueError("story mapping: coverage must be partial or complete")
         if schema >= 2:
@@ -422,7 +474,10 @@ def story_units(catalog, item_vnums=None, mob_keywords=None):
                 text(step, "text")
                 text(step, "hint", empty=True)
                 if kind == "completion":
-                    refs(step["contracts"])
+                    step_refs = refs(step["contracts"])
+                    if any(id.startswith("zone-story:scripted:") and
+                           not id.startswith(f"zone-story:scripted:{area}:") for id in step_refs):
+                        raise ValueError("scripted outcome: cross-area steps are not supported")
                 else:
                     number(step["count"], 1, 3000)
                     if kind == "equipped_item":
@@ -438,6 +493,8 @@ def story_units(catalog, item_vnums=None, mob_keywords=None):
             fields(exclusion, {"reason", "contracts"})
             text(exclusion, "reason")
             bind(refs(exclusion["contracts"], zone))
+        if any(d["definition_id"] not in bound for d in scripted):
+            raise ValueError("scripted outcome: every outcome needs a story or exclusion")
         if mapping["coverage"] == "complete" and any(d["active"] and d["source_area"] == area and d["definition_id"] not in bound for d in definitions.values()):
             raise ValueError("complete story mapping leaves a native contract unclassified")
     for id, d in definitions.items():

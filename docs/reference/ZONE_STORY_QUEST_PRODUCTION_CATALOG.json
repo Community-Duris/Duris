@@ -35660,6 +35660,51 @@
     },
     {
       "active": true,
+      "completion_key": "73637269707465643a626f7264656c6c6f3a686972652d636f6d70616e696f6e",
+      "content_revision": 2,
+      "daily_eligible": false,
+      "daily_exclusion": "Scripted outcome awaits daily review",
+      "definition_id": "zone-story:scripted:bordello:93602:hire-companion",
+      "eligible_for_zone_completion": true,
+      "giver_vnum": 93602,
+      "prerequisites": [],
+      "repeatable": true,
+      "source_area": "bordello",
+      "source_system": "zone_story",
+      "zone_number": 936
+    },
+    {
+      "active": true,
+      "completion_key": "73637269707465643a626f7264656c6c6f3a686972652d636f6d70616e696f6e",
+      "content_revision": 2,
+      "daily_eligible": false,
+      "daily_exclusion": "Scripted outcome awaits daily review",
+      "definition_id": "zone-story:scripted:bordello:93603:hire-companion",
+      "eligible_for_zone_completion": true,
+      "giver_vnum": 93603,
+      "prerequisites": [],
+      "repeatable": true,
+      "source_area": "bordello",
+      "source_system": "zone_story",
+      "zone_number": 936
+    },
+    {
+      "active": true,
+      "completion_key": "73637269707465643a626f7264656c6c6f3a686972652d636f6d70616e696f6e",
+      "content_revision": 2,
+      "daily_eligible": false,
+      "daily_exclusion": "Scripted outcome awaits daily review",
+      "definition_id": "zone-story:scripted:bordello:93611:hire-companion",
+      "eligible_for_zone_completion": true,
+      "giver_vnum": 93611,
+      "prerequisites": [],
+      "repeatable": true,
+      "source_area": "bordello",
+      "source_system": "zone_story",
+      "zone_number": 936
+    },
+    {
+      "active": true,
       "completion_key": "676976653d493a39343030322c493a39343030322c493a39343030333b726563656976653d493a39343031333b6469736170706561723d30",
       "content_revision": 2,
       "daily_eligible": true,
@@ -40030,8 +40075,8 @@
     "excludes": [
       "bartender_random_world_quests"
     ],
-    "fingerprint_sha256": "28f5291881a220322d48a47f53b428172c03f7df04acc99c339e45f0488ace62",
-    "kind": "legacy_static_qst"
+    "fingerprint_sha256": "be9d622636bad2702b5746278c8705af873718f3056c9f439ed7c90b162d1445",
+    "kind": "legacy_static_qst_and_scripted_outcomes"
   },
   "story_mappings": [
     {
@@ -158119,7 +158164,7 @@
           "topics": []
         }
       ],
-      "coverage": "partial",
+      "coverage": "complete",
       "exclusions": [],
       "introduction": "Vella's Bordello offers paid temporary companions and can host wandering creatures whose materials are sought by quest givers in Winterhaven.",
       "orientation": [
@@ -158130,10 +158175,106 @@
         "A wandering psychomia treant provides a plant sought by Buzzbeef in Winterhaven. His reward can then be taken to Thyz for a thieves' guild invitation. Branay also uses the plant in a separate nightshade recipe.",
         "Follow these requests in Winterhaven's journal after visiting the city and meeting its quest givers. Materials supplied by another player work too; finding or defeating a creature here is not required for those hand-ins."
       ],
-      "revision": 2,
-      "schema_version": 3,
+      "revision": 3,
+      "schema_version": 4,
+      "scripted_outcomes": [
+        {
+          "event": "hire-companion",
+          "giver_vnum": 93602,
+          "repeatable": true
+        },
+        {
+          "event": "hire-companion",
+          "giver_vnum": 93603,
+          "repeatable": true
+        },
+        {
+          "event": "hire-companion",
+          "giver_vnum": 93611,
+          "repeatable": true
+        }
+      ],
       "source_area": "bordello",
-      "stories": []
+      "stories": [
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "scripted:bordello:hire-companion",
+              "giver_vnum": 93602
+            }
+          ],
+          "id": "hire-crazed",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "scripted:bordello:hire-companion",
+                  "giver_vnum": 93602
+                }
+              ],
+              "hint": "Pay the full price to this provider. The journal records the hire once the pet belongs to you and follows you. Underpayments do not accumulate.",
+              "id": "hire",
+              "kind": "completion",
+              "text": "Successfully hire the sex crazed worker"
+            }
+          ],
+          "summary": "Pay at least 500 copper in one payment to hire a temporary pet. A successful hire stays recorded after the charm expires; hiring again uses the same service entry.",
+          "title": "Hire the sex crazed worker"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "scripted:bordello:hire-companion",
+              "giver_vnum": 93603
+            }
+          ],
+          "id": "hire-well-built",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "scripted:bordello:hire-companion",
+                  "giver_vnum": 93603
+                }
+              ],
+              "hint": "Pay the full price to this provider. The journal records the hire once the pet belongs to you and follows you. Underpayments do not accumulate.",
+              "id": "hire",
+              "kind": "completion",
+              "text": "Successfully hire the well built worker"
+            }
+          ],
+          "summary": "Pay at least 500 copper in one payment to hire a temporary pet. A successful hire stays recorded after the charm expires; hiring again uses the same service entry.",
+          "title": "Hire the well built worker"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "scripted:bordello:hire-companion",
+              "giver_vnum": 93611
+            }
+          ],
+          "id": "hire-sleazy",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "scripted:bordello:hire-companion",
+                  "giver_vnum": 93611
+                }
+              ],
+              "hint": "Pay the full price to this provider. The journal records the hire once the pet belongs to you and follows you. Underpayments do not accumulate.",
+              "id": "hire",
+              "kind": "completion",
+              "text": "Successfully hire the sleazy worker"
+            }
+          ],
+          "summary": "Pay at least 500 copper in one payment to hire a temporary pet. A successful hire stays recorded after the charm expires; hiring again uses the same service entry.",
+          "title": "Hire the sleazy worker"
+        }
+      ]
     },
     {
       "contacts": [

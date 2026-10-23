@@ -2134,6 +2134,8 @@ int stat_shops(int, P_char, int, char *);
 /* necromancy.c */
 void event_pet_death(P_char ch, P_char victim, P_obj obj, void *data);
 int setup_pet(P_char mob, P_char ch, int duration, int flag);
+/* Observation result distinguishes rejection from valid indefinite charm. */
+int setup_pet(P_char mob, P_char ch, int duration, int flag, bool *applied);
 int can_raise_greater_draco(P_char ch);
 void spell_corpseform(int, P_char, char *, int, P_char, P_obj);
 void event_corpseform_wearoff(P_char, P_char, P_obj, void *);

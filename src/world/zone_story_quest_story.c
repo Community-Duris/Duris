@@ -139,16 +139,22 @@ bool apply(const std::string &json, std::string_view source_area,
 			cJSON_Delete);
 		const int schema =
 			integer(cJSON_GetObjectItemCaseSensitive(root.get(), "schema_version"), 1,
-				3, "schema_version");
+				4, "schema_version");
 		if (schema == 1)
 			fields(root.get(),
 			       { "schema_version", "revision", "source_area", "coverage", "stories",
 				 "exclusions" },
 			       "story mapping");
-		else
+		else if (schema < 4)
 			fields(root.get(),
 			       { "schema_version", "revision", "source_area", "coverage", "stories",
 				 "exclusions", "introduction", "orientation", "contacts" },
+			       "story mapping");
+		else
+			fields(root.get(),
+			       { "schema_version", "revision", "source_area", "coverage", "stories",
+				 "exclusions", "introduction", "orientation", "contacts",
+				 "scripted_outcomes" },
 			       "story mapping");
 		zone_story_quest_catalog::story_mapping mapping;
 		mapping.source_area = text(root.get(), "source_area", "story mapping");
@@ -208,6 +214,54 @@ bool apply(const std::string &json, std::string_view source_area,
 				mapping.contacts.push_back(std::move(contact));
 			}
 		}
+		auto candidate = *catalog;
+		std::set<std::string> scripted_ids;
+		if (schema >= 4)
+			for (auto *entry = array(root.get(), "scripted_outcomes", 0, 256,
+						 "scripted outcomes")
+						   ->child;
+			     entry; entry = entry->next)
+			{
+				fields(entry, { "event", "giver_vnum", "repeatable" },
+				       "scripted outcome");
+				const auto event = text(entry, "event", "scripted outcome");
+				const int32_t giver = integer(
+					cJSON_GetObjectItemCaseSensitive(entry, "giver_vnum"), 1,
+					INT32_MAX, "scripted outcome.giver_vnum");
+				const auto *repeatable =
+					cJSON_GetObjectItemCaseSensitive(entry, "repeatable");
+				if (!identifier(event) || !cJSON_IsBool(repeatable))
+					throw std::runtime_error(
+						"scripted outcome: invalid event or repeatable flag");
+				const zone_story_quest_catalog::story_contact *contact = nullptr;
+				for (const auto &value : mapping.contacts)
+					if (value.mob_vnum == giver)
+						contact = &value;
+				if (!contact)
+					throw std::runtime_error(
+						"scripted outcome: giver requires an authored contact");
+				zone_story_quest_tracking::quest_definition definition;
+				definition.definition_id =
+					zone_story_quest_catalog::scripted_definition_id(
+						source_area, giver, event);
+				if (!scripted_ids.insert(definition.definition_id).second)
+					throw std::runtime_error(
+						"scripted outcome: duplicate event and giver");
+				definition.source_system =
+					zone_story_quest_tracking::ZONE_STORY_QUEST_SOURCE_SYSTEM;
+				definition.zone_number = zone;
+				definition.source_area = source_area;
+				definition.giver_vnum = giver;
+				definition.completion_key =
+					hex("scripted:" + std::string(source_area) + ":" + event);
+				definition.active = definition.eligible_for_zone_completion = true;
+				definition.repeatable = cJSON_IsTrue(repeatable);
+				definition.content_revision = catalog->content_revision;
+				definition.giver_name = contact->name;
+				definition.display_name = "An outcome from " + contact->name;
+				definition.daily_exclusion = "Scripted outcome awaits daily review";
+				candidate.definitions.push_back(std::move(definition));
+			}
 		std::set<std::string> story_ids;
 		for (auto *entry = array(root.get(), "stories", 0, 256, "stories")->child; entry;
 		     entry = entry->next)
@@ -228,7 +282,7 @@ bool apply(const std::string &json, std::string_view source_area,
 				throw std::runtime_error(
 					id + ": category must be story, request or service");
 			story.summary = text(entry, "summary", id);
-			story.contracts = references(entry, "contracts", *catalog, id, zone);
+			story.contracts = references(entry, "contracts", candidate, id, zone);
 			std::set<std::string> step_ids;
 			for (auto *step = array(entry, "steps", 1, 32, id)->child; step;
 			     step = step->next)
@@ -266,8 +320,16 @@ bool apply(const std::string &json, std::string_view source_area,
 					parsed.optional = cJSON_IsTrue(optional);
 				}
 				if (parsed.kind == "completion")
+				{
 					parsed.contracts =
-						references(step, "contracts", *catalog, id);
+						references(step, "contracts", candidate, id);
+					for (const auto &ref : parsed.contracts)
+						if (ref.starts_with("zone-story:scripted:") &&
+						    !ref.starts_with("zone-story:scripted:" +
+								     mapping.source_area + ":"))
+							throw std::runtime_error(
+								"scripted outcome: cross-area steps are not supported");
+				}
 				else
 				{
 					parsed.count = integer(
@@ -302,15 +364,19 @@ bool apply(const std::string &json, std::string_view source_area,
 			fields(entry, { "reason", "contracts" }, "exclusion");
 			const std::string reason = text(entry, "reason", "exclusion");
 			for (const auto &id :
-			     references(entry, "contracts", *catalog, "exclusion", zone))
+			     references(entry, "contracts", candidate, "exclusion", zone))
 				if (!mapping.exclusions.emplace(id, reason).second)
 					throw std::runtime_error("exclusion: duplicate contract");
 		}
-		auto candidate = *catalog;
 		candidate.story_mappings.push_back(std::move(mapping));
 		std::vector<zone_story_quest_catalog::diagnostic> diagnostics;
 		if (!zone_story_quest_catalog::validate(candidate, &diagnostics))
 			throw std::runtime_error(diagnostics.front().message);
+		for (const auto &id : scripted_ids)
+			if (!zone_story_quest_catalog::story_for_contract(candidate, id) &&
+			    !zone_story_quest_catalog::excluded_contract(candidate, id))
+				throw std::runtime_error(
+					"scripted outcome: every outcome needs a story or exclusion");
 		*catalog = std::move(candidate);
 		if (error)
 			error->clear();

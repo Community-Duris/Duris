@@ -46,8 +46,8 @@ area while preserving native quest behavior and identities.
    stories or require a personal kill when supplied materials are accepted.
    Also inspect command-handling specials: Vella's 500-copper temporary follower
    hires are implemented in C++ without QST contracts. Include their offers in
-   contact guidance, and document the missing success observer explicitly until
-   scripted-service completion recording is implemented.
+   contact guidance and bind a scripted outcome to the verified success point
+   as described below. A handled command or attempted payment is not success.
 4. Group successful alternatives; classify rejected offerings and supporting
    trades/services. A terminal contract belongs to one story or exclusion.
 5. Validate and regenerate the checked-in audit snapshot:
@@ -66,7 +66,89 @@ area while preserving native quest behavior and identities.
 
 Files take effect at bootstrap; no new live reload command is introduced.
 Missing files are optional. Present invalid, unreadable, or oversized files
-make zone story bootstrap fail closed; they are never silently ignored.
+quarantine that area's journal with a diagnostic; other journals and native
+quests continue loading. Offline builder validation rejects the bad file.
+
+## Scripted quests and services (schema 4)
+
+Use the existing story sidecar for NPC interactions implemented in C++ specials.
+Schemas 1-3 remain supported. Schema 4 adds the required `scripted_outcomes` array;
+all other fields and story/step categories retain their meaning. The
+[Vella mapping](../../areas/story/bordello.story.json) is a complete working example
+with three paid services. Declarations supply journal metadata, not executable
+commands, prices, rewards, or pet rules.
+
+Add an event for each provider whose native success can be observed:
+
+```json
+"scripted_outcomes": [
+  { "event": "hire-companion", "giver_vnum": 93602, "repeatable": true }
+]
+```
+
+The giver must have a contact entry with a valid mobile prototype and command
+keyword. `event` is a stable lowercase identifier of at most 64 letters, digits,
+underscores or hyphens. The `(source_area, giver_vnum, event)` tuple identifies one
+outcome. Duplicate declarations are rejected. Do not reuse an event identifier
+for an unrelated result when changing the story.
+
+Bind the outcome in the story's terminal `contracts` and in its `completion` step:
+
+```json
+{ "giver_vnum": 93602, "completion_key": "scripted:bordello:hire-companion" }
+```
+
+Every scripted declaration must belong to a story or explicit exclusion, even
+with partial coverage. Several providers may share an event name, but their giver
+identities remain distinct. Use `category: "service"` for paid support such as
+Vella's hires; it renders **Service used** after success, persists across pet
+expiry/reconnect, and grants no achievement or daily renown. `story` and `request`
+use the existing story-achievement projection. Scripted outcomes are excluded
+from dailies pending separate eligibility review. Neither category adds native
+rewards. Native QST identities and the journal persistence schema are unchanged.
+
+For a multi-step script, put only terminal outcomes in the story's `contracts`.
+Reference intermediate outcomes from completion steps and classify those outcomes
+as supporting services or explicit exclusions, so an early step cannot finish
+the larger story. Native script logic still decides when each outcome succeeds.
+
+A developer must call the observer at the actual native success point:
+
+```cpp
+zone_story_quest_runtime::record_scripted_completion(
+    player, npc, "bordello", "hire-companion");
+```
+
+Include `world/zone_story_quest_runtime.h`. Call once after the native result has
+been established and before extracting or moving the recipient. The observer
+requires a connected mortal and a live NPC in the same room, a loaded declaration
+for that exact giver/event and an available journal store. It records personal
+credit only; it does not infer group beneficiaries. Successful interaction also
+records discovery of the actual room's zone and the giver encounter in the same
+journal save. An outcome performed away from its owning area does not invent
+discovery of that area.
+
+The call is `noexcept` and returns whether recording succeeded. Never make native
+payment, reward, effect or return behavior conditional on that result. Accounting
+is optional. A failed save restores journal state while native success stands;
+an unexpected exception disables journal publication. There is no atomic native
+reward/journal transaction or replay queue: a save failure or crash can leave a
+successful interaction unrecorded. Repeating a successful native interaction can
+record it later; never repeat native effects merely to repair a journal record.
+
+Vella's callbacks capture the new optional success output from `setup_pet`, then
+verify that the NPC is charmed, linked to the payer and following the payer. The
+original four-argument `setup_pet` API delegates to the same implementation.
+Existing return values and behavior are retained. A return of -1 alone is not a
+failure test: it also represents a valid indefinite charm. This distinction
+prevents rejected renewals of already-owned pets from earning false credit.
+
+Scripted completion steps currently refer to outcomes declared in the same area;
+foreign scripted references are rejected consistently rather than depending on
+load order. Native QST cross-area preparation steps continue to work. Use authored
+guidance for cross-zone scripted referrals until shared checklist references are
+implemented. Room-only, object-only, offline and group-award adapters need their
+own verified success boundaries; this API handles synchronous NPC interactions.
 
 ## Current contracts and intended repairs
 

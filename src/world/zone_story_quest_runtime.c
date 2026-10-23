@@ -545,6 +545,57 @@ bool record_authoritative_completion(std::string_view definition_id, int32_t zon
 	return true;
 }
 
+bool record_scripted_completion(P_char player, P_char giver, std::string_view source_area,
+				std::string_view event, std::string *error) noexcept
+try
+{
+	if (!physical_player(player) || !giver || !IS_NPC(giver) || !IS_ALIVE(giver) ||
+	    giver->in_room != player->in_room || !mob_index || GET_RNUM(giver) < 0 ||
+	    GET_RNUM(giver) > top_of_mobt)
+		return fail(error, "scripted completion requires a present mortal and NPC");
+	if (tracker.catalog().unavailable_story_areas.contains(std::string(source_area)))
+		return fail(error, "scripted completion mapping is unavailable");
+	const auto id = zone_story_quest_catalog::scripted_definition_id(
+		source_area, mob_index[GET_RNUM(giver)].virtual_number, event);
+	for (const auto &definition : tracker.catalog().definitions)
+		if (definition.definition_id == id && definition.active)
+		{
+			const uint32_t pid = static_cast<uint32_t>(GET_PID(player));
+			const int32_t room = world[player->in_room].number;
+			const int64_t now = static_cast<int64_t>(time(nullptr));
+			const auto undo = tracker.checkpoint_for(current_season_id(), { pid });
+			const auto visited = tracker.discover_zone(
+				current_season_id(), pid,
+				zone_table[world[player->in_room].zone].number, room, now,
+				"completion-backfill", error);
+			if (visited != zone_story_quest_feature::result::applied &&
+			    visited != zone_story_quest_feature::result::already_applied)
+				return false;
+			const auto met = tracker.meet_npc(current_season_id(), pid,
+							  definition.giver_vnum, room, now, error);
+			if (met != zone_story_quest_feature::result::applied &&
+			    met != zone_story_quest_feature::result::already_applied)
+			{
+				undo();
+				return false;
+			}
+			const bool recorded = record_authoritative_completion(
+				id, definition.zone_number, pid, { pid }, room, now,
+				GET_NAME(player), GET_LEVEL(player), GET_RACEWAR(player), false, 1,
+				GET_LEVEL(player), error);
+			if (!recorded)
+				undo();
+			return recorded;
+		}
+	return fail(error, "scripted completion event and giver are not declared");
+}
+catch (...)
+{
+	tracker_ready = false;
+	logit(LOG_DEBUG, "Scripted journal event failed; native gameplay continues.");
+	return false;
+}
+
 bool record_legacy_completion(struct char_data *player, const quest_complete_data *completion,
 			      int32_t room_vnum, int64_t completed_at, std::string *error,
 			      std::string_view transaction_id)

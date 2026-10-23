@@ -90,30 +90,31 @@ The `topless_prostitute` handler also exists, but no assignment to local #93604
 was found. Keep that unassigned handler separate from the three configured offers;
 adding a binding would be a native behavior change requiring separate review.
 
-Current journal revision two explains the price, underpayment behavior and
-follower outcome, with three service-provider contacts revealed on encounter.
-**It does not yet record a hire completion.** The existing native QST observer
-cannot see the custom success path. The map stays `coverage: "partial"` while
-scripted outcome tracking and live journeys are outstanding. Service visibility
-must not be mistaken for a completed integration.
+Current journal revision three uses schema four to declare and record these three
+scripted services. Each provider has a **Service used** entry and a recorded hire
+step. Completion belongs to the payer, remains after pet expiry/reconnect and
+adds no achievement or daily renown. Coverage is complete for the declared native
+and scripted contracts; a live mortal journey is still a separate qualification.
 
-The next implementation should observe a successful hire after the pet-owner
-link and follower relationship are both established, using a stable scripted
-service identity for each configured provider. Do not use a handled GIVE command
-or an NPC money increase alone as proof. `setup_pet` can return -1 for both a
-rejected target and a valid indefinite duration, so its return sign alone is also
-insufficient. Reuse the journal's persistence and failure isolation, credit the
-payer, and retain service classification unless an achievement policy is chosen.
-The observer must never retry the payment or pet creation to repair journal state.
+The callback observes success after payment, pet setup and following. A separate
+success output from `setup_pet` distinguishes rejection from valid indefinite
+charm without changing the original four-argument API or its return values. The
+observer verifies the pet-owner link, charm and follower. It never retries payment
+or pet creation to repair journal state. The general observer can be used by other
+NPC scripts through their own sidecar declarations; see the
+[builder guide](../guides/ZONE_STORY_BUILDING.md#scripted-quests-and-services-schema-4).
 
-Acceptance cases: exact payment, overpayment, underpayment, two smaller payments,
-wrong recipient, item gift, fighting provider, rejected pet setup, ordinary
-expiry, existing indefinite-duration effects, rehire, journal storage failure,
-and reconnect. Verify the original money/pet outcomes as well as the journal
-record. No extra reward or daily credit is implied by recording a service.
+The executable regression links the real three callbacks and real `setup_pet`.
+It covers exact payment, overpayment, underpayment, two smaller payments, wrong
+recipient, item/no-money transfer, fighting provider, rejected setup, rejected
+renewal of an already-owned pet, indefinite duration, rehire, journal save failure,
+unexpected storage exception, disabled tracking, retained history after removing
+the pet, and serialized reload. It also checks a non-pet story in another area.
+The surrounding give/link infrastructure is isolated in this harness; a full live
+journey and timed expiry remain to be tested separately.
 
 Evidence: [assigned callbacks](../../src/specs/specs.assign.c#L352),
-[hire implementation](../../src/specs/specs.grove.c#L439),
+[hire implementation](../../src/specs/specs.grove.c#L451),
 [pet setup and duration](../../src/classes/necromancy.c#L211),
 [local characters](../../areas/mob/bordello.mob).
 

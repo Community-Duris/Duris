@@ -17,6 +17,12 @@ void add_diagnostic(std::vector<diagnostic> *diagnostics, int64_t index, const c
 }
 } // namespace
 
+std::string scripted_definition_id(std::string_view area, int32_t giver, std::string_view event)
+{
+	return "zone-story:scripted:" + std::string(area) + ":" + std::to_string(giver) + ":" +
+	       std::string(event);
+}
+
 bool validate(const catalog &catalog, std::vector<diagnostic> *diagnostics)
 {
 	if (diagnostics)

@@ -4,6 +4,15 @@
 > on this branch. Historical accounting gates and native repair claims below
 > describe the original branch; those zone repairs were not imported.
 
+The current standalone snapshot contains 233 area maps, 2,668 native QST
+definitions and three declared scripted hire outcomes for Vella's Bordello.
+It projects 1,518 story achievement units and 1,406 conservative daily candidates;
+the three hire services add neither achievements nor daily rewards. Schema-four
+sidecars and their native success callers are documented in the
+[builder guide](../guides/ZONE_STORY_BUILDING.md#scripted-quests-and-services-schema-4).
+The older counts and accounting-specific inventory below are historical design
+context; use the standalone contract and generated snapshot for current coverage.
+
 The checked-in [production catalog](ZONE_STORY_QUEST_PRODUCTION_CATALOG.json) is
 built from active static quest files listed in `areas/AREA`, following the area
 compiler's Q-block boundary. Revision 2 contains 2,668 stable contracts, of which
@@ -189,6 +198,7 @@ Q-contract completion that can safely be added as a daily turn-in.
 
 | Special/source | Observed behavior | Coverage decision |
 | --- | --- | --- |
+| Three assigned Vella hire specials in `specs.grove.c` | Paid follower/pet service; observes applied pet setup and the final payer relationship. | Three persistent service-use entries through the schema-four observer; no daily or achievement reward. |
 | `smelter`, `finish_smelt` in `specs.alatorin.c` | Paid ore conversion/trade; unavailable under active accounting. | Trade, no daily completion or bonus. |
 | `monk_remort` in `specs.mobile.c` | Paid permanent class conversion. | Character transformation, no replayable daily. |
 | `berserker_proc_room` in `specs.room.c` | Permanent battlerager transformation and skill reset. | Character transformation, no replayable daily. |
@@ -198,9 +208,12 @@ Q-contract completion that can safely be added as a daily turn-in.
 | Bartender/random world quests | Generated assigned-run content with separate rewards/resets. | Existing world quest system; outside the static zone-story denominator. |
 
 This inventory does not turn repeated speech, item creation, or an encounter
-spawn into a rewarded accomplishment. New scripted quests can join the tracker
-by declaring a stable definition, replay/prerequisite contract, and durable
-terminal event with frozen recipients through the existing completion API.
+spawn into a rewarded accomplishment. New synchronous NPC scripts can declare
+stable sidecar outcomes and report verified native success through
+`record_scripted_completion`. It records personal history through the existing
+journal store without changing native effects or requiring accounting. It has
+no outbox or atomic guarantee with native rewards. Offline, grouped and replayed
+economic outcomes still need their own authority/recovery contracts.
 
 Regenerate and validate the snapshot with:
 

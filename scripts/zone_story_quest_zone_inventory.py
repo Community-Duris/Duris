@@ -92,18 +92,21 @@ def inventory(root):
     blocks = native_blocks(root)
     by_contract = {(b["giver_vnum"], b["binding"]["completion_key"]): b for b in blocks if "binding" in b}
     definitions = collections.defaultdict(list)
+    scripted = collections.defaultdict(list)
     dialogue = collections.defaultdict(list)
     specials = collections.defaultdict(set)
-    corrected_givers = {d["giver_vnum"] for d in catalog["definitions"] if "previous_zone_number" in d}
+    native = [d for d in catalog["definitions"] if d["definition_id"].startswith("zone-story:qst:")]
+    corrected_givers = {d["giver_vnum"] for d in native if "previous_zone_number" in d}
     giver_owners = collections.defaultdict(set)
-    for definition in catalog["definitions"]:
+    for definition in native:
         giver_owners[definition["giver_vnum"]].add(definition["source_area"])
 
     def owner(vnum):
         return next((z["source_area"] for z in zones if z["first_vnum"] <= vnum <= z["last_vnum"]), None)
 
     for definition in catalog["definitions"]:
-        definitions[definition["source_area"]].append(definition)
+        target = scripted if definition["definition_id"].startswith("zone-story:scripted:") else definitions
+        target[definition["source_area"]].append(definition)
     for block in blocks:
         if block["kind"] in {"M", "MA"} and block["body"]:
             aliases = block["body"][0].split("~")[0].lower().split()
@@ -137,7 +140,7 @@ def inventory(root):
                 if kind == "I" and vnum > 0:
                     consumers[vnum].add(index)
         links = {v for v in producers.keys() & consumers.keys() if any(p != c for p in producers[v] for c in consumers[v])}
-        rows.append({"zone": zone, "requests": requests, "dialogue": dialogue[area], "specials": sorted(specials[area]), "special_assignments": area_assignments[area], "candidate_link_items": sorted(links), "mapped": (root / "areas/story" / f"{area}.story.json").is_file()})
+        rows.append({"zone": zone, "requests": requests, "scripted_outcomes": scripted[area], "dialogue": dialogue[area], "specials": sorted(specials[area]), "special_assignments": area_assignments[area], "candidate_link_items": sorted(links), "mapped": (root / "areas/story" / f"{area}.story.json").is_file()})
     return rows, mobs, items
 
 
@@ -189,6 +192,16 @@ def review_index(root, source_area):
         lines.append(f"| {ref['giver_vnum']} | `{ref['completion_key']}` | {cell(classification)} | {location(block)} |")
     if not evidence["requests"]:
         lines += ["", "No native Q contracts. Scripted outcomes require separate semantic review."]
+    if evidence["scripted_outcomes"]:
+        lines += ["", "## Declared scripted outcomes", "",
+                  "Sidecar declarations require a native success caller; they do not prove payment, effects or reachability.", "",
+                  "| Giver | Event binding | Classification | Declaration |", "| ---: | --- | --- | --- |"]
+        for definition in evidence["scripted_outcomes"]:
+            giver = definition["giver_vnum"]
+            key = bytes.fromhex(definition["completion_key"]).decode()
+            classification = classifications[(giver, key)]
+            source = f"areas/story/{source_area}.story.json"
+            lines.append(f"| {giver} | `{key}` | {cell(classification)} | [{source}](../../../{source}) |")
     lines += ["", "## Dialogue responses", "", "Topics are source aliases, not recorded learned objectives.", "",
               "| Giver | Aliases | Source |", "| ---: | --- | --- |"]
     for block in evidence["dialogue"]:
@@ -208,7 +221,7 @@ def review_index(root, source_area):
 def markdown(root):
     rows, mobs, items = inventory(root)
     quest_rows = [r for r in rows if r["requests"]]
-    lines = ["# Active zone journal evidence inventory", "", "Generated from the authoritative `areas/AREA` list, native Q bindings, active prototypes,", "and literal special assignments. Counts describe static evidence, not gameplay qualification.", "Links between an exchange output and another input are review candidates; they do not", "prove mandatory order, personal sourcing, branches, or a scripted completion.", "", f"Scanned {len(rows)} catalog zones; {len(quest_rows)} have native Q contracts;", f"{sum(len(r['requests']) for r in rows)} distinct Q contracts; {sum(r['mapped'] for r in rows)} authored journals.", "", "Regenerate with:", "", "```bash", "python3 scripts/zone_story_quest_zone_inventory.py --output docs/reference/ZONE_STORY_ZONE_INVENTORY.md", "```", "", "The [priority roadmap](../design/ZONE_STORY_ZONE_PRIORITIES.md) supplies the reviewed order", "and proposed story families. Every unmapped area still has its native fallback journal", "when accounting is active and the area/giver has been discovered/encountered.", "", "## Areas with native quests", "", "Q = distinct native contracts; M = player-addressable dialogue response blocks;", "links = distinct items connecting separate local exchanges. Special names are inspection", "leads from literal assignments only, not an exhaustive script audit. Empty special lists", "do not establish the absence of shared, generated, or dynamically assigned procedures.", "", "| Area / source | Q | M | Links | Authored | Sample native offering → outcome | Assigned special leads |", "| --- | ---: | ---: | ---: | --- | --- | --- |"]
+    lines = ["# Active zone journal evidence inventory", "", "Generated from the authoritative `areas/AREA` list, native Q bindings, active prototypes,", "and literal special assignments. Counts describe static evidence, not gameplay qualification.", "Links between an exchange output and another input are review candidates; they do not", "prove mandatory order, personal sourcing, branches, or a scripted completion.", "", f"Scanned {len(rows)} catalog zones; {len(quest_rows)} have native Q contracts;", f"{sum(len(r['requests']) for r in rows)} distinct Q contracts; {sum(r['mapped'] for r in rows)} authored journals.", "", "Regenerate with:", "", "```bash", "python3 scripts/zone_story_quest_zone_inventory.py --output docs/reference/ZONE_STORY_ZONE_INVENTORY.md", "```", "", "The [priority roadmap](../design/ZONE_STORY_ZONE_PRIORITIES.md) supplies the reviewed order", "and proposed story families. Every unmapped area still has its native fallback journal", "after the area is discovered and its giver encountered; accounting is optional.", "", "## Areas with native quests", "", "Q = distinct native contracts; M = player-addressable dialogue response blocks;", "links = distinct items connecting separate local exchanges. Special names are inspection", "leads from literal assignments only, not an exhaustive script audit. Empty special lists", "do not establish the absence of shared, generated, or dynamically assigned procedures.", "", "| Area / source | Q | M | Links | Authored | Sample native offering → outcome | Assigned special leads |", "| --- | ---: | ---: | ---: | --- | --- | --- |"]
 
     def cell(value):
         return plain(str(value)).replace("|", "\\|")
@@ -229,6 +242,12 @@ def markdown(root):
     for row in sorted((r for r in rows if not r["requests"]), key=lambda r: r["zone"]["source_area"]):
         zone = row["zone"]
         lines.append(f"| {cell(zone['name'])} (`{zone['source_area']}`) | {len(row['dialogue'])} | {'Yes' if row['mapped'] else 'No'} | {cell(', '.join(row['specials'][:6])) or '—'} |")
+    lines += ["", "## Declared scripted outcomes", "",
+              "These metadata declarations are separate from native Q contracts and require verified success callers.", "",
+              "| Area / source | Declared outcomes | Sidecar |", "| --- | ---: | --- |"]
+    for row in sorted((r for r in rows if r["scripted_outcomes"]), key=lambda r: r["zone"]["source_area"]):
+        area = row["zone"]["source_area"]
+        lines.append(f"| {cell(row['zone']['name'])} (`{area}`) | {len(row['scripted_outcomes'])} | [{area}.story.json](../../areas/story/{area}.story.json) |")
     return "\n".join(lines) + "\n"
 
 
@@ -236,7 +255,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-root", type=pathlib.Path, default=pathlib.Path(__file__).resolve().parents[1])
     parser.add_argument("--output", type=pathlib.Path)
-    parser.add_argument("--area-evidence", help="export a complete native/reset/special evidence inventory for one active area")
+    parser.add_argument("--area-evidence", help="export native/scripted/reset/special evidence for one active area")
     parser.add_argument("--evidence-format", choices=("json", "markdown"), default="json")
     args = parser.parse_args()
     root = args.source_root.resolve()

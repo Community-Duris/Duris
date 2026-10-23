@@ -61,6 +61,9 @@ zone_story_quest_catalog::catalog native_catalog(const char *path)
 	{
 		zone_story_quest_tracking::quest_definition definition;
 		definition.definition_id = text(entry, "definition_id");
+		// Scripted definitions are created from their sidecar, as at server boot.
+		if (definition.definition_id.starts_with("zone-story:scripted:"))
+			continue;
 		definition.source_system = text(entry, "source_system");
 		definition.zone_number = number(entry, "zone_number");
 		definition.source_area = text(entry, "source_area");
@@ -116,6 +119,33 @@ int main(int argc, char **argv)
 	require(zone_story_quest_catalog::eligible_definition_count(catalog, 135, 2) == 84,
 		"raw Twin Towers count changed");
 	std::string error;
+	if (argc > 3 &&
+	    (std::string(argv[3]) == "scripted" || std::string(argv[3]) == "invalid-scripted"))
+	{
+		const bool expected = std::string(argv[3]) == "scripted";
+		require(zone_story_quest_story::apply(read(argv[2]), "bordello", &catalog,
+						      &error) == expected,
+			"scripted outcome declaration validation disagreed");
+		require(catalog.definitions.size() == (expected ? 2671 : 2668),
+			"invalid scripted declaration leaked definitions into catalog");
+		require(catalog.story_mappings.size() == (expected ? 1 : 0),
+			"scripted mapping did not apply atomically");
+		if (expected)
+		{
+			require(catalog.story_mappings.front().stories.size() == 3,
+				"Vella needs three provider service entries");
+			for (const auto &unit : zone_story_quest_catalog::quest_units(catalog))
+				if (unit.zone_number == 936)
+					require(!unit.achievement && !unit.daily_candidate,
+						"hiring service awarded achievement or daily credit");
+			require(!zone_story_quest_story::apply(read(argv[2]), "bordello", &catalog,
+							       &error) &&
+					catalog.definitions.size() == 2671 &&
+					catalog.story_mappings.size() == 1,
+				"duplicate scripted mapping partially applied");
+		}
+		return 0;
+	}
 	if (argc > 3 && (std::string(argv[3]) == "boundary" || std::string(argv[3]) == "oversized"))
 	{
 		const bool accepted = std::string(argv[3]) == "boundary";

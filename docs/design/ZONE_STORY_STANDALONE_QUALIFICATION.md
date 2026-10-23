@@ -14,14 +14,17 @@ in this port.
   Revisions and player-facing explanations were adapted for standalone gameplay.
 - Vella's Bordello adds one map with paid follower-service guidance, local
   contacts and roaming material sources for Winterhaven's quests. Its
-  revision-two correction explains the hires without claiming a recorded hire
-  completion; the custom-success observer remains planned. It preserves the
-  existing completion owners; no native contracts are added or duplicated.
-  The complete catalog validates 233 maps and 2,668 native contracts, producing
-  1,518 story achievement units and 1,406 conservative daily candidates.
+  revision-three map records three scripted hire outcomes as services. The
+  complete catalog validates 233 maps, 2,668 unchanged native contracts and
+  three separate scripted definitions, producing 1,518 story achievement units
+  and 1,406 conservative daily candidates. Hires add no achievement or renown.
 - Native area files and special assignments match the pinned master base. The
   only change to `src/world/quest.c` observes an NPC encounter after a successful
   ASK response; native offer, consumption and reward logic is unchanged.
+  The three assigned Vella hire callbacks observe success after the existing
+  payment, pet setup and follower operations. An additional `setup_pet` overload
+  exposes whether setup was applied while preserving the four-argument API,
+  return values, duration, rejection paths and effects.
 - All 980 research documents match the SHA-256 hashes in
   [PORT_SNAPSHOT.json](quest-story-followups/PORT_SNAPSHOT.json).
 - Master's existing 31 migration entries are unchanged. Migration 0032 is additive.
@@ -29,13 +32,37 @@ in this port.
 
 ## Executable validation
 
-Vella revision two is a content/documentation correction. Re-ran the catalog
-generator with `--check` and
-`python tests/async/test_zone_story_quest_production_catalog.py`: both passed.
-All 2,668 native definitions, world identities, existing quest bindings and
-achievement/daily counts are unchanged; the twelve Vella contact prototypes and
-aliases validate. The 980 preserved research hashes still match. No server source
-changed in this correction; live hire/expiry journeys remain outstanding.
+The current Vella revision adds schema-four declarations and a reusable scripted
+success observer. The arrival regression executes all three production hire
+callbacks and the real pet-setup implementation with controlled transfer,
+follower and persistence surroundings. It covers exact payment, overpayment,
+non-accumulating underpayments, rejected transfers, wrong targets, combat,
+rejected pet setup/renewal, indefinite charm, personal credit, repeated hires,
+loss of the pet, reload, disabled tracking, failed saves and unexpected storage
+exceptions. A second-zone non-pet story proves reuse, physical-zone discovery
+and rollback without inventing discovery of a remote owning zone. These are
+executable adapter tests; a full live hire/expiry journey remains outstanding.
+
+Schema tests exercise version 1-3 compatibility, version-four service projection,
+atomic rejection of duplicate/invalid/unbound declarations, and local-only
+scripted completion references. The production snapshot adds only three scripted
+definitions; all 2,668 native definitions, existing bindings and achievement/daily
+counts are unchanged. No new persistence format or migration is introduced by
+this scripted-outcome addition.
+
+Focused commands for the scripted-outcome addition:
+
+```bash
+python3 tests/async/test_zone_story_quest_arrival.py
+python3 tests/async/test_zone_story_quest_story.py
+python3 tests/async/test_zone_story_quest_production.py
+python3 tests/async/test_zone_story_quest_production_catalog.py
+python3 tests/async/test_zone_story_quest_source_area.py
+python3 tests/async/test_flatfile_zone_story_quest_state.py
+python3 tests/async/test_zone_story_quest_owners.py
+python3 tests/async/test_zone_story_quest_turolzoo.py
+make -C src BIN_ROOT=/output/bin -j2
+```
 
 The disposable build used image
 `sha256:13d9e3ccbd77e8e4432f3f2647c54ccfbdd7c83a83585346b5527077c2f1e32a`,
@@ -65,9 +92,10 @@ Passed focused regressions:
 The full maintained server build and final incremental build passed with
 `make -C src BIN_ROOT=/output/bin -j2`. The final arrival/native-observation and
 disabled-runtime erasure regressions also passed after the erasure-guard edit.
-The tested implementation commit is `6489b7987423a9a37317c066a3c08eda357a1fa8`;
-subsequent qualification/review-plan edits are documentation only. Diagnostic runs
-that collect assertion failures are not counted as passing tests.
+The initial standalone implementation was qualified at commit
+`6489b7987423a9a37317c066a3c08eda357a1fa8`. The later Vella scripted-outcome addition
+has separate build and focused regression evidence described above and below.
+Diagnostic runs that collect assertion failures are not counted as passing tests.
 
 ## Database proof
 
@@ -98,6 +126,18 @@ for rollback; an old binary is not a sufficient rollback plan by itself.
   returns before changing the character's journal history.
 - Recorded the user's Turolopolis decision: hostile badge holders, direct recovery
   through combat and looting, no rescue/reunion endpoint, and supplied badges valid.
+- Distinguished rejected pet setup from successful indefinite charm without
+  changing either result; rejected renewals cannot reuse existing pet ownership
+  as evidence of a new successful hire.
+- Recorded actual physical-zone discovery before the scripted giver encounter,
+  with both changes in the completion save/rollback boundary. Generic outcomes
+  work when no earlier arrival record exists and never discover a remote owner.
+- Preserved the existing four-argument pet-setup interface for all other callers.
+- Rejected foreign scripted completion steps rather than accepting them according
+  to sidecar load order; existing native QST cross-area references remain valid.
+- Updated the zone evidence inventory to expose declared scripted outcomes
+  separately from native Q blocks, preserving native offering/source analysis
+  and corrected-giver ownership instead of trying to parse a script as a Q block.
 
 ## Limits and next proof
 
@@ -114,10 +154,16 @@ The existing native completion observer runs before rewards and has no standalon
 outbox. Journal persistence and native rewards are not atomic: a failed save can
 miss a successful exchange, and a crash can separate an accepted-hand-in record
 from the later reward. No reward replay or economic recovery is claimed.
+Scripted observers run after native success. They can also miss a completed
+interaction on save failure or crash; callers must never replay native effects
+or gate payment/rewards on the observer's return value.
 
 Evidence and build outputs are retained under the task-specific directories in
 `D:/Dev/Temp/duris-zone-journals-standalone-20261022` and
 `D:/Dev/Builds/Duris/zone-journals-standalone-20261022`.
+Vella scripted-outcome evidence is under
+`D:/Dev/Temp/duris-vella-scripted-20261023/evidence`, using the same chat's build
+directory and pinned image with a new exclusive container lease.
 The owned disposable container exited and was removed after the successful final
 build; its lease was released. No development game or database from this task was
 left running. Evidence/build outputs are retained; unrelated services were untouched.

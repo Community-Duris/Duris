@@ -1,8 +1,16 @@
 #include "world/zone_story_quest_runtime.c"
+#include "world/zone_story_quest_story.h"
+#include "cmd/interp.h"
+#include "magic/spells.h"
 #include <cassert>
 #include <cstdarg>
 #include <cstdlib>
 #include <iostream>
+#include <fstream>
+#include <cstring>
+#include <stdexcept>
+
+static void scripted_hire_regressions();
 
 P_room world = nullptr;
 P_index obj_index = nullptr;
@@ -13,6 +21,7 @@ struct zone_data *zone_table = nullptr;
 namespace
 {
 bool save_ok = true;
+bool throw_save = false;
 bool npc_visible = true;
 int vision = 1;
 int writes = 0;
@@ -49,6 +58,8 @@ sql_zone_story_quest_records_save(uint32_t, const zone_story_quest_state::change
 				  std::string *)
 {
 	++writes;
+	if (throw_save)
+		throw std::runtime_error("injected journal storage exception");
 	if (!save_ok)
 		return sql_zone_story_quest_state_result::io_error;
 	zone_story_quest_state::apply(&durable_records, updates);
@@ -421,6 +432,330 @@ int main()
 	       church_restored.summary_for(7, 77).completed == 0 &&
 	       church_restored.summary_for(7, 42).completed == 1 &&
 	       !church_restored.existing_transaction("offering:church-pending", &receipt));
+	scripted_hire_regressions();
 	std::cout
 		<< "native arrival suppression, failure rollback, empty area, and restart passed\n";
+}
+
+// Native callback surroundings are isolated; the three callbacks and setup_pet
+// themselves are linked unchanged from production, including their rejection paths.
+namespace
+{
+std::map<P_char, P_char> pet_owners;
+std::vector<char *> allocated_names;
+P_char payment_target = nullptr;
+int payment = 0;
+bool allow_pet = true;
+bool indefinite_pet = false;
+int pet_links = 0;
+}
+bool collector_presence_is_npc(P_char)
+{
+	return false;
+}
+bool training_dummy_capture_target_allowed(P_char)
+{
+	return allow_pet;
+}
+bool has_innate(P_char, int innate)
+{
+	return indefinite_pet && innate == INNATE_UNHOLY_ALLIANCE;
+}
+void linked_affect_to_char(P_char npc, affected_type *affect, P_char owner, int type)
+{
+	assert(type == LNK_PET);
+	pet_owners[npc] = owner;
+	npc->specials.affected_by |= affect->bitvector;
+	++pet_links;
+}
+P_char get_linked_char(P_char npc, ush_int type)
+{
+	return type == LNK_PET ? pet_owners[npc] : nullptr;
+}
+void item_restrict_player_pet_equipment(P_char) {}
+void remove_plushit_bits(P_char) {}
+void clearMemory(P_char) {}
+void remember(P_char, P_char) {}
+int number(int low, int)
+{
+	return low;
+}
+int dice(int, int)
+{
+	return 1;
+}
+char *str_dup(const char *name)
+{
+	char *copy = strdup(name);
+	allocated_names.push_back(copy);
+	return copy;
+}
+void add_follower(P_char npc, P_char player)
+{
+	npc->following = player;
+}
+void stop_follower(P_char npc)
+{
+	npc->following = nullptr;
+}
+void do_give(P_char player, char *, int)
+{
+	if (payment_target && payment > 0 && GET_COPPER(player) >= payment)
+	{
+		GET_COPPER(player) -= payment;
+		GET_COPPER(payment_target) += payment;
+	}
+}
+void do_action(P_char, char *, int) {}
+void mobsay(P_char, const char *) {}
+void act(const char *, int, P_char, P_obj, void *, int) {}
+void argument_interpreter(char *, char *first, char *second)
+{
+	*first = *second = 0;
+}
+P_char get_char_room(const char *, int)
+{
+	return payment_target;
+}
+int sex_crazed_prostitute(P_char, P_char, int, char *);
+int well_built_prostitute(P_char, P_char, int, char *);
+int sleezy_prostitute(P_char, P_char, int, char *);
+
+static void scripted_hire_regressions()
+{
+	using namespace zone_story_quest_runtime;
+	zone_story_quest_catalog::catalog catalog;
+	catalog.content_revision = 2;
+	catalog.zones = { { 936, "Vella's Bordello", "bordello", 93600, 93668, true } };
+	std::ifstream file("areas/story/bordello.story.json");
+	const std::string mapping{ std::istreambuf_iterator<char>(file),
+				   std::istreambuf_iterator<char>() };
+	std::string error;
+	assert(zone_story_quest_story::apply(mapping, "bordello", &catalog, &error));
+	assert(catalog.definitions.size() == 3);
+	for (const auto &unit : zone_story_quest_catalog::quest_units(catalog))
+		assert(!unit.achievement && !unit.daily_candidate);
+	room_data room = {};
+	room.number = 93610;
+	world = &room;
+	zone_data zone = {};
+	zone.number = 936;
+	zone_table = &zone;
+	index_data indices[3] = {};
+	const int providers[] = { 93602, 93603, 93611 };
+	for (int i = 0; i < 3; ++i)
+		indices[i].virtual_number = providers[i];
+	mob_index = indices;
+	top_of_mobt = 2;
+	pc_only_data pc = {};
+	pc.pid = 42;
+	char_data player = {};
+	player.only.pc = &pc;
+	char player_name[] = "Alice";
+	player.player.name = player_name;
+	player.player.level = 10;
+	player.specials.position = STAT_NORMAL;
+	player.in_room = 0;
+	descriptor_data descriptor = {};
+	descriptor.connected = CON_PLAYING;
+	descriptor.character = &player;
+	player.desc = &descriptor;
+	pc_only_data peer_pc = {};
+	peer_pc.pid = 77;
+	char_data peer = player;
+	peer.only.pc = &peer_pc;
+	char peer_name[] = "Bob";
+	peer.player.name = peer_name;
+	descriptor_data peer_descriptor = descriptor;
+	peer_descriptor.character = &peer;
+	peer.desc = &peer_descriptor;
+	group_list peer_member = {};
+	peer_member.ch = &peer;
+	player.group = &peer_member;
+	player.next = &peer;
+	character_list = &player;
+	npc_only_data npc_data = {};
+	char_data npc = {};
+	char npc_name[] = "prostitute";
+	auto reset = [&](int index)
+	{
+		tracker = zone_story_quest_feature::service(catalog);
+		tracker_ready = true;
+		save_ok = true;
+		throw_save = false;
+		durable.clear();
+		durable_records = {};
+		writes = 0;
+		published.clear();
+		allow_pet = true;
+		indefinite_pet = false;
+		pet_owners.clear();
+		pet_links = 0;
+		npc = {};
+		npc_data = {};
+		npc.only.npc = &npc_data;
+		npc_data.R_num = index;
+		npc.specials.act = ACT_ISNPC;
+		npc.specials.position = STAT_NORMAL;
+		npc.player.level = 10;
+		npc.player.name = npc_name;
+		npc.in_room = 0;
+		room.people = &npc;
+		npc.next_in_room = &player;
+		player.next_in_room = &peer;
+		player.specials.position = STAT_NORMAL;
+		player.player.level = 10;
+		GET_COPPER(&player) = 10000;
+		payment_target = &npc;
+		payment = 500;
+		assert(tracker.discover_zone(7, 42, 936, 93610, 100, "arrival") ==
+		       zone_story_quest_feature::result::applied);
+		assert(tracker.discover_zone(7, 77, 936, 93610, 100, "arrival") ==
+		       zone_story_quest_feature::result::applied);
+		assert(tracker.meet_npc(7, 77, providers[index], 93610, 100) ==
+		       zone_story_quest_feature::result::applied);
+	};
+	const auto used = [&]() {
+		return render_journal(&player, 936, false, false).find("[Service used]") !=
+		       std::string::npos;
+	};
+	int (*callbacks[])(P_char, P_char, int, char *) = { sex_crazed_prostitute,
+							    well_built_prostitute,
+							    sleezy_prostitute };
+	char args[] = "500 copper prostitute";
+	for (int index = 0; index < 3; ++index)
+	{
+		const auto invoke = [&]()
+		{ return callbacks[index](&npc, &player, CMD_GIVE, args); };
+		reset(index);
+		assert(invoke() && used() && npc.following == &player &&
+		       GET_MASTER(&npc) == &player);
+		assert(GET_COPPER(&player) == 9500 && GET_COPPER(&npc) == 500 && pet_links == 1);
+		assert(npc_data.pet_charm_expires_at >= time(nullptr) + 599);
+		assert(tracker.has_met_npc(7, 42, providers[index]));
+		assert(tracker.summary_for(7, 42).renown == 0);
+		assert(render_journal(&peer, 936, false, false).find("[Service used]") ==
+		       std::string::npos); // A present groupmate did not buy the service.
+		const auto id = zone_story_quest_catalog::scripted_definition_id(
+			"bordello", providers[index], "hire-companion");
+		assert(tracker.evidence_for(id, 2).successful_attempts == 1);
+		npc.following = nullptr;
+		pet_owners.clear();
+		npc.specials.affected_by = 0;
+		assert(used()); // Historical service use survives losing/expiring the pet.
+		tracker = zone_story_quest_feature::service(catalog);
+		assert(load_persisted_state(&error) && used());
+		assert(invoke() && used() && pet_links == 2 && GET_COPPER(&player) == 9000);
+		assert(tracker.evidence_for(id, 2).successful_attempts == 2);
+
+		reset(index);
+		payment = 250;
+		assert(invoke() && invoke() && GET_COPPER(&npc) == 500);
+		assert(!used() && !pet_links && writes == 0);
+		payment = 700;
+		assert(invoke() && used() && GET_COPPER(&npc) == 1200);
+
+		reset(index);
+		payment = 0; // Item gift or rejected monetary transfer has no cash delta.
+		assert(invoke() && !used() && !pet_links && writes == 0);
+		payment = 500;
+		payment_target = nullptr; // The GIVE target is not this provider.
+		assert(invoke() && !used() && !pet_links && writes == 0);
+		payment_target = &npc;
+		npc.specials.fighting = &player;
+		assert(!invoke() && !used() && GET_COPPER(&player) == 10000);
+
+		reset(index);
+		allow_pet = false;
+		assert(invoke() && !used() && !pet_links && writes == 0);
+		assert(GET_COPPER(&player) == 9500 &&
+		       npc.following == &player); // Preserve native rejection behavior.
+		// A rejected renewal must not credit an already-owned pet.
+		pet_owners[&npc] = &player;
+		npc.specials.affected_by |= AFF_CHARM;
+		assert(invoke() && !used() && writes == 0);
+
+		reset(index);
+		indefinite_pet = true;
+		assert(invoke() && used() && npc_data.pet_charm_expires_at == 0);
+
+		reset(index);
+		save_ok = false;
+		const auto before = tracker.serialize_state();
+		assert(invoke() && npc.following == &player && GET_COPPER(&player) == 9500);
+		assert(!used() && tracker.serialize_state() == before);
+		assert(!tracker.has_met_npc(7, 42, providers[index]));
+		save_ok = true;
+		assert(invoke() && used() && GET_COPPER(&player) == 9000);
+
+		reset(index);
+		tracker_ready = false;
+		assert(invoke() && !writes && npc.following == &player &&
+		       GET_MASTER(&npc) == &player);
+		assert(GET_COPPER(&player) == 9500 && pet_links == 1);
+
+		reset(index);
+		throw_save = true;
+		assert(invoke() && !ready() && npc.following == &player &&
+		       GET_COPPER(&player) == 9500);
+	}
+	reset(0);
+	assert(!record_scripted_completion(&player, &npc, "bordello", "unknown", &error));
+	assert(!record_scripted_completion(&player, &npc, "other", "hire-companion", &error));
+	npc_data.R_num = 3;
+	assert(!record_scripted_completion(&player, &npc, "bordello", "hire-companion", &error));
+	npc_data.R_num = 0;
+	player.player.level = OVERLORD;
+	assert(!record_scripted_completion(&player, &npc, "bordello", "hire-companion", &error));
+	player.player.level = 10;
+	{
+		temporary_placement preview;
+		assert(!record_scripted_completion(&player, &npc, "bordello", "hire-companion",
+						   &error));
+	}
+	assert(writes == 0);
+	// The same adapter also records a non-pet story in a different zone.
+	auto generic = catalog;
+	generic.zones.push_back({ 937, "Archive", "archive", 93700, 93799, true });
+	const std::string other = R"json({
+      "schema_version":4,"revision":1,"source_area":"archive","coverage":"complete",
+      "introduction":"Archive","orientation":[],
+      "contacts":[{"mob_vnum":93602,"name":"Archivist","keyword":"prostitute","description":"A scripted fixture.","topics":[]}],
+      "scripted_outcomes":[{"event":"open-records","giver_vnum":93602,"repeatable":false}],
+      "stories":[{"id":"open","title":"Open records","category":"story","summary":"A non-pet scripted outcome.",
+        "contracts":[{"giver_vnum":93602,"completion_key":"scripted:archive:open-records"}],
+        "steps":[{"id":"open","text":"Open records","kind":"completion","hint":"Read the records.",
+          "contracts":[{"giver_vnum":93602,"completion_key":"scripted:archive:open-records"}]}]}],"exclusions":[]})json";
+	assert(zone_story_quest_story::apply(other, "archive", &generic, &error));
+	auto foreign_step = other;
+	foreign_step.replace(foreign_step.rfind("scripted:archive:open-records"),
+			     std::strlen("scripted:archive:open-records"),
+			     "scripted:bordello:hire-companion");
+	auto candidate = catalog;
+	candidate.zones = generic.zones;
+	assert(!zone_story_quest_story::apply(foreign_step, "archive", &candidate, &error) &&
+	       error == "scripted outcome: cross-area steps are not supported");
+	tracker = zone_story_quest_feature::service(generic);
+	const auto undiscovered = tracker.serialize_state();
+	save_ok = false;
+	assert(!record_scripted_completion(&player, &npc, "archive", "open-records", &error));
+	assert(tracker.serialize_state() == undiscovered && !tracker.has_discovered(7, 42, 936));
+	save_ok = true;
+	const bool generic_recorded =
+		record_scripted_completion(&player, &npc, "archive", "open-records", &error);
+	if (!generic_recorded)
+		std::cerr << "generic scripted result: " << error << "\n";
+	assert(generic_recorded);
+	assert(tracker.summary_for(7, 42).completed == 1 &&
+	       tracker.summary_for(7, 77).completed == 0);
+	assert(!tracker.has_discovered(7, 42, 937)); // A foreign outcome does not invent a visit.
+	assert(GET_COPPER(&player) == 10000 && pet_links == 0);
+	generic.unavailable_story_areas["archive"] = "invalid mapping";
+	tracker = zone_story_quest_feature::service(generic);
+	assert(!record_scripted_completion(&player, &npc, "archive", "open-records", &error));
+	for (auto *name : allocated_names)
+		free(name);
+	allocated_names.clear();
+	std::cout
+		<< "scripted Vella hires: three native callbacks, actual pet setup, rejected/indefinite setup, payments, persistence and isolation passed\n";
 }

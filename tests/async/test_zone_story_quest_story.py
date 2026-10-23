@@ -1303,6 +1303,29 @@ with tempfile.TemporaryDirectory(prefix="duris-authored-story-") as temporary:
         "-lcjson", "-o", str(binary),
     ], cwd=ROOT, check=True)
     native = ROOT / "docs/reference/ZONE_STORY_QUEST_PRODUCTION_CATALOG.json"
+    scripted_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "bordello")
+    subprocess.run([str(binary), str(native), str(ROOT / "areas/story/bordello.story.json"), "scripted"], cwd=ROOT, check=True)
+    def invalid_scripted(name, mutate):
+        mapping = copy.deepcopy(scripted_mapping)
+        mutate(mapping)
+        changed = copy.deepcopy(catalog)
+        changed["story_mappings"] = [mapping]
+        try:
+            module.story_units(changed)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"invalid scripted mapping accepted: {name}")
+        path = pathlib.Path(temporary) / f"scripted-{name}.json"
+        path.write_text(json.dumps(mapping), encoding="utf-8")
+        subprocess.run([str(binary), str(native), str(path), "invalid-scripted"], cwd=ROOT, check=True)
+    invalid_scripted("duplicate", lambda m: m["scripted_outcomes"].append(m["scripted_outcomes"][0]))
+    invalid_scripted("boolean", lambda m: m["scripted_outcomes"][0].update(repeatable=1))
+    invalid_scripted("unknown-field", lambda m: m["scripted_outcomes"][0].update(reward=500))
+    invalid_scripted("invalid-event", lambda m: m["scripted_outcomes"][0].update(event="hire companion"))
+    invalid_scripted("unknown-giver", lambda m: m["scripted_outcomes"][0].update(giver_vnum=999999))
+    invalid_scripted("unbound", lambda m: (m.update(coverage="partial"), m["stories"].pop()))
+    invalid_scripted("old-schema", lambda m: m.update(schema_version=3))
     subprocess.run([str(binary), str(native), str(ROOT / "areas/story/twin_towers_forest.story.json")], cwd=ROOT, check=True)
     subprocess.run([str(binary), str(native), str(ROOT / "areas/story/twin_towers_forest.story.json"), "all"], cwd=ROOT, check=True)
     boundary_dir = pathlib.Path(temporary) / "sidecar-boundary"

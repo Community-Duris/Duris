@@ -1,8 +1,8 @@
 {
-  "schema_version": 3,
-  "revision": 2,
+  "schema_version": 4,
+  "revision": 3,
   "source_area": "bordello",
-  "coverage": "partial",
+  "coverage": "complete",
   "introduction": "Vella's Bordello offers paid temporary companions and can host wandering creatures whose materials are sought by quest givers in Winterhaven.",
   "orientation": [
     "The approach from the Surface leads into the building's main rooms. Padh watches the entrance, and Vella keeps her own chamber deeper inside.",
@@ -98,6 +98,102 @@
       "topics": []
     }
   ],
-  "stories": [],
-  "exclusions": []
+  "stories": [
+    {
+      "id": "hire-crazed",
+      "title": "Hire the sex crazed worker",
+      "category": "service",
+      "summary": "Pay at least 500 copper in one payment to hire a temporary pet. A successful hire stays recorded after the charm expires; hiring again uses the same service entry.",
+      "contracts": [
+        {
+          "giver_vnum": 93602,
+          "completion_key": "scripted:bordello:hire-companion"
+        }
+      ],
+      "steps": [
+        {
+          "id": "hire",
+          "text": "Successfully hire the sex crazed worker",
+          "kind": "completion",
+          "hint": "Pay the full price to this provider. The journal records the hire once the pet belongs to you and follows you. Underpayments do not accumulate.",
+          "contracts": [
+            {
+              "giver_vnum": 93602,
+              "completion_key": "scripted:bordello:hire-companion"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hire-well-built",
+      "title": "Hire the well built worker",
+      "category": "service",
+      "summary": "Pay at least 500 copper in one payment to hire a temporary pet. A successful hire stays recorded after the charm expires; hiring again uses the same service entry.",
+      "contracts": [
+        {
+          "giver_vnum": 93603,
+          "completion_key": "scripted:bordello:hire-companion"
+        }
+      ],
+      "steps": [
+        {
+          "id": "hire",
+          "text": "Successfully hire the well built worker",
+          "kind": "completion",
+          "hint": "Pay the full price to this provider. The journal records the hire once the pet belongs to you and follows you. Underpayments do not accumulate.",
+          "contracts": [
+            {
+              "giver_vnum": 93603,
+              "completion_key": "scripted:bordello:hire-companion"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hire-sleazy",
+      "title": "Hire the sleazy worker",
+      "category": "service",
+      "summary": "Pay at least 500 copper in one payment to hire a temporary pet. A successful hire stays recorded after the charm expires; hiring again uses the same service entry.",
+      "contracts": [
+        {
+          "giver_vnum": 93611,
+          "completion_key": "scripted:bordello:hire-companion"
+        }
+      ],
+      "steps": [
+        {
+          "id": "hire",
+          "text": "Successfully hire the sleazy worker",
+          "kind": "completion",
+          "hint": "Pay the full price to this provider. The journal records the hire once the pet belongs to you and follows you. Underpayments do not accumulate.",
+          "contracts": [
+            {
+              "giver_vnum": 93611,
+              "completion_key": "scripted:bordello:hire-companion"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": [],
+  "scripted_outcomes": [
+    {
+      "event": "hire-companion",
+      "giver_vnum": 93602,
+      "repeatable": true
+    },
+    {
+      "event": "hire-companion",
+      "giver_vnum": 93603,
+      "repeatable": true
+    },
+    {
+      "event": "hire-companion",
+      "giver_vnum": 93611,
+      "repeatable": true
+    }
+  ]
 }

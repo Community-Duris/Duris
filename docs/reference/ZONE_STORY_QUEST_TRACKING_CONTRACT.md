@@ -5,9 +5,16 @@
 > describe the original branch; those zone repairs were not imported.
 
 Tracking is per character PID and season. It covers stable static zone/story Q
-contracts; bartender/random world quest assignments have their own lifecycle.
+contracts and explicitly declared scripted NPC outcomes; bartender/random world
+quest assignments have their own lifecycle.
 There is no acceptance, sharing, abandonment, or midnight world-reset record in
-this tracker. An original quest turn-in supplies the authoritative completion.
+this tracker. An original quest turn-in or verified native scripted success
+supplies the authoritative completion. The scripted adapter records personal
+credit only, and service categories do not contribute achievements or daily
+renown. See the [schema-four builder contract](../guides/ZONE_STORY_BUILDING.md#scripted-quests-and-services-schema-4)
+for stable identities, call-site requirements and failure boundaries. The
+accounting-specific transaction/recovery descriptions below are historical;
+standalone observation is not atomic with native rewards.
 
 ## Definitions and discovery
 

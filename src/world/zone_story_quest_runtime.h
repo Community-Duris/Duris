@@ -65,6 +65,14 @@ bool record_authoritative_completion(
 bool record_legacy_completion(struct char_data *player, const quest_complete_data *completion,
 			      int32_t room_vnum, int64_t completed_at, std::string *error = nullptr,
 			      std::string_view transaction_id = {});
+
+/* Call only after native scripted success, while player and giver still share
+ * the room. Records personal credit using the sidecar's declared event; never
+ * performs or retries payment, rewards, or effects. Failure must not gate native
+ * gameplay. Repeated calls are harmless for the journal's completion checklist. */
+bool record_scripted_completion(struct char_data *player, struct char_data *giver,
+				std::string_view source_area, std::string_view event,
+				std::string *error = nullptr) noexcept;
 } // namespace zone_story_quest_runtime
 
 #endif

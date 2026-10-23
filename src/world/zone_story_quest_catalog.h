@@ -98,6 +98,8 @@ struct quest_unit
 };
 
 std::vector<quest_unit> quest_units(const catalog &catalog);
+/* Scripted outcomes have their own namespace; they never impersonate Q blocks. */
+std::string scripted_definition_id(std::string_view area, int32_t giver, std::string_view event);
 bool excluded_contract(const catalog &catalog, std::string_view id);
 const story_definition *story_for_contract(const catalog &catalog, std::string_view id);
 

@@ -15,7 +15,8 @@ Implementation checks pass; the live zone-by-zone review remains open.
   seasonal story achievements, and optional discovered-zone daily checklists.
 - 232 preserved mappings plus a mapping for Vella's Bordello, including its
   paid temporary follower services and connections to Winterhaven's quests.
-  The native catalog contains 2,668 contracts; 1,406 grouped daily candidates
+  The catalog contains 2,668 native QST contracts and three scripted hire
+  outcomes; 1,406 grouped daily candidates
   survive the existing conservative selection policy. Candidate status does not
   guarantee a reachable recipient or renewed materials.
 - Optional `areas/story/<area>.story.json` files. Native `.qst`, `.zon`, `.mob`,
@@ -33,7 +34,9 @@ Implementation checks pass; the live zone-by-zone review remains open.
 
 `quest zone <area>` opens a discovered journal; `achievements zones` and
 `achievements zone <area>` show discovery and story progress. Contacts appear
-through observed encounters. Dailies stay off by default. Setting
+through observed encounters. Successful scripted hires also record the provider
+encounter and show **Service used**, retaining that history after pet expiry.
+Dailies stay off by default. Setting
 `ZONE_STORY_DAILY_ENABLED=true` enables their independent policy, still subject
 to discovery, cohort/access evidence and party limits. It adds journal renown,
 not extra native gold, experience or item rewards. `ZONE_STORY_SEASON_ID` selects
@@ -108,14 +111,12 @@ levels and material renewal before choosing the next player test.
 
 1. Run mortal gameplay journeys for each reviewed area, including supplied items,
    multi-reset outcomes and reconnect persistence; keep results with the dossier.
-2. Add an optional native event adapter for custom scripted outcomes only after
-   identifying the actual success point. Never infer completion from prose or a
-   command merely being handled.
-   The first concrete integration is Vella's three paid follower services:
-   observe the established pet-owner link and follower after the accepted payment.
-   Their current journal explains the service but does not yet persist a hire
-   completion. See the [Vella review](ZONE_STORY_STARTER_REVIEW.md#2-vellas-bordello-bordello)
-   for exact hooks and acceptance cases.
+2. Extend the scripted-success observer to other reviewed NPC quests and services.
+   Schema-four sidecars declare outcomes; Vella's three hires are the first
+   integration. This synchronous personal-credit adapter reuses journal storage
+   and remains independent of accounting. Add each future call only after its
+   actual native success point is verified; see the
+   [builder guide](../guides/ZONE_STORY_BUILDING.md#scripted-quests-and-services-schema-4).
 3. Design acquisition provenance and first-obtained/worn milestones independently
    of accounting, with stable event identities and clear source-versus-gift rules.
    Current item readiness is intentionally not historical provenance.
