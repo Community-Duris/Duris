@@ -117,12 +117,10 @@ void event_mana_regen(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 	struct regen_event_state state = regen_state_from_data(data);
 	unsigned long long elapsed_ticks = regen_elapsed_ticks(&state);
 	int regen_value_int;
-	int per_tick = 0;
+	int per_tick = mana_regen(ch, FALSE);
+	const bool surplus_decay = per_tick < 0 && GET_MANA(ch) > GET_MAX_MANA(ch);
 
-	per_tick = IS_AFFECTED(ch, AFF_MEDITATE) ? ((GET_C_POW(ch) + GET_C_INT(ch)) / .2) :
-						   ((GET_C_POW(ch) + GET_C_INT(ch)) / 2.5);
-	if ((per_tick == 0) || (GET_MANA(ch) == GET_MAX_MANA(ch) && per_tick > 0) ||
-	    (GET_MANA(ch) < 0 && per_tick < 0))
+	if (per_tick == 0)
 		return;
 
 	state.accumulated += ((float)per_tick * (float)elapsed_ticks) / (float)PULSES_IN_TICK;
@@ -130,9 +128,16 @@ void event_mana_regen(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 	if (regen_value_int >= 1 || regen_value_int <= -1)
 	{
 		GET_MANA(ch) += regen_value_int;
-		if (GET_MANA(ch) > GET_MAX_MANA(ch))
+		if (regen_value_int > 0 && GET_MANA(ch) > GET_MAX_MANA(ch))
 			GET_MANA(ch) = GET_MAX_MANA(ch);
+		if (GET_MANA(ch) < 0)
+			GET_MANA(ch) = 0;
 		state.accumulated -= (float)regen_value_int;
+		if (surplus_decay && GET_MANA(ch) <= GET_MAX_MANA(ch))
+		{
+			GET_MANA(ch) = GET_MAX_MANA(ch);
+			state.accumulated = 0.0f;
+		}
 		gmcp_char_vitals(ch);
 		if (IS_PC(ch) && IS_AFFECTED(ch, AFF_MEDITATE) &&
 		    GET_MANA(ch) == GET_MAX_MANA(ch) && GET_CLASS(ch, CLASS_PSIONICIST))
@@ -141,6 +146,10 @@ void event_mana_regen(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 			stop_meditation(ch);
 		}
 	}
+
+	if ((per_tick > 0 && GET_MANA(ch) == GET_MAX_MANA(ch)) ||
+	    (per_tick < 0 && GET_MANA(ch) == 0))
+		return;
 
 	add_event(event_mana_regen, IS_PC(ch) ? 1 : MOB_MANA_REGEN_DELAY, ch, 0, 0, 0, &state,
 		  sizeof(state));

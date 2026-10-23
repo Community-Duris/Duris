@@ -369,6 +369,29 @@ epic points (not PvP) in `prepare_epic_award()`; artefact feeding in
 `sql_world_quest_can_do_another()` (never fewer than one a day) and the kill count in
 `createQuest()`.
 
+## PSP regeneration
+
+`mana_regen()` in `src/world/limits.c` supplies one signed PSP rate per game tick
+to event admission, `event_mana_regen()` and staff display. The base remains
+`int((POW + INT) / 2.5)`, or `/ 0.2` while meditating. Feeblemind quarters that
+base; sleeping doubles it and resting adds half, using status rather than posture.
+The signed equipment modifier is added once, then the player regeneration dial
+scales positive PC recovery. Negative rates and NPC recovery are unscaled.
+
+Combat, incapacitation or worse, and unprotected sunlight for sun-vulnerable
+characters suppress PSP changes. Active events recheck those rules each callback
+and discard fractional credit when suppressed. This corrects the former callback
+that ignored these modifiers and eligibility checks; no configuration defaults change.
+Positive recovery stops at maximum, negative equipment drains stop at zero, and
+surplus PSP decays toward maximum without crossing it on delayed callbacks.
+Staff display can show the potential positive rate at full PSP without scheduling it.
+
+Events retain elapsed-pulse accounting and the existing cadence: one pulse for PCs,
+five for NPCs. Spending PSP restarts recovery immediately. The periodic
+`affect_update()` retries every `USES_MANA` character, including racial PSP users,
+so recovery resumes after combat or sunlight within the next game tick (normally
+75 seconds). `StartRegen()` admits only nonzero rates and prevents duplicate events.
+
 ## Racial pulse
 
 Each race's action rates live in `lib/duris.properties`. `spellcast.pulse.racial.<Race>`

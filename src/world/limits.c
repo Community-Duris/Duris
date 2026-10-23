@@ -114,17 +114,17 @@ int vitality_limit(P_char ch)
 	return (max);
 }
 
-/*
- * calculate ch's mana regeneration rate, return regen/minute for mobs,
- * regen/hour for players.  Convert mobs to same scale when they cast like
- * players do.  JAB
- */
+/* PSP per game tick, shared by event admission, callbacks and staff display. */
 
 int mana_regen(P_char ch, bool display_only)
 {
 	int gain;
 
-	if (ch->points.mana_reg >= 0 && GET_MANA(ch) == GET_MAX_MANA(ch) && !display_only)
+	if (GET_STAT(ch) <= STAT_INCAP || IS_FIGHTING(ch))
+		return 0;
+
+	if (has_innate(ch, INNATE_VULN_SUN) && IS_SUNLIT(ch->in_room) &&
+	    !IS_TWILIGHT_ROOM(ch->in_room) && !IS_AFFECTED4(ch, AFF4_GLOBE_OF_DARKNESS))
 		return 0;
 
 	if (GET_MANA(ch) > GET_MAX_MANA(ch))
@@ -133,27 +133,14 @@ int mana_regen(P_char ch, bool display_only)
 		return MIN(-1, gain);
 	}
 
-	if (IS_NPC(ch))
-	{
-		gain = GET_LEVEL(ch) >> 1;
-	}
-	else if (!IS_PUNDEAD(ch))
-	{
-		gain = 14;
-	}
-	else
-		gain = 20;
+	gain = IS_AFFECTED(ch, AFF_MEDITATE) ? ((GET_C_POW(ch) + GET_C_INT(ch)) / .2) :
+					       ((GET_C_POW(ch) + GET_C_INT(ch)) / 2.5);
 
 	if (affected_by_spell(ch, SPELL_FEEBLEMIND))
 		gain >>= 2;
 
-	switch (GET_POS(ch))
+	switch (GET_STAT(ch))
 	{
-	case STAT_DEAD:
-	case STAT_DYING:
-	case STAT_INCAP:
-		gain = 0;
-		break;
 	case STAT_SLEEPING:
 		gain <<= 1;
 		break;
@@ -162,35 +149,15 @@ int mana_regen(P_char ch, bool display_only)
 		break;
 	}
 
-	if (IS_AFFECTED(ch, AFF_MEDITATE))
-		gain += 5 + GET_CHAR_SKILL(ch, SKILL_MEDITATE);
-
-	/*
-	if (USES_MANA(ch))
-	{
-	  if (GET_CHAR_SKILL(ch, SKILL_ADVANCED_MEDITATION) >= 90)
-	  {
-	    gain = (int) (gain * 2.5);
-	            notch_skill(ch, SKILL_ADVANCED_MEDITATION, 2);
-	  }
-	  else
-	  {
-	    gain *= 2;
-	           notch_skill(ch, SKILL_ADVANCED_MEDITATION, 2);
-	  }
-	}
-	*/
-
 	gain += ch->points.mana_reg;
+	gain = difficulty_scale_player_regen(ch, gain);
 
-	if (IS_FIGHTING(ch))
-		gain = 0;
+	if (gain > 0 && GET_MANA(ch) == GET_MAX_MANA(ch) && !display_only)
+		return 0;
+	if (gain < 0 && GET_MANA(ch) <= 0)
+		return 0;
 
-	if (has_innate(ch, INNATE_VULN_SUN) && IS_SUNLIT(ch->in_room) &&
-	    !IS_TWILIGHT_ROOM(ch->in_room) && !IS_AFFECTED4(ch, AFF4_GLOBE_OF_DARKNESS))
-		gain = 0;
-
-	return difficulty_scale_player_regen(ch, gain * gain / 8);
+	return gain;
 }
 
 /* * calculate ch's hit regeneration rate, return regen/minute */
