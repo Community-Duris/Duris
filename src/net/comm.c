@@ -3776,7 +3776,7 @@ int new_descriptor(int s, int conn_type)
 	if (getpeername(desc, (struct sockaddr *)&sock, &size) < 0)
 	{
 		perror("getpeername");
-		strcpy(newd->host, "&+RUNTRACEABLE&n");
+		strcpy(newd->host, "unknown");
 	}
 	else
 	{

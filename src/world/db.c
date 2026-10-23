@@ -3561,8 +3561,13 @@ void reset_zone(int zone, int force_item_repop)
 				{
 					mob = 0;
 					last_mob = 0;
-					logit(LOG_MOB, "M cmd not executed %d %d %d %d", ZCMD.arg1,
-					      ZCMD.arg2, ZCMD.arg3, ZCMD.arg4);
+					logit(LOG_MOB,
+					      "M cmd not executed: mob %d in room %d, limit %d, chance %d%%",
+					      mob_index[ZCMD.arg1].virtual_number,
+					      ZCMD.arg3 >= 0 && ZCMD.arg3 <= top_of_world ?
+						      world[ZCMD.arg3].number :
+						      NOWHERE,
+					      ZCMD.arg2, ZCMD.arg4);
 				}
 				if (!mob)
 				{
@@ -3922,8 +3927,13 @@ void reset_zone(int zone, int force_item_repop)
 					{
 						last_mob_load = 0;
 						mob = last_mob = 0;
-						logit(LOG_MOB, "F cmd not executed %d %d %d %d",
-						      ZCMD.arg1, ZCMD.arg2, ZCMD.arg3, ZCMD.arg4);
+						logit(LOG_MOB,
+						      "F cmd not executed: mob %d in room %d, limit %d, chance %d%%",
+						      mob_index[ZCMD.arg1].virtual_number,
+						      ZCMD.arg3 >= 0 && ZCMD.arg3 <= top_of_world ?
+							      world[ZCMD.arg3].number :
+							      NOWHERE,
+						      ZCMD.arg2, ZCMD.arg4);
 					}
 					if (!last_mob)
 					{
@@ -3973,8 +3983,13 @@ void reset_zone(int zone, int force_item_repop)
 					{
 						mob = 0;
 						last_mob_load = 0;
-						logit(LOG_MOB, "R cmd not executed %d %d %d %d",
-						      ZCMD.arg1, ZCMD.arg2, ZCMD.arg3, ZCMD.arg4);
+						logit(LOG_MOB,
+						      "R cmd not executed: mob %d in room %d, limit %d, chance %d%%",
+						      mob_index[ZCMD.arg1].virtual_number,
+						      ZCMD.arg3 >= 0 && ZCMD.arg3 <= top_of_world ?
+							      world[ZCMD.arg3].number :
+							      NOWHERE,
+						      ZCMD.arg2, ZCMD.arg4);
 					}
 					// A missed roll leaves no mount, with the rider still in last_mob.
 					if (!mob || !last_mob)
