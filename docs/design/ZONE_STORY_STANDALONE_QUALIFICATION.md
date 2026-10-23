@@ -12,7 +12,11 @@ in this port.
 - All 232 imported maps retain their source areas, native contract bindings,
   categories, optional steps, quantities, item identities, contacts and topics.
   Revisions and player-facing explanations were adapted for standalone gameplay.
-- Vella's Bordello adds one exploration/contact-only map, with no quest contracts.
+- Vella's Bordello adds one map with paid follower-service guidance, local
+  contacts and roaming material sources for Winterhaven's quests. Its
+  revision-two correction explains the hires without claiming a recorded hire
+  completion; the custom-success observer remains planned. It preserves the
+  existing completion owners; no native contracts are added or duplicated.
   The complete catalog validates 233 maps and 2,668 native contracts, producing
   1,518 story achievement units and 1,406 conservative daily candidates.
 - Native area files and special assignments match the pinned master base. The
@@ -24,6 +28,14 @@ in this port.
   No original feature/research worktree or original PR was modified.
 
 ## Executable validation
+
+Vella revision two is a content/documentation correction. Re-ran the catalog
+generator with `--check` and
+`python tests/async/test_zone_story_quest_production_catalog.py`: both passed.
+All 2,668 native definitions, world identities, existing quest bindings and
+achievement/daily counts are unchanged; the twelve Vella contact prototypes and
+aliases validate. The 980 preserved research hashes still match. No server source
+changed in this correction; live hire/expiry journeys remain outstanding.
 
 The disposable build used image
 `sha256:13d9e3ccbd77e8e4432f3f2647c54ccfbdd7c83a83585346b5527077c2f1e32a`,

@@ -13,7 +13,8 @@ Implementation checks pass; the live zone-by-zone review remains open.
 
 - Discovery on genuine mortal arrival, private journals, visible NPC encounters,
   seasonal story achievements, and optional discovered-zone daily checklists.
-- 232 preserved mappings plus an exploration-only mapping for Vella's Bordello.
+- 232 preserved mappings plus a mapping for Vella's Bordello, including its
+  paid temporary follower services and connections to Winterhaven's quests.
   The native catalog contains 2,668 contracts; 1,406 grouped daily candidates
   survive the existing conservative selection policy. Candidate status does not
   guarantee a reachable recipient or renewed materials.
@@ -110,6 +111,11 @@ levels and material renewal before choosing the next player test.
 2. Add an optional native event adapter for custom scripted outcomes only after
    identifying the actual success point. Never infer completion from prose or a
    command merely being handled.
+   The first concrete integration is Vella's three paid follower services:
+   observe the established pet-owner link and follower after the accepted payment.
+   Their current journal explains the service but does not yet persist a hire
+   completion. See the [Vella review](ZONE_STORY_STARTER_REVIEW.md#2-vellas-bordello-bordello)
+   for exact hooks and acceptance cases.
 3. Design acquisition provenance and first-obtained/worn milestones independently
    of accounting, with stable event identities and clear source-versus-gift rules.
    Current item readiness is intentionally not historical provenance.
@@ -121,6 +127,12 @@ levels and material renewal before choosing the next player test.
    quest, and do not promise daily renewal from reset metadata alone.
 6. Design failure recovery for the observer without making native quests depend
    on journal availability. Keep economic accounting an optional integration.
+7. Add builder-authored references to quests completed in other zones. Vella's
+   supplies Incarnate and psychomia materials for Winterhaven's requests; the
+   current maps explain this through guidance and ingredient hints. A future
+   shared checklist should reuse the owning quest's completion, preserve
+   encounter/discovery visibility, accept supplied materials and avoid duplicate
+   achievements or daily credit. Do not move ownership to the material source.
 
 Validation evidence for this port is recorded in
 [the standalone qualification record](ZONE_STORY_STANDALONE_QUALIFICATION.md).

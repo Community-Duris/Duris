@@ -1,13 +1,16 @@
 {
   "schema_version": 3,
-  "revision": 1,
+  "revision": 2,
   "source_area": "bordello",
-  "coverage": "complete",
-  "introduction": "Explore Vella's Bordello, its fountain hall, private rooms and shop.",
+  "coverage": "partial",
+  "introduction": "Vella's Bordello offers paid temporary companions and can host wandering creatures whose materials are sought by quest givers in Winterhaven.",
   "orientation": [
     "The approach from the Surface leads into the building's main rooms. Padh watches the entrance, and Vella keeps her own chamber deeper inside.",
     "Vegar runs a shop among the private rooms. The fountain, corridors and treasure room offer places to explore.",
-    "This area's journal records discovery and the people you meet. There are no mapped quest turn-ins here yet."
+    "Three of the house's workers offer to follow you as a temporary pet for a payment worth at least 500 copper. Pay the full amount at once; smaller payments do not accumulate toward the service. Their contact entries explain the offer once you have met them.",
+    "Incarnates sometimes roam through the house. Their remains are ingredients for Bipplewizzlille's five potion recipes in Winterhaven; each recipe also needs an empty potion bottle. These creatures are much stronger than the ordinary residents.",
+    "A wandering psychomia treant provides a plant sought by Buzzbeef in Winterhaven. His reward can then be taken to Thyz for a thieves' guild invitation. Branay also uses the plant in a separate nightshade recipe.",
+    "Follow these requests in Winterhaven's journal after visiting the city and meeting its quest givers. Materials supplied by another player work too; finding or defeating a creature here is not required for those hand-ins."
   ],
   "contacts": [
     {
@@ -29,6 +32,69 @@
       "name": "Vegar",
       "keyword": "vegar",
       "description": "A burly shopkeeper sells his wares.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93602,
+      "name": "A sex crazed prostitute",
+      "keyword": "prostitute",
+      "description": "A single payment worth at least 500 copper hires her to follow you as a temporary pet. The usual charm lasts ten minutes, subject to your existing pet-duration abilities. Smaller payments are kept without granting the hire.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93603,
+      "name": "A well built prostitute",
+      "keyword": "prostitute",
+      "description": "A single payment worth at least 500 copper hires her to follow you as a temporary pet. The usual charm lasts ten minutes, subject to your existing pet-duration abilities. Smaller payments are kept without granting the hire.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93611,
+      "name": "A sleazy prostitute",
+      "keyword": "prostitute",
+      "description": "A single payment worth at least 500 copper hires her to follow you as a temporary pet. The usual charm lasts ten minutes, subject to your existing pet-duration abilities. Smaller payments are kept without granting the hire.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 55550,
+      "name": "The Incarnate of Fire",
+      "keyword": "fire",
+      "description": "This wandering Incarnate leaves a burning flame when it dies. Bipplewizzlille in Winterhaven accepts the flame and an empty potion bottle for a fiery potion.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 55551,
+      "name": "The Incarnate of Frost",
+      "keyword": "frost",
+      "description": "This wandering Incarnate leaves a small snowflake when it dies. Bipplewizzlille in Winterhaven accepts the snowflake and an empty potion bottle for a frosty potion.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 55552,
+      "name": "The Incarnate of Stone",
+      "keyword": "stone",
+      "description": "This wandering Incarnate leaves a flint of granite when it dies. Bipplewizzlille in Winterhaven accepts the granite and an empty potion bottle for a granite potion.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 55553,
+      "name": "The Incarnate of Air",
+      "keyword": "air",
+      "description": "This wandering Incarnate leaves a wisp of wind when it dies. Bipplewizzlille in Winterhaven accepts the wisp and an empty potion bottle for an acceleration potion.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 55554,
+      "name": "The Incarnate of Mischief",
+      "keyword": "mischief",
+      "description": "This wandering Incarnate leaves a delicate bubble when it dies. Bipplewizzlille in Winterhaven accepts the bubble and an empty potion bottle for a protection potion.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 55246,
+      "name": "A tall psychomia treant",
+      "keyword": "psychomia",
+      "description": "This wandering treant leaves a psychomia plant when it dies. Buzzbeef in Winterhaven rewards the plant with coins and a small plastic bag; Thyz accepts that bag for an invitation. Branay has a separate recipe using a plant, nightshade and two gnomish shopkeepers tokens.",
       "topics": []
     }
   ],

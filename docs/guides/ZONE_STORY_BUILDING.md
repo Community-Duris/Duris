@@ -38,6 +38,16 @@ area while preserving native quest behavior and identities.
 3. Trace item sources in resets/prototypes and inspect relevant specials and
    assignments. Mechanical producer/consumer links are candidates, not proof
    of story prerequisites. NPC prose can disagree with executable terms.
+   Search other areas' quests, shared spawn rooms and wandering NPC routes as
+   well. A missing same-name QST file does not make an area exploration-only:
+   Vella's supplies roaming materials for Winterhaven's quests. Describe those
+   connections in orientation/contact guidance and ingredient hints, preserving
+   the existing completion owner. Do not duplicate a native contract in two
+   stories or require a personal kill when supplied materials are accepted.
+   Also inspect command-handling specials: Vella's 500-copper temporary follower
+   hires are implemented in C++ without QST contracts. Include their offers in
+   contact guidance, and document the missing success observer explicitly until
+   scripted-service completion recording is implemented.
 4. Group successful alternatives; classify rejected offerings and supporting
    trades/services. A terminal contract belongs to one story or exclusion.
 5. Validate and regenerate the checked-in audit snapshot:

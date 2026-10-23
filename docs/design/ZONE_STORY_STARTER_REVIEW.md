@@ -61,22 +61,100 @@ records; confirm hidden-route entry and return without staff movement.
 
 ## 2. Vella's Bordello (`bordello`)
 
-The active area has 69 rooms, 16 mobile prototypes and Vegar's shop. Vella manages
-her establishment, Padh guards it, and the rooms depict patrons, private chambers,
-a fountain and a treasure room. There is no same-stem QST file and no native
-Q/QA hand-in. Membership in the QST area list does not create a quest.
+**Correction, 2026-10-23:** the initial exploration-only classification was too
+narrow. The area has scripted paid follower services, and roaming creatures
+supply materials for quests completed in Winterhaven. Absence of a same-stem
+QST file does not mean absence of quest or service gameplay. The user's recalled
+interaction is the paid follower service, not the roaming-material connection.
 
-Added an exploration/contact journal with zero invented completion contracts.
-Discovering the area is still an achievement; visiting the shop is not a quest
-completion. The three contacts are Vella, Padh and Vegar, revealed on encounter.
-Review whether exploration-only presentation is useful before designing any new
-errand. Treasure-door reset behavior and imported slot-machine objects remain
-research follow-ups, with no repairs in this port.
+### Paid temporary followers
 
-Evidence: [room descriptions](../../areas/wld/bordello.wld),
-[characters](../../areas/mob/bordello.mob), [resets](../../areas/zon/bordello.zon),
-[shop](../../areas/shp/bordello.shp),
-[full audit](quest-story-followups/BORDELLO_AUDIT_REVIEW.md).
+Three local mobile prototypes have assigned C++ callbacks with the same offer:
+
+| Provider | Callback | Existing offer and outcome |
+| --- | --- | --- |
+| Sex crazed prostitute #93602 | `sex_crazed_prostitute` | At least 500 copper value in one payment; establishes a pet and follows the payer. |
+| Well built prostitute #93603 | `well_built_prostitute` | Same payment and temporary pet outcome. |
+| Sleazy prostitute #93611 | `sleezy_prostitute` | Same payment and temporary pet outcome. |
+
+Each callback compares the NPC's money immediately before and after `do_give`.
+A positive increase below 500 produces the underpayment response; the money is
+kept and separate payments do not accumulate toward a hire. At 500 or more the
+callback calls `setup_pet(ch, pl, 10, 0)`, stops an existing follower relationship
+if present, and calls `add_follower(ch, pl)`. Standard player charm duration is
+ten minutes. Existing Unholy Alliance/globe behavior can make that duration
+indefinite; the journal does not alter these pet rules. These callbacks have no
+item or experience reward and do not execute a native QST contract.
+
+The `topless_prostitute` handler also exists, but no assignment to local #93604
+was found. Keep that unassigned handler separate from the three configured offers;
+adding a binding would be a native behavior change requiring separate review.
+
+Current journal revision two explains the price, underpayment behavior and
+follower outcome, with three service-provider contacts revealed on encounter.
+**It does not yet record a hire completion.** The existing native QST observer
+cannot see the custom success path. The map stays `coverage: "partial"` while
+scripted outcome tracking and live journeys are outstanding. Service visibility
+must not be mistaken for a completed integration.
+
+The next implementation should observe a successful hire after the pet-owner
+link and follower relationship are both established, using a stable scripted
+service identity for each configured provider. Do not use a handled GIVE command
+or an NPC money increase alone as proof. `setup_pet` can return -1 for both a
+rejected target and a valid indefinite duration, so its return sign alone is also
+insufficient. Reuse the journal's persistence and failure isolation, credit the
+payer, and retain service classification unless an achievement policy is chosen.
+The observer must never retry the payment or pet creation to repair journal state.
+
+Acceptance cases: exact payment, overpayment, underpayment, two smaller payments,
+wrong recipient, item gift, fighting provider, rejected pet setup, ordinary
+expiry, existing indefinite-duration effects, rehire, journal storage failure,
+and reconnect. Verify the original money/pet outcomes as well as the journal
+record. No extra reward or daily credit is implied by recording a service.
+
+Evidence: [assigned callbacks](../../src/specs/specs.assign.c#L352),
+[hire implementation](../../src/specs/specs.grove.c#L439),
+[pet setup and duration](../../src/classes/necromancy.c#L211),
+[local characters](../../areas/mob/bordello.mob).
+
+### Roaming sources for Winterhaven's quests
+
+The shared dispersal room #55614 in `wh.wld` has an up exit to Vella's fountain
+hall #93610. Its resets declare the five Incarnates #55550-#55554 and psychomia
+treants #55246. Their assigned death callback creates one object with the same
+VNUM in the room. The dispersal-room prose says two ingredients; the callback
+creates one. This is source evidence of the intended route, not a live population
+or renewal guarantee. Incarnates are level 45 and treants level 24, so these
+visitors do not make a uniformly easy beginner quest set.
+
+| Source and progression | Existing outcome | Journal treatment |
+| --- | --- | --- |
+| Incarnate remains plus one empty potion bottle, brought to Bipplewizzlille | Fire/flame -> fiery potion; Frost/snowflake -> frosty potion; Stone/granite -> granite potion; Air/wind -> acceleration potion; Mischief/bubble -> protection potion | Vella's explains the connection and reveals the roaming contacts on encounter. Winterhaven retains the five actual recipe checklists and completion owners. |
+| Psychomia plant brought to Buzzbeef; his small plastic bag then brought to Thyz | Buzzbeef gives 100,000 copper and the bag; Thyz gives a super secret invitation | Explain both steps without making personal treant hunting or a prior personal Buzzbeef completion mandatory. |
+| Psychomia plant, nightshade and two gnomish shopkeepers tokens brought to Branay | Small nightshade splinter | Explain the independent use of the same plant; retain exact extra ingredients. |
+
+The three original local contacts (Vella, Padh and Vegar), three hire providers,
+and six wandering sources bring the map to twelve contacts. Encounter history is
+by mobile prototype, not proof that the encounter happened in Vella's. Winterhaven
+retains its existing completion identities and now names Vella's in the matching
+ingredient hints. Vella's uses prose referrals; it does not yet embed another
+zone's live quest checklist or grant duplicate completion/daily credit.
+
+Evidence: [shared dispersal room](../../areas/wld/wh.wld#L12606),
+[shared resets](../../areas/zon/wh.zon#L1622),
+[death conversion](../../src/specs/specs.winterhaven.c#L70),
+[Incarnate recipes and dialogue](../../areas/qst/wh.qst#L749),
+[Buzzbeef](../../areas/qst/wh.qst#L1322),
+[Branay's recipe](../../areas/qst/wh.qst#L1557),
+[Thyz's invitation](../../areas/qst/wh.qst#L2038).
+The active `wh.zon` title is **The City of Winterhaven**; older research uses
+White Harbor for the same source key.
+
+The area still has 69 rooms, 16 local mobile prototypes and Vegar's shop.
+Treasure-door resets and imported slot-machine objects remain research follow-ups.
+No native repair is included. The preserved
+[historical audit](quest-story-followups/BORDELLO_AUDIT_REVIEW.md) remains unchanged;
+this current review corrects the earlier journal classification.
 
 ## 3. Harrow (`harrow`)
 

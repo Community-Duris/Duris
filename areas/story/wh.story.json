@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "revision": 3,
+  "revision": 4,
   "source_area": "wh",
   "coverage": "complete",
   "introduction": "Winterhaven connects everyday city requests with forest crafts, prisoners, snow-ogre passages, ambassador memories and distant artifact expeditions. Choose a story and follow its exact materials and named contact.",
@@ -2258,7 +2258,7 @@
           "id": "item-2",
           "text": "Carry 1 x a burning flame",
           "kind": "carried_item",
-          "hint": "The matching Incarnate leaves one material on death. Lancer's gem-studded hide exchange also supplies all five materials. Each alchemy recipe uses one material and one empty bottle.",
+          "hint": "The matching Incarnate leaves one material on death and may roam through Vella's Bordello or other nearby zones. Lancer's gem-studded hide exchange also supplies all five materials. Each recipe uses one material and one empty bottle; supplied materials qualify.",
           "item_vnums": [
             55550
           ],
@@ -2304,7 +2304,7 @@
           "id": "item-2",
           "text": "Carry 1 x a small snowflake",
           "kind": "carried_item",
-          "hint": "The matching Incarnate leaves one material on death. Lancer's gem-studded hide exchange also supplies all five materials. Each alchemy recipe uses one material and one empty bottle.",
+          "hint": "The matching Incarnate leaves one material on death and may roam through Vella's Bordello or other nearby zones. Lancer's gem-studded hide exchange also supplies all five materials. Each recipe uses one material and one empty bottle; supplied materials qualify.",
           "item_vnums": [
             55551
           ],
@@ -2350,7 +2350,7 @@
           "id": "item-2",
           "text": "Carry 1 x a flint of granite",
           "kind": "carried_item",
-          "hint": "The matching Incarnate leaves one material on death. Lancer's gem-studded hide exchange also supplies all five materials. Each alchemy recipe uses one material and one empty bottle.",
+          "hint": "The matching Incarnate leaves one material on death and may roam through Vella's Bordello or other nearby zones. Lancer's gem-studded hide exchange also supplies all five materials. Each recipe uses one material and one empty bottle; supplied materials qualify.",
           "item_vnums": [
             55552
           ],
@@ -2396,7 +2396,7 @@
           "id": "item-2",
           "text": "Carry 1 x a wisp of wind",
           "kind": "carried_item",
-          "hint": "The matching Incarnate leaves one material on death. Lancer's gem-studded hide exchange also supplies all five materials. Each alchemy recipe uses one material and one empty bottle.",
+          "hint": "The matching Incarnate leaves one material on death and may roam through Vella's Bordello or other nearby zones. Lancer's gem-studded hide exchange also supplies all five materials. Each recipe uses one material and one empty bottle; supplied materials qualify.",
           "item_vnums": [
             55553
           ],
@@ -2442,7 +2442,7 @@
           "id": "item-2",
           "text": "Carry 1 x a delicate bubble",
           "kind": "carried_item",
-          "hint": "The matching Incarnate leaves one material on death. Lancer's gem-studded hide exchange also supplies all five materials. Each alchemy recipe uses one material and one empty bottle.",
+          "hint": "The matching Incarnate leaves one material on death and may roam through Vella's Bordello or other nearby zones. Lancer's gem-studded hide exchange also supplies all five materials. Each recipe uses one material and one empty bottle; supplied materials qualify.",
           "item_vnums": [
             55554
           ],
@@ -4393,7 +4393,7 @@
           "id": "item-1",
           "text": "Carry 1 x a psychomia plant",
           "kind": "carried_item",
-          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "hint": "Psychomia treants may wander through Vella's Bordello and other nearby zones. A treant leaves a psychomia plant on death. Buzzbeef and Branay accept supplied plants too; neither requires you to kill the treant yourself.",
           "item_vnums": [
             55246
           ],
@@ -5051,7 +5051,7 @@
           "id": "item-3",
           "text": "Carry 1 x a psychomia plant",
           "kind": "carried_item",
-          "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+          "hint": "Psychomia treants may wander through Vella's Bordello and other nearby zones. A treant leaves a psychomia plant on death. Buzzbeef and Branay accept supplied plants too; neither requires you to kill the treant yourself.",
           "item_vnums": [
             55246
           ],

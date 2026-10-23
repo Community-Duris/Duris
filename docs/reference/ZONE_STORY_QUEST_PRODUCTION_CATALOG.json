@@ -96044,7 +96044,7 @@
         "Ask Xola and Drahknalloth's projection about time and the dragons before their expedition. Carry the three beating hearts for the three locked seals, then deliver them before they decay.",
         "Supplied materials count for native delivery. A completed delivery records the exchange; it does not establish a personal kill, learned topic, unlocked passage or complete campaign."
       ],
-      "revision": 3,
+      "revision": 4,
       "schema_version": 3,
       "source_area": "wh",
       "stories": [
@@ -97436,7 +97436,7 @@
             },
             {
               "count": 1,
-              "hint": "The matching Incarnate leaves one material on death. Lancer's gem-studded hide exchange also supplies all five materials. Each alchemy recipe uses one material and one empty bottle.",
+              "hint": "The matching Incarnate leaves one material on death and may roam through Vella's Bordello or other nearby zones. Lancer's gem-studded hide exchange also supplies all five materials. Each recipe uses one material and one empty bottle; supplied materials qualify.",
               "id": "item-2",
               "item_vnums": [
                 55550
@@ -97482,7 +97482,7 @@
             },
             {
               "count": 1,
-              "hint": "The matching Incarnate leaves one material on death. Lancer's gem-studded hide exchange also supplies all five materials. Each alchemy recipe uses one material and one empty bottle.",
+              "hint": "The matching Incarnate leaves one material on death and may roam through Vella's Bordello or other nearby zones. Lancer's gem-studded hide exchange also supplies all five materials. Each recipe uses one material and one empty bottle; supplied materials qualify.",
               "id": "item-2",
               "item_vnums": [
                 55551
@@ -97528,7 +97528,7 @@
             },
             {
               "count": 1,
-              "hint": "The matching Incarnate leaves one material on death. Lancer's gem-studded hide exchange also supplies all five materials. Each alchemy recipe uses one material and one empty bottle.",
+              "hint": "The matching Incarnate leaves one material on death and may roam through Vella's Bordello or other nearby zones. Lancer's gem-studded hide exchange also supplies all five materials. Each recipe uses one material and one empty bottle; supplied materials qualify.",
               "id": "item-2",
               "item_vnums": [
                 55552
@@ -97574,7 +97574,7 @@
             },
             {
               "count": 1,
-              "hint": "The matching Incarnate leaves one material on death. Lancer's gem-studded hide exchange also supplies all five materials. Each alchemy recipe uses one material and one empty bottle.",
+              "hint": "The matching Incarnate leaves one material on death and may roam through Vella's Bordello or other nearby zones. Lancer's gem-studded hide exchange also supplies all five materials. Each recipe uses one material and one empty bottle; supplied materials qualify.",
               "id": "item-2",
               "item_vnums": [
                 55553
@@ -97620,7 +97620,7 @@
             },
             {
               "count": 1,
-              "hint": "The matching Incarnate leaves one material on death. Lancer's gem-studded hide exchange also supplies all five materials. Each alchemy recipe uses one material and one empty bottle.",
+              "hint": "The matching Incarnate leaves one material on death and may roam through Vella's Bordello or other nearby zones. Lancer's gem-studded hide exchange also supplies all five materials. Each recipe uses one material and one empty bottle; supplied materials qualify.",
               "id": "item-2",
               "item_vnums": [
                 55554
@@ -99571,7 +99571,7 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+              "hint": "Psychomia treants may wander through Vella's Bordello and other nearby zones. A treant leaves a psychomia plant on death. Buzzbeef and Branay accept supplied plants too; neither requires you to kill the treant yourself.",
               "id": "item-1",
               "item_vnums": [
                 55246
@@ -100229,7 +100229,7 @@
             },
             {
               "count": 1,
-              "hint": "Ask the named contact about this exact material and follow its description. Supplied copies are accepted for delivery.",
+              "hint": "Psychomia treants may wander through Vella's Bordello and other nearby zones. A treant leaves a psychomia plant on death. Buzzbeef and Branay accept supplied plants too; neither requires you to kill the treant yourself.",
               "id": "item-3",
               "item_vnums": [
                 55246
@@ -158054,17 +158054,83 @@
           "mob_vnum": 93612,
           "name": "Vegar",
           "topics": []
+        },
+        {
+          "description": "A single payment worth at least 500 copper hires her to follow you as a temporary pet. The usual charm lasts ten minutes, subject to your existing pet-duration abilities. Smaller payments are kept without granting the hire.",
+          "keyword": "prostitute",
+          "mob_vnum": 93602,
+          "name": "A sex crazed prostitute",
+          "topics": []
+        },
+        {
+          "description": "A single payment worth at least 500 copper hires her to follow you as a temporary pet. The usual charm lasts ten minutes, subject to your existing pet-duration abilities. Smaller payments are kept without granting the hire.",
+          "keyword": "prostitute",
+          "mob_vnum": 93603,
+          "name": "A well built prostitute",
+          "topics": []
+        },
+        {
+          "description": "A single payment worth at least 500 copper hires her to follow you as a temporary pet. The usual charm lasts ten minutes, subject to your existing pet-duration abilities. Smaller payments are kept without granting the hire.",
+          "keyword": "prostitute",
+          "mob_vnum": 93611,
+          "name": "A sleazy prostitute",
+          "topics": []
+        },
+        {
+          "description": "This wandering Incarnate leaves a burning flame when it dies. Bipplewizzlille in Winterhaven accepts the flame and an empty potion bottle for a fiery potion.",
+          "keyword": "fire",
+          "mob_vnum": 55550,
+          "name": "The Incarnate of Fire",
+          "topics": []
+        },
+        {
+          "description": "This wandering Incarnate leaves a small snowflake when it dies. Bipplewizzlille in Winterhaven accepts the snowflake and an empty potion bottle for a frosty potion.",
+          "keyword": "frost",
+          "mob_vnum": 55551,
+          "name": "The Incarnate of Frost",
+          "topics": []
+        },
+        {
+          "description": "This wandering Incarnate leaves a flint of granite when it dies. Bipplewizzlille in Winterhaven accepts the granite and an empty potion bottle for a granite potion.",
+          "keyword": "stone",
+          "mob_vnum": 55552,
+          "name": "The Incarnate of Stone",
+          "topics": []
+        },
+        {
+          "description": "This wandering Incarnate leaves a wisp of wind when it dies. Bipplewizzlille in Winterhaven accepts the wisp and an empty potion bottle for an acceleration potion.",
+          "keyword": "air",
+          "mob_vnum": 55553,
+          "name": "The Incarnate of Air",
+          "topics": []
+        },
+        {
+          "description": "This wandering Incarnate leaves a delicate bubble when it dies. Bipplewizzlille in Winterhaven accepts the bubble and an empty potion bottle for a protection potion.",
+          "keyword": "mischief",
+          "mob_vnum": 55554,
+          "name": "The Incarnate of Mischief",
+          "topics": []
+        },
+        {
+          "description": "This wandering treant leaves a psychomia plant when it dies. Buzzbeef in Winterhaven rewards the plant with coins and a small plastic bag; Thyz accepts that bag for an invitation. Branay has a separate recipe using a plant, nightshade and two gnomish shopkeepers tokens.",
+          "keyword": "psychomia",
+          "mob_vnum": 55246,
+          "name": "A tall psychomia treant",
+          "topics": []
         }
       ],
-      "coverage": "complete",
+      "coverage": "partial",
       "exclusions": [],
-      "introduction": "Explore Vella's Bordello, its fountain hall, private rooms and shop.",
+      "introduction": "Vella's Bordello offers paid temporary companions and can host wandering creatures whose materials are sought by quest givers in Winterhaven.",
       "orientation": [
         "The approach from the Surface leads into the building's main rooms. Padh watches the entrance, and Vella keeps her own chamber deeper inside.",
         "Vegar runs a shop among the private rooms. The fountain, corridors and treasure room offer places to explore.",
-        "This area's journal records discovery and the people you meet. There are no mapped quest turn-ins here yet."
+        "Three of the house's workers offer to follow you as a temporary pet for a payment worth at least 500 copper. Pay the full amount at once; smaller payments do not accumulate toward the service. Their contact entries explain the offer once you have met them.",
+        "Incarnates sometimes roam through the house. Their remains are ingredients for Bipplewizzlille's five potion recipes in Winterhaven; each recipe also needs an empty potion bottle. These creatures are much stronger than the ordinary residents.",
+        "A wandering psychomia treant provides a plant sought by Buzzbeef in Winterhaven. His reward can then be taken to Thyz for a thieves' guild invitation. Branay also uses the plant in a separate nightshade recipe.",
+        "Follow these requests in Winterhaven's journal after visiting the city and meeting its quest givers. Materials supplied by another player work too; finding or defeating a creature here is not required for those hand-ins."
       ],
-      "revision": 1,
+      "revision": 2,
       "schema_version": 3,
       "source_area": "bordello",
       "stories": []
