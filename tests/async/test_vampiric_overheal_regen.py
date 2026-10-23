@@ -168,6 +168,22 @@ int main() {
     event_move_regen(&ch, nullptr, nullptr, &state);
     assert(GET_VITALITY(&ch) == 115);
 
+    // A delayed surplus decay must stop at maximum, without spending ordinary
+    // movement or retaining negative credit for the next regeneration cycle.
+    GET_VITALITY(&ch) = 119;
+    state = {-0.75f, ne_event_tick};
+    ne_event_tick += 4 * PULSES_IN_TICK;
+    event_move_regen(&ch, nullptr, nullptr, &state);
+    assert(GET_VITALITY(&ch) == 100 && next_state.accumulated == 0.0f);
+
+    // A genuinely negative equipment rate still drains movement below its cap.
+    ch.points.move_reg = -100;
+    state = {0.0f, ne_event_tick};
+    ne_event_tick += PULSES_IN_TICK;
+    event_move_regen(&ch, nullptr, nullptr, &state);
+    assert(GET_VITALITY(&ch) < 100);
+    ch.points.move_reg = 0;
+
     GET_VITALITY(&ch) = 99;
     state = {0.0f, ne_event_tick};
     ne_event_tick += PULSES_IN_TICK;

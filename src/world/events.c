@@ -181,6 +181,7 @@ void event_move_regen(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 	unsigned long long elapsed_ticks = regen_elapsed_ticks(&state);
 	int regen_value_int;
 	int per_tick = move_regen(ch, FALSE);
+	const bool surplus_decay = per_tick < 0 && GET_VITALITY(ch) > GET_MAX_VITALITY(ch);
 
 #if defined(CTF_MUD) && (CTF_MUD == 1)
 	affected_type *af;
@@ -200,6 +201,11 @@ void event_move_regen(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 		if (regen_value_int > 0 && GET_VITALITY(ch) > GET_MAX_VITALITY(ch))
 			GET_VITALITY(ch) = GET_MAX_VITALITY(ch);
 		state.accumulated -= (float)regen_value_int;
+		if (surplus_decay && GET_VITALITY(ch) <= GET_MAX_VITALITY(ch))
+		{
+			GET_VITALITY(ch) = GET_MAX_VITALITY(ch);
+			state.accumulated = 0.0f;
+		}
 		gmcp_char_vitals(ch);
 	}
 

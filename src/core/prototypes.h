@@ -941,9 +941,9 @@ nevent_schedule_result add_event_owned_payload(event_func, int, P_char, P_char, 
 					       nevent_payload_destroy_type);
 
 template <typename T>
-	requires(!std::is_void_v<T>)
-inline nevent_schedule_result add_event(event_func func, int delay, P_char ch, P_char victim,
-					P_obj obj, int flag, T *data, int data_size)
+requires(!std::is_void_v<T>) inline nevent_schedule_result
+	add_event(event_func func, int delay, P_char ch, P_char victim, P_obj obj, int flag,
+		  T *data, int data_size)
 {
 	static_assert(std::is_trivially_copyable_v<std::remove_cv_t<T>>,
 		      "raw event payloads must be trivially copyable; use add_event_owned");
@@ -968,10 +968,9 @@ nevent_schedule_result nevent_replace_owned_payload(nevent_handle, event_func, i
 						    nevent_payload_destroy_type);
 
 template <typename T>
-	requires(!std::is_void_v<T>)
-inline nevent_schedule_result nevent_replace(nevent_handle existing, event_func func, int delay,
-					     P_char ch, P_char victim, P_obj obj, int flag, T *data,
-					     int data_size)
+requires(!std::is_void_v<T>) inline nevent_schedule_result
+	nevent_replace(nevent_handle existing, event_func func, int delay, P_char ch, P_char victim,
+		       P_obj obj, int flag, T *data, int data_size)
 {
 	static_assert(std::is_trivially_copyable_v<std::remove_cv_t<T>>,
 		      "raw event payloads must be trivially copyable; use nevent_replace_owned");
@@ -1399,6 +1398,8 @@ int io_con_hitp(P_char);
 
 /* innates.c */
 void assign_innates();
+void event_hatred_check(P_char, P_char, P_obj, void *);
+bool start_hatred_check(P_char);
 string list_innates(int, int, int);
 void do_innate_decrepify(P_char, P_char);
 bool has_divine_force(P_char);

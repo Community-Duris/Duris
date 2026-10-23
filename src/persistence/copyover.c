@@ -1402,6 +1402,7 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 				ch->in_room = NOWHERE;
 				char_to_room(ch, save_room, FALSE);
 				player_load_pets_place(ch);
+				start_hatred_check(ch);
 
 				// stash fighting info for later restoration
 				ch->specials.copyover_fighting_type = desc_entry.fighting_type;
