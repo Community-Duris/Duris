@@ -189,6 +189,30 @@ static std::string read_file()
 	return { std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>() };
 }
 
+static void hometown_alarm_case(P_char actor)
+{
+	assert(initialize_properties());
+	for (const char *key : { "justice.alarms.good", "justice.alarms.evil" })
+	{
+		int matches = 0;
+		for (int i = 0; i < properties_count; ++i)
+			matches += !strcmp(duris_properties[i].key, key);
+		assert(matches == 1);
+		// Use the same integer accessor as justice_action_invader().
+		assert(get_property(key, 0) == 1);
+	}
+	command(actor, "show justice.alarms.*");
+	assert(output.find("justice.alarms.good: 1.000\r\n") != std::string::npos);
+	assert(output.find("justice.alarms.evil: 1.000\r\n") != std::string::npos);
+	// An explicit runtime override still works; reload restores the shipped default.
+	command(actor, "set justice.alarms.evil 0");
+	assert(get_property("justice.alarms.evil", 1) == 0);
+	assert(get_property("justice.alarms.good", 0) == 1);
+	command(actor, "reload");
+	assert(get_property("justice.alarms.evil", 0) == 1);
+	assert(get_property("justice.alarms.good", 0) == 1);
+}
+
 static void failure_case(P_char actor, const std::string &test)
 {
 	if (test == "keys")
@@ -278,10 +302,13 @@ int main(int argc, char **argv)
 	actor.player.name = const_cast<char *>("PropertyQa");
 	if (argc == 2)
 	{
-		failure_case(&actor, argv[1]);
+		if (!strcmp(argv[1], "hometown-alarms"))
+			hometown_alarm_case(&actor);
+		else
+			failure_case(&actor, argv[1]);
 		for (int i = 0; i < properties_count; ++i)
 			FREE(duris_properties[i].key);
-		std::cout << "property failure preserved state: " << argv[1] << '\n';
+		std::cout << "property command case passed: " << argv[1] << '\n';
 		return 0;
 	}
 	observations seen{}, other{};
