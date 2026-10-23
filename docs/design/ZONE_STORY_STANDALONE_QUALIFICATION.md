@@ -50,10 +50,12 @@ Passed focused regressions:
   daily projection, receipt replay, legacy schema compatibility and invalid maps.
 - Immutable migration runner and runtime compatibility checks.
 
-The full maintained server build passed with `make -C src BIN_ROOT=/output/bin -j2`.
-The final incremental build and observation regression rerun are pending the last
-erasure-guard edit. Diagnostic runs that collect assertion failures are not counted
-as passing tests.
+The full maintained server build and final incremental build passed with
+`make -C src BIN_ROOT=/output/bin -j2`. The final arrival/native-observation and
+disabled-runtime erasure regressions also passed after the erasure-guard edit.
+The tested implementation commit is `6489b7987423a9a37317c066a3c08eda357a1fa8`;
+subsequent qualification/review-plan edits are documentation only. Diagnostic runs
+that collect assertion failures are not counted as passing tests.
 
 ## Database proof
 
@@ -104,7 +106,9 @@ from the later reward. No reward replay or economic recovery is claimed.
 Evidence and build outputs are retained under the task-specific directories in
 `D:/Dev/Temp/duris-zone-journals-standalone-20261022` and
 `D:/Dev/Builds/Duris/zone-journals-standalone-20261022`.
-Container release is recorded in the local task receipt after qualification.
+The owned disposable container exited and was removed after the successful final
+build; its lease was released. No development game or database from this task was
+left running. Evidence/build outputs are retained; unrelated services were untouched.
 Research files were preserved byte for byte, including inherited line endings and
 whitespace. The standalone implementation passes the changed-line clang-format
 18.1.8 check and Git whitespace checks with CRLF line endings recognized.

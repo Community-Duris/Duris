@@ -6,6 +6,9 @@ contract for this port. Historical accounting-branch research remains useful
 source evidence, but its accounting activation requirements and prior repair
 claims do not describe this branch.
 
+Review: [draft PR #724](https://github.com/Community-Duris/Duris/pull/724).
+Implementation checks pass; the live zone-by-zone review remains open.
+
 ## What ships
 
 - Discovery on genuine mortal arrival, private journals, visible NPC encounters,
@@ -94,10 +97,11 @@ acquisition. Source review and a passing catalog are not a completed live journe
 Record the player decisions, reproduce disputed paths, and only then promote
 unresolved research into a supported journal claim.
 
-After these, choose compact nearby requests with clear endpoints: Kobold
-Settlement, Woodseer, and the Town of Moregeeth are candidates to inspect,
-not a promise about their level or access. Confirm their active source identity,
-entry routes and combat levels before choosing the next player test.
+After these, review Woodseer first: its seven independent errands have concrete
+items and rewards. Then consider Kobold Settlement's silver commissions and gem
+spectacles, followed by the Town of Moregeeth. These are candidates to inspect,
+not a promise about their level or access. Confirm entry routes, source combat
+levels and material renewal before choosing the next player test.
 
 ## Remaining universal work
 

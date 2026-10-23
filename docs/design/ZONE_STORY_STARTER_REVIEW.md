@@ -109,3 +109,26 @@ Record source evidence, a mortal journey result, the user's story decisions and
 remaining questions. Update the player map only with supported facts. Keep an
 actual native fix in a separate named commit and PR/news entry. A source-valid
 map is not proof of live reachability, reset renewal or a completed rescue.
+
+## Suggested next journals
+
+1. **Woodseer:** seven independent local errands: a bard's broken mandolin, honey
+   for a farmer's birthday dinner, green pigment for an artist, beeswax for a
+   woodworker, a bee egg for a mage, a hummingbird feather for a wizard, and raw
+   turtle meat for the maitre d'. This is the next candidate for checking concise
+   item hints and readable independent outcomes. Confirm source levels and routes
+   before calling the whole set suitable for a new character.
+2. **Kobold Settlement:** silver smelting and a shield commission support a more
+   complex crafting review; statue gems and matching frames lead to spectacles.
+   Keep coin fees, exact quantities and supplied-material shortcuts. Investigate
+   actual stock-cap/reset behavior rather than declaring scarcity a broken quest
+   or promising that one reset supplies everything.
+3. **Town of Moregeeth:** connect Moreg's blackmail request, Glub's return of the
+   killer's sword and Tala's assassin-letter investigation without inventing a
+   required order. Gimbatul's component pouch supplies a portal-room key, while
+   four planar components earn a crown. Moreg also wears Glub's requested sword,
+   so review giver availability across resets and supplied-item alternatives.
+   The paid dart and bat-skull necklace recipes remain supporting services.
+
+These maps are preserved already. This queue proposes their next careful review;
+it does not mark their live journeys complete or introduce native repairs.
