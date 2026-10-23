@@ -13,6 +13,7 @@
  * own maximum against this value at compile time.
  */
 constexpr size_t flatfile_authority_transaction_maximum_operations = 32;
+constexpr size_t flatfile_authority_transaction_maximum_bytes = 256 * 1024 * 1024;
 
 struct flatfile_authority_after_image
 {

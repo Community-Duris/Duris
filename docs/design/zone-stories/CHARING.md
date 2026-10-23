@@ -1,0 +1,29 @@
+# Charing: the forest-elf hometown
+
+Charing is the active full-world area listed at [areas/AREA line 212](../../../areas/AREA#L212). The manifest calls it the “new elf hometown”; the zone header is #450, with 210 rooms (#45000–#45209), 95 mobile prototypes, 58 object prototypes, and 14 shops ([zone header](../../../areas/zon/charing.zon#L1), [coverage row](../quest-story-followups/ZONE_COVERAGE_REGISTER.csv#L55)).
+
+## Story and quest boundary
+
+Charing presents a maintained elven city at the edge of a protected forest. Its center has a mermaid fountain, its people include elves and visiting centaurs, and the roads lead to a druid grove, temples, a royal palace and courthouse, guilds and shops, a theatre, a necromancy tower, and the Great Tree. The surrounding woods include an interconnected canopy, a river, animals, and forest trails. Individual residents introduce smaller hooks through an oracle, two magical teachers, a visitor from Tharnadia, a lost human, abandoned children, and prisoners. The [detailed source story review](../quest-story-followups/CHARING_STORY_REVIEW.md) links each scene and resident to its WLD or MOB source and records the full shop inventory.
+
+The Charing story sidecar calls its coverage complete and invites players to meet residents, but its `contacts`, `stories`, and `exclusions` arrays are empty ([sidecar](../../../areas/story/charing.story.json#L1)). Charing appears in the legacy QST index, but there is no `areas/qst/charing.qst` file and the local native Q/QA contract count is zero. A compiled binding assigns the generic `world_quest` handler to mobile #45055, the ranger bartender ([assignment](../../../src/specs/specs.assign.c#L766), [mobile source](../../../areas/mob/charing.mob#L783)). This code hook can offer the shared world-quest interaction; it does not prove which offers or data are present for a live server. The empty sidecar and absent local QST therefore describe authored local story records, not the full runtime quest surface.
+
+## Direct area-owner questions and conservative recommendations
+
+The normalized title is unique and the compiled Chaos-port alias `charing grey`
+already resolves to #45000. These questions therefore focus on unresolved
+runtime ownership and authored access, not a new title alias.
+
+| Question for the area owner | Source evidence | Recommendation |
+| --- | --- | --- |
+| Is the empty complete story sidecar meant to coexist with the generic world-quest bartender, and should it describe that interaction? | The sidecar has empty `contacts`, `stories`, and `exclusions`, while mobile #45055 has the shared handler; its live offer pool was not inspected. | Keep authored local story records separate from the shared offer surface. Add only verified local contacts or stories, and do not interpret the empty arrays as proof that the handler offers nothing. |
+| Should Half-Elves pass Charing’s north gate even though they cannot choose Charing at character creation? | The compiled gate allows Grey, Half-Elf, and Centaur; the hometown table enables Grey and Centaur only. | Confirm the intended audience and keep gate admission distinct from hometown selection. Change one table only after the builder selects the policy. |
+| Are the Palace, jail, and Great Tree door/key placements and asymmetric entrance still intended? | The Palace, Queen’s chambers, throne room, jail, and Great Tree use different authored keys and reset states; the outside Tree entrance is hidden while the Charing-side exit is not. | Preserve numeric exits, keys, and reset state until the intended entry/return route and each key’s role are confirmed. Do not infer a shared key sequence from room names. |
+| Is Pet Shop room #45037 intended to remain a disconnected staging room behind the pet-shop handler? | Room #45037 has no WLD exits; the `pet_shops` procedure bound to adjacent #45036 reads hirelings from the next room in load order. | Preserve the staging layout while the handler owns stock delivery. Add no public exit or direct binding unless the owner confirms a player-facing room or travel route. |
+| Is room #45151 still intended as mount staging, and what should load or deliver its mounts? | The room has reset-loaded mounts but no WLD exits or direct compiled VNUM binding found in the audit. | Keep it as unresolved staging intent until its consumer is identified. Do not add a route or handler solely because mounts reset there. |
+| Was the Quartermaster intentionally removed when `siege` retired? | History moved the mobile/reset into `siege`, then retired that source and deleted Charing’s reference; no current #401030 reference remains. | Keep the retired source and Charing reset unchanged unless the owner requests a new maintained placement. Do not revive the retired `siege` source as part of this review. |
+| Should the two Charing forest exits to #209060 and #209660 remain unresolved legacy links? | Their targets are absent from the active loader but appear in unregistered Surf files; matching source-only Surf approaches are not active ingress. | Preserve both records and candidate references until the owner identifies an active destination or confirms retirement. Do not document them as playable routes. |
+
+## Current working resolution
+
+Keep active Charing at its current source paths. Preserve its authored rooms, resets, shops, local and imported object VNUMs, and the current Surface connection. Treat the two forest targets as pruned legacy links, the Great Tree route and locked interiors as reset-authored access state, and room #45151 as unresolved staging intent. The [repository-wide audit](../quest-story-followups/CHARING_AUDIT_REVIEW.md) records the reset-aware graph, code bindings, typed dependencies, source-only map records, and same-stem history. No gameplay change or source move is proposed.

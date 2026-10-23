@@ -1370,6 +1370,8 @@ void show_char_to_char(P_char i, P_char ch, int mode, const OutputContext &conte
 		return;
 	}
 
+	zone_story_quest_runtime::encountered(ch, i);
+
 	// Show char info shown in list of people in room
 	if (mode == 0)
 	{
