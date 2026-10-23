@@ -8441,18 +8441,25 @@ astute of enemies can determine that you are still alive.
 #0
 
 Ferries
-Ferries - Last Edited: 2015-08-05 21:05:20 by ashyel
+Ferries - Last Edited: 2026-10-23
 ====================================================
-Currently in the world of Duris there are three large ocean-going vessels that traverse the seas, ferrying passengers to different locations.  Players who cannot afford or do not wish to purchase their own ships can use these ferries to travel.
+Seven ferries carry passengers between the ports and shores of Duris. Players who cannot afford or do not wish to purchase their own ships can use these ferries to travel.
 Tickets for these vessels can be purchased from Gnomish contraptions positioned near each docking point.  Players may ride a ferry as far as they choose, but must buy a new ticket once they've disembarked.
 ==The WaveDancer==
-Departs from the ports of Quietus Quay, Myrabolus, and the Jade Empire beach at a cost of 10 platinum per ticket.
-==The SeaStalker==
-Travels between Storm Port, the NW beach of Khomeni Khan and the City of Torrhan at a cost of 30 platinum per ticket.
+Route: Khomani-Khan -> The Jade Empire -> Quietus Quay -> The Jade Empire -> Myrabolus -> The Jade Empire, then back to Khomani-Khan. Tickets cost 10 platinum.
 ==The Seaspray==
-Travels between Menden, Fort Boyard, and StormPort at a cost of 10 platinum per ticket.
-==The Old Ferry==
-Travels between Menden and Fenaline at a cost of 5 platinum per ticket.
+Route: Storm Port -> Menden-on-the-Deep, then back to Storm Port. Tickets cost 10 platinum.
+==The Stalval==
+Route: Deramuth Port -> Fort Boyard, then back to Deramuth Port. Tickets cost 10 platinum.
+==The Crimson Fulgur==
+Route: Deramuth Port -> Sarmiz'Duul, then back to Deramuth Port. Tickets cost 10 platinum.
+==The Ironhold Grudge==
+Route: Deramuth Port -> Venan'Trut, then back to Deramuth Port. Tickets cost 10 platinum.
+==Old Rickety Ferry==
+Route: Tharnadia -> Moonshae Island -> Menden-on-the-Deep, then back to Tharnadia. Tickets cost 5 platinum.
+==The Stromvok==
+Route: Storm Port -> Torrhan -> Strathor, then back to Storm Port. Tickets cost 10 platinum.
+Type 'look contraption' at a dock to see the route and boarding status. Buy a ticket, enter the ferry, and keep the ticket throughout the journey. Use 'look out' to view the surroundings and 'disembark' from the boarding platform when the ferry is docked.
 ==See also==
 ships, moonwell, map
 #0

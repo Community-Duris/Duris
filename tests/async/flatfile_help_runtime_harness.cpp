@@ -35,6 +35,15 @@ int main()
 	const string missing = wiki_help("definitely missing topic");
 	require(missing.find("no help topics") != string::npos,
 		"missing help did not preserve the user-facing result");
+	const string ferries = wiki_help("ferries");
+	for (const char *name : { "WaveDancer", "Seaspray", "Stalval", "Crimson Fulgur",
+				  "Ironhold Grudge", "Old Rickety Ferry", "Stromvok" })
+		require(ferries.find(name) != string::npos,
+			"ferry help did not render an active ferry");
+	require(ferries.find("SeaStalker") == string::npos &&
+			ferries.find("Fenaline") == string::npos &&
+			ferries.find("Menden-on-the-Deep") != string::npos,
+		"ferry help still renders obsolete routes or stop names");
 	for (const char *query : { "nolocate", "no locate", "no-locate", "toggle_nolocate" })
 	{
 		const string no_locate = wiki_help(query);

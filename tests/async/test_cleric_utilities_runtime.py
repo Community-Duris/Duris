@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Run cleric utility spell bodies with real protection/cure logic and isolated effects."""
 
+import os
+from pathlib import Path
 import subprocess
 from _paths import ROOT, extract_function
 
@@ -9,9 +11,26 @@ PRELUDE = r'''
 #include "core/utils.h"
 #include "net/comm.h"
 #include "magic/spells.h"
+#include "world/events.h"
 #include <cassert>
 #include <cstdio>
 #include <strings.h>
+
+Skill skills[MAX_SKILLS]{};
+static int poison_events = 0;
+static short queued_poison = 0;
+void event_poison(P_char, P_char, P_obj, void *);
+float get_property(const char *, double fallback) { return fallback; }
+int get_property(const char *, int fallback) { return fallback; }
+int number(int, int high) { return high; }
+nevent_schedule_result add_event(event_func callback, int delay, P_char, P_char,
+                                 P_obj, int, const void *data, int size) {
+    assert(callback == event_poison && delay == WAIT_SEC * 60);
+    assert(size == sizeof(queued_poison));
+    queued_poison = *static_cast<const short *>(data);
+    ++poison_events;
+    return {};
+}
 
 void send_to_char(const char *, P_char) {}
 void act(const char *, int, P_char, P_obj, void *, int) {}
@@ -171,17 +190,55 @@ int main() {
     spell_mass_purification(56, &caster, nullptr, 0, nullptr, nullptr);
     assert(count(&caster) == 8);
     clear(&caster);
+
+    // Slowness created through the real poison path remains a poison, so the
+    // ordinary cure removes it while preserving an unrelated slow effect.
+    skills[POISON_SLOWNESS].spell_pointer = [](int level, P_char attacker, char *arg,
+                                             int type, P_char target, P_obj effect) {
+        poison_slowness(level, attacker, arg, type, target,
+                        reinterpret_cast<affected_type *>(effect));
+    };
+    add(&caster, SPELL_SLOW, 0, AFF2_SLOW);
+    poison_slowness(50, &ally, nullptr, 0, &caster, nullptr);
+    assert(count(&caster) == 2 && poison_events == 1);
+    assert((caster.affected->bitvector2 & (AFF2_POISONED | AFF2_SLOW)) ==
+           (AFF2_POISONED | AFF2_SLOW));
+    poison_slowness(50, &ally, nullptr, 0, &caster, nullptr);
+    assert(count(&caster) == 2 && poison_events == 1);
+    spell_remove_poison(50, &ally, nullptr, 0, &caster, nullptr);
+    assert(count(&caster) == 1 && affected_by_spell(&caster, SPELL_SLOW));
+    assert(!affected_by_spell(&caster, POISON_SLOWNESS));
+    assert(!IS_AFFECTED2(&caster, AFF2_POISONED) && IS_AFFECTED2(&caster, AFF2_SLOW));
+    event_poison(&caster, &ally, nullptr, &queued_poison);
+    assert(count(&caster) == 1 && poison_events == 1);
+    clear(&caster);
+
+    // Reapplication after cleansing works and the actual expiration callback
+    // removes the affect without scheduling a replacement.
+    poison_slowness(50, &ally, nullptr, 0, &caster, nullptr);
+    assert(count(&caster) == 1 && poison_events == 2);
+    event_poison(&caster, &ally, nullptr, &queued_poison);
+    assert(count(&caster) == 0 && poison_events == 2);
+    assert(!IS_AFFECTED2(&caster, AFF2_POISONED | AFF2_SLOW));
+    poison_slowness(50, &ally, nullptr, 0, &caster, nullptr);
+    caster.in_room = 5;
+    spell_mass_purification(56, &caster, nullptr, 0, nullptr, nullptr);
+    assert(count(&caster) == 0);
     std::puts("Cleric warding targets, refresh, independent effects, and group cleansing passed.");
+    std::puts("Slowness poison flags, cleansing, duplicate application and expiry passed.");
 }
 '''
 
 functions = [extract_function("magic.c", "void spell_protection_from_" + name + "(")
              for name in ("fire", "cold", "acid", "gas", "lightning", "good", "evil")]
-functions += [extract_function("handler.c", "int poison_common_remove(")]
+functions += [extract_function("handler.c", signature) for signature in (
+    "int poison_common_remove(", "struct affected_type *poison_common(",
+    "void event_poison(", "void poison_slowness(")]
 functions += [extract_function("magic.c", signature) for signature in (
     "void spell_cure_blind(", "void spell_cure_disease(", "void spell_divine_warding(",
-    "static void purify_group_member(", "void spell_mass_purification(")]
-output = ROOT / "bin/tests/cleric-utilities"
+    "static void purify_group_member(", "void spell_mass_purification(",
+    "void spell_remove_poison(")]
+output = Path(os.environ.get("BIN_ROOT", ROOT / "bin")) / "tests/cleric-utilities"
 output.mkdir(parents=True, exist_ok=True)
 harness = output / "harness.cpp"
 harness.write_text(PRELUDE + "\n".join(functions) + DRIVER)

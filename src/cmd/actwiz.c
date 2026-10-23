@@ -5479,6 +5479,13 @@ void do_purge(P_char ch, char *argument, int /*cmd*/)
 		}
 		else if ((obj = get_obj_in_list_vis(ch, name, world[ch->in_room].contents)))
 		{
+			if (is_ferry_object(obj))
+			{
+				send_to_char(
+					"Ferry ships and ticket machines cannot be purged.\r\n",
+					ch);
+				return;
+			}
 			if (obj->R_num == real_object(VOBJ_WALLS))
 			{
 				send_to_char("Use 'dispel magic' to get rid of walls.\n", ch);
