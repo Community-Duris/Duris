@@ -2465,6 +2465,7 @@ void reconnect(P_desc d, P_char tmp_ch)
 	tmp_ch->only.pc->last_ip = ip2ul(d->host);
 	tmp_ch->specials.timer = 0;
 	STATE(d) = CON_PLAYING;
+	zone_story_quest_runtime::arrived(tmp_ch);
 	(void)telemetry_runtime_game_connection_transition(
 		tmp_ch, d, telemetry_connection_transition_kind::attached);
 	(void)telemetry_runtime_game_context(tmp_ch, d);
@@ -2957,6 +2958,7 @@ void select_main_menu(P_desc d, char *arg)
 		}
 		enter_game(d);
 		STATE(d) = CON_PLAYING;
+		zone_story_quest_runtime::arrived(d->character);
 		(void)telemetry_runtime_game_enter(d->character, d);
 		(void)telemetry_runtime_game_context(d->character, d);
 		d->prompt_mode = !item_creation_grant_blocks_commands(d->character);

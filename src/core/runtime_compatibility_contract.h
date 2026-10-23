@@ -77,14 +77,14 @@ constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
  * introduced by migration 0031. Migration 0029 adds the
  * additive critical-operation failure stage; it changes no runtime table count.
  * Fingerprints are measured on MySQL 8 and MariaDB 10.11. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0031_player_item_runtime_state";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 31;
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0032_discovered_zone_daily_state";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 32;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"ab0e11959207cca0579dcc5635f9c124c655d07635a14c62334a8a2d02c3c7d8";
+	"e2f41f9cffc51f0f9ec24639c6a69ad2a2f437af14d142ee463f6046ef70326e";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"c523d56f74862735f6aef0c831cbe662bed49c64fa6cbdf05bac82f81c1225e5";
+	"c6c645d85195fdf70ae558b937e31dca146d54e5d313eae0d1a9178eb139debe";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"30be02f71b0cb9d0e70812c5762b112b1636f9ceb07f95e08d94743a5e971120";
+	"25e7862cedf27a1d7b8bf2ee0eb4ef0608b309dc0269153d4e233a758741c079";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";

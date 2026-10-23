@@ -15,13 +15,17 @@ catalog_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(catalog_module)
 
 catalog = catalog_module.production_catalog(ROOT)
+snapshot = ROOT / "docs/reference/ZONE_STORY_QUEST_PRODUCTION_CATALOG.json"
+assert json.loads(snapshot.read_text(encoding="utf-8")) == catalog, "regenerate the production catalog after editing journal maps"
 assert catalog["source"]["kind"] == "legacy_static_qst"
 assert catalog["source"]["area_list"] == "areas/AREA"
 assert catalog["source"]["excludes"] == ["bartender_random_world_quests"]
 assert len(catalog["definitions"]) == 2668
-assert all(item["zone_number"] > 0 for item in catalog["definitions"])
+assert all(item["zone_number"] >= 0 for item in catalog["definitions"])
+assert all(not item["eligible_for_zone_completion"] and not item["daily_eligible"]
+           for item in catalog["definitions"] if item["zone_number"] == 0)
 assert all(item["source_system"] == "zone_story" for item in catalog["definitions"])
-assert all(item["repeatable"] is True for item in catalog["definitions"])
+assert all(item["repeatable"] or not item["daily_eligible"] for item in catalog["definitions"])
 assert len({item["definition_id"] for item in catalog["definitions"]}) == len(catalog["definitions"])
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

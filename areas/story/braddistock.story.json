@@ -1,0 +1,130 @@
+{
+  "schema_version": 3,
+  "revision": 2,
+  "source_area": "braddistock",
+  "coverage": "complete",
+  "introduction": "Lord Braddistock still haunts his mansion and asks about his missing pet. Follow the clues into its hidden cellars, release Slippers, and return the collar.",
+  "orientation": [
+    "Ask lord help at the road outside the mansion. He believes you are from pest control and wants his missing pet found.",
+    "Inspect the library's old tome and its note, then search the cellars for concealed passages. The rat infestation is dangerous.",
+    "The silver key carried by the Rat Lord releases the chained jaguar. Return its collar to Lord Braddistock. A supplied collar also satisfies his request.",
+    "Books, treasures, and the titan maul have exploration clues of their own; they are not additional quest completions."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 1314,
+      "name": "the spirit of Lord Braddistock",
+      "keyword": "lord",
+      "description": "Ask for help finding Slippers; the lord mistakes you for pest control.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 1316,
+      "name": "the apparition of Lord Braddistock's pet jaguar",
+      "keyword": "jaguar",
+      "description": "The chained pet needs the silver key. Its meowing is ambient behavior; give it the key to release it.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "release-slippers",
+      "title": "Release Slippers",
+      "category": "service",
+      "summary": "Give the silver key to the chained jaguar in the hidden laboratory. Slippers departs and gives you the collar that Lord Braddistock wants.",
+      "contracts": [
+        {
+          "giver_vnum": 1316,
+          "completion_key": "give=I:1334;receive=I:1340;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "key",
+          "text": "Carry the silver key",
+          "kind": "carried_item",
+          "hint": "The Rat Lord carries this key in the deepest cavern. A supplied key also works.",
+          "item_vnums": [
+            1334
+          ],
+          "count": 1
+        },
+        {
+          "id": "release",
+          "text": "Give the silver key to the chained jaguar",
+          "kind": "completion",
+          "hint": "The freed pet gives you its collar. Return that collar to its owner to finish the mansion story.",
+          "contracts": [
+            {
+              "giver_vnum": 1316,
+              "completion_key": "give=I:1334;receive=I:1340;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "quiet-the-mansion",
+      "title": "Quiet the mansion",
+      "category": "story",
+      "summary": "Return Slippers' collar to Lord Braddistock to receive 150,000 experience and his remains. Freeing the pet with the Rat Lord's silver key is a known route to the collar.",
+      "contracts": [
+        {
+          "giver_vnum": 1314,
+          "completion_key": "give=I:1340;receive=E:150000,I:1375;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "key",
+          "text": "Carry 1 x a silver key",
+          "kind": "carried_item",
+          "hint": "The Rat Lord in the deepest cavern carries the silver key. A supplied collar lets you proceed to the owner without this route.",
+          "item_vnums": [
+            1334
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "free-pet",
+          "text": "Free the chained pet",
+          "kind": "completion",
+          "hint": "Give the silver key to the chained jaguar in the hidden laboratory. Its collar is the proof the owner accepts.",
+          "contracts": [
+            {
+              "giver_vnum": 1316,
+              "completion_key": "give=I:1334;receive=I:1340;disappear=1"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "id": "collar",
+          "text": "Carry 1 x a collar with an inscription, \"Slippers\"",
+          "kind": "carried_item",
+          "hint": "The freed jaguar gives you the collar. A collar supplied by another player also satisfies this delivery.",
+          "item_vnums": [
+            1340
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Return the recovered collar",
+          "kind": "completion",
+          "hint": "Give the collar to Lord Braddistock. His promised later payment is narrative; the actual reward is experience and his remains.",
+          "contracts": [
+            {
+              "giver_vnum": 1314,
+              "completion_key": "give=I:1340;receive=E:150000,I:1375;disappear=1"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

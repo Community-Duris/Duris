@@ -1,0 +1,37 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "bordello",
+  "coverage": "complete",
+  "introduction": "Explore Vella's Bordello, its fountain hall, private rooms and shop.",
+  "orientation": [
+    "The approach from the Surface leads into the building's main rooms. Padh watches the entrance, and Vella keeps her own chamber deeper inside.",
+    "Vegar runs a shop among the private rooms. The fountain, corridors and treasure room offer places to explore.",
+    "This area's journal records discovery and the people you meet. There are no mapped quest turn-ins here yet."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 93600,
+      "name": "Vella",
+      "keyword": "vella",
+      "description": "Vella oversees the establishment from her private chamber.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93605,
+      "name": "Padh",
+      "keyword": "padh",
+      "description": "An imposing bouncer guards the entrance.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93612,
+      "name": "Vegar",
+      "keyword": "vegar",
+      "description": "A burly shopkeeper sells his wares.",
+      "topics": []
+    }
+  ],
+  "stories": [],
+  "exclusions": []
+}
