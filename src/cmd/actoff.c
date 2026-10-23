@@ -2691,15 +2691,39 @@ void do_flee(P_char ch, char *argument, int cmd)
 		{
 			int skl = GET_CHAR_SKILL(ch, SKILL_CONTROL_FLEE);
 
-			if (skl && (notch_skill(ch, SKILL_CONTROL_FLEE,
-						get_property("skill.notch.offensive", 7)) ||
-				    skl > number(1, 130)))
-				attempted_dir = dir_from_keyword(argument);
+			if (skl > 0)
+			{
+				const int requested_dir = dir_from_keyword(arg);
+				if (requested_dir < 0 || requested_dir >= NUM_EXITS)
+				{
+					send_to_char("Flee in which direction?\r\n", ch);
+					return;
+				}
+				if (!CAN_GO(ch, requested_dir) ||
+				    bad_flee_dir(ch, EXIT(ch, requested_dir)->to_room) ||
+				    !can_enter_room(ch, EXIT(ch, requested_dir)->to_room, 0))
+				{
+					send_to_char("You cannot flee in that direction.\r\n", ch);
+					return;
+				}
+
+				const int control_chance =
+					BOUNDED(0, skl, 100) * MAX_CHANCE_TO_CONTROL_FLEE / 100;
+				// Training does not bypass the configured direction-control cap.
+				notch_skill(ch, SKILL_CONTROL_FLEE,
+					    get_property("skill.notch.offensive", 7));
+				if (number(1, 100) <= control_chance)
+					attempted_dir = requested_dir;
+				else
+					send_to_char(
+						"You lose control of your fleeing direction!\r\n",
+						ch);
+			}
 		}
 	}
 
 	/* here we calculate a correct random dir if we haven't got any yet */
-	if (attempted_dir == -1)
+	if (attempted_dir == -1 && available_exits > 0)
 	{
 		int picked = number(0, available_exits - 1);
 
