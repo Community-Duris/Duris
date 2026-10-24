@@ -1046,16 +1046,22 @@ P_index generate_indices(FILE *fl, int *top)
 			break; /* tolerate EOF-terminated legacy files */
 		if (*buf == '$')
 			break;
-		if (*buf == '#')
+		if (*buf == '#' && sscanf(buf, "#%d", &i) == 1 && i != 9999999)
 			num++;
 	}
 
 	logit(LOG_STATUS, "\t\t%d entries allocated", num);
+	if (num == 0)
+	{
+		*top = -1;
+		return nullptr;
+	}
 
 	/* allocate array of index_data */
 	CREATE(t_idx, index_data, (unsigned)num, MEM_TAG_IDXDATA);
 
 	rewind(fl);
+	i = 0;
 
 	for (;;)
 	{
@@ -1063,14 +1069,23 @@ P_index generate_indices(FILE *fl, int *top)
 		{
 			if (*buf == '#')
 			{
-				sscanf(buf, "#%d", &t_idx[i].virtual_number);
+				int vnum;
+				if (sscanf(buf, "#%d", &vnum) != 1)
+					continue;
+				if (vnum == 9999999)
+					break;
+				t_idx[i].virtual_number = vnum;
 				t_idx[i].pos = ftell(fl);
 				t_idx[i].number = 0;
 				t_idx[i].func.mob = NULL;
 				t_idx[i].qst_func = NULL;
 				t_idx[i].keys = NULL;
 				t_idx[i].desc1 = NULL;
-				t_idx[i].desc2 = NULL;
+				// Both formats start with keywords followed by the short description.
+				// Keep the record position for ordinary loading, and share this text
+				// through the existing index ownership/cleanup path.
+				skip_fread(fl);
+				t_idx[i].desc2 = fread_string(fl);
 				t_idx[i].desc3 = NULL;
 				if (i && (t_idx[i - 1].virtual_number >= t_idx[i].virtual_number))
 					logit(LOG_DEBUG, "Warning: index (%d, %d) out of order.",
@@ -1085,8 +1100,7 @@ P_index generate_indices(FILE *fl, int *top)
 			break; /* EOF-terminated legacy files */
 		}
 	}
-	const bool has_sentinel = i > 0 && t_idx[i - 1].virtual_number == 9999999;
-	*top = i - (has_sentinel ? 2 : 1);
+	*top = i - 1;
 	return (t_idx);
 }
 

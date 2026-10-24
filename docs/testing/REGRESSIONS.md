@@ -11,6 +11,32 @@ own schema. Flat-file journeys take a server built with
 Four of these sections note that the full-server path was never driven under sanitizers; no
 journey does that yet.
 
+## Bounded builder inspection
+
+`rlist`, `mlist`, and `olist` default to the standing zone and use the public zone
+numbers shown by `zlist`. Each command displays at most 500 entries. Explicit
+VNUMs and inclusive ranges remain available, with continuation advice preserving
+the selected zone and range. `rlist` uses `offset <count>` when duplicate room
+VNUMs cross a page boundary. Mobile/object zones follow the numeric partitions
+through each zone's top, rather than reset commands or current instance locations.
+Prototype listings use shared short descriptions loaded at boot and report the
+existing population/reset limits without creating entities or reading files/DBs.
+
+`python3 tests/async/test_builder_list_commands.py` executes the production handlers
+and parsing/ANSI helpers under ASan/UBSan and in an optimized build. It covers
+current/public zones, exact/reversed ranges, intersections, malformed and overflowing
+input, empty tables, 0/1/199/499/500/501+ entries, duplicate-VNUM continuation,
+INT_MAX, paging/help/NPC behavior, bounded colored/multiline names and invalid
+sectors. Comparison/probe counts check that 20,000 unrelated entries on either side
+are skipped. Entity-loader stubs abort, fixture state stays unchanged, and command
+registration must retain IMMORTAL access. The fixture timings are not measurements
+of network latency or a production stall.
+
+`python3 tests/async/test_newbie_object_template.py` exercises the index generator,
+object parser and publisher with cold names, empty text, sentinel/EOF termination,
+preserved file positions, shared pointers and cleanup. These native tests do not
+emulate live command dispatch, network paging or database state.
+
 ## Combined log-review integration qualification
 
 The combined server/world/schema at `8b2681862` incorporates master `c6a95a470`

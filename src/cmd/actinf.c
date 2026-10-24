@@ -9,6 +9,8 @@
  */
 
 #include "persistence/persistence_log.h"
+#include <algorithm>
+#include <cerrno>
 #include <ctype.h>
 #include <fnmatch.h>
 #include <iostream>
@@ -10410,252 +10412,293 @@ void do_zlist(P_char ch, char * /*argument*/, int /*cmd*/)
 
 void do_hlist(P_char /*ch*/, char * /*argument*/, int /*cmd*/) {}
 
-void do_rlist(P_char ch, char *argument, int /*cmd*/)
+namespace
 {
-	std::vector<std::string> t;
-	char tmp[MAX_INPUT_LENGTH];
-	bool haveZone = false, haveRange = false;
+constexpr int BUILDER_LIST_LIMIT = 500;
+
+struct builder_list_scope
+{
 	int zone = -1;
-	int vmin = INT_MIN, vmax = INT_MAX;
-	size_t i = 0;
-	char buf[MAX_STRING_LENGTH];
-	static constexpr int W_NUM = 7;
-	static constexpr int W_NAME = 40;
-	static constexpr int W_SECTOR = 20;
+	int first = 0;
+	int last = INT_MAX;
+	int offset = 0;
+};
 
-	if (IS_NPC(ch))
-		return;
-
-	if (!IS_SET(ch->specials.act, PLR_PAGING_ON))
-	{
-		send_to_char("&+WRoom List is too long, please tog page on, to read it\n", ch);
-		return;
-	}
-
-	for (; argument && *argument;)
-	{
-		argument = one_argument(argument, tmp);
-		if (*tmp)
-			t.emplace_back(tmp);
-	}
-
-	auto help = [&]()
-	{
-		send_to_char("&+WUsage:&n\r\n"
-			     "  rlist\r\n"
-			     "  rlist ?\r\n"
-			     "  rlist zone <zone#>\r\n"
-			     "  rlist <vnumFrom> <vnumTo>\r\n"
-			     "  rlist zone <zone#> <vnumFrom> <vnumTo>\r\n",
-			     ch);
-	};
-
-	if (!t.empty() && (t[0] == "?" || t[0] == "help"))
-	{
-		help();
-		return;
-	}
-
-	if (i < t.size() && is_abbrev(t[i].c_str(), "zone"))
-	{
-		haveZone = true;
-		if (++i >= t.size() || !is_number(const_cast<char *>(t[i].c_str())))
-		{
-			help();
-			return;
-		}
-		zone = atoi(const_cast<char *>(t[i].c_str()));
-		++i;
-	}
-
-	if (i < t.size())
-	{
-		if (!is_number(const_cast<char *>(t[i].c_str())))
-		{
-			help();
-			return;
-		}
-		haveRange = true;
-		vmin = atoi(t[i].c_str());
-		if (++i < t.size())
-		{
-			if (!is_number(const_cast<char *>(t[i].c_str())))
-			{
-				help();
-				return;
-			}
-			vmax = atoi(t[i].c_str());
-			++i;
-		}
-		else
-		{
-			vmax = vmin;
-		}
-	}
-
-	if (i != t.size())
-	{
-		help();
-		return;
-	} // extra junk args
-
-	if (haveRange && vmin > vmax)
-		std::swap(vmin, vmax);
-
-	send_to_char(
-		"/---------------------------------------------------------------------------------\\\r\n",
-		ch);
-	snprintf(
-		buf, sizeof(buf),
-		"|&-c&+l Room Listing (# Rooms: %7d)                                                 &n|\r\n",
-		top_of_world + 1);
+void builder_list_usage(P_char ch, const char *command)
+{
+	char buf[1024];
+	snprintf(buf, sizeof(buf),
+		 "Usage: %s [<vnum> | <from> <to>]\r\n"
+		 "       %s zone <zone-number> [<vnum> | <from> <to>]\r\n"
+		 "       %s ? | help\r\n"
+		 "No arguments: current zone. Zone numbers are those shown by zlist.\r\n"
+		 "VNUM ranges are inclusive; at most 500 entries are shown.\r\n"
+		 "Mobile/object zones use VNUM partitions through each zone's top,\r\n"
+		 "above the previous zone's top (first zone starts at 0), not resets\r\n"
+		 "or current instance locations.\r\n",
+		 command, command, command);
 	send_to_char(buf, ch);
-	send_to_char(
-		"|---------------------------------------------------------------------------------|\r\n",
-		ch);
-
-	snprintf(buf, sizeof(buf), "|&-c&+l%*s&n|&-c&+l%*s&n|&-c&+l %-*s &n|&-c&+l %-*s &n|\r\n",
-		 W_NUM, "Zone", W_NUM, "Vnum", W_NAME, "Name", W_SECTOR, "Sector");
-	send_to_char(buf, ch);
-	send_to_char(
-		"|-------|-------|------------------------------------------|----------------------|\r\n",
-		ch);
-
-	for (int r = 0; r <= top_of_world; ++r)
-	{
-		const room_data &room = world[r];
-
-		if (haveZone && room.zone != zone)
-			continue;
-		if (haveRange && (room.number < vmin || room.number > vmax))
-			continue;
-
-		snprintf(buf, sizeof(buf), "|%*d|%*d| %s &n| %s &n|\r\n", W_NUM, room.zone, W_NUM,
-			 room.number, pad_ansi(room.name ? room.name : "", W_NAME, W_NAME).c_str(),
-			 pad_ansi(sector_types[room.sector_type] ? sector_types[room.sector_type] :
-								   "Unknown",
-				  W_SECTOR, W_SECTOR)
-				 .c_str());
-		send_to_char(buf, ch);
-	}
-
-	send_to_char(
-		"\\---------------------------------------------------------------------------------/\r\n",
-		ch);
+	if (!strcmp(command, "rlist"))
+		send_to_char(
+			"rlist also accepts a trailing offset <count> to skip rooms at the starting VNUM.\r\n",
+			ch);
 }
 
-void do_olist(P_char /*ch*/, char * /*argument*/, int /*cmd*/) {}
+bool builder_list_number(const std::string &text, int &value)
+{
+	if (text.empty() || text.find_first_not_of("0123456789") != std::string::npos)
+		return false;
+	errno = 0;
+	char *end;
+	const long parsed = strtol(text.c_str(), &end, 10);
+	if (errno == ERANGE || *end || parsed > INT_MAX)
+		return false;
+	value = static_cast<int>(parsed);
+	return true;
+}
+
+bool builder_list_parse(P_char ch, const char *argument, const char *command,
+			builder_list_scope &scope)
+{
+	if (IS_NPC(ch))
+		return false;
+	std::istringstream input(argument ? argument : "");
+	std::vector<std::string> tokens;
+	for (std::string token; input >> token;)
+		tokens.push_back(token);
+	if (tokens.size() == 1 && (tokens[0] == "?" || !strcasecmp(tokens[0].c_str(), "help")))
+	{
+		builder_list_usage(ch, command);
+		return false;
+	}
+	auto error = [&](const char *reason)
+	{
+		char buf[256];
+		snprintf(buf, sizeof(buf), "%s: %s\r\n", command, reason);
+		send_to_char(buf, ch);
+		builder_list_usage(ch, command);
+		return false;
+	};
+	if (!strcmp(command, "rlist") && tokens.size() >= 2 &&
+	    tokens[tokens.size() - 2] == "offset")
+	{
+		if (!builder_list_number(tokens.back(), scope.offset))
+			return error("expected a nonnegative room offset within int range.");
+		tokens.resize(tokens.size() - 2);
+		if (tokens.empty())
+			return error("room offsets require a starting VNUM.");
+	}
+	size_t i = 0;
+	if (!tokens.empty() && is_abbrev(tokens[0].c_str(), "zone"))
+	{
+		int number;
+		if (tokens.size() < 2 || !builder_list_number(tokens[1], number))
+			return error("expected a nonnegative public zone number.");
+		if (!zone_table || top_of_zone_table < 0 || (scope.zone = real_zone(number)) < 0)
+			return error("unknown public zone number (see zlist).");
+		i = 2;
+	}
+	if (tokens.size() - i > 2)
+		return error("too many arguments.");
+	if (i < tokens.size())
+	{
+		if (!builder_list_number(tokens[i++], scope.first))
+			return error("expected a nonnegative VNUM within int range.");
+		scope.last = scope.first;
+		if (i < tokens.size() && !builder_list_number(tokens[i], scope.last))
+			return error("expected a nonnegative VNUM within int range.");
+		if (scope.first > scope.last)
+			std::swap(scope.first, scope.last);
+	}
+	else if (scope.offset)
+		return error("room offsets require a starting VNUM.");
+	else if (scope.zone < 0)
+	{
+		if (!world || ch->in_room < 0 || ch->in_room > top_of_world || !zone_table ||
+		    world[ch->in_room].zone > top_of_zone_table)
+			return error("no valid current zone; supply a VNUM range or public zone.");
+		scope.zone = world[ch->in_room].zone;
+	}
+	if (!IS_SET(ch->specials.act, PLR_PAGING_ON))
+		return error("use toggle paging to enable paging for results.");
+	return true;
+}
+
+std::string builder_list_name(const char *name, int width)
+{
+	// Bound raw bytes as well as display width, even for color-only strings.
+	const char *source = name && *name ? name : "(unnamed)";
+	std::string text(source, strnlen(source, 160));
+	for (char &letter : text)
+		if (static_cast<unsigned char>(letter) < ' ' || letter == '\x7f')
+			letter = ' ';
+	// The raw-byte cap can cut a color sequence; do not pass a partial code
+	// to the legacy ANSI width helpers, which expect complete sequences.
+	const auto amp = text.rfind('&');
+	if (amp != std::string::npos)
+	{
+		const size_t remaining = text.size() - amp;
+		if (remaining == 1 || (text[amp + 1] == '=' && remaining < 4) ||
+		    ((text[amp + 1] == '+' || text[amp + 1] == '-') && remaining < 3))
+			text.resize(amp);
+	}
+	return pad_ansi(text.c_str(), width, true);
+}
+
+void builder_list_header(P_char ch, const char *kind, const builder_list_scope &scope)
+{
+	char buf[256];
+	if (scope.zone >= 0)
+		snprintf(buf, sizeof(buf), "%s list: zone %d, VNUMs %d..%d\r\n", kind,
+			 zone_table[scope.zone].number, scope.first, scope.last);
+	else
+		snprintf(buf, sizeof(buf), "%s list: all zones, VNUMs %d..%d\r\n", kind,
+			 scope.first, scope.last);
+	send_to_char(buf, ch);
+}
+
+void builder_list_footer(P_char ch, const char *command, const char *kind,
+			 const builder_list_scope &scope, int shown, int next, int offset = 0)
+{
+	char buf[256];
+	if (!shown)
+		snprintf(buf, sizeof(buf), "No matching %s.\r\n", kind);
+	else
+		snprintf(buf, sizeof(buf), "Shown: %d %s.\r\n", shown, kind);
+	send_to_char(buf, ch);
+	if (next < 0)
+		return;
+	char suffix[32] = "";
+	if (offset)
+		snprintf(suffix, sizeof(suffix), " offset %d", offset);
+	if (scope.zone >= 0)
+		snprintf(buf, sizeof(buf), "More matches exist. Continue: %s zone %d %d %d%s\r\n",
+			 command, zone_table[scope.zone].number, next, scope.last, suffix);
+	else
+		snprintf(buf, sizeof(buf), "More matches exist. Continue: %s %d %d%s\r\n", command,
+			 next, scope.last, suffix);
+	send_to_char(buf, ch);
+}
+
+void builder_list_prototypes(P_char ch, char *argument, const char *command, const char *kind,
+			     const char *plural, P_index index, int top)
+{
+	builder_list_scope scope;
+	if (!builder_list_parse(ch, argument, command, scope))
+		return;
+	builder_list_header(ch, kind, scope);
+	send_to_char(
+		"|      VNUM| Name                                     | Population|Reset limit|\r\n",
+		ch);
+	int first = scope.first, last = scope.last;
+	if (scope.zone >= 0)
+	{
+		if (scope.zone > 0)
+		{
+			const int previous = zone_table[scope.zone - 1].top;
+			// The final int VNUM cannot be incremented to form another partition.
+			if (previous == INT_MAX)
+			{
+				builder_list_footer(ch, command, plural, scope, 0, -1);
+				return;
+			}
+			first = std::max(first, previous + 1);
+		}
+		last = std::min(last, zone_table[scope.zone].top);
+	}
+	int shown = 0, next = -1;
+	if (index && top >= 0 && first <= last)
+	{
+		auto *end = index + top + 1;
+		auto *at = std::lower_bound(index, end, first, [](const index_data &entry, int vnum)
+					    { return entry.virtual_number < vnum; });
+		for (; at != end && at->virtual_number <= last; ++at)
+		{
+			if (shown == BUILDER_LIST_LIMIT)
+			{
+				next = at->virtual_number;
+				break;
+			}
+			char buf[512];
+			snprintf(buf, sizeof(buf), "|%10d| %s &n|%11d|%11d|\r\n",
+				 at->virtual_number, builder_list_name(at->desc2, 40).c_str(),
+				 at->number, at->limit);
+			send_to_char(buf, ch);
+			++shown;
+		}
+	}
+	builder_list_footer(ch, command, plural, scope, shown, next);
+}
+} // namespace
+
+void do_rlist(P_char ch, char *argument, int /*cmd*/)
+{
+	builder_list_scope scope;
+	if (!builder_list_parse(ch, argument, "rlist", scope))
+		return;
+	builder_list_header(ch, "Room", scope);
+	send_to_char(
+		"|  Zone|      VNUM| Name                             | Sector             |\r\n",
+		ch);
+	int first = 0, last = top_of_world;
+	if (scope.zone >= 0)
+	{
+		first = std::max(first, zone_table[scope.zone].real_bottom);
+		last = std::min(last, zone_table[scope.zone].real_top);
+		if (zone_table[scope.zone].real_bottom < 0)
+			last = -1;
+	}
+	int shown = 0, next = -1, offset = 0;
+	if (world && first <= last)
+	{
+		auto *end = world + last + 1;
+		auto *at = std::lower_bound(world + first, end, scope.first,
+					    [](const room_data &room, int vnum)
+					    { return room.number < vnum; });
+		if (scope.offset > end - at ||
+		    (scope.offset && at[scope.offset - 1].number != scope.first))
+		{
+			send_to_char("rlist: offset exceeds rooms at the starting VNUM.\r\n", ch);
+			return;
+		}
+		auto *group = at;
+		at += scope.offset;
+		for (; at != end && at->number <= scope.last; ++at)
+		{
+			if (at->number != group->number)
+				group = at;
+			if (scope.zone >= 0 && at->zone != scope.zone)
+				continue;
+			if (shown == BUILDER_LIST_LIMIT)
+			{
+				next = at->number;
+				offset = static_cast<int>(at - group);
+				break;
+			}
+			const char *sector = static_cast<unsigned>(at->sector_type) <
+							     NUM_SECT_TYPES ?
+						     sector_types[at->sector_type] :
+						     nullptr;
+			const int zone = zone_table && at->zone <= top_of_zone_table ?
+						 zone_table[at->zone].number :
+						 -1;
+			char buf[512];
+			snprintf(buf, sizeof(buf), "|%6d|%10d| %s &n| %s &n|\r\n", zone, at->number,
+				 builder_list_name(at->name, 32).c_str(),
+				 builder_list_name(sector ? sector : "Unknown", 18).c_str());
+			send_to_char(buf, ch);
+			++shown;
+		}
+	}
+	builder_list_footer(ch, "rlist", "rooms", scope, shown, next, offset);
+}
+
+void do_olist(P_char ch, char *argument, int /*cmd*/)
+{
+	builder_list_prototypes(ch, argument, "olist", "Object", "objects", obj_index, top_of_objt);
+}
 
 void do_mlist(P_char ch, char *argument, int /*cmd*/)
 {
-	std::vector<std::string> t;
-	char tmp[MAX_INPUT_LENGTH];
-	bool haveRange = false;
-	int vmin = INT_MIN, vmax = INT_MAX;
-	size_t i = 0;
-	char buf[MAX_STRING_LENGTH];
-	static constexpr int W_VNUM = 7;
-	static constexpr int W_NUM = 4;
-	static constexpr int W_NAME = 40;
-
-	if (IS_NPC(ch))
-		return;
-
-	if (!IS_SET(ch->specials.act, PLR_PAGING_ON))
-	{
-		send_to_char("&+WRoom List is too long, please tog page on, to read it\n", ch);
-		return;
-	}
-
-	for (; argument && *argument;)
-	{
-		argument = one_argument(argument, tmp);
-		if (*tmp)
-			t.emplace_back(tmp);
-	}
-
-	auto help = [&]()
-	{
-		send_to_char("&+WUsage:&n\r\n"
-			     "  mlist\r\n"
-			     "  mlist ?\r\n"
-			     "  mlist <vnumFrom> <vnumTo>\r\n",
-			     ch);
-	};
-
-	if (!t.empty() && (t[0] == "?" || t[0] == "help"))
-	{
-		help();
-		return;
-	}
-
-	if (i < t.size())
-	{
-		if (!is_number(const_cast<char *>(t[i].c_str())))
-		{
-			help();
-			return;
-		}
-		haveRange = true;
-		vmin = atoi(t[i].c_str());
-		if (++i < t.size())
-		{
-			if (!is_number(const_cast<char *>(t[i].c_str())))
-			{
-				help();
-				return;
-			}
-			vmax = atoi(t[i].c_str());
-			++i;
-		}
-		else
-		{
-			vmax = vmin;
-		}
-	}
-
-	if (i != t.size())
-	{
-		help();
-		return;
-	} // extra junk args
-
-	if (haveRange && vmin > vmax)
-		std::swap(vmin, vmax);
-
-	send_to_char("/------------------------------------------------------------\\\r\n", ch);
-	snprintf(buf, sizeof(buf),
-		 "|&-c&+l Mobile Listing (# Rooms: %7d)                          &n|\r\n",
-		 top_of_mobt + 1);
-	send_to_char(buf, ch);
-	send_to_char("|------------------------------------------------------------|\r\n", ch);
-
-	snprintf(buf, sizeof(buf), "|&-c&+l%*s&n|&-c&+l %-*s &n|&-c&+l%*s/%-*s&n|\r\n", W_VNUM,
-		 "Vnum", W_NAME, "Name", W_NUM, "Num", W_NUM, "Max");
-	send_to_char(buf, ch);
-	send_to_char("|-------|------------------------------------------|---------|\r\n", ch);
-
-	for (i = 0; i <= static_cast<size_t>(top_of_mobt); i++)
-	{
-		if (haveRange &&
-		    (mob_index[i].virtual_number < vmin || mob_index[i].virtual_number > vmax))
-			continue;
-
-		P_char mob = read_mobile(mob_index[i].virtual_number, VIRTUAL);
-
-		if (!mob)
-			continue;
-
-		snprintf(buf, sizeof(buf), "|%*d| %s &n|%*d/%-*d|\r\n", W_VNUM,
-			 mob_index[i].virtual_number,
-			 pad_ansi(mob->player.short_descr ? mob->player.short_descr : "", W_NAME,
-				  W_NAME)
-				 .c_str(),
-			 W_NUM, mob_index[i].number, W_NUM, mob_index[i].limit);
-		send_to_char(buf, ch);
-
-		extract_char(mob);
-	}
-
-	send_to_char("\\------------------------------------------------------------/\r\n", ch);
+	builder_list_prototypes(ch, argument, "mlist", "Mobile", "mobiles", mob_index, top_of_mobt);
 }
