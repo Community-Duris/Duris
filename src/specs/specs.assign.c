@@ -294,7 +294,6 @@ void assign_mobiles(void)
 
 	/* arcium */
 	world[real_room0(22439)].funct = inn;
-	world[real_room0(29605)].funct = inn;
 
 	/* halfcut hills */
 	mob_index[real_mobile0(27009)].func.mob = crossbow_ambusher;
@@ -371,11 +370,6 @@ void assign_mobiles(void)
 	mob_index[real_mobile0(1253)].func.mob = archer;
 	mob_index[real_mobile0(1254)].func.mob = archer;
 
-	/* Sylvandawn */
-	mob_index[real_mobile0(8028)].func.mob = cityguard;
-	mob_index[real_mobile0(8034)].func.mob = cityguard;
-	mob_index[real_mobile0(8047)].func.mob = cityguard;
-
 	/* transparent tower */
 	mob_index[real_mobile0(16205)].func.mob = transp_tow_acerlade;
 
@@ -413,19 +407,13 @@ void assign_mobiles(void)
 	mob_index[real_mobile0(1437)].func.mob = kobold_priest;
 	mob_index[real_mobile0(1438)].func.mob = stone_golem;
 
-	/* Troll Hills */
-	mob_index[real_mobile0(1919)].func.mob = bridge_troll;
-
 	mob_index[real_mobile0(36203)].func.mob = mob_index[real_mobile0(132599)].func.mob =
 		rentacleric;
 
 	/* Evil Spec teachers */
-	mob_index[real_mobile0(1520)].func.mob = 0; // sorc
 	mob_index[real_mobile0(22467)].func.mob = 0; // zerker
 	mob_index[real_mobile0(36440)].func.mob = 0; // assassin
 	mob_index[real_mobile0(4401)].func.mob = 0; // cleric
-	mob_index[real_mobile0(1518)].func.mob = 0; // conj
-	mob_index[real_mobile0(1519)].func.mob = 0; // necro
 	mob_index[real_mobile0(97585)].func.mob = 0; // illus
 	mob_index[real_mobile0(36441)].func.mob = 0; // reaver
 	mob_index[real_mobile0(36442)].func.mob = 0; // bard
@@ -433,41 +421,23 @@ void assign_mobiles(void)
 
 	/* Undead Spec teachers */
 	mob_index[real_mobile0(66238)].func.mob = 0; // reaver
-	mob_index[real_mobile0(200011)].func.mob = 0; // sorc
-	mob_index[real_mobile0(210006)].func.mob = 0; // warrior
 	mob_index[real_mobile0(22415)].func.mob = 0; // AP
-	mob_index[real_mobile0(200012)].func.mob = 0; // Conj
 	mob_index[real_mobile0(22435)].func.mob = 0; // Mercenary
 	mob_index[real_mobile0(90306)].func.mob = 0; // piper
 	mob_index[real_mobile0(90328)].func.mob = 0; // dreadlord
 
 	/* Goodie Spec teachers */
-	mob_index[real_mobile0(1510)].func.mob = 0; // shaman
-	mob_index[real_mobile0(1500)].func.mob = 0; // sorc
-	mob_index[real_mobile0(1512)].func.mob = 0; // conj
 	mob_index[real_mobile0(82507)].func.mob = 0; // conj
-	mob_index[real_mobile0(1501)].func.mob = 0; // warrior
-	mob_index[real_mobile0(1503)].func.mob = 0; // paladin
-	mob_index[real_mobile0(1514)].func.mob = 0; // assassin
-	mob_index[real_mobile0(1509)].func.mob = 0; // druid
-	mob_index[real_mobile0(1507)].func.mob = 0; // cleric
-	mob_index[real_mobile0(1515)].func.mob = 0; // mercenary
-	mob_index[real_mobile0(1502)].func.mob = 0; // ranger
 	mob_index[real_mobile0(82500)].func.mob = 0; // ranger
-	mob_index[real_mobile0(1511)].func.mob = 0; // necro
-	mob_index[real_mobile0(1516)].func.mob = 0; // bard
-	mob_index[real_mobile0(1513)].func.mob = 0; // thief
 
 	/* All side spec teachers */
 	mob_index[real_mobile0(66736)].func.mob = 0; // shaman
 	mob_index[real_mobile0(22420)].func.mob = 0; // shaman
-	mob_index[real_mobile0(1510)].func.mob = 0; // shaman
 	mob_index[real_mobile0(22441)].func.mob = 0; // thief
 	mob_index[real_mobile0(9420)].func.mob = 0; // thief
 	mob_index[real_mobile0(22440)].func.mob = 0; // assassin
 
 	mob_index[real_mobile0(66732)].func.mob = 0; // AP
-	mob_index[real_mobile0(200321)].func.mob = 0; // Ethermancer
 	mob_index[real_mobile0(9432)].func.mob = 0; // Warrior
 	mob_index[real_mobile0(66731)].func.mob = 0; // Mercenary
 	mob_index[real_mobile0(66631)].func.mob = 0; // Bard
@@ -475,9 +445,6 @@ void assign_mobiles(void)
 
 	/* Bahamut */
 	mob_index[real_mobile0(25700)].func.mob = bahamut;
-	/* fooquest */
-	mob_index[real_mobile0(65012)].func.mob = fooquest_mob;
-	mob_index[real_mobile0(65013)].func.mob = fooquest_boss;
 
 	/* Goodie Highwayman */
 	mob_index[real_mobile0(500058)].func.mob = goodie_guardian;
@@ -564,12 +531,6 @@ void assign_mobiles(void)
   mob_index[real_mobile0(3243)].func.mob = mercenary_three;
   mob_index[real_mobile0(3244)].func.mob = piergeiron_guard;
 #endif
-	/*
-	   Mt. Skelenak (New Moria)
-	 */
-	mob_index[real_mobile0(4070)].func.mob = piercer;
-	mob_index[real_mobile0(4120)].func.mob = guild_guard;
-
 	mob_index[real_mobile0(15)].func.mob = witch_doctor;
 	mob_index[real_mobile0(21549)].func.mob = llyren;
 
@@ -585,8 +546,6 @@ void assign_mobiles(void)
 	mob_index[real_mobile0(550)].func.mob = underdark_track;
 	mob_index[real_mobile0(551)].func.mob = underdark_track;
 
-	mob_index[real_mobile0(210004)].func.mob = undeadcont_track;
-	mob_index[real_mobile0(210005)].func.mob = undeadcont_track;
 #if 0
   mob_index[real_mobile0(210000)].func.mob = undeadcont_track;
   mob_index[real_mobile0(210001)].func.mob = undeadcont_track;
@@ -616,12 +575,6 @@ void assign_mobiles(void)
 	 */
 
 	mob_index[real_mobile0(19705)].func.mob = guild_guard;
-
-	/*
-	   Alterian Region
-	 */
-	mob_index[real_mobile0(4812)].func.mob = poison;
-	mob_index[real_mobile0(4830)].func.mob = wanderer;
 
 #if 0
   /* Verzanan Harbor */
@@ -685,32 +638,6 @@ void assign_mobiles(void)
 	/* Human HT - Tharnadia */
 
 	world[real_room0(132507)].funct = welfare_well;
-	mob_index[real_mobile0(150115)].func.mob = outpost_captain;
-	mob_index[real_mobile0(150116)].func.mob = outpost_captain;
-	mob_index[real_mobile0(150117)].func.mob = outpost_captain;
-	mob_index[real_mobile0(150118)].func.mob = outpost_captain;
-	mob_index[real_mobile0(150119)].func.mob = outpost_captain;
-	mob_index[real_mobile0(150120)].func.mob = outpost_captain;
-	mob_index[real_mobile0(150121)].func.mob = outpost_captain;
-	mob_index[real_mobile0(150122)].func.mob = outpost_captain;
-	mob_index[real_mobile0(150123)].func.mob = outpost_captain;
-	mob_index[real_mobile0(150124)].func.mob = outpost_captain;
-	mob_index[real_mobile0(150125)].func.mob = outpost_captain;
-	mob_index[real_mobile0(150126)].func.mob = outpost_captain;
-	mob_index[real_mobile0(150127)].func.mob = outpost_captain;
-	mob_index[real_mobile0(150128)].func.mob = outpost_captain;
-	mob_index[real_mobile0(150129)].func.mob = outpost_captain;
-	mob_index[real_mobile0(150130)].func.mob = outpost_captain;
-	mob_index[real_mobile0(150131)].func.mob = outpost_captain;
-	mob_index[real_mobile0(150132)].func.mob = outpost_captain;
-	mob_index[real_mobile0(150133)].func.mob = outpost_captain;
-	mob_index[real_mobile0(150134)].func.mob = outpost_captain;
-	mob_index[real_mobile0(150135)].func.mob = outpost_captain;
-	mob_index[real_mobile0(150136)].func.mob = outpost_captain;
-	mob_index[real_mobile0(150137)].func.mob = outpost_captain;
-	mob_index[real_mobile0(150138)].func.mob = outpost_captain;
-	mob_index[real_mobile0(150139)].func.mob = outpost_captain;
-	mob_index[real_mobile0(150140)].func.mob = outpost_captain;
 
 	mob_index[real_mobile0(132593)].func.mob = janitor;
 	mob_index[real_mobile0(132519)].func.mob = money_changer;
@@ -770,14 +697,12 @@ void assign_mobiles(void)
 	mob_index[real_mobile0(18707)].func.mob = world_quest;
 	mob_index[real_mobile0(17022)].func.mob = world_quest;
 	mob_index[real_mobile0(11601)].func.mob = world_quest;
-	mob_index[real_mobile0(8003)].func.mob = world_quest;
 	mob_index[real_mobile0(5755)].func.mob = world_quest;
 	mob_index[real_mobile0(1603)].func.mob = world_quest;
 
 	mob_index[real_mobile0(36420)].func.mob = world_quest;
 	mob_index[real_mobile0(82229)].func.mob = world_quest;
 	mob_index[real_mobile0(82208)].func.mob = world_quest;
-	mob_index[real_mobile0(8309)].func.mob = world_quest;
 
 	mob_index[real_mobile0(16553)].func.mob = world_quest;
 	mob_index[real_mobile0(16553)].func.mob = world_quest;
@@ -901,21 +826,6 @@ void assign_mobiles(void)
 	mob_index[real_mobile0(75639)].func.mob = obsid_cit_death_knight;
 	mob_index[real_mobile0(75640)].func.mob = obsid_cit_satar_ghulan;
 
-	/* Sylvandawn */
-	mob_index[real_mobile0(8004)].func.mob = money_changer;
-	mob_index[real_mobile0(8019)].func.mob = guild_guard;
-	mob_index[real_mobile0(8029)].func.mob = guild_guard;
-	mob_index[real_mobile0(8037)].func.mob = guild_guard;
-	mob_index[real_mobile0(8039)].func.mob = guild_guard;
-	mob_index[real_mobile0(8040)].func.mob = guild_guard;
-	mob_index[real_mobile0(8041)].func.mob = guild_guard;
-	mob_index[real_mobile0(8042)].func.mob = guild_guard;
-	mob_index[real_mobile0(8044)].func.mob = janitor;
-	mob_index[real_mobile0(8050)].func.mob = guild_guard;
-	mob_index[real_mobile0(8311)].func.mob = guild_guard;
-	mob_index[real_mobile0(8312)].func.mob = guild_guard;
-	mob_index[real_mobile0(8313)].func.mob = guild_guard;
-
 	mob_index[real_mobile0(45049)].func.mob = guild_guard;
 	/*
 	   Players Guild
@@ -982,12 +892,6 @@ void assign_mobiles(void)
 	mob_index[real_mobile0(14029)].func.mob = faerie;
 	mob_index[real_mobile0(14048)].func.mob = cricket;
 
-	/*
-	   Wilderness Near Verzanan
-	 */
-	mob_index[real_mobile0(14202)].func.mob = bridge_troll; /*
-	                                                           north bridge
-	                                                         */
 	/* Temple Zone */
 	mob_index[real_mobile0(18302)].func.mob = temple_illyn;
 
@@ -1049,11 +953,8 @@ void assign_mobiles(void)
 	/*
 	   Plane of Fire One
 	 */
-	mob_index[real_mobile0(25000)].func.mob = guild_guard;
 	mob_index[real_mobile0(25400)].func.mob = guild_guard;
 	mob_index[real_mobile0(25440)].func.mob = imix_shout;
-	mob_index[real_mobile0(25101)].func.mob = guild_guard;
-	mob_index[real_mobile0(25104)].func.mob = guild_guard;
 
 	/*
 	     Prison
@@ -1210,8 +1111,6 @@ void assign_mobiles(void)
   mob_index[real_mobile0(92058)].func.mob = ochre_jelly;
   mob_index[real_mobile0(92062)].func.mob = helmed_horror;
 #endif
-	mob_index[real_mobile0(150100)].func.mob = patrol_leader;
-	mob_index[real_mobile0(150101)].func.mob = patrol_leader_road;
 
 	/* elemental plane bosses shout */
 	mob_index[real_mobile0(12400)].func.mob = menzellon_shout;
@@ -1225,20 +1124,6 @@ void assign_mobiles(void)
 	mob_index[real_mobile0(82000)].func.mob = jindo_ticket_master;
 	/* newbie zone this mob gives a special item to the newbie */
 	mob_index[real_mobile0(22801)].func.mob = newbie_paladin;
-	// lowbie quest proc dont do this if your below lvl 35 thing
-	mob_index[real_mobile0(65015)].func.mob = newbie_quest;
-	mob_index[real_mobile0(65016)].func.mob = newbie_quest;
-	mob_index[real_mobile0(65018)].func.mob = newbie_quest;
-	mob_index[real_mobile0(65019)].func.mob = newbie_quest;
-	mob_index[real_mobile0(65022)].func.mob = newbie_quest;
-	mob_index[real_mobile0(65024)].func.mob = newbie_quest;
-	mob_index[real_mobile0(65026)].func.mob = newbie_quest;
-	mob_index[real_mobile0(65028)].func.mob = newbie_quest;
-	mob_index[real_mobile0(65029)].func.mob = newbie_quest;
-	mob_index[real_mobile0(65030)].func.mob = newbie_quest;
-	mob_index[real_mobile0(65032)].func.mob = newbie_quest;
-	mob_index[real_mobile0(65033)].func.mob = newbie_quest;
-	mob_index[real_mobile0(65034)].func.mob = newbie_quest;
 
 	/*CELESTIA PROCS*/
 	mob_index[real_mobile0(45565)].func.mob = Malevolence;
@@ -1285,8 +1170,6 @@ void assign_objects(void)
 	obj_index[real_object0(500055)].func.obj = tharnrifts_portal;
 	obj_index[real_object0(55007)].func.obj = no_kill_priest_obj;
 	obj_index[real_object0(1372)].func.obj = jet_black_maul;
-	obj_index[real_object0(35102)].func.obj = magic_pool;
-	obj_index[real_object0(35103)].func.obj = magic_pool;
 	obj_index[real_object0(12028)].func.obj = moonstone_fragment;
 	obj_index[real_object0(96073)].func.obj = faith;
 	obj_index[real_object0(96012)].func.obj = mistweave;
@@ -1453,7 +1336,6 @@ void assign_objects(void)
 
 	/* avernus procs */
 	obj_index[real_object0(32001)].func.obj = sinister_tactics_staff;
-	obj_index[real_object0(32507)].func.obj = shard_frozen_styx_water;
 
 	/* shabo procs */
 	obj_index[real_object0(32831)].func.obj = pesky_imp_chest;
@@ -1499,34 +1381,8 @@ void assign_objects(void)
 	obj_index[real_object0(12016)].func.obj = unspec_altar;
 	obj_index[real_object0(1190)].func.obj = rax_red_dagger;
 	obj_index[real_object0(2204)].func.obj = cutting_dagger;
-	obj_index[real_object0(70549)].func.obj = circlet_of_light;
-	obj_index[real_object0(70554)].func.obj = ljs_sword;
-	obj_index[real_object0(70556)].func.obj = wuss_sword;
-	obj_index[real_object0(70558)].func.obj = head_guard_sword;
-	obj_index[real_object0(70559)].func.obj = priest_rudder;
-	obj_index[real_object0(70565)].func.obj = alch_bag;
-	obj_index[real_object0(70568)].func.obj = alch_rod;
-	obj_index[real_object0(70571)].func.obj = ljs_armor;
-	obj_index[real_object0(70572)].func.obj = dragon_skull_helm;
 	obj_index[real_object0(99447)].func.obj = nightcrawler_dagger;
 	obj_index[real_object0(66419)].func.obj = righteous_blade;
-
-	/* mobs */
-	mob_index[real_mobile0(70535)].func.mob = long_john_silver_shout;
-	mob_index[real_mobile0(70542)].func.mob = undead_parrot;
-	mob_index[real_mobile0(70546)].func.mob = undead_dragon_east;
-
-	/* general jabbering */
-	mob_index[real_mobile0(70552)].func.mob = pirate_cabinboy_talk;
-	mob_index[real_mobile0(70554)].func.mob = pirate_female_talk;
-	mob_index[real_mobile0(70502)].func.mob = pirate_talk;
-	mob_index[real_mobile0(70503)].func.mob = pirate_talk;
-	mob_index[real_mobile0(70539)].func.mob = pirate_talk;
-	mob_index[real_mobile0(70540)].func.mob = pirate_talk;
-	mob_index[real_mobile0(70541)].func.mob = pirate_talk;
-	mob_index[real_mobile0(70549)].func.mob = pirate_talk;
-	mob_index[real_mobile0(70551)].func.mob = pirate_talk;
-	mob_index[real_mobile0(70561)].func.mob = pirate_talk;
 
 	/* tower of high sorcery */
 	mob_index[real_mobile0(9342)].func.mob = bulette;
@@ -1550,7 +1406,6 @@ void assign_objects(void)
 	obj_index[real_object0(25710)].func.obj = bloodfeast;
 
 	/*Newbie quest */
-	obj_index[real_object0(65050)].func.obj = dragonslayer;
 	obj_index[real_object0(34545)].func.obj = mankiller;
 
 	/* MadMan */
@@ -1824,10 +1679,6 @@ void assign_objects(void)
 	obj_index[real_object0(4404)].func.obj = magic_pool;
 	obj_index[real_object0(17)].func.obj = barb;
 
-	/* Alterian Wilderness */
-	obj_index[real_object0(4801)].func.obj = magic_pool;
-	obj_index[real_object0(4802)].func.obj = magic_pool;
-
 #if 0
   /* Verzanan Harbor */
   obj_index[real_object0(5316)].func.obj = gesen;
@@ -1963,13 +1814,11 @@ void assign_objects(void)
 	obj_index[real_object0(87612)].func.obj = doombringer;
 	// obj_index[real_object0(25030)].func.obj = flamberge;
 	obj_index[real_object0(430)].func.obj = flamberge;
-	obj_index[real_object0(25080)].func.obj = ring_elemental_control;
 
 	/*
 	   Plane of Fire Two
 	 */
 	obj_index[real_object0(139004)].func.obj = holy_mace;
-	obj_index[real_object0(25103)].func.obj = staff_of_blue_flames;
 	obj_index[real_object0(30)].func.obj = staff_of_power;
 	obj_index[real_object0(40409)].func.obj = reliance_pegasus;
 
@@ -2212,7 +2061,6 @@ void assign_objects(void)
 
 	/* Morgs Proc */
 	// mob_index[real_mobile0(87880)].func.mob = morgs_protect;
-	mob_index[real_mobile0(87891)].func.mob = world_quest;
 
 	/* Keleks Proc */
 	obj_index[real_object0(87950)].func.obj = deliverer_hammer;
@@ -2292,7 +2140,6 @@ void assign_rooms(void)
 		world[real_room0(x)].funct = squid_arena;
 	}
 
-	world[real_room0(19890)].funct = GithyankiCave;
 	// world[real_room0(VROOM_TIAMAT_HOME)].funct = TiamatThrone;
 
 	/* inns */
@@ -2316,7 +2163,6 @@ void assign_rooms(void)
 	world[real_room0(82574)].funct = inn;
 	world[real_room0(99715)].funct = inn;
 	world[real_room0(10857)].funct = inn;
-	world[real_room0(3398)].funct = inn;
 	world[real_room0(1736)].funct = inn;
 	world[real_room0(139078)].funct = inn;
 
@@ -2335,10 +2181,8 @@ void assign_rooms(void)
 	  mob_index[real_mobile0(5809)].func.mob = plant_attacks_paralysis;
 	*/
 	world[real_room0(37716)].funct = inn;
-	world[real_room0(66355)].funct = undead_inn;
 	world[real_room0(14362)].funct = inn;
 
-	world[real_room0(43341)].funct = patrol_shops;
 	world[real_room0(45006)].funct = inn;
 	world[real_room0(45036)].funct = pet_shops;
 	world[real_room0(29280)].funct = pet_shops;
@@ -2386,11 +2230,7 @@ void assign_rooms(void)
 	world[real_room0(88846)].funct = ship_shop_proc;
 	world[real_room0(43198)].funct = ship_shop_proc;
 	world[real_room0(43158)].funct = ship_shop_proc;
-	world[real_room0(140854)].funct = ship_shop_proc;
-	world[real_room0(258421)].funct = ship_shop_proc;
 	world[real_room0(22441)].funct = ship_shop_proc;
-	world[real_room0(70501)].funct = ship_shop_proc; /* rax's quest zone */
-	world[real_room0(258421)].funct = ship_shop_proc;
 	world[real_room0(43118)].funct = ship_shop_proc;
 	world[real_room0(635260)].funct = ship_shop_proc;
 	world[real_room0(584171)].funct = ship_shop_proc;
@@ -2432,13 +2272,6 @@ void assign_rooms(void)
 	/* Minotaur hometown NAX */
 	world[real_room0(37716)].funct = inn;
 
-	/* Sylvandawn */
-	world[real_room0(8010)].funct = pet_shops;
-	world[real_room0(8211)].funct = dump;
-	world[real_room0(8323)].funct = pet_shops;
-	world[real_room0(8003)].funct = inn;
-	world[real_room0(8287)].funct = ship_shop_proc;
-
 	/* Sarmiz'Duul */
 	world[real_room0(9738)].funct = inn;
 	world[real_room0(9967)].funct = ship_shop_proc;
@@ -2454,13 +2287,9 @@ void assign_rooms(void)
 	world[real_room0(29701)].funct = inn;
 	world[real_room0(29305)].funct = inn;
 	world[real_room0(29103)].funct = inn;
-	world[real_room0(29502)].funct = inn;
-	world[real_room0(30511)].funct = inn;
 	world[real_room0(30104)].funct = inn;
-	world[real_room0(29903)].funct = inn;
 	world[real_room0(29202)].funct = inn;
 	world[real_room0(29403)].funct = inn;
-	world[real_room0(30303)].funct = inn;
 
 	/* clav's tundra zone */
 
