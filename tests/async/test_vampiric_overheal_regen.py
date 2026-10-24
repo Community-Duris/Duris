@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify that allowed vampiric over-cap HP decays instead of snapping."""
+"""Verify gradual over-cap HP/movement decay and ordinary regeneration caps."""
 
 from pathlib import Path
 import subprocess
@@ -62,6 +62,9 @@ void act(const char *, int, P_char, P_obj, void *, int) {}
 float get_property(const char *, double) { return 9.0f; }
 bool has_innate(P_char, int) { return false; }
 int get_innate_regeneration(P_char) { return innate_gain; }
+int GET_CHAR_SKILL_P(P_char, int) { return 0; }
+int GET_CLASS(P_char ch, uint cls) { return (ch->player.m_class & cls) != 0; }
+int dice(int, int) { assert(false && "not a quadruped fixture"); return 0; }
 float get_epic_bonus(P_char, int) { return 0; }
 int difficulty_scale_player_regen(P_char, int gain) { return gain; }
 room_affect *get_spell_from_room(P_room, int) { return nullptr; }
@@ -92,6 +95,9 @@ HELPERS = "\n".join(
         extract_function("events.c", "static unsigned long long regen_elapsed_ticks("),
         extract_function("limits.c", "int hit_regen("),
         extract_function("events.c", "void event_hit_regen(P_char ch,"),
+        extract_function("limits.c", "int move_regen("),
+        "#define MOB_MOVE_REGEN_DELAY 10",
+        extract_function("events.c", "void event_move_regen(P_char ch,"),
     ]
 )
 
@@ -141,7 +147,60 @@ int main() {
     run_pulses(&ch, 1, 600, state);
     assert(GET_HIT(&ch) == GET_MAX_HIT(&ch));
 
-    std::puts("vampiric over-cap decay and ordinary healing cap regressions passed");
+    // Movement follows the same signed-delta rule: the first decrement from
+    // 120/100 must be 119, with elapsed-pulse catch-up still applied.
+    ch.specials.position = STAT_NORMAL + POS_STANDING;
+    ch.player.race = RACE_HUMAN;
+    GET_VITALITY(&ch) = 120;
+    GET_MAX_VITALITY(&ch) = 100;
+    state = {0.0f, ne_event_tick};
+    assert(move_regen(&ch, false) == -5);
+    for (int tick = 0; tick < PULSES_IN_TICK && GET_VITALITY(&ch) == 120; ++tick) {
+        ++ne_event_tick;
+        event_move_regen(&ch, nullptr, nullptr, &state);
+        state = next_state;
+    }
+    assert(GET_VITALITY(&ch) == 119);
+
+    GET_VITALITY(&ch) = 120;
+    state = {0.0f, ne_event_tick};
+    ne_event_tick += PULSES_IN_TICK;
+    event_move_regen(&ch, nullptr, nullptr, &state);
+    assert(GET_VITALITY(&ch) == 115);
+
+    // A delayed surplus decay must stop at maximum, without spending ordinary
+    // movement or retaining negative credit for the next regeneration cycle.
+    GET_VITALITY(&ch) = 119;
+    state = {-0.75f, ne_event_tick};
+    ne_event_tick += 4 * PULSES_IN_TICK;
+    event_move_regen(&ch, nullptr, nullptr, &state);
+    assert(GET_VITALITY(&ch) == 100 && next_state.accumulated == 0.0f);
+
+    // A genuinely negative equipment rate still drains movement below its cap.
+    ch.points.move_reg = -100;
+    state = {0.0f, ne_event_tick};
+    ne_event_tick += PULSES_IN_TICK;
+    event_move_regen(&ch, nullptr, nullptr, &state);
+    assert(GET_VITALITY(&ch) < 100);
+    ch.points.move_reg = 0;
+
+    GET_VITALITY(&ch) = 99;
+    state = {0.0f, ne_event_tick};
+    ne_event_tick += PULSES_IN_TICK;
+    event_move_regen(&ch, nullptr, nullptr, &state);
+    assert(GET_VITALITY(&ch) == 100);
+    const int before_full = scheduled;
+    ++ne_event_tick;
+    event_move_regen(&ch, nullptr, nullptr, &next_state);
+    assert(GET_VITALITY(&ch) == 100 && scheduled == before_full);
+
+    char_data opponent{};
+    ch.specials.fighting = &opponent;
+    GET_VITALITY(&ch) = 120;
+    ++ne_event_tick;
+    event_move_regen(&ch, nullptr, nullptr, &next_state);
+    assert(GET_VITALITY(&ch) == 120 && scheduled == before_full);
+    std::puts("HP/movement over-cap decay, delayed callbacks, caps and combat stop passed");
 }
 '''
 

@@ -243,4 +243,19 @@ for call in ("char_from_room(", "char_to_room("):
     assert call not in look_out, (
         f"ferry 'look out' must not move the passenger: {call} runs room departure/arrival logic")
 
-print(f"ferry contract passed ({len(ferries)} ferries)")
+# The shipped help must describe exactly the active fleet, in route order,
+# including repeat hub stops, and use the same price and stop labels as the code.
+help_text = (ROOT / "help/duris_help_parsed.hlp").read_text(encoding="utf-8", errors="replace")
+ferry_help = help_text.split("\nFerries\n", 1)[1].split("\n#0", 1)[0]
+sections = dict(re.findall(r"==([^=\n]+)==\n(.*?)(?=\n==|\Z)", ferry_help, re.S))
+assert set(sections) - {"See also"} == set(names), "help ferries must list the current fleet"
+for ferry in ferries:
+    name = strip_color(ferry["name"])
+    route = [strip_color(label) for _, label in ferry["stops"]]
+    assert " -> ".join(route) + ", then back to " + route[0] in sections[name], name
+    assert f"Tickets cost {ferry['price'] // 1000} platinum." in sections[name], name
+menden = {strip_color(label) for ferry in ferries for vnum, label in ferry["stops"]
+          if vnum in (550723, 550724)}
+assert menden == {"Menden-on-the-Deep"}, menden
+
+print(f"ferry contract and help routes/prices passed ({len(ferries)} ferries)")

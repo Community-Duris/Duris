@@ -111,6 +111,7 @@
 #include "persistence/persistence_mode.h"
 #include "core/env_file.h"
 #include "persistence/locker_async.h"
+#include "item/storage_lockers.h"
 #include "persistence/maintenance_repository.h"
 #include "persistence/maintenance_scheduler.h"
 #include "persistence/maintenance_snapshot.h"
@@ -2590,6 +2591,25 @@ resume_game_loop:
 		_autoboot = 0;
 		goto resume_game_loop;
 	}
+	if (!_pwipe && !save_all_lockers())
+	{
+		critical_command_coordinator_resume();
+		critical_outbox_resume();
+		player_save_pipeline_resume();
+		persistence_alert(AVATAR, "locker_save", "shutdown", "none", "none", "save_failed",
+				  "shutdown_cancelled=1");
+		shutdownData.eShutdownType = TimedShutdownData::NONE;
+		for (P_desc pending_desc = descriptor_list; pending_desc;
+		     pending_desc = pending_desc->next)
+			if (pending_desc->descriptor > 0 && pending_desc->connected == CON_PLAYING)
+				write_to_descriptor(
+					pending_desc,
+					"\r\nShutdown cancelled because a locker save failed.\r\n");
+		shutdownflag = 0;
+		_reboot = 0;
+		_autoboot = 0;
+		goto resume_game_loop;
+	}
 	if (!_pwipe && !redis_world_recovery_drain(3000))
 	{
 		critical_command_coordinator_resume();
@@ -2633,7 +2653,6 @@ resume_game_loop:
 	if (!_pwipe)
 	{
 		flush_pending_ship_saves();
-		locker_async_drain(2000);
 
 		if (no_ferries == 0)
 		{
@@ -3776,7 +3795,7 @@ int new_descriptor(int s, int conn_type)
 	if (getpeername(desc, (struct sockaddr *)&sock, &size) < 0)
 	{
 		perror("getpeername");
-		strcpy(newd->host, "&+RUNTRACEABLE&n");
+		strcpy(newd->host, "unknown");
 	}
 	else
 	{

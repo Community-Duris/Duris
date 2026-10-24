@@ -221,6 +221,20 @@ struct record_payload
 	unsigned long long expected_tick;
 };
 
+// Actual PSP callback/admission, with a controlled rate. Rate policy and
+// producer behavior are covered by test_psp_regen_runtime.py; this mode proves the queue.
+int mana_regen(P_char ch, bool) {
+    return IS_FIGHTING(ch) || GET_MANA(ch) == GET_MAX_MANA(ch) ? 0 : 80;
+}
+int move_regen(P_char, bool) { return 0; }
+int hit_regen(P_char, bool) { return 0; }
+int ward_regen(P_char, bool) { return 0; }
+int GET_CLASS(P_char ch, uint cls) { return (ch->player.m_class & cls) != 0; }
+void stop_meditation(P_char ch) { REMOVE_BIT(ch->specials.affected_by, AFF_MEDITATE); }
+void gmcp_char_vitals(P_char) {}
+void send_to_char(const char *, P_char) { require(false, 341); }
+/* REGEN_CALLBACKS */
+
 struct child_payload
 {
 	int id;
@@ -1244,10 +1258,71 @@ static void test_short_affect()
 	std::puts("short-affect expiry, PC fallback, cancellation, reuse, and zero NPC scans passed");
 }
 
+static void test_regen_lifecycle()
+{
+    for (bool npc : {false, true})
+        for (int interval : {1, 4})
+        {
+            reset_scheduler();
+            char_data owner{}, opponent{};
+            npc_only_data mob{};
+            pc_only_data pc{};
+            owner.specials.position = STAT_NORMAL | POS_STANDING;
+            owner.specials.act = npc ? ACT_ISNPC : 0;
+            if (npc) { owner.only.npc = &mob; mob.idnum = 3; }
+            else owner.only.pc = &pc;
+            GET_MANA(&owner) = 100;
+            GET_MAX_MANA(&owner) = 10000;
+            character_list = &owner;
+            StartRegen(&owner, regen_resource::mana);
+            StartRegen(&owner, regen_resource::mana);
+            require(ne_event_counter == 1, 330);
+            require(get_scheduled(&owner, event_mana_regen)->due_tick == (npc ? 5 : 1), 331);
+            unsigned long long adjusted_sequence = 0;
+            while (ne_event_tick <= 3000)
+            {
+                auto *event = get_scheduled(&owner, event_mana_regen);
+                const auto *state = static_cast<const regen_event_state *>(event->data);
+                if (!npc && interval == 4 && event->sequence != adjusted_sequence)
+                {
+                    // The heartbeat already advanced past the last callback tick.
+                    // Schedule four pulses from that callback, retaining elapsed credit.
+                    adjusted_sequence = event->sequence;
+                    require(nevent_reschedule_at(nevent_handle_from_event(event),
+                                                state->last_tick + interval), 332);
+                }
+                const int expected_interval = npc ? 5 : interval;
+                require(event->due_tick - state->last_tick == expected_interval, 340);
+                run_one_heartbeat();
+                require(ne_event_counter == 1, 333);
+            }
+            // NPC callbacks use five-pulse spacing; float credit costs at most one.
+            require(std::abs(GET_MANA(&owner) - 900) <= 1, 334);
+            owner.specials.fighting = &opponent;
+            for (int pulse = 0; pulse < 10; ++pulse) run_one_heartbeat();
+            require(ne_event_counter == 0 && !owner.nevents, 335);
+            const int blocked_mana = GET_MANA(&owner);
+            for (int pulse = 0; pulse < 300; ++pulse) run_one_heartbeat();
+            require(GET_MANA(&owner) == blocked_mana, 336);
+            owner.specials.fighting = nullptr;
+            GET_MAX_MANA(&owner) = GET_MANA(&owner) + 1;
+            StartRegen(&owner, regen_resource::mana);
+            auto *event = get_scheduled(&owner, event_mana_regen);
+            auto *state = static_cast<regen_event_state *>(event->data);
+            require(state->last_tick == ne_event_tick && state->accumulated == 0, 337);
+            for (int pulse = 0; pulse < 10; ++pulse) run_one_heartbeat();
+            require(GET_MANA(&owner) == GET_MAX_MANA(&owner) && !owner.nevents, 338);
+            require_balanced(339);
+            character_list = nullptr;
+        }
+}
+
 int main(int argc, char **argv)
 {
 	require(argc == 2, 160);
-	if (std::strcmp(argv[1], "common") == 0)
+    if (std::strcmp(argv[1], "regen") == 0)
+        test_regen_lifecycle();
+    else if (std::strcmp(argv[1], "common") == 0)
 	{
 		test_boundary_matrix();
 		test_current_bucket_positions();
@@ -1288,7 +1363,22 @@ int main(int argc, char **argv)
 }
 '''
 
-# Exercise the actual production callback; count only world-list visits.
+# Exercise the real PSP callback/admission on the real queue.
+events = (SRC / "events.c").read_text()
+regen = "struct regen_event_state { float accumulated; unsigned long long last_tick; };\n"
+regen += "\n".join(line for line in events.splitlines()
+                   if line.startswith("#define MOB_") and "_REGEN_DELAY" in line)
+regen += "\n" + "\n".join(extract_function("events.c", signature) for signature in (
+    "static struct regen_event_state regen_state_from_data(",
+    "static unsigned long long regen_elapsed_ticks(",
+    "void event_mana_regen(P_char ch,",
+    "void StartRegen(P_char ch,",
+))
+# Keep the literal scheduler prefix reusable by the item-action benchmark.
+HARNESS = HARNESS.replace("DEFINE_LABEL_CALLBACK(event_mana_regen)", "")
+HARNESS = HARNESS.replace("/* REGEN_CALLBACKS */", regen)
+
+# Exercise the actual short-affect callback; count only world-list visits.
 short_affect = extract_function("affects.c", "void event_short_affect(")
 assert short_affect.count("if (c == ch)") == 1
 short_affect = short_affect.replace("if (c == ch)", "if ((++short_affect_visits, c == ch))")
@@ -1352,6 +1442,7 @@ with tempfile.TemporaryDirectory(prefix="duris-nevent-scheduler-") as directory:
         subprocess.run([str(binary), mode], check=True, env=environment)
 
     run_mode("common")
+    run_mode("regen")
     run_mode("priority-off")
     run_mode("priority-on", DURIS_NEVENT_PLAYER_PRIORITY="1")
     run_mode(

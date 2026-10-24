@@ -48,6 +48,7 @@ MANUAL_ONLY_TEST_NAMES = frozenset(
     {
         "test_mob_gold_dial_runtime.py",
         "test_mysql_playtime_journey.py",
+        "test_mysql_locker_grant_journey.py",
         "test_pet_restart_journey.py",
         "test_playtime_mysql_repository.py",
         "test_issue331_player_journey.py",

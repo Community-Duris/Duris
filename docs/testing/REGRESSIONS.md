@@ -11,6 +11,80 @@ own schema. Flat-file journeys take a server built with
 Four of these sections note that the full-server path was never driven under sanitizers; no
 journey does that yet.
 
+## Quickstep and Seadog help
+
+`help quickstep` redirects to the complete Quick Step topic. `help seadog`
+describes its passive ship-speed and cargo-sale bonuses, including the owner
+versus panel-operator distinction and the races/specialization that receive it.
+These entries document Community's existing mechanics; no ability or balance
+change is included. Luminari's Web Spray entry is not applicable because
+Community does not implement that ability.
+
+`python3 tests/async/test_flatfile_help_catalog.py` verifies both topics through
+the production flat-file catalog and help renderer, including mixed-case queries.
+`python3 tests/async/test_help_cache.py` uses the maintained SQL importer's pure
+parser on the tracked help index, then verifies the same topics and redirect in
+the production cached-help lookup/render functions, using the importer's actual
+category expression. Its catalog endpoint is a test adapter. The live SQL journey
+below imports the complete tracked content with the maintained script and queries
+ferries, Quickstep (including mixed case and the spaced topic), and Seadog through
+the actual game. It found that importing redirects as category 0 displayed their
+literal text; the importer now marks redirect entries as category 1. The isolated
+`test_help_import_atomic.py` checks that metadata alongside rollback, consistent
+publication, and rejection of nontransactional destinations.
+
+## Epic training completion
+
+Successful epic skill purchases refresh derived stats before sending GMCP vitals
+and requesting a save. Reaching 100 produces a mastery-complete message; earlier
+purchases retain improvement feedback, and a maxed skill still refuses training.
+The configured training level, prices, and durable epic transaction remain unchanged.
+
+`python3 tests/async/test_epic_training.py` runs the production teacher, reward
+tables, completion callback, and epic transaction code under ASan/UBSan. It checks
+level/funds/class/prerequisite/teacher-cap refusals, intermediate and final mastery,
+no publication before acknowledgment, refresh-before-vitals/save ordering, repeated
+completion delivery, rejected/admission-failed purchases, stale-state refunds, and
+offline completion followed by reattachment. Cash, stat rebuild, client output,
+save, and writer endpoints are controlled adapters.
+
+`python3 tests/async/test_mysql_epic_training_journey.py --server /absolute/path/dms_new`
+uses a generated full world, the real Toughness teacher, and a unique disposable
+MariaDB schema. It checks Community's level-55 refusal and level-56/57 purchases,
+numerical Human and Illithid HP changes at full and injured health, the actual
+GMCP vitals packets, repeated affect refreshes, mastery and at-cap refusal, and
+saved skill/balance/ledger state across clean server restarts. It also runs the
+maintained help importer from a temporary copy without a checkout `.env`.
+Explicit `TEST_DB_HOST`, `TEST_DB_USER`, and `TEST_DB_PASSWORD` are required;
+the host must be loopback. The test does not exercise a crash between the epic
+commit and the subsequent character snapshot, or run a full server under ASan.
+
+## Bounded builder inspection
+
+`rlist`, `mlist`, and `olist` default to the standing zone and use the public zone
+numbers shown by `zlist`. Each command displays at most 500 entries. Explicit
+VNUMs and inclusive ranges remain available, with continuation advice preserving
+the selected zone and range. `rlist` uses `offset <count>` when duplicate room
+VNUMs cross a page boundary. Mobile/object zones follow the numeric partitions
+through each zone's top, rather than reset commands or current instance locations.
+Prototype listings use shared short descriptions loaded at boot and report the
+existing population/reset limits without creating entities or reading files/DBs.
+
+`python3 tests/async/test_builder_list_commands.py` executes the production handlers
+and parsing/ANSI helpers under ASan/UBSan and in an optimized build. It covers
+current/public zones, exact/reversed ranges, intersections, malformed and overflowing
+input, empty tables, 0/1/199/499/500/501+ entries, duplicate-VNUM continuation,
+INT_MAX, paging/help/NPC behavior, bounded colored/multiline names and invalid
+sectors. Comparison/probe counts check that 20,000 unrelated entries on either side
+are skipped. Entity-loader stubs abort, fixture state stays unchanged, and command
+registration must retain IMMORTAL access. The fixture timings are not measurements
+of network latency or a production stall.
+
+`python3 tests/async/test_newbie_object_template.py` exercises the index generator,
+object parser and publisher with cold names, empty text, sentinel/EOF termination,
+preserved file positions, shared pointers and cleanup. These native tests do not
+emulate live command dispatch, network paging or database state.
+
 ## Combined log-review integration qualification
 
 The combined server/world/schema at `8b2681862` incorporates master `c6a95a470`
@@ -166,11 +240,6 @@ group size or override policy changed. Build evidence is retained in the isolate
 integration worktree's `bin/analysis/integration/build.log`. This focused pass is
 not final combined-stack qualification or production rollout; full-server fault
 journeys and the broad gates remain due after #73–#75 integration.
-
-Issue #58 is locally qualified on `fix/58-artifact-guild-memory`. The
-[qualification record](../ongoing-projects/log-server-review.md#qualification-update-2026-10-14)
-maps the acceptance criteria to tests, records local logs and separates review
-readiness from production rollout.
 
 `python3 tests/async/test_artifact_guild_rewards_runtime.py` links real reward
 capture/application, transaction submission and codec code, with controlled writer
@@ -398,8 +467,7 @@ queue reuse pass under ASan/UBSan. Restoring each original caller separately
 fails at the adjacent-room assertion. RNG, eligibility, presentation, movement
 endpoints, and wait are adapters; no live cast, production rollout, or historical
 attribution is claimed. The development server build and eight related focused
-zone/movement/lifecycle/latency tests pass. Evidence and remaining original
-acceptance are in [the continuation plan](../ongoing-projects/plan-issue-106.md).
+zone/movement/lifecycle/latency tests pass.
 
 The legacy physical `damage()` wrapper now stops a skill after either
 participant dies, matching its spell branch. Previously simultaneous death
@@ -1647,6 +1715,71 @@ Not covered: the original report, an intermittent full-world crash in room 40200
 purging an apprentice and running `zresetfull`, was never attributed to this defect by a
 core or sanitizer trace. A full-world sanitizer journey with a real summoned
 master-and-follower chain would settle it.
+
+## Named locker entry
+
+Each personal locker belongs to an account and faction. Bare character names and
+`<character>.locker` resolve to the same active account locker; blocked, deleted,
+missing, or unreadable identities cannot create separate character storage.
+Exact authenticated account/side names retain default creation rights. Canonical
+own-guild names use the same checks and fees as `enter locker guild`.
+
+Room titles use the owner's current character, a visitor's requested character,
+or the first eligible same-side character in the account menu's recent-first order.
+If that last lookup fails, a generic title protects the account name. Faction checks
+apply independently of grants, ownership, and staff access, before occupancy is
+revealed. Loading a locker never changes its stored faction. The SQL account list
+loads login timestamps as epoch seconds and uses the same stable ordering as the
+title fallback, so reading and saving that list cannot replace dates with year values.
+
+```sh
+python3 tests/async/test_locker_named_entry_runtime.py
+python3 tests/async/test_locker_result_failures.py
+python3 tests/async/test_locker_terminal_fallback_contract.py
+python3 tests/async/test_locker_item_payload.py
+python3 tests/async/test_mysql_locker_grant_journey.py --server /absolute/path/dms_new
+```
+
+The first test executes production resolution, ownership and display-name functions
+under ASan/UBSan. SQL responses are controlled; flat-file identities use the real
+persisted catalog, including blocked/deleted/missing identities and corruption.
+Use a filesystem that supports the repository's ownership and permission checks.
+The occupancy test exercises idle, occupied and pending-save admission without
+revealing occupants to unauthorized or opposite-side visitors.
+
+The save boundary accepts only locker identity, faction, optional guild ownership
+and the item tree. Item UIDs, nested contents, item properties, affects and extra
+descriptions retain their existing item serializers. Chest names, password hashes,
+sort settings and visitor grants stay in their dedicated tables. The obsolete
+player-format fallback and owner password copy are removed. The runtime still uses
+a character-shaped item carrier for existing object movement and event APIs; that
+carrier is excluded from the player save loop and cannot enter `writeCharacter`.
+The item-payload regression executes the private-chest loader and asynchronous SQL
+writer under ASan/UBSan. It checks all five item-flag fields and material, retained
+prototype defaults for older rows, and removal of exact duplicate description rows
+without removing distinct descriptions. Both locker writers now deduplicate those
+rows, and the private-chest loader restores the same saved flags as public storage.
+
+The failure regression executes worker completion and final-save functions under
+ASan/UBSan. An asynchronous failure recollects an occupied locker's items before a
+synchronous retry; failed saves retain their pending state. The dedicated final
+save drains queued work, saves open lockers and private chests, and handles deferred
+carriers. Normal shutdown and copyover refuse to finish if that save fails.
+
+The MariaDB journey requires a generated full world, a matching server binary, and
+explicit disposable loopback `TEST_DB_HOST`, `TEST_DB_USER`, and `TEST_DB_PASSWORD`.
+It creates and drops a unique schema using the existing bootstrap/migration
+contract, imports help from a temporary copy, and never reads the checkout `.env`.
+Mortal accounts exercise grants, aliases, title privacy, first creation, revocation,
+occupancy, faction refusal, reconnect, private chests and nested contents. A database
+trigger injects save failure and checks that shutdown cancels without losing the
+saved contents. Occupied and just-left shutdown/restart checks compare item UIDs
+and chest metadata. A mortal guild owner exercises creation, contents, fees, and
+membership/prestige/parole refusal. Evidence goes under `bin/analysis/issue-234`.
+
+This addresses Luminari #234 on Community's MariaDB implementation. Community's
+flat-file locker load/save entry points remain pre-existing stubs; catalog tests
+and a server build do not establish a working flat-file locker gameplay journey.
 
 ## Connection timeout observer cleanup
 

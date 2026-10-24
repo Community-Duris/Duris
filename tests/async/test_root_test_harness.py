@@ -45,6 +45,8 @@ sys.modules[runner_spec.name] = runner
 runner_spec.loader.exec_module(runner)
 expected_resource_intensive = {
     "test_account_recovery_journey.py",
+    "test_connection_limit_journey.py",
+    "test_corpse_trap_restart_journey.py",
     "test_creation_prompt_journey.py",
     "test_game_loop_session_journey.py",
     "test_area_coin_pickup.py",
@@ -63,6 +65,7 @@ assert runner.RESOURCE_INTENSIVE_TEST_NAMES == expected_resource_intensive
 assert runner.MANUAL_ONLY_TEST_NAMES == {
     "test_mob_gold_dial_runtime.py",
     "test_mysql_playtime_journey.py",
+    "test_mysql_locker_grant_journey.py",
     "test_pet_restart_journey.py",
     "test_playtime_mysql_repository.py",
     "test_issue331_player_journey.py",
@@ -82,6 +85,8 @@ sample_tests = [
     Path("test_mysql_combat_journey.py"),
     Path("test_information_cache_journey.py"),
     Path("test_creation_prompt_journey.py"),
+    Path("test_connection_limit_journey.py"),
+    Path("test_corpse_trap_restart_journey.py"),
 ]
 parallel_tests, resource_intensive_tests = runner.partition_tests(sample_tests)
 assert parallel_tests == [Path("test_fast.py")]

@@ -9187,7 +9187,7 @@ int parrySucceed(P_char victim, P_char attacker, P_obj wpn)
 
 	// Harder to parry a swashbuckler.
 	if (GET_SPEC(attacker, CLASS_WARRIOR, SPEC_SWASHBUCKLER))
-		learnedattacker = (int)(learnedattacker * 0.80);
+		learnedattacker = (int)(learnedattacker * 1.10);
 
 	// Random 5% change based on random luck comparison.
 	if (number(0, GET_C_LUK(victim)) > number(0, GET_C_LUK(attacker)))

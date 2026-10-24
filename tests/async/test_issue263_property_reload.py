@@ -2,6 +2,7 @@
 """Execute property commands, including refreshing loaded PCs and NPCs after reload."""
 from pathlib import Path
 import os
+import shutil
 import subprocess
 import tempfile
 from _paths import HARNESS_STUBS
@@ -9,7 +10,7 @@ from _paths import HARNESS_STUBS
 ROOT = Path(__file__).resolve().parents[2]
 
 def main():
-    output = ROOT / "bin" / "tests"
+    output = Path(os.environ.get("BIN_ROOT", ROOT / "bin")) / "tests"
     output.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="issue263-properties-", dir=output) as directory:
         work = Path(directory)
@@ -30,9 +31,12 @@ def main():
             for case in ("keys", "reload-missing", "reload-read", "reload-close-source",
                          "reload-malformed", "reload-limit", "save-missing", "save-open",
                          "save-read", "save-write", "save-flush", "save-close-source",
-                         "save-close-target", "save-rename", "save-malformed"):
+                         "save-close-target", "save-rename", "save-malformed", "hometown-alarms"):
                 with tempfile.TemporaryDirectory(prefix=case + "-", dir=work) as scenario:
                     (Path(scenario) / "lib").mkdir()
+                    if case == "hometown-alarms":
+                        shutil.copyfile(ROOT / "lib/duris.properties",
+                                        Path(scenario) / "lib/duris.properties")
                     results.append(subprocess.run([str(binary), case], cwd=scenario).returncode)
             assert all(result == 0 for result in results), results
             print("real property-command journey passed:", mode, flush=True)

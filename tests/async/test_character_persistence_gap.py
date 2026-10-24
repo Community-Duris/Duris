@@ -324,7 +324,7 @@ require(
 
 flat_terminal_save = section(
     write_character,
-    "#ifdef __NO_MYSQL__\n\tif (!is_locker_char &&",
+    "#ifdef __NO_MYSQL__",
     "\n#endif",
 )
 require(

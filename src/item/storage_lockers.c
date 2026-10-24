@@ -42,6 +42,8 @@
 #include "sql/sql_player.h"
 #include "world/vnum.room.h"
 #include "persistence/locker_async.h"
+#include "persistence/persistence_mode.h"
+#include "flatfile/flatfile_identity_repository.h"
 #include "item/item_movement_transaction.h"
 
 extern P_index obj_index;
@@ -1716,7 +1718,7 @@ bool EqAffectChest::ItemFits(P_obj obj)
 int storage_locker(int room, P_char ch, int cmd, char *arg);
 
 /* create a new locker room for locker 'locker' which 'ch' will go to */
-static int create_new_locker(P_char ch, P_char locker);
+static int create_new_locker(P_char ch, P_char locker, const char *requested = nullptr);
 
 /* free memory associated with creating a new locker */
 static void free_locker(int roomNum);
@@ -1793,6 +1795,163 @@ int storage_locker_obj_hook(P_obj obj, P_char ch, int cmd, char *argument)
 }
 
 /* room proc put in banks, etc to allow a person to enter a locker */
+/* Every personal entry resolves to an account and faction; there is no character storage. */
+static bool resolve_named_locker(const char *name, std::string *target)
+{
+	*target = name;
+	for (char &value : *target)
+		value = tolower(static_cast<unsigned char>(value));
+	if (target->ends_with(".locker"))
+		target->resize(target->size() - 7);
+	if (target->empty())
+		return false;
+	if (!strchr(target->c_str(), '.'))
+	{
+		std::string account, side;
+		if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		{
+			const char *root = persistence_mode_flatfile_root();
+			flatfile_identity_record identity;
+			std::string error;
+			const auto result =
+				root ? flatfile_identity_lookup_name(root, target->c_str(),
+								     &identity, &error) :
+				       flatfile_identity_result::io_error;
+			if (result != flatfile_identity_result::ok &&
+			    result != flatfile_identity_result::not_found)
+				return false;
+			if (result == flatfile_identity_result::ok && identity.active &&
+			    !identity.blocked)
+			{
+				account = identity.account;
+				side = std::to_string(identity.racewar);
+			}
+		}
+		else
+		{
+			if (!DB)
+				return false;
+			char *escaped = sql_escape_string(target->c_str());
+			if (!escaped)
+				return false;
+			MYSQL_RES *rows = db_query(
+				"SELECT account_name, racewar FROM account_characters "
+				"WHERE LOWER(char_name)=LOWER('%s') AND blocked=0 AND deleted_at IS NULL LIMIT 1",
+				escaped);
+			free(escaped);
+			if (!rows)
+				return false;
+			MYSQL_ROW row = mysql_fetch_row(rows);
+			if (row)
+			{
+				if (!row[0] || !row[0][0] || !row[1])
+				{
+					mysql_free_result(rows);
+					return false;
+				}
+				account = row[0];
+				side = row[1];
+			}
+			mysql_free_result(rows);
+		}
+		if (account.empty() || !str_cmp(account.c_str(), "Unknown"))
+			return false;
+		*target = "account." + account + "." + side;
+	}
+	else if (target->starts_with("account."))
+	{
+		const size_t dot = target->find('.', 8);
+		if (dot == std::string::npos || dot == 8 || dot + 2 != target->size() ||
+		    (*target)[dot + 1] < '0' || (*target)[dot + 1] > '2')
+			return false;
+	}
+	else if (target->starts_with("guild."))
+	{
+		if (target->size() == 6 || (*target)[6] == '0' ||
+		    target->find_first_not_of("0123456789", 6) != std::string::npos)
+			return false;
+	}
+	else
+	{
+		return false;
+	}
+	for (char &value : *target)
+		value = tolower(static_cast<unsigned char>(value));
+	if (!target->ends_with(".locker"))
+		*target += ".locker";
+	return true;
+}
+
+/* Only an exact authenticated account and side can use default creation rights. */
+static bool locker_is_account_owner(P_char ch, const std::string &target)
+{
+	const char *account = get_account_name_safe(ch);
+	return account && strcmp(account, "Unknown") &&
+	       !str_cmp(target.c_str(), ("account." + std::string(account) + "." +
+					 std::to_string(GET_RACEWAR(ch)) + ".locker")
+						.c_str());
+}
+
+/* Account identifiers are internal. Never use one as a room display name. */
+static std::string locker_display_name(P_char visitor, P_char locker, const char *requested)
+{
+	std::string display;
+	const std::string target = GET_NAME(locker);
+	if (locker_is_account_owner(visitor, target))
+		display = GET_NAME(visitor);
+	else if (requested && *requested && !strchr(requested, '.'))
+		display = requested;
+	else if (target.starts_with("account."))
+	{
+		const std::string account = target.substr(8, target.find('.', 8) - 8);
+		if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		{
+			const char *root = persistence_mode_flatfile_root();
+			std::vector<flatfile_identity_record> characters;
+			std::string error;
+			if (root &&
+			    flatfile_identity_list_account(root, account, &characters, &error) ==
+				    flatfile_identity_result::ok)
+			{
+				const flatfile_identity_record *first = nullptr;
+				for (const auto &character : characters)
+					if (character.active && !character.blocked &&
+					    character.racewar == GET_RACEWAR(locker) &&
+					    (!first || character.last_login > first->last_login ||
+					     (character.last_login == first->last_login &&
+					      character.pid < first->pid)))
+						first = &character;
+				if (first)
+					display = first->name;
+			}
+		}
+		else if (DB)
+		{
+			char *escaped = sql_escape_string(account.c_str());
+			MYSQL_RES *rows =
+				escaped ?
+					db_query(
+						"SELECT char_name FROM account_characters WHERE LOWER(account_name)=LOWER('%s') "
+						"AND racewar=%d AND blocked=0 AND deleted_at IS NULL ORDER BY last_login DESC, pid ASC LIMIT 1",
+						escaped, GET_RACEWAR(locker)) :
+					nullptr;
+			free(escaped);
+			if (rows)
+			{
+				MYSQL_ROW row = mysql_fetch_row(rows);
+				if (row && row[0])
+					display = row[0];
+				mysql_free_result(rows);
+			}
+		}
+	}
+	for (char &value : display)
+		value = tolower(static_cast<unsigned char>(value));
+	if (!display.empty())
+		display[0] = toupper(static_cast<unsigned char>(display[0]));
+	return display;
+}
+
 int storage_locker_room_hook(int room, P_char ch, int cmd, char *arg)
 {
 	P_char chLocker = NULL;
@@ -1821,6 +1980,9 @@ int storage_locker_room_hook(int room, P_char ch, int cmd, char *arg)
 		return (FALSE);
 
 	argument_interpreter(arg, enterWhat, enterWho);
+	std::string requested = enterWho;
+	if (requested.ends_with(".locker"))
+		requested.resize(requested.size() - 7);
 
 	if (str_cmp(enterWhat, "locker"))
 		return FALSE;
@@ -1869,7 +2031,10 @@ int storage_locker_room_hook(int room, P_char ch, int cmd, char *arg)
 	// }
 
 	// check for guild locker
-	if (!str_cmp(enterWho, "guild"))
+	const std::string guild_name =
+		GET_ASSOC(ch) ? "guild." + std::to_string(GET_ASSOC(ch)->get_id()) : "";
+	if (!str_cmp(enterWho, "guild") ||
+	    (GET_ASSOC(ch) && (guild_name == enterWho || guild_name + ".locker" == enterWho)))
 	{ /* guild lockers are named:  guild.x.locker where 'x' is the assoc number */
 		if (!GET_ASSOC(ch) || !IS_MEMBER(GET_A_BITS(ch)) ||
 		    (IS_PC(ch) && !GT_PAROLE(GET_A_BITS(ch))))
@@ -1911,7 +2076,16 @@ int storage_locker_room_hook(int room, P_char ch, int cmd, char *arg)
 		bValidate = 1;
 	}
 
-	checked_snprintf(lockerName, 500, "%s.locker", enterWho);
+	std::string target;
+	if (!resolve_named_locker(enterWho, &target) || target.size() >= sizeof(lockerName))
+	{
+		send_to_char("The locker could not be opened right now.  Please try later.\r\n",
+			     ch);
+		return TRUE;
+	}
+	checked_snprintf(lockerName, sizeof(lockerName), "%s", target.c_str());
+	if (locker_is_account_owner(ch, target))
+		bValidate = 0;
 
 	chLocker = load_locker_char(ch, lockerName, bValidate);
 
@@ -1920,7 +2094,7 @@ int storage_locker_room_hook(int room, P_char ch, int cmd, char *arg)
 		return TRUE;
 	}
 
-	locker_room = create_new_locker(ch, chLocker);
+	locker_room = create_new_locker(ch, chLocker, requested.c_str());
 
 	if (!locker_room)
 	{
@@ -2357,8 +2531,7 @@ void StorageLocker::event_resortLocker(P_char chLocker, P_char ch, P_obj /*obj*/
  * memory.  This function performs the actual SQL serialization and then
  * extracts the locker character.
  *
- * If the save fails, writeCharacter already has its own internal flat-file
- * fallback.  The failure is logged for staff attention. */
+ * A failed save retains the live contents and re-entry fence for recovery. */
 static void event_deferredTerminalSave(P_char chLocker, P_char /*ch*/, P_obj /*obj*/,
 				       void * /*data*/)
 {
@@ -2368,16 +2541,18 @@ static void event_deferredTerminalSave(P_char chLocker, P_char /*ch*/, P_obj /*o
 	logit(LOG_DEBUG, "Deferred terminal save: locker_char=%s carried=%d", GET_NAME(chLocker),
 	      locker_count_carried_objects(chLocker));
 
-	/* sql_save_locker owns and commits its transaction when called through
-	 * writeCharacter. A false result preserves the locker character and all
+	/* The dedicated locker save owns its transaction. A false result preserves the carrier and all
 	 * inventory for an operator retry. */
-	if (!writeCharacter(chLocker, 3, NOWHERE))
+	if (!save_locker_storage(chLocker))
 	{
-		logit(LOG_OBJ,
-		      "Deferred terminal save: writeCharacter failed for %s (flat fallback may have been attempted)",
+		logit(LOG_OBJ, "Deferred terminal save: save_locker_storage failed for %s",
 		      GET_NAME(chLocker));
 		persistence_alert(AVATAR, "locker", "deferred_terminal", "none", "none",
 				  "terminal_not_durable", "extract_refused=1");
+		// The event is also the re-entry fence while the worker is unavailable.
+		// Retain it after failure so an old durable copy cannot be loaded beside
+		// these unsaved live contents.
+		add_event(event_deferredTerminalSave, 3, chLocker, NULL, NULL, 0, NULL, 0);
 		return;
 	}
 
@@ -2919,7 +3094,7 @@ static void create_private_chest_objects(StorageLocker *pLocker)
 	mysql_free_result(result);
 }
 
-static int create_new_locker(P_char ch, P_char locker)
+static int create_new_locker(P_char ch, P_char locker, const char *requested)
 {
 	P_obj tmp_object = NULL, next_obj = NULL;
 	int roomNum = -1;
@@ -2972,26 +3147,13 @@ static int create_new_locker(P_char ch, P_char locker)
 			}
 			snprintf(roomNameBuf, 500, "The Storage Locker for %s&n", Gbuf1);
 		}
-		else if (!strn_cmp("account.", GET_NAME(locker), 8))
-		{ /* account locker - format: account.name.racewar.locker */
-			char acct_name[MAX_INPUT_LENGTH];
-			char *src = GET_NAME(locker) + 8;
-			char *dot = strchr(src, '.');
-			if (dot)
-			{
-				int len = dot - src;
-				memcpy(acct_name, src, len);
-				acct_name[len] = '\0';
-			}
-			else
-				strcpy(acct_name, src);
-			checked_snprintf(roomNameBuf, 500, "The Storage Locker for %s", acct_name);
-		}
 		else
-		{ /* normal player locker */
-			snprintf(roomNameBuf, 500, "The Storage Locker for %s", GET_NAME(locker));
-			if (strrchr(roomNameBuf, '.'))
-				*(strrchr(roomNameBuf, '.')) = '\0';
+		{
+			const std::string display = locker_display_name(ch, locker, requested);
+			checked_snprintf(roomNameBuf, sizeof(roomNameBuf), "%s%s",
+					 display.empty() ? "A Private Storage Locker" :
+							   "The Storage Locker for ",
+					 display.c_str());
 		}
 		/* found a room to use!  set the room name, flags, etc */
 		world[realNum].sector_type = LOCKERS_SECT_TYPE;
@@ -3090,6 +3252,21 @@ static void free_locker(int roomNum)
 	}
 }
 
+/* Locker characters stay in the holding room; their wrappers live in private rooms. */
+static StorageLocker *active_locker_for(P_char locker)
+{
+	for (int vnum = LOCKERS_START + 1; vnum < LOCKERS_START + LOCKERS_MAX; ++vnum)
+	{
+		const int room = real_room(vnum);
+		if (room == NOWHERE || world[room].funct != storage_locker)
+			continue;
+		StorageLocker *active = GetChestList(room);
+		if (active && active->GetLockerChar() == locker)
+			return active;
+	}
+	return NULL;
+}
+
 /* Load a locker character while preserving occupancy privacy and access rules. */
 static P_char load_locker_char(P_char ch, char *esc_locker_name, int bValidateAccess)
 {
@@ -3109,6 +3286,14 @@ static P_char load_locker_char(P_char ch, char *esc_locker_name, int bValidateAc
 		return NULL;
 	}
 
+	const std::string target = esc_locker_name;
+	if (target.starts_with("account.") &&
+	    !target.ends_with("." + std::to_string(GET_RACEWAR(ch)) + ".locker"))
+	{
+		send_to_char("You don't have access to that locker!\r\n", ch);
+		return NULL;
+	}
+
 	bool bPlayerIsGod = (GET_LEVEL(ch) >= OVERLORD || god_check(ch->player.name));
 
 	// check if locker exists in database
@@ -3119,6 +3304,17 @@ static P_char load_locker_char(P_char ch, char *esc_locker_name, int bValidateAc
 		// check if locker is currently in use
 		if (lockerName_is_inuse(esc_locker_name) > 0)
 		{
+			bool authorized = false;
+			for (P_char chk = character_list; chk && !authorized; chk = chk->next)
+				if (GET_NAME(chk) && !str_cmp(esc_locker_name, GET_NAME(chk)))
+					authorized = GET_RACEWAR(ch) == GET_RACEWAR(chk) &&
+						     (!bValidateAccess || bPlayerIsGod ||
+						      locker_access_canEnter(chk, ch));
+			if (!authorized)
+			{
+				send_to_char("You don't have access to that locker!\r\n", ch);
+				return NULL;
+			}
 			// Check if this is a pending deferred save rather than an
 			// active user, and give a more appropriate message.
 			bool deferred_save_pending = false;
@@ -3152,12 +3348,10 @@ static P_char load_locker_char(P_char ch, char *esc_locker_name, int bValidateAc
 				for (P_char chk = character_list; chk; chk = chk->next)
 				{
 					if (chk && GET_NAME(chk) &&
-					    !str_cmp(esc_locker_name, GET_NAME(chk)) &&
-					    chk->in_room != NOWHERE &&
-					    IS_ROOM(chk->in_room, ROOM_LOCKER))
+					    !str_cmp(esc_locker_name, GET_NAME(chk)))
 					{
-						pOcc = GetChestList(chk->in_room);
-						if (pOcc && pOcc->GetLockerChar() == chk)
+						pOcc = active_locker_for(chk);
+						if (pOcc)
 						{
 							active_locker_char = chk;
 							break;
@@ -3167,17 +3361,6 @@ static P_char load_locker_char(P_char ch, char *esc_locker_name, int bValidateAc
 
 				if (active_locker_char)
 				{
-					if (bValidateAccess && !bPlayerIsGod &&
-					    !locker_access_canEnter(active_locker_char, ch))
-					{
-						// No access - don't reveal anything about the
-						// locker's state or its occupant.
-						send_to_char(
-							"You don't have access to that locker!\r\n",
-							ch);
-						return NULL;
-					}
-
 					P_char occupant = pOcc->GetLockerUser();
 
 					// Player has access (or is staff / entering own locker).
@@ -3221,40 +3404,12 @@ static P_char load_locker_char(P_char ch, char *esc_locker_name, int bValidateAc
 		}
 
 		// validate access
-		if (bValidateAccess && !bPlayerIsGod && !locker_access_canEnter(vict, ch))
+		if (GET_RACEWAR(ch) != GET_RACEWAR(vict) ||
+		    (bValidateAccess && !bPlayerIsGod && !locker_access_canEnter(vict, ch)))
 		{
 			send_to_char("You don't have access to that locker!\r\n", ch);
 			free_char(vict);
 			return NULL;
-		}
-
-		// check racewar side
-		if (bValidateAccess)
-		{
-			if (!bPlayerIsGod && GET_RACEWAR(ch) != GET_RACEWAR(vict))
-			{
-				send_to_char(
-					"Well, THIS is interesting... You have access to a locker on the other racewar\n"
-					"side.  A special log is being generated which will be followed up on to\n"
-					"determine if this was a mistake, or an attempt at cheating.\n",
-					ch);
-				wizlog(56,
-				       "&+RPOSSIBLE CHEATING:&n %s is trying to access opposite racewar side locker %s",
-				       GET_NAME(ch), esc_locker_name);
-				logit(LOG_WIZ,
-				      "POSSIBLE CHEATING: %s is trying to access opposite racewar side locker %s",
-				      GET_NAME(ch), esc_locker_name);
-				sql_log(ch, PLAYERLOG,
-					"&+RPOSSIBLE CHEATING:&n trying to access opposite racewar side locker %s",
-					esc_locker_name);
-				free_char(vict);
-				return NULL;
-			}
-		}
-		else
-		{
-			// just in case their racewar side happened to change mysteriously..
-			GET_RACEWAR(vict) = GET_RACEWAR(ch);
 		}
 	}
 	else
@@ -3273,11 +3428,22 @@ static P_char load_locker_char(P_char ch, char *esc_locker_name, int bValidateAc
 		clear_char(vict);
 		ensure_pconly_pool();
 		vict->only.pc = (struct pc_only_data *)mm_get(dead_pconly_pool);
+		if (!vict->only.pc)
+		{
+			mm_release(dead_mob_pool, vict);
+			return NULL;
+		}
+		memset(vict->only.pc, 0, sizeof(struct pc_only_data));
 		vict->only.pc->aggressive = -1;
 		vict->only.pc->zone_trophy = NULL;
 		vict->desc = NULL;
 
-		create_locker_char(ch, vict, esc_locker_name);
+		if (!create_locker_char(ch, vict, esc_locker_name))
+		{
+			free_char(vict);
+			send_to_char("The locker could not be saved. Please try later.\r\n", ch);
+			return NULL;
+		}
 	}
 
 	// insert in list
@@ -3292,17 +3458,47 @@ static P_char load_locker_char(P_char ch, char *esc_locker_name, int bValidateAc
 	return vict;
 }
 
+// Runtime item movement still uses a character-shaped carrier. Only this
+// explicit view crosses the save boundary; no player state is serialized.
+locker_save_data locker_save_data_for(P_char locker)
+{
+	const char *name = locker ? GET_NAME(locker) : nullptr;
+	return { name, locker ? GET_RACEWAR(locker) : 0,
+		 name && !strncmp(name, "guild.", 6) ? atoi(name + 6) : 0,
+		 locker ? locker->carrying : nullptr };
+}
+
+bool save_locker_storage(P_char locker)
+{
+	return locker && sql_save_locker(locker_save_data_for(locker));
+}
+
+/* Final shutdown/copyover boundary, including private chests and deferred saves
+ * that are not represented by an async slot. Preserve live state on any failure. */
+bool save_all_lockers()
+{
+	if (!locker_async_drain(3000))
+		return false;
+	bool saved = true;
+	for (P_char locker = character_list; locker; locker = locker->next)
+	{
+		if (!GET_NAME(locker) || !strstr(GET_NAME(locker), ".locker"))
+			continue;
+		StorageLocker *active = active_locker_for(locker);
+		const bool prepared = !active || active->LockerToPFile();
+		if (!prepared || !save_locker_storage(locker))
+			saved = false;
+		if (active)
+			active->PFileToLocker();
+	}
+	return saved;
+}
+
 static P_char create_locker_char(P_char chOwner, P_char ch, char *esc_locker_name)
 {
-	/* create a new pfile with 'esc_locker_name' name */
-
 	ch->player.name = str_dup(esc_locker_name);
 	GET_RACEWAR(ch) = GET_RACEWAR(chOwner);
-	GET_RACE(ch) = GET_RACE(chOwner);
-	//  init_char(ch);
-	strcpy(ch->only.pc->pwd, chOwner->only.pc->pwd);
-	writeCharacter(ch, 0, NOWHERE);
-	return ch;
+	return sql_save_locker(locker_save_data_for(ch), true) ? ch : nullptr;
 }
 
 static int save_locker_char(P_char ch, int bTerminal)
@@ -3360,12 +3556,12 @@ static int save_locker_char(P_char ch, int bTerminal)
 		if (!locker_async_mark_dirty(chLocker, ch, 1, "save_locker_char-terminal"))
 		{
 			/* async unavailable - sync terminal save */
-			if (!writeCharacter(chLocker, 3, NOWHERE))
+			if (!save_locker_storage(chLocker))
 			{
 				locker_log_save_failure(
 					pLocker, ch, chLocker,
-					"terminal-writeCharacter-sync-fallback",
-					"async unavailable and writeCharacter failed");
+					"terminal-save_locker_storage-sync-fallback",
+					"async unavailable and save_locker_storage failed");
 				pLocker->PFileToLocker();
 				return 0;
 			}
@@ -3379,11 +3575,11 @@ static int save_locker_char(P_char ch, int bTerminal)
 	if (!locker_async_mark_dirty(chLocker, ch, 0, "save_locker_char-nonterminal"))
 	{
 		/* async unavailable - fall back to synchronous public save */
-		if (!writeCharacter(chLocker, 0, NOWHERE))
+		if (!save_locker_storage(chLocker))
 		{
 			locker_log_save_failure(pLocker, ch, chLocker,
-						"sync-writeCharacter-fallback",
-						"async unavailable and writeCharacter failed");
+						"sync-save_locker_storage-fallback",
+						"async unavailable and save_locker_storage failed");
 			pLocker->PFileToLocker();
 			return 0;
 		}
@@ -3574,12 +3770,9 @@ static int lockerName_is_inuse(char *lockerName)
 			 * It must be counted as "in use" to prevent the player from
 			 * re-entering the same locker and loading a duplicate before
 			 * the save event fires. */
-			StorageLocker *pLocker = NULL;
+			StorageLocker *pLocker = active_locker_for(chLocker);
 
-			if (chLocker->in_room != NOWHERE && IS_ROOM(chLocker->in_room, ROOM_LOCKER))
-				pLocker = GetChestList(chLocker->in_room);
-
-			if (pLocker && pLocker->GetLockerChar() == chLocker)
+			if (pLocker)
 			{
 				nCnt++;
 			}
@@ -3656,7 +3849,7 @@ bool rename_locker(P_char ch, char *old_charname, char *new_charname)
 	CAP(lockerNewName);
 	GET_NAME(chLocker) = str_dup(lockerNewName);
 
-	if (!writeCharacter(chLocker, 0, NOWHERE))
+	if (!save_locker_storage(chLocker))
 	{
 		logit(LOG_OBJ, "Char save failed for %s in rename_locker()!", GET_NAME(ch));
 		debug("Char save failed for %s in rename_locker()!", GET_NAME(ch));

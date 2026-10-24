@@ -78,6 +78,7 @@ bool item_creation_grant_batches_pending() { return false; }
 void flush_pending_ship_saves() {}
 bool drain_pending_ship_saves() { return true; }
 int locker_async_drain(int) { return 1; }
+bool save_all_lockers() { return true; }
 void maintenance_scheduler_quiesce() {}
 void maintenance_scheduler_resume() {}
 bool maintenance_scheduler_drain(uint64_t) { return true; }
@@ -99,6 +100,7 @@ bool persistence_log_drain(unsigned timeout_ms) { assert(timeout_ms == 3000); re
 // Empty-world boundaries: reaching these would make the fixture invalid.
 bool persistence_save_character_terminal(P_char, int) { std::abort(); }
 bool persistence_save_character_terminal_database_acknowledged(P_char, int) { std::abort(); }
+bool start_hatred_check(P_char) { std::abort(); }
 int websocket_send_text(P_desc, const char *) { std::abort(); }
 int compress_end(P_desc, int) { std::abort(); }
 void write_to_q(const char *, txt_q *, int) { std::abort(); }

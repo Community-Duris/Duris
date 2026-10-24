@@ -951,7 +951,7 @@ void poison_slowness(int /*level*/, P_char /*ch*/, char * /*arg*/, [[maybe_unuse
 		if (!(af = poison_common(victim, POISON_SLOWNESS)))
 			return;
 		af->duration = 1;
-		af->bitvector2 = AFF2_SLOW;
+		af->bitvector2 |= AFF2_SLOW;
 
 		send_to_char("&+cYe feel a wave of strange weakness running through yer body.&n\n",
 			     victim);
@@ -1629,7 +1629,7 @@ bool char_to_room(P_char ch, int room, int dir)
 	/*
 	 * justice hook
 	 */
-	if (!training_dummy_is(ch) && IS_INVADER(ch))
+	if (!training_dummy_is(ch))
 	{
 		justice_action_invader(ch);
 		if (!IS_ALIVE(ch))

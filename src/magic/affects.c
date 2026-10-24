@@ -3864,9 +3864,8 @@ void affect_update(void)
 			if (GET_VITALITY(i) < GET_MAX_VITALITY(i))
 				StartRegen(i, regen_resource::vitality);
 
-			if (GET_CLASS(i, CLASS_PSIONICIST) || GET_CLASS(i, CLASS_MINDFLAYER))
-				if (GET_MANA(i) < GET_MAX_MANA(i))
-					StartRegen(i, regen_resource::mana);
+			if (USES_MANA(i))
+				StartRegen(i, regen_resource::mana);
 
 			if (GET_WARD(i) < GET_MAX_WARD(i))
 				StartRegen(i, regen_resource::ward);

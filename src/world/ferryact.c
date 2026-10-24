@@ -53,7 +53,7 @@ struct ferry_definition
 	{
 		int room_vnum;
 		const char *name;
-	} *stops;
+	} * stops;
 };
 
 Ferry *create_ferry(const struct ferry_definition *fd)
@@ -127,7 +127,7 @@ static int rickety_ferry_rooms[] = { 47027, 47028, 0 };
 static struct ferry_definition::stop_info rickety_ferry_stops[] = {
 	{ 133052, "&+WTharnadia&N" },
 	{ 557216, "&+CMoonshae &+GIsland&N" },
-	{ 550723, "&+bMenden-of-the-Deep&N" },
+	{ 550723, "&+bMenden-on-the-Deep&N" },
 	{}
 };
 static int stromvok_rooms[] = { 47199, 47215, 0 };
@@ -447,7 +447,7 @@ int ferry_automat_proc(P_obj obj, P_char ch, int cmd, char *arg)
 	if (cmd == CMD_LOOK && isname(arg, "contraption"))
 	{
 		snprintf(buff, MAX_STRING_LENGTH,
-			 "The %s sails from here to the following destinations:\r\n%s\r\n",
+			 "%s sails from here to the following destinations:\r\n%s\r\n",
 			 ferry->name.c_str(), ferry->get_route_list(route_stop).c_str());
 		send_to_char(buff, ch);
 
@@ -494,7 +494,9 @@ int ferry_automat_proc(P_obj obj, P_char ch, int cmd, char *arg)
 
 		if (ticket_cost > 0 && SUB_MONEY(ch, ticket_cost, 0) != 0)
 		{
-			send_to_char("You don't have enough money to buy a ticket!\r\n", ch);
+			send_to_char(
+				"The machine cannot accept your payment right now. Try again shortly.\r\n",
+				ch);
 			return TRUE;
 		}
 
@@ -512,8 +514,7 @@ int ferry_automat_proc(P_obj obj, P_char ch, int cmd, char *arg)
 		ticket->value[0] = ferry_id;
 
 		char buf[MAX_STRING_LENGTH];
-		snprintf(buf, MAX_STRING_LENGTH, "a &+Wferry ticket&n for the %s",
-			 ferry->name.c_str());
+		snprintf(buf, MAX_STRING_LENGTH, "a &+Wferry ticket&n for %s", ferry->name.c_str());
 		ticket->short_description = str_dup(buf);
 
 		send_to_char("You put your money into the machine and receive a ticket.\r\n", ch);
