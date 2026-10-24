@@ -45,7 +45,9 @@ assert "if (mysql_num_rows(res) >= 1)" in source
 # before visitor grants for both idle and actively occupied lockers.
 assert "static bool locker_access_canEnter(P_char locker, P_char visitor)" in source
 assert "sql_locker_owner_can_access(GET_NAME(locker), GET_PID(visitor)" in source
-assert source.count("!locker_access_canEnter(") == 2
+admission = extract_function('storage_lockers.c',
+    'static P_char load_locker_char(P_char ch, char *esc_locker_name, int bValidateAccess)\n{')
+assert admission.count('locker_access_canEnter(') == 2
 sql_player = (SRC / "sql_player.c").read_text()
 owner_access = sql_player[sql_player.index("bool sql_locker_owner_can_access") :]
 assert "locker->owner_pid != owner_pid" in owner_access
@@ -158,6 +160,7 @@ bool char_to_room(P_char ch, int room, int) {
     return true;
 }
 void *_mm_get(mm_ds *, const char *, int) { assert(false); return nullptr; }
+void mm_release(mm_ds *, void *) { assert(false); }
 void clear_char(P_char) { assert(false); }
 void ensure_pconly_pool() { assert(false); }
 static P_char create_locker_char(P_char, P_char, char *) { assert(false); return nullptr; }
@@ -227,13 +230,26 @@ int main(int argc, char **argv) {
     } else if (!strcmp(argv[1], "staff-and-own")) {
         allowed = false;
         visitor.player.level = OVERLORD;
-        GET_RACEWAR(&visitor) = 2; // staff retains its existing side/access bypass
+        GET_RACEWAR(&visitor) = 1; // staff can bypass grants only on the same side
         blocked();
         assert(access_checks == 0 && !occupant_output.empty());
         reset();
         allowed = false;
         blocked(0); // existing trusted own-locker entry path
         assert(access_checks == 0 && !occupant_output.empty());
+        for (int validate : {0, 1}) {
+            reset();
+            visitor.player.level = OVERLORD;
+            GET_RACEWAR(&visitor) = 2;
+            blocked(validate);
+            assert(occupant_output.empty());
+            assert(visitor_output == "You don't have access to that locker!\r\n");
+            reset();
+            rooms[3].funct = nullptr;
+            GET_RACEWAR(&visitor) = 2;
+            assert(load_locker_char(&visitor, request_name, validate) == nullptr);
+            assert(frees == 1 && moves == 0 && GET_RACEWAR(&loaded) == 1);
+        }
     } else if (!strcmp(argv[1], "generic-occupant")) {
         for (P_char who : {static_cast<P_char>(nullptr), &visitor}) {
             reset();
@@ -263,6 +279,11 @@ int main(int argc, char **argv) {
             assert(lockerName_is_inuse(request_name) == 1);
             blocked();
             assert(visitor_output.find(deferred ? "finishing its save" : "currently using") != std::string::npos);
+            assert(occupant_output.empty());
+            allowed = false;
+            visitor_output.clear();
+            blocked();
+            assert(visitor_output == "You don't have access to that locker!\r\n");
             assert(occupant_output.empty());
         }
     } else assert(false);

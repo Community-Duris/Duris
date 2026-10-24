@@ -2212,7 +2212,8 @@ bool persistence_save_all_characters_terminal(int type)
 
 	for (ch = character_list; ch; ch = ch->next)
 	{
-		if (!IS_PC(ch) || !GET_NAME(ch))
+		// Locker carriers are drained by locker_async_drain, never the player pipeline.
+		if (!IS_PC(ch) || !GET_NAME(ch) || strstr(GET_NAME(ch), ".locker"))
 			continue;
 		if (!persistence_save_character_terminal(ch, type))
 		{

@@ -278,7 +278,7 @@ bool sql_delete_account(const char *name)
 {
 	return false;
 }
-bool sql_save_locker(P_char locker_ch, int owner_pid, int owner_assoc_id)
+bool sql_save_locker(const locker_save_data &locker, bool create_only)
 {
 	return false;
 }
@@ -315,7 +315,8 @@ bool sql_locker_owner_can_access(const char *locker_name, int owner_pid, int rac
 		return false;
 	/* Locate the one case-insensitive locker name supplied by the caller. */
 	auto locker =
-		std::find_if(lockers.begin(), lockers.end(), [locker_name](const auto &entry)
+		std::find_if(lockers.begin(), lockers.end(),
+			     [locker_name](const auto &entry)
 			     { return strcasecmp(entry.locker_name.c_str(), locker_name) == 0; });
 	if (locker == lockers.end() || locker->owner_pid != owner_pid || locker->owner_assoc_id ||
 	    locker->racewar != racewar)
@@ -5296,11 +5297,12 @@ static struct acct_chars *sql_load_account_characters(const char *account_name)
 	char query[512];
 	snprintf(
 		query, sizeof(query),
-		"select ac.pid, ac.char_name, ac.login_count, ac.last_login, ac.blocked, ac.racewar, "
+		"select ac.pid, ac.char_name, ac.login_count, UNIX_TIMESTAMP(ac.last_login), ac.blocked, ac.racewar, "
 		"pd.level, pd.race, pd.m_class, pd.secondary_class, pd.last_room, pd.last_save "
 		"from account_characters ac "
 		"left join player_data pd on ac.pid = pd.pid "
-		"where LOWER(ac.account_name)=LOWER('%s') and ac.deleted_at is null",
+		"where LOWER(ac.account_name)=LOWER('%s') and ac.deleted_at is null "
+		"ORDER BY ac.last_login DESC, ac.pid ASC",
 		esc_name);
 	free(esc_name);
 
@@ -6075,15 +6077,20 @@ static int sql_save_locker_item(int locker_id, int chest_id, P_obj obj, int cont
 	return item_id;
 }
 
-static bool sql_save_locker_upsert(P_char locker_ch, const char *locker_name, char *esc_name,
-				   int owner_pid, int owner_assoc_id, int *locker_id)
+static bool sql_save_locker_upsert(const locker_save_data &locker, char *esc_name, int *locker_id,
+				   bool create_only)
 {
-	int existing_locker_id = sql_get_locker_id_by_name(locker_name);
+	int existing_locker_id = sql_get_locker_id_by_name(locker.name);
 
 	if (existing_locker_id > 0)
 	{
+		if (create_only)
+		{
+			sql_rollback();
+			return false;
+		}
 		int carrying_count = 0;
-		for (P_obj cur = locker_ch->carrying; cur; cur = cur->next_content)
+		for (P_obj cur = locker.items; cur; cur = cur->next_content)
 			carrying_count++;
 		logit(LOG_DEBUG, "sql_save_locker: component=public_chest items=%d",
 		      carrying_count);
@@ -6114,22 +6121,17 @@ static bool sql_save_locker_upsert(P_char locker_ch, const char *locker_name, ch
 	}
 
 	// new locker - insert locker record
-	char owner_pid_str[32], owner_assoc_str[32];
-	if (owner_pid > 0)
-		snprintf(owner_pid_str, sizeof(owner_pid_str), "%d", owner_pid);
-	else
-		strcpy(owner_pid_str, "NULL");
-	if (owner_assoc_id > 0)
-		snprintf(owner_assoc_str, sizeof(owner_assoc_str), "%d", owner_assoc_id);
+	char owner_assoc_str[32];
+	if (locker.owner_assoc_id > 0)
+		snprintf(owner_assoc_str, sizeof(owner_assoc_str), "%d", locker.owner_assoc_id);
 	else
 		strcpy(owner_assoc_str, "NULL");
 
 	char ins_query[512];
 	snprintf(ins_query, sizeof(ins_query),
-		 "INSERT INTO lockers (locker_name, owner_pid, owner_assoc_id, racewar, race) "
-		 "VALUES ('%s', %s, %s, %d, %d)",
-		 esc_name, owner_pid_str, owner_assoc_str, GET_RACEWAR(locker_ch),
-		 GET_RACE(locker_ch));
+		 "INSERT INTO lockers (locker_name, owner_assoc_id, racewar) "
+		 "VALUES ('%s', %s, %d)",
+		 esc_name, owner_assoc_str, locker.racewar);
 
 	if (!sql_run_query(ins_query))
 	{
@@ -6142,11 +6144,10 @@ static bool sql_save_locker_upsert(P_char locker_ch, const char *locker_name, ch
 	return true;
 }
 
-static bool sql_save_locker_items(P_char locker_ch, int locker_id, int public_chest_id,
-				  bool own_txn)
+static bool sql_save_locker_items(P_obj items, int locker_id, int public_chest_id, bool own_txn)
 {
 	// save all items the locker char is carrying to public chest - any failure rolls back the whole locker save
-	for (P_obj obj = locker_ch->carrying; obj; obj = obj->next_content)
+	for (P_obj obj = items; obj; obj = obj->next_content)
 	{
 		if (sql_save_locker_item(locker_id, public_chest_id, obj, 0) == 0)
 		{
@@ -6167,22 +6168,30 @@ static bool sql_save_locker_items(P_char locker_ch, int locker_id, int public_ch
 	return true;
 }
 
-bool sql_save_locker(P_char locker_ch, int owner_pid, int owner_assoc_id)
+bool sql_save_locker(const locker_save_data &locker, bool create_only)
 {
-	if (!locker_ch || !DB)
+	if (!locker.name || !DB)
 	{
 		logit(LOG_DEBUG, "sql_save_locker: outcome=unavailable");
 		return false;
 	}
 
-	const char *locker_name = GET_NAME(locker_ch);
-	if (!locker_name)
+	const std::string name = locker.name;
+	const size_t account_end = name.find('.', 8);
+	const bool account = name.starts_with("account.") && account_end != std::string::npos &&
+			     account_end > 8 && !locker.owner_assoc_id &&
+			     name.substr(account_end) ==
+				     "." + std::to_string(locker.racewar) + ".locker";
+	const bool guild = locker.owner_assoc_id > 0 &&
+			   name == "guild." + std::to_string(locker.owner_assoc_id) + ".locker";
+	if ((!account && !guild) || locker.racewar < 0 || locker.racewar > 2 ||
+	    (create_only && locker.items))
 	{
-		logit(LOG_DEBUG, "sql_save_locker: null locker name");
+		logit(LOG_DEBUG, "sql_save_locker: invalid locker identity or creation contents");
 		return false;
 	}
 
-	char *esc_name = sql_escape_string(locker_name);
+	char *esc_name = sql_escape_string(locker.name);
 	if (!esc_name)
 	{
 		logit(LOG_DEBUG, "sql_save_locker: component=name_escape outcome=failure");
@@ -6203,8 +6212,7 @@ bool sql_save_locker(P_char locker_ch, int owner_pid, int owner_assoc_id)
 	}
 
 	int locker_id = 0;
-	if (!sql_save_locker_upsert(locker_ch, locker_name, esc_name, owner_pid, owner_assoc_id,
-				    &locker_id))
+	if (!sql_save_locker_upsert(locker, esc_name, &locker_id, create_only))
 	{
 		free(esc_name);
 		return false;
@@ -6221,7 +6229,7 @@ bool sql_save_locker(P_char locker_ch, int owner_pid, int owner_assoc_id)
 		return false;
 	}
 
-	return sql_save_locker_items(locker_ch, locker_id, public_chest_id, own_txn);
+	return sql_save_locker_items(locker.items, locker_id, public_chest_id, own_txn);
 }
 
 static P_obj sql_load_locker_items(int locker_id, int public_chest_id, int container_id);
@@ -7097,7 +7105,7 @@ void sql_load_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 		 "SELECT id, vnum, weight, cost, timer, extra_flags, wear_flags, item_type, "
 		 "value0, value1, value2, value3, value4, value5, value6, value7, "
 		 "name, short_descr, description, action_descr, obj_uid, item_condition, "
-		 "item_material "
+		 "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, item_material "
 		 "FROM locker_items WHERE locker_id=%d AND container_id IS NULL AND chest_id=%d",
 		 locker_id, chest_id);
 
@@ -7170,6 +7178,18 @@ void sql_load_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 		}
 		if (row[21] && strlen(row[21]) > 0)
 			obj->condition = atoi(row[21]);
+		if (row[22])
+			obj->bitvector = strtoul(row[22], NULL, 10);
+		if (row[23])
+			obj->bitvector2 = strtoul(row[23], NULL, 10);
+		if (row[24])
+			obj->bitvector3 = strtoul(row[24], NULL, 10);
+		if (row[25])
+			obj->bitvector4 = strtoul(row[25], NULL, 10);
+		if (row[26])
+			obj->bitvector5 = strtoul(row[26], NULL, 10);
+		if (row[27])
+			obj->material = atoi(row[27]);
 
 		if (!sql_persistence_item_owner_matches_identity(
 			    obj->obj_uid, "locker", static_cast<unsigned long long>(locker_id),
@@ -10780,7 +10800,8 @@ void sql_restore_saved_items(void)
 		}
 		std::unordered_set<uint64_t> tree_uids;
 		if (!sql_saved_item_collect_uids(obj, &tree_uids) ||
-		    std::any_of(tree_uids.begin(), tree_uids.end(), [&published_uids](uint64_t uid)
+		    std::any_of(tree_uids.begin(), tree_uids.end(),
+				[&published_uids](uint64_t uid)
 				{ return published_uids.find(uid) != published_uids.end(); }))
 		{
 			extract_obj(obj, FALSE);

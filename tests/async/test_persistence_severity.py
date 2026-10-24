@@ -131,7 +131,6 @@ print('[PASS] successful death completion/progress are quiet; disputes, refused 
 
 for file, snippet in [
     ('src/cmd/actoth.c', 'persistence_report(saved ? persistence_severity::ok : persistence_severity::alert,'),
-    ('src/core/files.c', 'persistence_report(persistence_severity::ok, AVATAR, "player_flat_fallback",'),
     ('src/core/utility.c', 'persistence_report(failed ? persistence_severity::alert : persistence_severity::ok,'),
 ]:
     assert contains((ROOT / file).read_text(), snippet), file

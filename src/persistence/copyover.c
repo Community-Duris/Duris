@@ -36,6 +36,7 @@
 #include "net/ttype.h"
 #include "net/websocket.h"
 #include "persistence/locker_async.h"
+#include "item/storage_lockers.h"
 #include "persistence/maintenance_scheduler.h"
 #include "persistence/critical_command_coordinator.h"
 #include "persistence/critical_outbox.h"
@@ -883,7 +884,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	/* Terminal player saves can dirty a locker after the initial locker drain,
 	 * and critical movement ACKs can publish a locker transfer during the
 	 * critical drain. Seal that final generation before serializing copyover. */
-	if (!locker_async_drain(3000))
+	if (!save_all_lockers())
 	{
 		critical_command_coordinator_resume();
 		player_save_pipeline_resume();

@@ -121,10 +121,16 @@ bool sql_delete_account(const char *name);
 // locker functions
 // ============================================================================
 
-// save locker to db
-// for personal locker: owner_pid set, owner_assoc_id = 0
-// for guild locker: owner_pid = 0, owner_assoc_id set
-bool sql_save_locker(P_char locker_ch, int owner_pid, int owner_assoc_id);
+// Borrowed on the game thread; serializers may only read these locker fields.
+// Item serialization preserves nested contents, UIDs, affects and descriptions.
+struct locker_save_data
+{
+	const char *name;
+	int racewar;
+	int owner_assoc_id;
+	P_obj items;
+};
+bool sql_save_locker(const locker_save_data &locker, bool create_only = false);
 
 // load locker from db
 // pass owner_pid for personal, owner_assoc_id for guild (other should be 0)

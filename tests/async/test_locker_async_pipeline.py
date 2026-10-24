@@ -62,7 +62,7 @@ def main():
     ok &= check("pulse wired into game loop",
                 "locker_async_pulse" in files["comm"])
     ok &= check("shutdown drain",
-                "locker_async_shutdown" in files["comm"] and "locker_async_drain" in files["comm"])
+                "locker_async_shutdown" in files["comm"] and "save_all_lockers" in files["comm"])
     ok &= check("makefile builds locker_async.o",
                 "locker_async.o" in files["makefile"])
     ok &= check("restore view after seal",

@@ -39,6 +39,7 @@
 #include <time.h>
 #include <errno.h>
 #include <unistd.h>
+#include <unordered_set>
 
 extern P_index obj_index;
 extern P_char character_list;
@@ -63,8 +64,6 @@ struct locker_async_slot
 	enum locker_async_state state;
 	char locker_name[LOCKER_ASYNC_NAME_LEN];
 	int locker_id;
-	int owner_pid;
-	int owner_assoc_id;
 	int terminal;
 	int rebuild_objects; /* another dirty landed while inflight */
 	unsigned long gen;
@@ -475,6 +474,7 @@ static int emit_item_sql(struct la_buf *b, P_obj obj, int locker_id, int chest_i
 	}
 
 	bool spellbook_emitted = false;
+	std::unordered_set<std::string> description_keys;
 	for (ed = obj->ex_description; ed; ed = ed->next)
 	{
 		char *ek = NULL;
@@ -495,6 +495,17 @@ static int emit_item_sql(struct la_buf *b, P_obj obj, int locker_id, int chest_i
 			free(ek);
 			free(edesc);
 			return 0;
+		}
+		// Match the synchronous writer: prototype and saved descriptions can overlap.
+		std::string description_key = ek;
+		description_key.push_back('\0');
+		if (edesc)
+			description_key += edesc;
+		if (!description_keys.insert(std::move(description_key)).second)
+		{
+			free(ek);
+			free(edesc);
+			continue;
 		}
 		if (edesc)
 			emitted = la_buf_printf(
@@ -526,78 +537,17 @@ static int emit_item_sql(struct la_buf *b, P_obj obj, int locker_id, int chest_i
 	return 1;
 }
 
-static void locker_owner_ids(P_char chLocker, int *owner_pid, int *owner_assoc_id)
+/* Only locker metadata crosses this persistence boundary. */
+static int ensure_locker_ids(const locker_save_data &locker, int *out_locker_id, int *out_public_id)
 {
-	*owner_pid = 0;
-	*owner_assoc_id = 0;
-	if (!chLocker || !GET_NAME(chLocker))
-		return;
-	if (strncmp(GET_NAME(chLocker), "guild.", 6) == 0)
-	{
-		*owner_assoc_id = atoi(GET_NAME(chLocker) + 6);
-	}
-	else if (strncmp(GET_NAME(chLocker), "account.", 8) == 0)
-	{
-		*owner_pid = 0;
-	}
-	else
-	{
-		char pname[MAX_NAME_LENGTH + 1];
-		char *dot;
-		strlcpy(pname, GET_NAME(chLocker), sizeof(pname));
-		dot = strstr(pname, ".locker");
-		if (dot)
-			*dot = '\0';
-		*owner_pid = sql_get_player_pid(pname);
-	}
-}
-
-/* Ensure the locker row + public chest exist; return locker_id and public_chest_id.
- * Only metadata -- no item walk. Returns 0 on failure. */
-static int ensure_locker_ids(P_char chLocker, int owner_pid, int owner_assoc_id, int *out_locker_id,
-			     int *out_public_id)
-{
-	int locker_id;
-	int public_id;
-	char *esc_name;
-	char query[768];
-	char owner_pid_str[32], owner_assoc_str[32];
-
-	if (!chLocker || !GET_NAME(chLocker) || !out_locker_id || !out_public_id)
+	if (!locker.name || !out_locker_id || !out_public_id)
 		return 0;
-
-	locker_id = sql_get_locker_id_by_name(GET_NAME(chLocker));
+	int locker_id = sql_get_locker_id_by_name(locker.name);
 	if (locker_id <= 0)
-	{
-		esc_name = la_esc(GET_NAME(chLocker));
-		if (!esc_name)
-			return 0;
-		if (owner_pid > 0)
-			snprintf(owner_pid_str, sizeof(owner_pid_str), "%d", owner_pid);
-		else
-			strcpy(owner_pid_str, "NULL");
-		if (owner_assoc_id > 0)
-			snprintf(owner_assoc_str, sizeof(owner_assoc_str), "%d", owner_assoc_id);
-		else
-			strcpy(owner_assoc_str, "NULL");
-		snprintf(
-			query, sizeof(query),
-			"INSERT INTO lockers (locker_name, owner_pid, owner_assoc_id, racewar, race) "
-			"VALUES ('%s', %s, %s, %d, %d)",
-			esc_name, owner_pid_str, owner_assoc_str, GET_RACEWAR(chLocker),
-			GET_RACE(chLocker));
-		free(esc_name);
-		if (!qry("%s", query))
-			return 0;
-		locker_id = sql_get_locker_id_by_name(GET_NAME(chLocker));
-		if (locker_id <= 0)
-			return 0;
-	}
-
-	public_id = sql_get_or_create_public_chest(locker_id);
+		return 0; // Entry must establish the locker before any inventory is admitted.
+	const int public_id = sql_get_or_create_public_chest(locker_id);
 	if (public_id <= 0)
 		return 0;
-
 	*out_locker_id = locker_id;
 	*out_public_id = public_id;
 	return 1;
@@ -607,8 +557,7 @@ static int ensure_locker_ids(P_char chLocker, int owner_pid, int owner_assoc_id,
 static char *build_locker_snapshot_sql(struct locker_async_slot *s, P_char chLocker)
 {
 	struct la_buf b;
-	int owner_pid = s->owner_pid;
-	int owner_assoc_id = s->owner_assoc_id;
+	const locker_save_data locker = locker_save_data_for(chLocker);
 	int locker_id = 0;
 	int public_id = 0;
 	P_obj obj;
@@ -616,13 +565,8 @@ static char *build_locker_snapshot_sql(struct locker_async_slot *s, P_char chLoc
 	if (!chLocker || !GET_NAME(chLocker))
 		return NULL;
 
-	if (!owner_pid && !owner_assoc_id)
-		locker_owner_ids(chLocker, &owner_pid, &owner_assoc_id);
-	s->owner_pid = owner_pid;
-	s->owner_assoc_id = owner_assoc_id;
-
 	/* Resolve ids on main (cheap). */
-	if (!ensure_locker_ids(chLocker, owner_pid, owner_assoc_id, &locker_id, &public_id))
+	if (!ensure_locker_ids(locker, &locker_id, &public_id))
 		return NULL;
 	s->locker_id = locker_id;
 
@@ -638,7 +582,7 @@ static char *build_locker_snapshot_sql(struct locker_async_slot *s, P_char chLoc
 		    locker_id, public_id))
 		goto fail;
 
-	for (obj = chLocker->carrying; obj; obj = obj->next_content)
+	for (obj = locker.items; obj; obj = obj->next_content)
 	{
 		if (!emit_item_sql(&b, obj, locker_id, public_id, 0))
 			goto fail;
@@ -931,15 +875,13 @@ static void apply_result(struct locker_async_result *r)
 				  s->gen, s->terminal ? 1 : 0);
 		if (chLocker)
 		{
-			int owner_pid = s->owner_pid, owner_assoc = s->owner_assoc_id;
-			if (!owner_pid && !owner_assoc)
-				locker_owner_ids(chLocker, &owner_pid, &owner_assoc);
-			if (sql_save_locker(chLocker, owner_pid, owner_assoc))
-				durable_ok = 1;
-			else if (writeCharacter(chLocker, s->terminal ? 3 : 0, NOWHERE))
-				durable_ok = 1;
-			else
-				durable_ok = 0;
+			// Nonterminal snapshots restored their items to the room after sealing.
+			// Recollect them before fallback; an empty carrier is not an empty locker.
+			const bool prepared = s->terminal ||
+					      (chUser && locker_async_prepare_snapshot(chUser));
+			durable_ok = prepared && save_locker_storage(chLocker);
+			if (!s->terminal && chUser)
+				locker_async_restore_snapshot_view(chUser);
 		}
 		else
 		{
@@ -978,13 +920,13 @@ static void apply_result(struct locker_async_result *r)
 		s->gen = g_gen_seq++;
 		s->dirty_at = time(NULL);
 	}
-	else if (durable_ok || !s->terminal)
+	else if (durable_ok)
 	{
 		slot_clear(s);
 	}
 	else
 	{
-		/* Keep terminal-not-durable slot as DIRTY/busy fence. */
+		/* Every failed save remains pending, including an occupied locker. */
 		s->state = LCHK_DIRTY;
 		s->gen = g_gen_seq++;
 		s->dirty_at = time(NULL);
@@ -1020,22 +962,7 @@ static void drain_results(void)
 
 static int locker_sync_fallback_durable(struct locker_async_slot *s, P_char chLocker)
 {
-	int owner_pid;
-	int owner_assoc;
-
-	if (!s || !chLocker)
-		return 0;
-
-	owner_pid = s->owner_pid;
-	owner_assoc = s->owner_assoc_id;
-	if (!owner_pid && !owner_assoc)
-		locker_owner_ids(chLocker, &owner_pid, &owner_assoc);
-
-	if (sql_save_locker(chLocker, owner_pid, owner_assoc))
-		return 1;
-	if (writeCharacter(chLocker, s->terminal ? 3 : 0, NOWHERE))
-		return 1;
-	return 0;
+	return s && chLocker && save_locker_storage(chLocker);
 }
 
 static int start_one_snapshot(struct locker_async_slot *s)
@@ -1056,9 +983,8 @@ static int start_one_snapshot(struct locker_async_slot *s)
 	chUser = find_char_by_pid(s->user_pid);
 	if (!chLocker)
 	{
-		logit(LOG_FILE, "locker_async: dirty locker char missing for %s -- clearing",
+		logit(LOG_FILE, "locker_async: dirty locker char missing for %s -- retaining fence",
 		      s->locker_name);
-		slot_clear(s);
 		return 0;
 	}
 
@@ -1072,7 +998,6 @@ static int start_one_snapshot(struct locker_async_slot *s)
 			persistence_alert(AVATAR, "locker_async", s->locker_name, "none", "none",
 					  "prepare_failed",
 					  "LockerToPFile failed before snapshot; aborting gen");
-			slot_clear(s);
 			return 0;
 		}
 	}
@@ -1106,7 +1031,8 @@ static int start_one_snapshot(struct locker_async_slot *s)
 		{
 			if (chUser)
 				locker_async_restore_snapshot_view(chUser);
-			slot_clear(s);
+			if (durable_ok)
+				slot_clear(s);
 		}
 		return 0;
 	}
@@ -1145,7 +1071,8 @@ static int start_one_snapshot(struct locker_async_slot *s)
 		{
 			if (chUser)
 				locker_async_restore_snapshot_view(chUser);
-			slot_clear(s);
+			if (durable_ok)
+				slot_clear(s);
 		}
 		return 0;
 	}

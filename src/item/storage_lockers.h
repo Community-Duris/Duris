@@ -24,6 +24,10 @@ bool locker_owner_for_container(P_char actor, P_obj container, item_owner_identi
 
 int guild_locker_room_hook(int room, P_char ch, int cmd, char *arg);
 bool remove_all_locker_access(P_char ch);
+struct locker_save_data;
+locker_save_data locker_save_data_for(P_char locker);
+bool save_locker_storage(P_char locker);
+bool save_all_lockers();
 
 class LockerChest;
 class ComboChest;

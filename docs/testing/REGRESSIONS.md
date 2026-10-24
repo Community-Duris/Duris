@@ -1716,6 +1716,71 @@ purging an apprentice and running `zresetfull`, was never attributed to this def
 core or sanitizer trace. A full-world sanitizer journey with a real summoned
 master-and-follower chain would settle it.
 
+## Named locker entry
+
+Each personal locker belongs to an account and faction. Bare character names and
+`<character>.locker` resolve to the same active account locker; blocked, deleted,
+missing, or unreadable identities cannot create separate character storage.
+Exact authenticated account/side names retain default creation rights. Canonical
+own-guild names use the same checks and fees as `enter locker guild`.
+
+Room titles use the owner's current character, a visitor's requested character,
+or the first eligible same-side character in the account menu's recent-first order.
+If that last lookup fails, a generic title protects the account name. Faction checks
+apply independently of grants, ownership, and staff access, before occupancy is
+revealed. Loading a locker never changes its stored faction. The SQL account list
+loads login timestamps as epoch seconds and uses the same stable ordering as the
+title fallback, so reading and saving that list cannot replace dates with year values.
+
+```sh
+python3 tests/async/test_locker_named_entry_runtime.py
+python3 tests/async/test_locker_result_failures.py
+python3 tests/async/test_locker_terminal_fallback_contract.py
+python3 tests/async/test_locker_item_payload.py
+python3 tests/async/test_mysql_locker_grant_journey.py --server /absolute/path/dms_new
+```
+
+The first test executes production resolution, ownership and display-name functions
+under ASan/UBSan. SQL responses are controlled; flat-file identities use the real
+persisted catalog, including blocked/deleted/missing identities and corruption.
+Use a filesystem that supports the repository's ownership and permission checks.
+The occupancy test exercises idle, occupied and pending-save admission without
+revealing occupants to unauthorized or opposite-side visitors.
+
+The save boundary accepts only locker identity, faction, optional guild ownership
+and the item tree. Item UIDs, nested contents, item properties, affects and extra
+descriptions retain their existing item serializers. Chest names, password hashes,
+sort settings and visitor grants stay in their dedicated tables. The obsolete
+player-format fallback and owner password copy are removed. The runtime still uses
+a character-shaped item carrier for existing object movement and event APIs; that
+carrier is excluded from the player save loop and cannot enter `writeCharacter`.
+The item-payload regression executes the private-chest loader and asynchronous SQL
+writer under ASan/UBSan. It checks all five item-flag fields and material, retained
+prototype defaults for older rows, and removal of exact duplicate description rows
+without removing distinct descriptions. Both locker writers now deduplicate those
+rows, and the private-chest loader restores the same saved flags as public storage.
+
+The failure regression executes worker completion and final-save functions under
+ASan/UBSan. An asynchronous failure recollects an occupied locker's items before a
+synchronous retry; failed saves retain their pending state. The dedicated final
+save drains queued work, saves open lockers and private chests, and handles deferred
+carriers. Normal shutdown and copyover refuse to finish if that save fails.
+
+The MariaDB journey requires a generated full world, a matching server binary, and
+explicit disposable loopback `TEST_DB_HOST`, `TEST_DB_USER`, and `TEST_DB_PASSWORD`.
+It creates and drops a unique schema using the existing bootstrap/migration
+contract, imports help from a temporary copy, and never reads the checkout `.env`.
+Mortal accounts exercise grants, aliases, title privacy, first creation, revocation,
+occupancy, faction refusal, reconnect, private chests and nested contents. A database
+trigger injects save failure and checks that shutdown cancels without losing the
+saved contents. Occupied and just-left shutdown/restart checks compare item UIDs
+and chest metadata. A mortal guild owner exercises creation, contents, fees, and
+membership/prestige/parole refusal. Evidence goes under `bin/analysis/issue-234`.
+
+This addresses Luminari #234 on Community's MariaDB implementation. Community's
+flat-file locker load/save entry points remain pre-existing stubs; catalog tests
+and a server build do not establish a working flat-file locker gameplay journey.
+
 ## Connection timeout observer cleanup
 
 The LR-11 churn fixture used to close incomplete TLS/WebSocket sockets before
