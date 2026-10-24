@@ -3090,6 +3090,21 @@ static void free_locker(int roomNum)
 	}
 }
 
+/* Locker characters stay in the holding room; their wrappers live in private rooms. */
+static StorageLocker *active_locker_for(P_char locker)
+{
+	for (int vnum = LOCKERS_START + 1; vnum < LOCKERS_START + LOCKERS_MAX; ++vnum)
+	{
+		const int room = real_room(vnum);
+		if (room == NOWHERE || world[room].funct != storage_locker)
+			continue;
+		StorageLocker *active = GetChestList(room);
+		if (active && active->GetLockerChar() == locker)
+			return active;
+	}
+	return NULL;
+}
+
 /* Load a locker character while preserving occupancy privacy and access rules. */
 static P_char load_locker_char(P_char ch, char *esc_locker_name, int bValidateAccess)
 {
@@ -3152,12 +3167,10 @@ static P_char load_locker_char(P_char ch, char *esc_locker_name, int bValidateAc
 				for (P_char chk = character_list; chk; chk = chk->next)
 				{
 					if (chk && GET_NAME(chk) &&
-					    !str_cmp(esc_locker_name, GET_NAME(chk)) &&
-					    chk->in_room != NOWHERE &&
-					    IS_ROOM(chk->in_room, ROOM_LOCKER))
+					    !str_cmp(esc_locker_name, GET_NAME(chk)))
 					{
-						pOcc = GetChestList(chk->in_room);
-						if (pOcc && pOcc->GetLockerChar() == chk)
+						pOcc = active_locker_for(chk);
+						if (pOcc)
 						{
 							active_locker_char = chk;
 							break;
@@ -3168,7 +3181,8 @@ static P_char load_locker_char(P_char ch, char *esc_locker_name, int bValidateAc
 				if (active_locker_char)
 				{
 					if (bValidateAccess && !bPlayerIsGod &&
-					    !locker_access_canEnter(active_locker_char, ch))
+					    (GET_RACEWAR(ch) != GET_RACEWAR(active_locker_char) ||
+					     !locker_access_canEnter(active_locker_char, ch)))
 					{
 						// No access - don't reveal anything about the
 						// locker's state or its occupant.
@@ -3574,12 +3588,9 @@ static int lockerName_is_inuse(char *lockerName)
 			 * It must be counted as "in use" to prevent the player from
 			 * re-entering the same locker and loading a duplicate before
 			 * the save event fires. */
-			StorageLocker *pLocker = NULL;
+			StorageLocker *pLocker = active_locker_for(chLocker);
 
-			if (chLocker->in_room != NOWHERE && IS_ROOM(chLocker->in_room, ROOM_LOCKER))
-				pLocker = GetChestList(chLocker->in_room);
-
-			if (pLocker && pLocker->GetLockerChar() == chLocker)
+			if (pLocker)
 			{
 				nCnt++;
 			}
