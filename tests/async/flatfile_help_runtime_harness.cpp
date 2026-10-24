@@ -50,6 +50,21 @@ int main()
 		require(no_locate.find("introduction system") != string::npos,
 			"No Locate help alias did not render the dedicated topic");
 	}
+	const string quick_step = wiki_help("quick step");
+	for (const char *query : { "quickstep", "QuIcKsTeP" })
+		require(wiki_help(query) == quick_step &&
+				quick_step.find("powerful blow") != string::npos,
+			"Quickstep did not redirect to the full Quick Step topic");
+	for (const char *query : { "seadog", "SeAdOg" })
+	{
+		const string seadog = wiki_help(query);
+		for (const char *meaning :
+		     { "passive seafaring", "owner with Seadog", "anywhere aboard",
+		       "person operating the panel", "bonus will not persist", "10% more proceeds",
+		       "Humans and Orcs", "level 1", "Swashbucklers", "level 30" })
+			require(seadog.find(meaning) != string::npos,
+				"Seadog did not render its ownership, cargo and availability rules");
+	}
 	cout << "flat-file help runtime passed\n";
 	return 0;
 }

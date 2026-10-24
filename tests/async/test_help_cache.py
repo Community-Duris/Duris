@@ -1,5 +1,8 @@
 """Run the production cache state machine and actual help lookup/render bodies."""
 from pathlib import Path
+import ast
+import json
+import os
 import re
 import subprocess
 import tempfile
@@ -78,11 +81,42 @@ int main() {
  assert(result.find("bulk100\n")!=string::npos);
  assert(result.find("bulk101\n")==string::npos);
  for(int i=0;i<10000;++i) assert(wiki_help("Fire").find("burn")!=string::npos);
- cout << "help matching, redirects, dynamic content, metadata and repeated reads passed\n";
+ // Catalog entries are parsed by the maintained SQL importer's actual parser.
+ pages.clear();
+ __GAMEPLAY_HELP__
+ const auto quick_step = wiki_help("quick step");
+ for (const char *query : {"quickstep", "QuIcKsTeP"}) {
+   assert(wiki_help(query) == quick_step);
+   assert(quick_step.find("powerful blow") != string::npos);
+ }
+ for (const char *query : {"seadog", "SeAdOg"}) {
+   const auto seadog = wiki_help(query);
+   for (const char *meaning : {"passive seafaring", "owner with Seadog", "anywhere aboard",
+       "person operating the panel", "bonus will not persist", "10% more proceeds",
+       "Humans and Orcs", "level 1", "Swashbucklers", "level 30"})
+     assert(seadog.find(meaning) != string::npos);
+ }
+ cout << "help matching, redirects, dynamic content, metadata, repeated reads and gameplay topics passed\n";
 }
 '''
-(ROOT / 'bin').mkdir(exist_ok=True)
-with tempfile.TemporaryDirectory(dir=ROOT / 'bin') as temp:
+# Execute only the importer's pure parsing functions: no SQL or live environment.
+importer = (ROOT / 'scripts/import_help_to_prod.sh').read_text()
+block = re.findall(r"python3 <<'PYTHON_SCRIPT'\n(.*?)\nPYTHON_SCRIPT", importer, re.S)[1]
+definitions = [node for node in ast.parse(block).body if isinstance(node, ast.FunctionDef)
+               and node.name in ('help_index_entries', 'parse_help_index')]
+assert len(definitions) == 2
+parser = {'re': re}
+exec(compile(ast.Module(body=definitions, type_ignores=[]), '<help importer>', 'exec'), parser)
+entries = parser['parse_help_index'](ROOT / 'lib/information/help_index')
+topics = {'QUICK STEP', 'QUICKSTEP', 'SEADOG'}
+selected = [(title, text) for title, text in entries if title.upper() in topics]
+assert {title.upper() for title, _ in selected} == topics, 'gameplay help topics missing'
+main = main.replace('__GAMEPLAY_HELP__', '\n'.join(
+    f'add({json.dumps(title)}, {json.dumps(text)});' for title, text in selected))
+
+out = Path(os.environ.get('BIN_ROOT', ROOT / 'bin')) / 'tests'
+out.mkdir(parents=True, exist_ok=True)
+with tempfile.TemporaryDirectory(dir=out) as temp:
     temp = Path(temp)
     replacement = temp / 'replacement.cpp'
     replacement.write_text('#include <string>\n#include <cassert>\nusing namespace std;\n' +

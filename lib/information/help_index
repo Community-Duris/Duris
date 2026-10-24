@@ -21238,6 +21238,9 @@ Most archers find a bow useless once blades are crossed, but the sharpshooter lo
 ===========================================================================
 See also: fire, archery, shadow archery, enchant arrows
 #
+"QUICKSTEP" (Skill Alias)
+Redirect: Quick Step
+#
 "QUICK STEP" (Skill)
 ===========================================================================
 When a powerful blow comes crashing down, the quick-stepped fighter is simply elsewhere. A cunning sidestep, or a tuck and roll for those caught kneeling, turns what should have been a crushing strike into a whiff under "quick step" - and nimble souls may even turn the missed stroke into the attacker's own stumbling fumble. Agility and mastery decide whether the body answers in time.
@@ -23825,3 +23828,18 @@ or other ailments outside those handled by these cures.
 Usage: cast 'mass purification'
 
 See also: Remove Poison, Cure Blind, Cure Disease
+#
+"SEADOG" (Innate)
+===========================================================================
+Seadog is a passive seafaring talent. A ship's owner with Seadog adds two to
+its maximum speed while anywhere aboard. The speed order and panel display
+use the person operating the panel, but each sailing tick uses the aboard
+owner: another sailor's Seadog bonus will not persist, and a sailor without
+Seadog cannot order the owner's full bonus speed.
+
+Seadog also grants 10% more proceeds to the person selling ship cargo.
+Humans and Orcs possess it from level 1; Warrior Swashbucklers gain it at
+level 30. It does not require an innate command to activate.
+===========================================================================
+See also: Human, Orc, Swashbuckler, ships
+#

@@ -11,6 +11,22 @@ own schema. Flat-file journeys take a server built with
 Four of these sections note that the full-server path was never driven under sanitizers; no
 journey does that yet.
 
+## Quickstep and Seadog help
+
+`help quickstep` redirects to the complete Quick Step topic. `help seadog`
+describes its passive ship-speed and cargo-sale bonuses, including the owner
+versus panel-operator distinction and the races/specialization that receive it.
+These entries document Community's existing mechanics; no ability or balance
+change is included. Luminari's Web Spray entry is not applicable because
+Community does not implement that ability.
+
+`python3 tests/async/test_flatfile_help_catalog.py` verifies both topics through
+the production flat-file catalog and help renderer, including mixed-case queries.
+`python3 tests/async/test_help_cache.py` uses the maintained SQL importer's pure
+parser on the tracked help index, then verifies the same topics and redirect in
+the production cached-help lookup/render functions. Its catalog endpoint is a
+test adapter; this does not import into a database or publish live help.
+
 ## Epic training completion
 
 Successful epic skill purchases refresh derived stats before sending GMCP vitals
