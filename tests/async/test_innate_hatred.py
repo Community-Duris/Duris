@@ -64,4 +64,3 @@ with tempfile.TemporaryDirectory(prefix="hatred-", dir=build) as directory:
                                "eligibility", "normalization", "scheduler", "timing",
                                "serialization"]:
         subprocess.run([str(binary), mode], check=True)
-

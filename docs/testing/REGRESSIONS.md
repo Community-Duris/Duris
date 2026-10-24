@@ -24,8 +24,14 @@ Community does not implement that ability.
 the production flat-file catalog and help renderer, including mixed-case queries.
 `python3 tests/async/test_help_cache.py` uses the maintained SQL importer's pure
 parser on the tracked help index, then verifies the same topics and redirect in
-the production cached-help lookup/render functions. Its catalog endpoint is a
-test adapter; this does not import into a database or publish live help.
+the production cached-help lookup/render functions, using the importer's actual
+category expression. Its catalog endpoint is a test adapter. The live SQL journey
+below imports the complete tracked content with the maintained script and queries
+ferries, Quickstep (including mixed case and the spaced topic), and Seadog through
+the actual game. It found that importing redirects as category 0 displayed their
+literal text; the importer now marks redirect entries as category 1. The isolated
+`test_help_import_atomic.py` checks that metadata alongside rollback, consistent
+publication, and rejection of nontransactional destinations.
 
 ## Epic training completion
 
@@ -40,8 +46,18 @@ level/funds/class/prerequisite/teacher-cap refusals, intermediate and final mast
 no publication before acknowledgment, refresh-before-vitals/save ordering, repeated
 completion delivery, rejected/admission-failed purchases, stale-state refunds, and
 offline completion followed by reattachment. Cash, stat rebuild, client output,
-save, and writer endpoints are controlled adapters; this is not a live database
-purchase or restart journey.
+save, and writer endpoints are controlled adapters.
+
+`python3 tests/async/test_mysql_epic_training_journey.py --server /absolute/path/dms_new`
+uses a generated full world, the real Toughness teacher, and a unique disposable
+MariaDB schema. It checks Community's level-55 refusal and level-56/57 purchases,
+numerical Human and Illithid HP changes at full and injured health, the actual
+GMCP vitals packets, repeated affect refreshes, mastery and at-cap refusal, and
+saved skill/balance/ledger state across clean server restarts. It also runs the
+maintained help importer from a temporary copy without a checkout `.env`.
+Explicit `TEST_DB_HOST`, `TEST_DB_USER`, and `TEST_DB_PASSWORD` are required;
+the host must be loopback. The test does not exercise a crash between the epic
+commit and the subsequent character snapshot, or run a full server under ASan.
 
 ## Bounded builder inspection
 

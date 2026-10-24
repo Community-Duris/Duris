@@ -102,7 +102,8 @@ int main() {
 # Execute only the importer's pure parsing functions: no SQL or live environment.
 importer = (ROOT / 'scripts/import_help_to_prod.sh').read_text()
 block = re.findall(r"python3 <<'PYTHON_SCRIPT'\n(.*?)\nPYTHON_SCRIPT", importer, re.S)[1]
-definitions = [node for node in ast.parse(block).body if isinstance(node, ast.FunctionDef)
+parsed_importer = ast.parse(block)
+definitions = [node for node in parsed_importer.body if isinstance(node, ast.FunctionDef)
                and node.name in ('help_index_entries', 'parse_help_index')]
 assert len(definitions) == 2
 parser = {'re': re}
@@ -111,8 +112,20 @@ entries = parser['parse_help_index'](ROOT / 'lib/information/help_index')
 topics = {'QUICK STEP', 'QUICKSTEP', 'SEADOG'}
 selected = [(title, text) for title, text in entries if title.upper() in topics]
 assert {title.upper() for title, _ in selected} == topics, 'gameplay help topics missing'
-main = main.replace('__GAMEPLAY_HELP__', '\n'.join(
-    f'add({json.dumps(title)}, {json.dumps(text)});' for title, text in selected))
+# Use the actual staging category expression as well as its parser. Assigning
+# category 1 to every test page masked the live importer's former category 0.
+staging = next(node for node in parsed_importer.body if isinstance(node, ast.For)
+               and ast.unparse(node.target) == '(title, content)')
+category = next(node for node in staging.body if isinstance(node, ast.Assign)
+                and any(isinstance(target, ast.Name) and target.id == 'category'
+                        for target in node.targets))
+page_statements = []
+for title, text in selected:
+    values = {'content': text}
+    exec(compile(ast.Module(body=[category], type_ignores=[]), '<help category>', 'exec'), values)
+    page_statements.append(
+        f'add({json.dumps(title)}, {json.dumps(text)}, "{values["category"]}");')
+main = main.replace('__GAMEPLAY_HELP__', '\n'.join(page_statements))
 
 out = Path(os.environ.get('BIN_ROOT', ROOT / 'bin')) / 'tests'
 out.mkdir(parents=True, exist_ok=True)

@@ -380,4 +380,3 @@ with tempfile.TemporaryDirectory(prefix="psp-regen-") as directory:
             "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1",
         }).returncode != 0
     assert not failures, f"{failures} PSP scenarios failed"
-

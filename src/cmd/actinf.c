@@ -10610,8 +10610,9 @@ void builder_list_prototypes(P_char ch, char *argument, const char *command, con
 	if (index && top >= 0 && first <= last)
 	{
 		auto *end = index + top + 1;
-		auto *at = std::lower_bound(index, end, first, [](const index_data &entry, int vnum)
-					    { return entry.virtual_number < vnum; });
+		const auto by_vnum = [](const index_data &entry, int vnum)
+		{ return entry.virtual_number < vnum; };
+		auto *at = std::lower_bound(index, end, first, by_vnum);
 		for (; at != end && at->virtual_number <= last; ++at)
 		{
 			if (shown == BUILDER_LIST_LIMIT)
