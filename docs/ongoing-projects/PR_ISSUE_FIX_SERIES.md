@@ -38,9 +38,9 @@ actual category expression, and the database test checks the staged metadata.
   strict warnings-as-errors configuration:
   `make -C src -j2 BIN_ROOT=<task-bin>` and the corresponding
   `PERSISTENCE_BACKEND=flatfile DMS_BINARY=<task-bin>/server/dms_flat` build.
-- Combined run of 50 affected regression scripts: **49 passed**. The documentation
-  contract has the same pre-existing link failure described below; its other 11
-  cases passed. Coverage includes native production-function tests under ASan/UBSan,
+- The combined run passed 49 of 50 affected regression scripts. After removing two
+  stale documentation references, the remaining documentation script passed all
+  12 cases. Coverage includes native production-function tests under ASan/UBSan,
   regeneration/event scheduling, transaction boundaries, parsing, and lifetime checks.
 - A real flat-file server passed the **35-command builder journey** covering mortal
   rejection, staff access, two zones, the 500-row cap, continuation, paging cancellation,
@@ -72,12 +72,6 @@ contract, and runs the help importer from a temporary copy without reading the
 checkout's `.env`.
 
 ## Known limits and issue scope
-
-The documentation contract still reports these two missing targets from the base
-branch, unchanged by this series:
-
-- `docs/ongoing-projects/log-server-review.md#qualification-update-2026-10-14`
-- `docs/ongoing-projects/plan-issue-106.md`
 
 Focused sanitizer harnesses are not a full-world sanitizer run. This qualification
 does not inject a crash between the durable epic deduction and the subsequent

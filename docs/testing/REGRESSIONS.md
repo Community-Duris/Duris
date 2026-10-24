@@ -241,11 +241,6 @@ integration worktree's `bin/analysis/integration/build.log`. This focused pass i
 not final combined-stack qualification or production rollout; full-server fault
 journeys and the broad gates remain due after #73–#75 integration.
 
-Issue #58 is locally qualified on `fix/58-artifact-guild-memory`. The
-[qualification record](../ongoing-projects/log-server-review.md#qualification-update-2026-10-14)
-maps the acceptance criteria to tests, records local logs and separates review
-readiness from production rollout.
-
 `python3 tests/async/test_artifact_guild_rewards_runtime.py` links real reward
 capture/application, transaction submission and codec code, with controlled writer
 and unrelated engine services. Three feeds change memory before any completion;
@@ -472,8 +467,7 @@ queue reuse pass under ASan/UBSan. Restoring each original caller separately
 fails at the adjacent-room assertion. RNG, eligibility, presentation, movement
 endpoints, and wait are adapters; no live cast, production rollout, or historical
 attribution is claimed. The development server build and eight related focused
-zone/movement/lifecycle/latency tests pass. Evidence and remaining original
-acceptance are in [the continuation plan](../ongoing-projects/plan-issue-106.md).
+zone/movement/lifecycle/latency tests pass.
 
 The legacy physical `damage()` wrapper now stops a skill after either
 participant dies, matching its spell branch. Previously simultaneous death
