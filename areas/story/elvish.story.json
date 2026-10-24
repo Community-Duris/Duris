@@ -1,0 +1,253 @@
+{
+  "schema_version": 3,
+  "revision": 2,
+  "source_area": "elvish",
+  "coverage": "complete",
+  "stories": [
+    {
+      "id": "release-the-cursed-drider-35800",
+      "title": "Release the Cursed Drider",
+      "category": "story",
+      "summary": "Deliver the golden engraved dragon statue to the drider for experience and the adamantium-and-mithril spider key. The local preparation exchanges are optional when a valid statue is supplied. The reward key fits the runed chest and master-bedroom belt pouch.",
+      "contracts": [
+        {
+          "giver_vnum": 35800,
+          "completion_key": "give=I:35813;receive=E:50000,I:35820;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "war-room-key",
+          "text": "Carry the adamantium spider key for the War Room",
+          "kind": "carried_item",
+          "hint": "Kalaban exchanges four spider eggs for this key. It opens the door north of the Hall of Redemption. The key is access guidance; an existing open route or supplied key also works.",
+          "item_vnums": [
+            35824
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "egg-preparation",
+          "text": "Trade four spider eggs with Kalaban",
+          "kind": "completion",
+          "hint": "Optional access preparation. A supplied key or another valid access route does not require this receipt.",
+          "contracts": [
+            {
+              "giver_vnum": 35801,
+              "completion_key": "give=I:35812,I:35812,I:35812,I:35812;receive=E:30000,I:35824;disappear=0"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "id": "statue-preparation",
+          "text": "Have the drider prepare the two potion statues",
+          "kind": "completion",
+          "hint": "Optional recipe: one robin tail feather and one glowing ivy leaf. A supplied final statue does not require this receipt.",
+          "contracts": [
+            {
+              "giver_vnum": 35800,
+              "completion_key": "give=I:35817,I:35818;receive=I:35814,I:35816;disappear=0"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "id": "statue-combination",
+          "text": "Have Kalaban combine the two potion statues",
+          "kind": "completion",
+          "hint": "Optional recipe: one blood-red manticore and one blue sea serpent. Return the resulting golden dragon statue to the drider.",
+          "contracts": [
+            {
+              "giver_vnum": 35801,
+              "completion_key": "give=I:35814,I:35816;receive=I:35813;disappear=0"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "id": "material-35813",
+          "text": "Carry 1 x a golden engraved dragon statue",
+          "kind": "carried_item",
+          "hint": "The two local potion-statue exchanges prepare this item. Keep it for delivery; another valid statue also works without earlier receipts.",
+          "item_vnums": [
+            35813
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Deliver the golden dragon statue to the drider",
+          "kind": "completion",
+          "hint": "Return to the War Room with the exact statue. This terminal delivery gives experience and the reward key; earlier exchanges alone do not complete the story.",
+          "contracts": [
+            {
+              "giver_vnum": 35800,
+              "completion_key": "give=I:35813;receive=E:50000,I:35820;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "prepare-the-two-statues-35800",
+      "title": "Prepare the Two Statues",
+      "category": "service",
+      "summary": "Bring the drider one robin tail feather and one glowing ivy leaf for a blood-red manticore and blue sea-serpent potion statue. Take both to Kalaban for the remedy. This preparation service does not add a separate story achievement.",
+      "contracts": [
+        {
+          "giver_vnum": 35800,
+          "completion_key": "give=I:35817,I:35818;receive=I:35814,I:35816;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-35817",
+          "text": "Carry 1 x a robin's tail feather",
+          "kind": "carried_item",
+          "hint": "The red-breasted robin by the pond carries this feather. A valid supplied feather also works; possession is not a personal kill or recovery achievement.",
+          "item_vnums": [
+            35817
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-35818",
+          "text": "Carry 1 x a strangly glowing ivy leaf",
+          "kind": "carried_item",
+          "hint": "Golden ivy in the eastern glade carries this glowing leaf. The dialogue calls it petals, but the accepted ingredient is the leaf. Valid supplied leaves work too.",
+          "item_vnums": [
+            35818
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Give the feather and ivy leaf to the drider",
+          "kind": "completion",
+          "hint": "He gives the blood-red manticore and blue sea serpent. Keep both for Kalaban instead of drinking them.",
+          "contracts": [
+            {
+              "giver_vnum": 35800,
+              "completion_key": "give=I:35817,I:35818;receive=I:35814,I:35816;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-spider-eggs-and-the-hidden-key-35801",
+      "title": "The Spider Eggs and the Hidden Key",
+      "category": "request",
+      "summary": "Bring Kalaban four unhatched spider eggs for experience and the adamantium spider key. This key opens the War Room north of the Hall of Redemption; it differs from the drider's container key.",
+      "contracts": [
+        {
+          "giver_vnum": 35801,
+          "completion_key": "give=I:35812,I:35812,I:35812,I:35812;receive=E:30000,I:35824;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-35812",
+          "text": "Carry 4 x some unhatched spider eggs",
+          "kind": "carried_item",
+          "hint": "Sword spiders in the upper sleeping chambers carry the eggs. Bring four separate items; supplied eggs are accepted without personal sourcing proof.",
+          "item_vnums": [
+            35812
+          ],
+          "count": 4
+        },
+        {
+          "id": "turn-in",
+          "text": "Give four spider eggs to Kalaban",
+          "kind": "completion",
+          "hint": "Kalaban gives the adamantium spider key and experience. The key is for War Room access, not the runed chest or belt pouch.",
+          "contracts": [
+            {
+              "giver_vnum": 35801,
+              "completion_key": "give=I:35812,I:35812,I:35812,I:35812;receive=E:30000,I:35824;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "combine-the-statues-35801",
+      "title": "Combine the Statues",
+      "category": "service",
+      "summary": "Bring Kalaban the blood-red manticore and blue sea-serpent potion statues. He combines them into the golden engraved dragon statue for delivery to the drider. This is a preparation service, not the terminal release.",
+      "contracts": [
+        {
+          "giver_vnum": 35801,
+          "completion_key": "give=I:35814,I:35816;receive=I:35813;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-35814",
+          "text": "Carry 1 x a blood-red glass manticore",
+          "kind": "carried_item",
+          "hint": "The drider prepares this potion statue from a robin feather and glowing ivy leaf. A valid supplied statue also works. Keep it for the exchange instead of drinking it.",
+          "item_vnums": [
+            35814
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-35816",
+          "text": "Carry 1 x a blue sea serpent statue",
+          "kind": "carried_item",
+          "hint": "The drider prepares this potion statue from a robin feather and glowing ivy leaf. A valid supplied statue also works. Keep it for the exchange instead of drinking it.",
+          "item_vnums": [
+            35816
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Have Kalaban combine the two statues",
+          "kind": "completion",
+          "hint": "Deliver the resulting golden dragon statue to the drider for the terminal reward. Combining the statues alone does not release him.",
+          "contracts": [
+            {
+              "giver_vnum": 35801,
+              "completion_key": "give=I:35814,I:35816;receive=I:35813;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": [],
+  "introduction": "Follow the traces of an ancient elven home, meet its surviving inhabitants, and uncover a remedy for the cursed drider.",
+  "orientation": [
+    "Explore with look and exits, inspect gates and wall hangings, and search for concealed passages. Some doors respond to spoken words.",
+    "Two spider-shaped keys have different uses. Read their full descriptions: the adamantium key opens the War Room; the key made of adamantium and mithril opens reward containers.",
+    "Local ingredient and statue exchanges offer preparation routes. Valid supplied materials are accepted; live possession does not prove personal recovery."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 35800,
+      "name": "a half-elf, half-spider creature",
+      "keyword": "drider",
+      "description": "Follow his life, fighter, and help conversation, then answer yes for the ingredient request. His no response is a rebuke; the native exchanges do not record a permanent refusal.",
+      "topics": [
+        "life",
+        "fighter",
+        "help",
+        "yes",
+        "no"
+      ]
+    },
+    {
+      "mob_vnum": 35801,
+      "name": "Kalaban the aging hermit",
+      "keyword": "kalaban",
+      "description": "Ask about spiders to learn of the eggs. He offers the War Room access key and combines the drider's two potion statues into the remedy.",
+      "topics": [
+        "spiders"
+      ]
+    }
+  ]
+}

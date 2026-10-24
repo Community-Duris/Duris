@@ -9,6 +9,7 @@
  */
 
 #include "core/prototypes.h"
+#include "world/zone_story_quest_runtime.h"
 #include "world/rested.h"
 #include "account/creation_availability_config.h"
 #include "net/comm.h"
@@ -908,6 +909,7 @@ void do_trans(P_char ch, char *argument, int /*cmd*/)
 
 void do_at(P_char ch, char *argument, int /*cmd*/)
 {
+	zone_story_quest_runtime::temporary_placement placement;
 	char loc_str[MAX_STRING_LENGTH], buf[MAX_STRING_LENGTH];
 	int loc_nr, location, original_loc, zc, original_zc;
 	P_char target_mob, next;

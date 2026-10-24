@@ -22,8 +22,7 @@ def body(text, signature):
 erase = body(runtime, "bool erase_character(uint32_t pid, std::string *error)")
 assert erase.index("if (!pid)") < erase.index("if (!ready())")
 disabled = erase[erase.index("if (!ready())"):erase.index("const std::string before")]
-assert "persisted_state_absent(error) ||" in disabled and "fail(error," in disabled
-absent = body(runtime, "bool persisted_state_absent(std::string *error)")
-assert "flatfile_zone_story_quest_result::not_found" in absent
-assert "sql_zone_story_quest_state_result::not_found" in absent
-print("[PASS] a disabled zone-story catalog erases nothing it never stored, and fails closed otherwise")
+assert "return absent || fail(error," in " ".join(disabled.split())
+assert "flatfile_zone_story_quest_result::not_found" in disabled
+assert "sql_zone_story_quest_state_result::not_found" in disabled
+print("[PASS] disabled journal erasure preserves stored state and accepts absent state")

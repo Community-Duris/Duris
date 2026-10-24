@@ -24,13 +24,15 @@ with tempfile.TemporaryDirectory(prefix="duris-zone-story-quest-production-") as
             "tests/async/zone_story_quest_production_harness.cpp",
             "src/world/zone_story_quest_tracking.c",
             "src/world/zone_story_quest_catalog.c",
+            "src/world/zone_story_quest_story.c",
             "src/world/zone_story_quest_production.c",
+            "-lcjson",
             "-o",
             str(binary),
         ],
         cwd=ROOT,
         check=True,
     )
-    subprocess.run([str(binary)], cwd=ROOT, check=True)
+    subprocess.run([str(binary), temporary], cwd=ROOT, check=True)
 
 print("zone-story runtime production catalog regression passed")

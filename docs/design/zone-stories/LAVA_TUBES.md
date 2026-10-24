@@ -1,0 +1,29 @@
+# Lava Tubes: comprehensive zone-story mapping
+
+Checkpoint 258 covers active zone 120, source stem **lava_tubes**, whose rooms run from #12000 through #12166. The source set has 152 WLD rooms, 39 mobiles, 30 objects, a ZON reset file, and an SHP file with no shop records. There is no matching lava_tubes.qst or local story sidecar, although lava_tubes appears in areas/qst/AREA. The native inventory and bounded route/code review are in the [audit supplement](../quest-story-followups/LAVA_TUBES_AUDIT_REVIEW.md).
+
+## The authored landscape
+
+This contributor covers a broad high-mountain route, not only underground tubes. Its outer rooms describe glacier ice, steep and narrow trails, crevices, forest paths, a hostel, streams and waterfalls, a lake, a bone-filled canyon, and a high pass between Mt. Gandar and an inactive volcano. The glacier descent is repeatedly framed as dangerous. A large metal door sits in the ice without a resolved local WLD destination. The land-side routes lead past forest clearings and a rock shrine to mountain ridges and volcanic terrain. See the [WLD source](../../../areas/wld/lava_tubes.wld#L1), including the glacier and door near #12000–#12011, the crater at #12022, and the shrine at #12048–#12049.
+
+The geology is deliberately uneasy. One crater description leaves open whether it formed from volcanic activity or a meteorite. The tunnels first appear natural, then their regularity and adjoining carved chambers suggest artificial construction. Hot springs, steaming pools, a lava chasm, precarious ledges, and a narrow vertical tube sit below the cold mountain routes. The WLD prose identifies places to stand beside the lava, but that text does not establish safe traversal in a running game.
+
+A second strand is a hidden base. Xexos occupies a private chamber near the tunnels, with a painting of a famed automaton, a shabby supply emporium, and an equipment-filled cellar. Nearby, an ancient altar and viewing gallery frame reset-placed skeletons, spore-balls, and fire spirits. A separate ghastly chamber holds Mockvrakar; the reset places a warning symbol and demonic heart there, while its prose hints at his return. These are authored story clues, not a local QST contract.
+
+## Xexos, the automaton, and the moonstone
+
+Xexos is the contributor's strongest explicit quest lead. The old White Haven QST has Ohnagra #55127 tell the player to brave the Lava Tubes and find a huge mechanical automaton marked with Xexos's name. Its completion requires the glowing moonstone heart #12001 along with two outside items; the current White Haven story sidecar retains the same item input. See the [Ohnagra text and QST contract](../../../areas/qst/wh.qst#L2195) and [story mapping](../../../areas/story/wh.story.json#L993).
+
+The connection also has compiled behavior. Mobile #12025 is bound to Xexos's special procedure. While fighting, he changes into mobile #12026, transferring his inventory and equipment; when the transformed mobile stops fighting, the paired procedure handles the return. If a player carries moonstone fragment #12028, Xexos reveals that he stole the stone, that pirates attacked during his escape, and that he locked away an incomplete automaton. The local reset puts the huge automaton, mobile #12027, in the hidden cellar at #12159. Boot-time code places a #12028 fragment on it. See the [mobile bindings](../../../src/specs/specs.assign.c#L950), [Xexos and transformation procedures](../../../src/specs/specs.lava_tubes.c#L30), and [cellar reset](../../../areas/zon/lava_tubes.zon#L156).
+
+The compiled moonstone path ties this area to two other sources. Startup code may place a second fragment on Olhydra #23240 or in locker room #31724, and places a fragment on the Lava Tubes automaton. Cyric's Revenge's crew loader puts core #12029 in its treasure chest. The callback assigned to object #12028 combines exactly two fragments and one core into finished object #12001; Erzul's procedure then accepts the intact stone for a ship-crew reward. The relevant bindings and code live in [object assignment](../../../src/specs/specs.assign.c#L1278), [moonstone handling](../../../src/ships/ship_shop.c#L3518), [fragment seeding](../../../src/ships/ship_shop.c#L3621), [Erzul's procedure](../../../src/specs/specs.assign.c#L806), and [Cyric's Revenge loading](../../../src/ships/ship_npc.c#L2026). The supplement records the prototype and reset dependencies, including the two Heavens objects placed on Xexos.
+
+The code gives the old dialogue a tangible collection path, but the area has no native quest giver or local contract file. Ohnagra's exchange and Erzul's crew exchange are separate consumers of #12001. The authored sources do not explain whether builders intend those requests to share one recovered heart, support supplied copies, or serve as alternate outcomes; that decision is left open in the builder questions.
+
+## Source limits and review entry point
+
+The ZON file resets ten closed directions across five local door pairs, including Xexos's trapdoor and the hidden cellar. Its room hook, the automaton mobile, and the lever object have separate compiled behaviors. The WLD also contains one fall field, value 20, in room #12163 and no current fields. Neither source flags nor room prose have been treated as proof of live damage, route access, shop service, or safety.
+
+The title and history review distinguishes active **lava_tubes** from the separate active **lavcav** contributor titled “The Underground Lava Caves.” Keep **lava_tubes** **DO NOT MOVE** while its source-only approaches, imported objects, cross-area exits, and moonstone integrations remain under their recorded owners.
+
+The [audit supplement](../quest-story-followups/LAVA_TUBES_AUDIT_REVIEW.md#builder-questions-and-recommended-resolutions) contains 23 direct builder questions with source findings and recommended resolutions. No native area or gameplay source was changed for this checkpoint.

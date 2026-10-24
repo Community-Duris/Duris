@@ -1,0 +1,837 @@
+source_snapshot_commit,source_numeric_zone_owner,target_numeric_zone_owner,cross_zone_exit_records,records_with_reverse_direction_exit,sample_room_edges
+72ba3deff3bb30bde880018cdebe7c6db675b697,4horse,surface,1,1,34500 D2->515793
+72ba3deff3bb30bde880018cdebe7c6db675b697,Voluntown,icecrag,1,1,142400 D2->97132
+72ba3deff3bb30bde880018cdebe7c6db675b697,airp,plane_air_one,1,1,131600 D5->24422
+72ba3deff3bb30bde880018cdebe7c6db675b697,airshipgrave,surface,3,3,77543 D0->616080; 77557 D1->617684; 77557 D2->618083
+72ba3deff3bb30bde880018cdebe7c6db675b697,ako,surface,1,0,3751 D3->544136
+72ba3deff3bb30bde880018cdebe7c6db675b697,alatorin,connectorzones,1,1,83913 D1->53801
+72ba3deff3bb30bde880018cdebe7c6db675b697,alatorin,plane_air_one,1,0,83346 D5->24460
+72ba3deff3bb30bde880018cdebe7c6db675b697,alatorin,plane_earth_one,1,0,83344 D5->23860
+72ba3deff3bb30bde880018cdebe7c6db675b697,alatorin,plane_fire_one,1,0,83347 D5->25460
+72ba3deff3bb30bde880018cdebe7c6db675b697,alatorin,plane_water_one,1,0,83345 D5->23260
+72ba3deff3bb30bde880018cdebe7c6db675b697,alatorin,surface,4,4,83678 D4->518643; 83713 D4->522647; 83714 D0->519847; 83811 D3->521443
+72ba3deff3bb30bde880018cdebe7c6db675b697,alatorin,surfacekeeps,76,69,83100 D2->120667; 83103 D1->122103; 83104 D2->121212; 83115 D0->120917; 83115 D3->121016; 83117 D1->122109; 83118 D3->120620; 83119 D1->120626; 83120 D2->121123; 83136 D3->120931
+72ba3deff3bb30bde880018cdebe7c6db675b697,ancientb,surface,2,0,85600 D3->572443; 85623 D1->572446
+72ba3deff3bb30bde880018cdebe7c6db675b697,ants,surface,1,1,10900 D3->526267
+72ba3deff3bb30bde880018cdebe7c6db675b697,arac-web,arac_wild,1,1,36588 D3->36197
+72ba3deff3bb30bde880018cdebe7c6db675b697,arac-web,aracguil,7,7,36427 D0->36700; 36431 D0->36710; 36444 D0->36720; 36447 D0->36730; 36453 D0->36750; 36482 D0->36760; 36506 D0->36740
+72ba3deff3bb30bde880018cdebe7c6db675b697,arac-web,llzazan,3,3,36546 D2->36242; 36573 D1->36285; 36582 D1->36363
+72ba3deff3bb30bde880018cdebe7c6db675b697,arac_wild,arac-web,1,1,36197 D1->36588
+72ba3deff3bb30bde880018cdebe7c6db675b697,arac_wild,dungeon,1,1,36004 D1->93115
+72ba3deff3bb30bde880018cdebe7c6db675b697,arac_wild,llzazan,1,1,36199 D0->36200
+72ba3deff3bb30bde880018cdebe7c6db675b697,arac_wild,surface,2,2,36000 D3->589915; 36046 D1->588318
+72ba3deff3bb30bde880018cdebe7c6db675b697,aracguil,arac-web,7,7,36700 D2->36427; 36710 D2->36431; 36720 D2->36444; 36730 D2->36447; 36740 D2->36506; 36750 D2->36453; 36760 D2->36482
+72ba3deff3bb30bde880018cdebe7c6db675b697,arcium,surface,2,2,85700 D1->591773; 85700 D2->592172
+72ba3deff3bb30bde880018cdebe7c6db675b697,ashrumite,surface,2,2,66140 D2->550481; 66140 D3->550080
+72ba3deff3bb30bde880018cdebe7c6db675b697,ashrumite,underdark,2,2,66087 D1->701670; 66087 D2->702069
+72ba3deff3bb30bde880018cdebe7c6db675b697,astral_areas,astral_main,4,2,19826 D0->19755; 19828 D5->19798; 19867 D5->19815; 19885 D5->19806
+72ba3deff3bb30bde880018cdebe7c6db675b697,astral_main,astral_areas,2,2,19755 D2->19826; 19815 D4->19867
+72ba3deff3bb30bde880018cdebe7c6db675b697,astral_main,astral_tiamat,1,1,19800 D0->19928
+72ba3deff3bb30bde880018cdebe7c6db675b697,astral_main,gith_ht,1,1,19794 D3->19400
+72ba3deff3bb30bde880018cdebe7c6db675b697,astral_main,githyanki_fortress,1,1,19798 D4->132000
+72ba3deff3bb30bde880018cdebe7c6db675b697,astral_tiamat,astral_main,3,1,19928 D2->19800; 19948 D5->19785; 19955 D5->19785
+72ba3deff3bb30bde880018cdebe7c6db675b697,asylum,surface,1,1,9288 D2->551667
+72ba3deff3bb30bde880018cdebe7c6db675b697,avernus,tiamat,1,1,32031 D0->19600
+72ba3deff3bb30bde880018cdebe7c6db675b697,bahamut,plane_air_one,1,1,25700 D3->24460
+72ba3deff3bb30bde880018cdebe7c6db675b697,bandit,surface,1,1,98500 D2->536467
+72ba3deff3bb30bde880018cdebe7c6db675b697,banditca,surface,1,1,14800 D2->546515
+72ba3deff3bb30bde880018cdebe7c6db675b697,barovia,barovia2,1,1,91162 D0->58800
+72ba3deff3bb30bde880018cdebe7c6db675b697,barovia,bs,1,1,91000 D2->74057
+72ba3deff3bb30bde880018cdebe7c6db675b697,barovia,ravenloft,1,0,91167 D5->58568
+72ba3deff3bb30bde880018cdebe7c6db675b697,barovia2,barovia,1,1,58800 D2->91162
+72ba3deff3bb30bde880018cdebe7c6db675b697,barovia2,ravenloft,1,1,58958 D2->58567
+72ba3deff3bb30bde880018cdebe7c6db675b697,basin_wa,surface,1,1,34000 D4->612059
+72ba3deff3bb30bde880018cdebe7c6db675b697,bastine,highway,1,1,7600 D3->41618
+72ba3deff3bb30bde880018cdebe7c6db675b697,battlefi,surface,1,1,66400 D2->624087
+72ba3deff3bb30bde880018cdebe7c6db675b697,black_tunnels,khildarak,1,1,10721 D1->17377
+72ba3deff3bb30bde880018cdebe7c6db675b697,black_tunnels,pragtog,1,1,10700 D2->10693
+72ba3deff3bb30bde880018cdebe7c6db675b697,bloody_plains,killing_fields,5,5,33612 D3->33437; 33627 D3->33452; 33642 D3->33467; 33657 D3->33482; 33672 D3->33497
+72ba3deff3bb30bde880018cdebe7c6db675b697,bloody_plains,surface,1,1,33681 D2->586575
+72ba3deff3bb30bde880018cdebe7c6db675b697,bogentok,underdark,2,2,18700 D1->812663; 18714 D3->812256
+72ba3deff3bb30bde880018cdebe7c6db675b697,bordello,surface,1,1,93600 D2->563634
+72ba3deff3bb30bde880018cdebe7c6db675b697,brad,tharnadia,1,1,135001 D2->132650
+72ba3deff3bb30bde880018cdebe7c6db675b697,braddistock,tharnadian_ruin,1,1,1300 D2->5616
+72ba3deff3bb30bde880018cdebe7c6db675b697,brass,plane_fire_one,1,1,139000 D2->25455
+72ba3deff3bb30bde880018cdebe7c6db675b697,breale,surface,1,1,2600 D0->531537
+72ba3deff3bb30bde880018cdebe7c6db675b697,brimeforge,connectorzones,1,1,131036 D3->53802
+72ba3deff3bb30bde880018cdebe7c6db675b697,brimeforge,minizones,1,1,131037 D1->5879
+72ba3deff3bb30bde880018cdebe7c6db675b697,bs,barovia,1,1,74057 D0->91000
+72ba3deff3bb30bde880018cdebe7c6db675b697,bs,lava_tubes,2,2,74049 D2->12097; 74465 D3->12037
+72ba3deff3bb30bde880018cdebe7c6db675b697,bs,mountaintracks,1,1,74680 D5->20970
+72ba3deff3bb30bde880018cdebe7c6db675b697,bs,surface,5,5,74091 D3->604259; 74113 D0->602263; 74113 D3->602662; 74444 D2->605864; 74902 D1->604673
+72ba3deff3bb30bde880018cdebe7c6db675b697,bs,undermountain,1,1,74045 D0->92501
+72ba3deff3bb30bde880018cdebe7c6db675b697,bugentol,surface,1,1,95800 D1->589071
+72ba3deff3bb30bde880018cdebe7c6db675b697,bugger,ixxillikor,1,1,6426 D4->4380
+72ba3deff3bb30bde880018cdebe7c6db675b697,bugger,underdark,1,1,6400 D0->807099
+72ba3deff3bb30bde880018cdebe7c6db675b697,caertannad,tharnadian_ruin,1,1,78400 D1->5501
+72ba3deff3bb30bde880018cdebe7c6db675b697,caertannad,tharnrifts,73,23,78534 D0->110913; 78534 D1->111122; 78534 D2->111916; 78534 D3->111307; 78535 D0->111237; 78535 D1->111840; 78535 D2->112840; 78535 D3->112931; 78535 D6->110630; 78536 D3->112522
+72ba3deff3bb30bde880018cdebe7c6db675b697,castle,minizones,1,1,2401 D2->5760
+72ba3deff3bb30bde880018cdebe7c6db675b697,caves_skelenak,surface,4,3,4001 D2->607420; 4125 D3->557269; 4130 D1->556876; 4131 D0->556876
+72ba3deff3bb30bde880018cdebe7c6db675b697,caves_skelenak,tentro2,1,1,4152 D4->69088
+72ba3deff3bb30bde880018cdebe7c6db675b697,caves_skelenak,underdark,1,1,4093 D5->709664
+72ba3deff3bb30bde880018cdebe7c6db675b697,cbl_hall,heavens,1,1,29703 D4->420
+72ba3deff3bb30bde880018cdebe7c6db675b697,celestia,hell_one_avernus,1,0,45637 D0->51207
+72ba3deff3bb30bde880018cdebe7c6db675b697,centaur_zone,surface,1,1,93300 D2->519684
+72ba3deff3bb30bde880018cdebe7c6db675b697,ceothia,surface,1,1,80800 D2->628287
+72ba3deff3bb30bde880018cdebe7c6db675b697,cerebusp,surface,3,3,22005 D1->561729; 22005 D2->562128; 22118 D0->560129
+72ba3deff3bb30bde880018cdebe7c6db675b697,charing,surface,1,1,45183 D3->513692
+72ba3deff3bb30bde880018cdebe7c6db675b697,church,surface,1,1,87847 D1->527483
+72ba3deff3bb30bde880018cdebe7c6db675b697,citadel,skulldrach,1,1,13000 D2->12796
+72ba3deff3bb30bde880018cdebe7c6db675b697,cityruin,tharnadian_ruin,1,1,66200 D1->5588
+72ba3deff3bb30bde880018cdebe7c6db675b697,cldgt,surface,1,1,99500 D2->553314
+72ba3deff3bb30bde880018cdebe7c6db675b697,clfhaven,surface,1,1,21500 D2->620880
+72ba3deff3bb30bde880018cdebe7c6db675b697,cloister,drst,1,1,67138 D0->34351
+72ba3deff3bb30bde880018cdebe7c6db675b697,cloister,surface,1,1,67100 D0->537902
+72ba3deff3bb30bde880018cdebe7c6db675b697,clwcvrn,underdark,1,1,80700 D3->819329
+72ba3deff3bb30bde880018cdebe7c6db675b697,connectorzones,alatorin,1,1,53801 D3->83913
+72ba3deff3bb30bde880018cdebe7c6db675b697,connectorzones,brimeforge,1,1,53802 D1->131036
+72ba3deff3bb30bde880018cdebe7c6db675b697,connectorzones,cyrictunnel,1,1,53632 D5->54561
+72ba3deff3bb30bde880018cdebe7c6db675b697,connectorzones,faang,1,1,54232 D2->15557
+72ba3deff3bb30bde880018cdebe7c6db675b697,connectorzones,ixarkon,1,1,54238 D3->96600
+72ba3deff3bb30bde880018cdebe7c6db675b697,connectorzones,kvarkpass_connector,1,1,54220 D0->54834
+72ba3deff3bb30bde880018cdebe7c6db675b697,connectorzones,lab,1,0,53855 D0->82350
+72ba3deff3bb30bde880018cdebe7c6db675b697,connectorzones,lava_tubes,1,1,53734 D2->12161
+72ba3deff3bb30bde880018cdebe7c6db675b697,connectorzones,mountaintracks,2,2,53728 D0->20928; 53746 D2->20973
+72ba3deff3bb30bde880018cdebe7c6db675b697,connectorzones,pyramid,1,0,53725 D2->20466
+72ba3deff3bb30bde880018cdebe7c6db675b697,connectorzones,shabo,1,0,54012 D0->32803
+72ba3deff3bb30bde880018cdebe7c6db675b697,connectorzones,surface,42,40,53631 D4->588206; 53634 D0->544885; 53639 D1->547290; 53639 D2->547689; 53695 D3->610279; 53706 D1->609884; 53707 D2->518291; 53712 D0->515891; 53748 D2->624211; 53753 D0->622212
+72ba3deff3bb30bde880018cdebe7c6db675b697,connectorzones,trnsptow,1,1,54167 D0->16212
+72ba3deff3bb30bde880018cdebe7c6db675b697,connectorzones,udmini,1,0,54239 D5->88502
+72ba3deff3bb30bde880018cdebe7c6db675b697,connectorzones,underdark,13,13,53742 D4->813720; 53907 D5->712320; 54114 D0->734445; 54114 D3->734844; 54115 D0->738834; 54115 D3->739233; 54116 D1->740052; 54116 D2->740451; 54141 D0->747706; 54141 D2->748506
+72ba3deff3bb30bde880018cdebe7c6db675b697,connectorzones,underworld,1,0,53890 D5->4604
+72ba3deff3bb30bde880018cdebe7c6db675b697,connectorzones,worms,1,1,54211 D0->6984
+72ba3deff3bb30bde880018cdebe7c6db675b697,cosmic,surface,5,5,76001 D2->535802; 76243 D1->536209; 76243 D2->536608; 76268 D0->535007; 76268 D3->535406
+72ba3deff3bb30bde880018cdebe7c6db675b697,court,surface,1,1,6716 D2->531688
+72ba3deff3bb30bde880018cdebe7c6db675b697,crypt,unoutpst,1,1,14300 D3->98737
+72ba3deff3bb30bde880018cdebe7c6db675b697,cyrictunnel,connectorzones,1,1,54561 D4->53632
+72ba3deff3bb30bde880018cdebe7c6db675b697,cyrictunnel,surface,1,1,54500 D4->581796
+72ba3deff3bb30bde880018cdebe7c6db675b697,cyrictunnel,underdark,3,3,54529 D5->757626; 54549 D4->743256; 54554 D4->746483
+72ba3deff3bb30bde880018cdebe7c6db675b697,dark_forest,surface,2,2,75171 D1->633650; 75171 D2->634049
+72ba3deff3bb30bde880018cdebe7c6db675b697,darkfall,mira,1,1,95312 D0->82679
+72ba3deff3bb30bde880018cdebe7c6db675b697,darkfall,surface,2,2,95300 D3->515272; 95348 D1->515679
+72ba3deff3bb30bde880018cdebe7c6db675b697,delwyn,surface,1,1,82805 D2->549230
+72ba3deff3bb30bde880018cdebe7c6db675b697,desert,limbo,9,0,49790 D0->1; 49790 D1->1; 49790 D3->1; 49790 D4->1; 49790 D5->1; 49790 D6->1; 49790 D7->1; 49790 D8->1; 49790 D9->1
+72ba3deff3bb30bde880018cdebe7c6db675b697,desert,surface,2,2,49003 D3->545019; 49431 D1->545021
+72ba3deff3bb30bde880018cdebe7c6db675b697,desolate,surface,2,2,22200 D2->560534; 22363 D1->560135
+72ba3deff3bb30bde880018cdebe7c6db675b697,dirkn,valinhav,1,1,96800 D2->90810
+72ba3deff3bb30bde880018cdebe7c6db675b697,divhome,surface,1,1,40780 D4->615667
+72ba3deff3bb30bde880018cdebe7c6db675b697,dlsc,underdark,1,1,36800 D2->784930
+72ba3deff3bb30bde880018cdebe7c6db675b697,dracopit,mntcastl,1,1,15968 D0->37574
+72ba3deff3bb30bde880018cdebe7c6db675b697,dragonnia,surface,2,2,6803 D1->641969; 6803 D2->642368
+72ba3deff3bb30bde880018cdebe7c6db675b697,dream,ethereal_main,1,1,31301 D4->12442
+72ba3deff3bb30bde880018cdebe7c6db675b697,dreggan_wood,ethereal_main,1,1,41001 D1->12480
+72ba3deff3bb30bde880018cdebe7c6db675b697,dreggan_wood,shadamehr_keep,1,1,41186 D0->41200
+72ba3deff3bb30bde880018cdebe7c6db675b697,drst,cloister,1,1,34351 D2->67138
+72ba3deff3bb30bde880018cdebe7c6db675b697,drst,underdark,1,1,34200 D1->840288
+72ba3deff3bb30bde880018cdebe7c6db675b697,dungeon,arac_wild,1,1,93115 D3->36004
+72ba3deff3bb30bde880018cdebe7c6db675b697,dungeon,underdark,1,1,93069 D3->810962
+72ba3deff3bb30bde880018cdebe7c6db675b697,earth,underdark,1,1,43500 D3->804038
+72ba3deff3bb30bde880018cdebe7c6db675b697,earthp,plane_earth_one,1,1,131200 D4->23908
+72ba3deff3bb30bde880018cdebe7c6db675b697,element,surface,1,1,3800 D1->531681
+72ba3deff3bb30bde880018cdebe7c6db675b697,elftomb,surface,3,3,20600 D3->609100; 20611 D1->612309; 20615 D3->613104
+72ba3deff3bb30bde880018cdebe7c6db675b697,elvish,surface,2,2,35800 D1->517246; 35800 D2->517645
+72ba3deff3bb30bde880018cdebe7c6db675b697,ethereal_main,dream,1,1,12442 D5->31301
+72ba3deff3bb30bde880018cdebe7c6db675b697,ethereal_main,dreggan_wood,1,1,12480 D3->41001
+72ba3deff3bb30bde880018cdebe7c6db675b697,evkeep,surface,1,1,44801 D3->583837
+72ba3deff3bb30bde880018cdebe7c6db675b697,faang,connectorzones,1,1,15557 D0->54232
+72ba3deff3bb30bde880018cdebe7c6db675b697,faang,ixarkon,1,1,15412 D2->96474
+72ba3deff3bb30bde880018cdebe7c6db675b697,faang,surface,2,2,15254 D3->597479; 15411 D5->597886
+72ba3deff3bb30bde880018cdebe7c6db675b697,faang,underdark,3,3,15202 D2->797529; 15255 D2->818127; 15255 D3->817726
+72ba3deff3bb30bde880018cdebe7c6db675b697,fields_between,scorchvalley,1,0,71152 D5->71265
+72ba3deff3bb30bde880018cdebe7c6db675b697,fields_between,surface,1,1,71001 D0->629085
+72ba3deff3bb30bde880018cdebe7c6db675b697,firep,plane_fire_one,1,0,88301 D3->25415
+72ba3deff3bb30bde880018cdebe7c6db675b697,fishermans_wharf,surface,1,1,88900 D2->567269
+72ba3deff3bb30bde880018cdebe7c6db675b697,flind,underdark,1,1,3475 D2->829678
+72ba3deff3bb30bde880018cdebe7c6db675b697,foggy_woods,surface,5,5,90000 D1->579251; 90000 D2->579650; 90162 D3->578042; 90185 D0->575652; 90185 D1->576053
+72ba3deff3bb30bde880018cdebe7c6db675b697,foggy_woods,underworld3,1,1,90212 D3->30281
+72ba3deff3bb30bde880018cdebe7c6db675b697,forgotten_forest,surface,1,1,82701 D3->516090
+72ba3deff3bb30bde880018cdebe7c6db675b697,fortb,prisonb,2,2,38121 D1->43041; 38149 D1->43000
+72ba3deff3bb30bde880018cdebe7c6db675b697,fortb,surface,1,1,38100 D1->562320
+72ba3deff3bb30bde880018cdebe7c6db675b697,ghore,shafts,1,1,11548 D5->10043
+72ba3deff3bb30bde880018cdebe7c6db675b697,ghore,torture,1,1,11529 D2->95400
+72ba3deff3bb30bde880018cdebe7c6db675b697,ghore,troll_hills,1,1,11540 D2->1909
+72ba3deff3bb30bde880018cdebe7c6db675b697,gibber,underdark,2,2,8700 D0->820318; 8700 D3->820717
+72ba3deff3bb30bde880018cdebe7c6db675b697,gith_ht,astral_main,1,1,19400 D1->19794
+72ba3deff3bb30bde880018cdebe7c6db675b697,githyanki_fortress,astral_main,1,1,132000 D5->19798
+72ba3deff3bb30bde880018cdebe7c6db675b697,githzer,surface,1,1,44400 D2->538611
+72ba3deff3bb30bde880018cdebe7c6db675b697,glacier,surface,1,0,90402 D1->523536
+72ba3deff3bb30bde880018cdebe7c6db675b697,goblincamp,surface,1,1,11400 D2->617373
+72ba3deff3bb30bde880018cdebe7c6db675b697,goblincave,underdark,1,1,19000 D3->842047
+72ba3deff3bb30bde880018cdebe7c6db675b697,goblinht,surface,1,1,70327 D1->626940
+72ba3deff3bb30bde880018cdebe7c6db675b697,goblinht,truk,1,1,70198 D0->1655
+72ba3deff3bb30bde880018cdebe7c6db675b697,gold_hal,surface,1,1,40400 D2->559699
+72ba3deff3bb30bde880018cdebe7c6db675b697,gold_hal,underdark,1,1,40655 D3->717300
+72ba3deff3bb30bde880018cdebe7c6db675b697,grave,surface,2,2,8400 D2->593389; 8427 D1->592593
+72ba3deff3bb30bde880018cdebe7c6db675b697,halfcut,surface,1,1,27001 D0->629274
+72ba3deff3bb30bde880018cdebe7c6db675b697,hall,underdark,1,1,77700 D0->813247
+72ba3deff3bb30bde880018cdebe7c6db675b697,harpyht,surface,1,1,31100 D2->620042
+72ba3deff3bb30bde880018cdebe7c6db675b697,harrow,surface,2,2,29400 D2->547676; 29400 D3->547275
+72ba3deff3bb30bde880018cdebe7c6db675b697,headless,surface,2,2,2730 D0->596968; 2738 D2->597768
+72ba3deff3bb30bde880018cdebe7c6db675b697,heavens,arac-web,2,0,15 D5->36564; 27 D2->36564
+72ba3deff3bb30bde880018cdebe7c6db675b697,heavens,bordello,1,0,29 D2->93641
+72ba3deff3bb30bde880018cdebe7c6db675b697,heavens,cbl_hall,1,1,420 D5->29703
+72ba3deff3bb30bde880018cdebe7c6db675b697,heavens,goblinht,1,0,35 D2->70175
+72ba3deff3bb30bde880018cdebe7c6db675b697,heavens,khildarak,1,0,32 D2->17087
+72ba3deff3bb30bde880018cdebe7c6db675b697,heavens,lizard,1,0,15 D4->6076
+72ba3deff3bb30bde880018cdebe7c6db675b697,heavens,minizones,1,0,28 D0->5770
+72ba3deff3bb30bde880018cdebe7c6db675b697,heavens,quietus,1,0,31 D0->1736
+72ba3deff3bb30bde880018cdebe7c6db675b697,heavens,rabble,1,1,1234 D5->65100
+72ba3deff3bb30bde880018cdebe7c6db675b697,heavens,rtun,1,0,30 D0->90346
+72ba3deff3bb30bde880018cdebe7c6db675b697,heavens,shady,2,0,26 D0->97663; 41 D3->97663
+72ba3deff3bb30bde880018cdebe7c6db675b697,heavens,surface,1,0,34 D0->543661
+72ba3deff3bb30bde880018cdebe7c6db675b697,heavens,tharnadia,1,0,24 D0->132573
+72ba3deff3bb30bde880018cdebe7c6db675b697,heavens,tharnrifts,1,0,1204 D5->110000
+72ba3deff3bb30bde880018cdebe7c6db675b697,heavens,tundra,1,0,1221 D8->13714
+72ba3deff3bb30bde880018cdebe7c6db675b697,heavens,wh,1,0,41 D1->55160
+72ba3deff3bb30bde880018cdebe7c6db675b697,heavens,woodseer,1,0,25 D2->16558
+72ba3deff3bb30bde880018cdebe7c6db675b697,hell_one_avernus,tiamat,1,0,51100 D1->19600
+72ba3deff3bb30bde880018cdebe7c6db675b697,hell_three_minauros,hell_two_dis,7,4,51801 D3->51800; 51819 D0->51800; 51819 D1->51800; 51820 D0->51800; 52179 D2->51800; 52180 D2->51800; 52198 D1->51800
+72ba3deff3bb30bde880018cdebe7c6db675b697,hell_two_dis,hell_three_minauros,4,4,51800 D0->52180; 51800 D1->51801; 51800 D2->51820; 51800 D3->51819
+72ba3deff3bb30bde880018cdebe7c6db675b697,herders,surface,2,2,94300 D2->594610; 94300 D3->594209
+72ba3deff3bb30bde880018cdebe7c6db675b697,herders,underdark,1,1,94646 D3->746503
+72ba3deff3bb30bde880018cdebe7c6db675b697,highmoor,surface,1,1,19100 D2->526069
+72ba3deff3bb30bde880018cdebe7c6db675b697,highway,bastine,1,1,41618 D1->7600
+72ba3deff3bb30bde880018cdebe7c6db675b697,highway,mir,2,2,41316 D0->42137; 41585 D3->42152
+72ba3deff3bb30bde880018cdebe7c6db675b697,highway,surface,2,2,41732 D1->531250; 41837 D0->530849
+72ba3deff3bb30bde880018cdebe7c6db675b697,hunt,surface,2,1,13307 D2->650096; 13307 D3->649693
+72ba3deff3bb30bde880018cdebe7c6db675b697,hwood,surface,1,1,10800 D2->517668
+72ba3deff3bb30bde880018cdebe7c6db675b697,icecrag,Voluntown,1,1,97132 D0->142400
+72ba3deff3bb30bde880018cdebe7c6db675b697,icecrag,lava_tubes,1,0,97153 D2->12049
+72ba3deff3bb30bde880018cdebe7c6db675b697,icecrag,surface,1,1,97001 D3->511914
+72ba3deff3bb30bde880018cdebe7c6db675b697,icetower,surface,1,1,31800 D2->523117
+72ba3deff3bb30bde880018cdebe7c6db675b697,interspa,astral_main,1,0,99999 D9->19801
+72ba3deff3bb30bde880018cdebe7c6db675b697,ixarkon,connectorzones,1,1,96600 D1->54238
+72ba3deff3bb30bde880018cdebe7c6db675b697,ixarkon,faang,1,1,96474 D0->15412
+72ba3deff3bb30bde880018cdebe7c6db675b697,ixarkon,underdark,1,1,96471 D2->828097
+72ba3deff3bb30bde880018cdebe7c6db675b697,ixarkon,underworld,1,1,96588 D1->4503
+72ba3deff3bb30bde880018cdebe7c6db675b697,ixxillikor,bugger,1,1,4380 D5->6426
+72ba3deff3bb30bde880018cdebe7c6db675b697,ixxillikor,underdark,2,2,4200 D0->841353; 4200 D3->841752
+72ba3deff3bb30bde880018cdebe7c6db675b697,ixxillikor,underworld,1,1,4398 D4->4441
+72ba3deff3bb30bde880018cdebe7c6db675b697,jade,surface,4,3,76620 D2->642899; 76620 D3->642498; 76883 D4->642501; 76928 D0->642099
+72ba3deff3bb30bde880018cdebe7c6db675b697,jademini,surface,3,3,77218 D2->642096; 77220 D2->640900; 77258 D4->555555
+72ba3deff3bb30bde880018cdebe7c6db675b697,jin,surface,1,1,82063 D2->619653
+72ba3deff3bb30bde880018cdebe7c6db675b697,juiblex,fields_between,1,0,87671 D5->71106
+72ba3deff3bb30bde880018cdebe7c6db675b697,juiblex,mount,1,0,87673 D5->9106
+72ba3deff3bb30bde880018cdebe7c6db675b697,juiblex,scorchvalley,1,0,87674 D5->71221
+72ba3deff3bb30bde880018cdebe7c6db675b697,juiblex,torg,1,0,87672 D5->29073
+72ba3deff3bb30bde880018cdebe7c6db675b697,juiblex,underdark,1,1,87500 D4->772524
+72ba3deff3bb30bde880018cdebe7c6db675b697,kastle,surface,2,2,99400 D2->578633; 99439 D4->575843
+72ba3deff3bb30bde880018cdebe7c6db675b697,kelek,krethik,1,1,88165 D4->20115
+72ba3deff3bb30bde880018cdebe7c6db675b697,kelek,underdark,1,1,87950 D4->857219
+72ba3deff3bb30bde880018cdebe7c6db675b697,khildarak,black_tunnels,1,1,17377 D3->10721
+72ba3deff3bb30bde880018cdebe7c6db675b697,khildarak,mushroom_caverns,2,2,17000 D5->24188; 17746 D2->24108
+72ba3deff3bb30bde880018cdebe7c6db675b697,killing_fields,bloody_plains,6,5,33422 D1->33597; 33437 D1->33612; 33452 D1->33627; 33467 D1->33642; 33482 D1->33657; 33497 D1->33672
+72ba3deff3bb30bde880018cdebe7c6db675b697,killing_fields,surface,1,1,33302 D0->585374
+72ba3deff3bb30bde880018cdebe7c6db675b697,kimordril,surface,3,3,95502 D3->543256; 95655 D1->542862; 95658 D2->543661
+72ba3deff3bb30bde880018cdebe7c6db675b697,knight,surface,1,1,70900 D2->639011
+72ba3deff3bb30bde880018cdebe7c6db675b697,kobold,surface,1,1,1400 D2->622130
+72ba3deff3bb30bde880018cdebe7c6db675b697,kobold,underdark,1,1,1542 D1->816080
+72ba3deff3bb30bde880018cdebe7c6db675b697,krethik,kelek,1,1,20115 D5->88165
+72ba3deff3bb30bde880018cdebe7c6db675b697,krethik,surface,2,2,20000 D3->617005; 20112 D1->617010
+72ba3deff3bb30bde880018cdebe7c6db675b697,krimman,mistywood,1,0,16486 D1->95100
+72ba3deff3bb30bde880018cdebe7c6db675b697,krimman,twin_towers_forest,1,0,16486 D2->13595
+72ba3deff3bb30bde880018cdebe7c6db675b697,krimman,twstwd,1,1,16400 D3->16378
+72ba3deff3bb30bde880018cdebe7c6db675b697,krimman,woodseer,1,0,16486 D3->16660
+72ba3deff3bb30bde880018cdebe7c6db675b697,kuotoa,underworld,1,1,88200 D3->4454
+72ba3deff3bb30bde880018cdebe7c6db675b697,kvarkpass_connector,connectorzones,1,1,54834 D2->54220
+72ba3deff3bb30bde880018cdebe7c6db675b697,kvarkpass_connector,lab,1,1,54690 D0->82350
+72ba3deff3bb30bde880018cdebe7c6db675b697,kvarkpass_connector,surface,4,4,54600 D2->634209; 54803 D1->632614; 54804 D4->629815; 54844 D4->631412
+72ba3deff3bb30bde880018cdebe7c6db675b697,kvarkpass_connector,udmini,1,0,54811 D4->88515
+72ba3deff3bb30bde880018cdebe7c6db675b697,kvarkpass_connector,underworld,3,3,54805 D5->4420; 54810 D5->4440; 54841 D5->4557
+72ba3deff3bb30bde880018cdebe7c6db675b697,lab,kvarkpass_connector,1,1,82350 D2->54690
+72ba3deff3bb30bde880018cdebe7c6db675b697,labyrinth,mountaintracks,1,1,5000 D4->20971
+72ba3deff3bb30bde880018cdebe7c6db675b697,lava,surface,1,1,99700 D2->565027
+72ba3deff3bb30bde880018cdebe7c6db675b697,lava_tubes,bs,2,2,12037 D1->74465; 12097 D0->74049
+72ba3deff3bb30bde880018cdebe7c6db675b697,lava_tubes,connectorzones,1,1,12161 D0->53734
+72ba3deff3bb30bde880018cdebe7c6db675b697,lava_tubes,mountaintracks,2,2,12104 D3->20970; 12131 D5->20973
+72ba3deff3bb30bde880018cdebe7c6db675b697,lavcav,mountaintracks,1,1,35501 D0->21148
+72ba3deff3bb30bde880018cdebe7c6db675b697,library,underdark,1,1,402000 D0->813342
+72ba3deff3bb30bde880018cdebe7c6db675b697,lizard,surface,1,1,6098 D2->634225
+72ba3deff3bb30bde880018cdebe7c6db675b697,lizard,underdark,1,1,6120 D0->834369
+72ba3deff3bb30bde880018cdebe7c6db675b697,llyrath,moonshae,1,1,94900 D0->26257
+72ba3deff3bb30bde880018cdebe7c6db675b697,llzazan,arac-web,3,3,36242 D0->36546; 36285 D3->36573; 36363 D3->36582
+72ba3deff3bb30bde880018cdebe7c6db675b697,llzazan,arac_wild,1,1,36200 D2->36199
+72ba3deff3bb30bde880018cdebe7c6db675b697,llzazan,underdark,1,1,36262 D2->805516
+72ba3deff3bb30bde880018cdebe7c6db675b697,long,surface,2,2,34401 D0->520903; 34401 D3->521302
+72ba3deff3bb30bde880018cdebe7c6db675b697,lornecro,surface,1,1,138978 D0->512296
+72ba3deff3bb30bde880018cdebe7c6db675b697,lortower,troll_hills,1,0,134000 D1->1883
+72ba3deff3bb30bde880018cdebe7c6db675b697,lylr,surface,2,0,82200 D0->540876; 82240 D2->539281
+72ba3deff3bb30bde880018cdebe7c6db675b697,malch,shipy,1,1,23760 D4->43320
+72ba3deff3bb30bde880018cdebe7c6db675b697,malch,surface,1,1,23600 D4->632944
+72ba3deff3bb30bde880018cdebe7c6db675b697,malch,troll_caves,1,1,23741 D1->96976
+72ba3deff3bb30bde880018cdebe7c6db675b697,malch,underdark,1,1,23721 D1->849235
+72ba3deff3bb30bde880018cdebe7c6db675b697,mansion,surface,1,1,3500 D3->588620
+72ba3deff3bb30bde880018cdebe7c6db675b697,marigot,surface,2,2,5315 D3->519317; 5417 D1->519319
+72ba3deff3bb30bde880018cdebe7c6db675b697,maze_are,surface,1,1,94177 D3->571011
+72ba3deff3bb30bde880018cdebe7c6db675b697,mazzolin,underdark,2,2,21300 D2->803053; 21300 D3->802652
+72ba3deff3bb30bde880018cdebe7c6db675b697,menden,surface,4,4,88846 D2->550725; 88846 D3->550324; 88863 D0->549925; 88870 D1->550326
+72ba3deff3bb30bde880018cdebe7c6db675b697,mining,surface,1,1,4900 D3->566915
+72ba3deff3bb30bde880018cdebe7c6db675b697,minizones,brimeforge,1,1,5879 D3->131037
+72ba3deff3bb30bde880018cdebe7c6db675b697,minizones,castle,1,1,5760 D0->2401
+72ba3deff3bb30bde880018cdebe7c6db675b697,minizones,mist,1,0,5804 D0->6368
+72ba3deff3bb30bde880018cdebe7c6db675b697,minizones,surface,10,10,5735 D0->518898; 5756 D2->525294; 5770 D0->572071; 5785 D2->572871; 5819 D4->630996; 5830 D3->539287; 5847 D0->622631; 5868 D0->517480; 5966 D4->619036; 5974 D3->568229
+72ba3deff3bb30bde880018cdebe7c6db675b697,minizones,valley_crushk,1,0,5806 D2->2001
+72ba3deff3bb30bde880018cdebe7c6db675b697,minopass,surface,4,4,94700 D2->606867; 94721 D0->604472; 94721 D1->604873; 94878 D2->584060
+72ba3deff3bb30bde880018cdebe7c6db675b697,minopass,underdark,2,2,94818 D1->832822; 94818 D2->833221
+72ba3deff3bb30bde880018cdebe7c6db675b697,mir,highway,2,2,42137 D2->41316; 42152 D1->41585
+72ba3deff3bb30bde880018cdebe7c6db675b697,mira,cerebusp,1,0,82667 D3->22000
+72ba3deff3bb30bde880018cdebe7c6db675b697,mira,darkfall,1,1,82679 D2->95312
+72ba3deff3bb30bde880018cdebe7c6db675b697,mira,desolate,1,0,82667 D1->22209
+72ba3deff3bb30bde880018cdebe7c6db675b697,mira,surface,3,3,82500 D2->513674; 82500 D3->513273; 82670 D0->512874
+72ba3deff3bb30bde880018cdebe7c6db675b697,mist,surface,2,2,6300 D1->628063; 6300 D2->628462
+72ba3deff3bb30bde880018cdebe7c6db675b697,mist_chasm,surface,1,1,15000 D1->638825
+72ba3deff3bb30bde880018cdebe7c6db675b697,mistywood,underworld3,1,1,95045 D5->30162
+72ba3deff3bb30bde880018cdebe7c6db675b697,mitashi,surface,2,1,138200 D0->647688; 138409 D2->648088
+72ba3deff3bb30bde880018cdebe7c6db675b697,mntcastl,dracopit,1,1,37574 D2->15968
+72ba3deff3bb30bde880018cdebe7c6db675b697,mntcastl,surface,1,1,37416 D3->563532
+72ba3deff3bb30bde880018cdebe7c6db675b697,mobs_underdark,ixarkon,1,0,24012 D0->96471
+72ba3deff3bb30bde880018cdebe7c6db675b697,mobs_underdark,underworld3,1,0,24007 D0->30149
+72ba3deff3bb30bde880018cdebe7c6db675b697,moonshae,llyrath,1,1,26257 D2->94900
+72ba3deff3bb30bde880018cdebe7c6db675b697,moonshae,myrloch_vale,1,1,26311 D3->26401
+72ba3deff3bb30bde880018cdebe7c6db675b697,moonshae,surface,2,2,26208 D0->557218; 26208 D1->557619
+72ba3deff3bb30bde880018cdebe7c6db675b697,moonshae,underworld3,1,1,26272 D5->30000
+72ba3deff3bb30bde880018cdebe7c6db675b697,morg,underdark,1,1,88600 D0->844836
+72ba3deff3bb30bde880018cdebe7c6db675b697,moria,surface,2,2,99028 D1->528071; 99335 D3->528069
+72ba3deff3bb30bde880018cdebe7c6db675b697,moss,surface,1,1,23400 D0->611257
+72ba3deff3bb30bde880018cdebe7c6db675b697,mount,surface,1,1,9100 D5->517517
+72ba3deff3bb30bde880018cdebe7c6db675b697,mountaintracks,bs,1,1,20970 D4->74680
+72ba3deff3bb30bde880018cdebe7c6db675b697,mountaintracks,connectorzones,2,2,20928 D2->53728; 20973 D0->53746
+72ba3deff3bb30bde880018cdebe7c6db675b697,mountaintracks,labyrinth,1,1,20971 D5->5000
+72ba3deff3bb30bde880018cdebe7c6db675b697,mountaintracks,lava_tubes,2,2,20970 D1->12104; 20973 D4->12131
+72ba3deff3bb30bde880018cdebe7c6db675b697,mountaintracks,lavcav,1,1,21148 D2->35501
+72ba3deff3bb30bde880018cdebe7c6db675b697,mountaintracks,nexus,2,2,21015 D1->57637; 21144 D4->57536
+72ba3deff3bb30bde880018cdebe7c6db675b697,mountaintracks,shafts,2,2,20921 D0->10035; 20934 D1->10003
+72ba3deff3bb30bde880018cdebe7c6db675b697,mountaintracks,surface,3,3,20900 D2->611042; 20942 D1->607457; 21042 D0->598665
+72ba3deff3bb30bde880018cdebe7c6db675b697,mountaintracks,underdark,1,1,20977 D2->823315
+72ba3deff3bb30bde880018cdebe7c6db675b697,mril,surface,2,1,33717 D2->522257; 33764 D1->522257
+72ba3deff3bb30bde880018cdebe7c6db675b697,multiclass_temple,surface,5,5,52901 D4->511126; 52914 D3->513537; 52917 D1->513539; 52918 D2->518740; 52920 D0->517940
+72ba3deff3bb30bde880018cdebe7c6db675b697,mush1,underdark,1,1,10100 D1->856059
+72ba3deff3bb30bde880018cdebe7c6db675b697,mushroom_caverns,khildarak,2,2,24108 D0->17746; 24188 D4->17000
+72ba3deff3bb30bde880018cdebe7c6db675b697,mushroom_caverns,underdark,3,3,24101 D5->820288; 24187 D5->823870; 24237 D5->825082
+72ba3deff3bb30bde880018cdebe7c6db675b697,myconid,underdark,2,2,2300 D4->836064; 2392 D5->811016
+72ba3deff3bb30bde880018cdebe7c6db675b697,myrloch_vale,moonshae,1,1,26401 D1->26311
+72ba3deff3bb30bde880018cdebe7c6db675b697,nax,surface,1,1,37800 D1->625238
+72ba3deff3bb30bde880018cdebe7c6db675b697,new_cavecity,surface,2,2,15161 D1->584184; 15161 D2->584583
+72ba3deff3bb30bde880018cdebe7c6db675b697,new_cavecity,underdark,1,1,15102 D2->749656
+72ba3deff3bb30bde880018cdebe7c6db675b697,newfor,mist,1,0,53300 D2->6366
+72ba3deff3bb30bde880018cdebe7c6db675b697,newhaven,surface,8,1,35200 D2->553247; 35272 D0->552041; 35272 D1->551667; 35272 D2->564896; 35272 D3->558901; 35272 D6->576490; 35272 D7->579281; 35272 D8->552467
+72ba3deff3bb30bde880018cdebe7c6db675b697,newhope,surface,2,2,89217 D1->618434; 89217 D2->618833
+72ba3deff3bb30bde880018cdebe7c6db675b697,nexus,mountaintracks,2,2,57536 D5->21144; 57637 D3->21015
+72ba3deff3bb30bde880018cdebe7c6db675b697,nexus_ic,surface,4,4,130100 D3->511534; 130112 D0->511135; 130124 D1->511536; 130136 D2->511935
+72ba3deff3bb30bde880018cdebe7c6db675b697,nexus_island,surface,1,1,130301 D2->519153
+72ba3deff3bb30bde880018cdebe7c6db675b697,nexus_roper,underdark,1,1,130400 D2->811645
+72ba3deff3bb30bde880018cdebe7c6db675b697,nexus_uc,surface,1,1,130200 D0->577404
+72ba3deff3bb30bde880018cdebe7c6db675b697,nizari,surface,1,1,40002 D0->575327
+72ba3deff3bb30bde880018cdebe7c6db675b697,nlakes,surface,3,3,75337 D1->537889; 75363 D1->539488; 75418 D4->537871
+72ba3deff3bb30bde880018cdebe7c6db675b697,nlakes,teka2,1,1,75264 D0->75546
+72ba3deff3bb30bde880018cdebe7c6db675b697,nlakes,wh,1,1,75410 D0->55297
+72ba3deff3bb30bde880018cdebe7c6db675b697,nomads,surface,4,4,6203 D0->582095; 6221 D3->582494; 6227 D1->582496; 6246 D2->582895
+72ba3deff3bb30bde880018cdebe7c6db675b697,northern_wilderness,centaur_zone,1,0,12269 D0->93300
+72ba3deff3bb30bde880018cdebe7c6db675b697,nyneth,surface,1,1,22900 D2->581417
+72ba3deff3bb30bde880018cdebe7c6db675b697,oasis,surface,1,1,78000 D3->611692
+72ba3deff3bb30bde880018cdebe7c6db675b697,obcita,surface,1,1,75600 D2->579804
+72ba3deff3bb30bde880018cdebe7c6db675b697,obcita,underdark,2,2,75778 D1->736889; 75778 D2->737288
+72ba3deff3bb30bde880018cdebe7c6db675b697,opalphoenix,surface,1,1,70875 D1->528831
+72ba3deff3bb30bde880018cdebe7c6db675b697,orogs,underdark,4,4,45800 D1->825760; 45800 D2->826159; 45807 D1->824965; 45807 D2->825364
+72ba3deff3bb30bde880018cdebe7c6db675b697,orrak,surface,1,1,9000 D2->610629
+72ba3deff3bb30bde880018cdebe7c6db675b697,otower,surface,1,1,11300 D2->616249
+72ba3deff3bb30bde880018cdebe7c6db675b697,otower,underworld3,1,1,11348 D0->30172
+72ba3deff3bb30bde880018cdebe7c6db675b697,outpost,surface,1,1,82124 D3->527555
+72ba3deff3bb30bde880018cdebe7c6db675b697,pharrvly,pods,1,1,40389 D1->28500
+72ba3deff3bb30bde880018cdebe7c6db675b697,pharrvly,valley_crushk,1,1,40300 D3->2006
+72ba3deff3bb30bde880018cdebe7c6db675b697,pineholl,asylum,1,0,16164 D2->9287
+72ba3deff3bb30bde880018cdebe7c6db675b697,pineholl,breale,1,0,16163 D0->2604
+72ba3deff3bb30bde880018cdebe7c6db675b697,pineholl,mistywood,1,0,16164 D4->95048
+72ba3deff3bb30bde880018cdebe7c6db675b697,pineholl,twin_towers_forest,1,0,16162 D2->13595
+72ba3deff3bb30bde880018cdebe7c6db675b697,pineholl,twstwd,3,1,16097 D3->16364; 16162 D1->16308; 16163 D1->16344
+72ba3deff3bb30bde880018cdebe7c6db675b697,pineholl,woodseer,1,1,16065 D2->16960
+72ba3deff3bb30bde880018cdebe7c6db675b697,plane_air_one,airp,1,1,24422 D4->131600
+72ba3deff3bb30bde880018cdebe7c6db675b697,plane_air_one,bahamut,1,1,24460 D1->25700
+72ba3deff3bb30bde880018cdebe7c6db675b697,plane_earth_one,earthp,3,1,23908 D5->131200; 23926 D4->131364; 23928 D2->131364
+72ba3deff3bb30bde880018cdebe7c6db675b697,plane_fire_one,brass,1,1,25455 D0->139000
+72ba3deff3bb30bde880018cdebe7c6db675b697,plane_fire_one,firep,1,0,25415 D3->88321
+72ba3deff3bb30bde880018cdebe7c6db675b697,plane_water_one,seakngdm,1,1,23281 D5->31500
+72ba3deff3bb30bde880018cdebe7c6db675b697,pods,pharrvly,1,1,28500 D3->40389
+72ba3deff3bb30bde880018cdebe7c6db675b697,potions,ceothia,7,0,30709 D0->81094; 30709 D1->81094; 30709 D3->81094; 30709 D4->81094; 30709 D5->81094; 30713 D5->81094; 30714 D5->81094
+72ba3deff3bb30bde880018cdebe7c6db675b697,pragtog,black_tunnels,1,1,10693 D0->10700
+72ba3deff3bb30bde880018cdebe7c6db675b697,pragtog,underdark,1,1,10649 D4->822668
+72ba3deff3bb30bde880018cdebe7c6db675b697,prison,astral_main,5,0,7488 D0->19728; 7488 D1->19728; 7488 D3->19728; 7488 D4->19728; 7488 D5->19728
+72ba3deff3bb30bde880018cdebe7c6db675b697,prison,ethereal_main,5,0,7486 D0->12544; 7486 D2->12544; 7486 D3->12544; 7486 D4->12544; 7486 D5->12544
+72ba3deff3bb30bde880018cdebe7c6db675b697,prison,hell_one_avernus,5,0,7492 D0->51032; 7492 D1->51032; 7492 D2->51032; 7492 D3->51032; 7492 D4->51032
+72ba3deff3bb30bde880018cdebe7c6db675b697,prison,plane_air_one,5,0,7490 D0->24439; 7490 D1->24439; 7490 D2->24439; 7490 D3->24439; 7490 D5->24439
+72ba3deff3bb30bde880018cdebe7c6db675b697,prison,plane_earth_one,5,0,7494 D0->23905; 7494 D1->23905; 7494 D2->23905; 7494 D4->23905; 7494 D5->23905
+72ba3deff3bb30bde880018cdebe7c6db675b697,prison,plane_fire_one,5,0,7484 D1->25504; 7484 D2->25504; 7484 D3->25504; 7484 D4->25504; 7484 D5->25504
+72ba3deff3bb30bde880018cdebe7c6db675b697,prison,plane_water_one,5,0,7479 D1->23255; 7479 D2->23255; 7479 D3->23255; 7479 D4->23255; 7479 D5->23255
+72ba3deff3bb30bde880018cdebe7c6db675b697,prison,surface,1,1,7497 D2->636262
+72ba3deff3bb30bde880018cdebe7c6db675b697,prisonb,fortb,2,2,43000 D3->38149; 43041 D3->38121
+72ba3deff3bb30bde880018cdebe7c6db675b697,pworm,underdark,3,3,42500 D1->832712; 42500 D2->833111; 42583 D3->814263
+72ba3deff3bb30bde880018cdebe7c6db675b697,pworm,underworld,1,1,42588 D1->4618
+72ba3deff3bb30bde880018cdebe7c6db675b697,pyramid,surface,3,3,20400 D2->528459; 20466 D0->525659; 20466 D1->526060
+72ba3deff3bb30bde880018cdebe7c6db675b697,quietus,surface,2,2,1723 D2->636555; 1737 D0->635755
+72ba3deff3bb30bde880018cdebe7c6db675b697,quietus,underdark,1,1,1700 D5->850045
+72ba3deff3bb30bde880018cdebe7c6db675b697,rabble,heavens,1,1,65100 D4->1234
+72ba3deff3bb30bde880018cdebe7c6db675b697,raiders,surface,1,1,8900 D2->593506
+72ba3deff3bb30bde880018cdebe7c6db675b697,ravenloft,barovia2,1,1,58567 D0->58958
+72ba3deff3bb30bde880018cdebe7c6db675b697,ravenloft,ravenloft2,2,2,58538 D5->59057; 58542 D2->59352
+72ba3deff3bb30bde880018cdebe7c6db675b697,ravenloft2,barovia,4,0,59355 D5->91121; 59359 D1->91165; 59359 D3->91164; 59398 D2->91010
+72ba3deff3bb30bde880018cdebe7c6db675b697,ravenloft2,barovia2,2,0,59356 D5->58958; 59398 D0->58811
+72ba3deff3bb30bde880018cdebe7c6db675b697,ravenloft2,ravenloft,3,2,59057 D4->58538; 59352 D0->58542; 59398 D1->58305
+72ba3deff3bb30bde880018cdebe7c6db675b697,raxthan,surface,2,2,42980 D1->595852; 42980 D2->596251
+72ba3deff3bb30bde880018cdebe7c6db675b697,raxthan,underdark,1,1,42999 D2->749737
+72ba3deff3bb30bde880018cdebe7c6db675b697,realm,4horse,1,0,14210 D2->34804
+72ba3deff3bb30bde880018cdebe7c6db675b697,realm,astral_tiamat,1,0,14208 D0->19953
+72ba3deff3bb30bde880018cdebe7c6db675b697,realm,bahamut,1,0,14208 D4->25918
+72ba3deff3bb30bde880018cdebe7c6db675b697,realm,barovia2,1,0,14210 D5->58984
+72ba3deff3bb30bde880018cdebe7c6db675b697,realm,bctdl,1,0,14208 D5->32469
+72ba3deff3bb30bde880018cdebe7c6db675b697,realm,celestia,1,0,14208 D6->45718
+72ba3deff3bb30bde880018cdebe7c6db675b697,realm,ceofutur,1,0,14210 D8->81677
+72ba3deff3bb30bde880018cdebe7c6db675b697,realm,dracopit,1,0,14209 D4->15913
+72ba3deff3bb30bde880018cdebe7c6db675b697,realm,dragonnia,1,0,14210 D6->6839
+72ba3deff3bb30bde880018cdebe7c6db675b697,realm,earth,1,0,14209 D5->43568
+72ba3deff3bb30bde880018cdebe7c6db675b697,realm,eth2,1,0,14209 D0->32707
+72ba3deff3bb30bde880018cdebe7c6db675b697,realm,gibber,1,0,14209 D8->8788
+72ba3deff3bb30bde880018cdebe7c6db675b697,realm,githzer,2,0,14210 D0->44753; 14210 D1->44476
+72ba3deff3bb30bde880018cdebe7c6db675b697,realm,hall,1,0,14208 D8->77867
+72ba3deff3bb30bde880018cdebe7c6db675b697,realm,juiblex,1,0,14208 D3->87628
+72ba3deff3bb30bde880018cdebe7c6db675b697,realm,negplane,1,0,14210 D4->26852
+72ba3deff3bb30bde880018cdebe7c6db675b697,realm,nyneth3,1,0,14208 D7->38811
+72ba3deff3bb30bde880018cdebe7c6db675b697,realm,ravenloft,1,0,14208 D9->58369
+72ba3deff3bb30bde880018cdebe7c6db675b697,realm,snogres,1,0,14210 D7->87777
+72ba3deff3bb30bde880018cdebe7c6db675b697,realm,surface,1,1,14002 D3->531694
+72ba3deff3bb30bde880018cdebe7c6db675b697,realm,trnsptow,1,0,14209 D2->16271
+72ba3deff3bb30bde880018cdebe7c6db675b697,realm,vecna,1,0,14208 D2->130021
+72ba3deff3bb30bde880018cdebe7c6db675b697,rftjngle,pineholl,1,0,80398 D5->16008
+72ba3deff3bb30bde880018cdebe7c6db675b697,rftjngle,plane_air_one,1,0,80444 D2->24501
+72ba3deff3bb30bde880018cdebe7c6db675b697,rftjngle,plane_earth_one,1,0,80444 D3->23805
+72ba3deff3bb30bde880018cdebe7c6db675b697,rftjngle,plane_fire_one,1,0,80444 D0->25405
+72ba3deff3bb30bde880018cdebe7c6db675b697,rftjngle,plane_water_one,1,0,80444 D1->23250
+72ba3deff3bb30bde880018cdebe7c6db675b697,rftjngle,surface,1,1,80469 D1->568516
+72ba3deff3bb30bde880018cdebe7c6db675b697,rftjngle,woodseer,3,3,80000 D3->16950; 80001 D3->16951; 80002 D3->16952
+72ba3deff3bb30bde880018cdebe7c6db675b697,river_styx,hell_one_avernus,1,0,90700 D2->51001
+72ba3deff3bb30bde880018cdebe7c6db675b697,roguerai,surface,2,2,75801 D1->541822; 75801 D2->542221
+72ba3deff3bb30bde880018cdebe7c6db675b697,rtun,surface,2,2,90376 D4->574593; 90380 D1->576997
+72ba3deff3bb30bde880018cdebe7c6db675b697,ruins,surface,2,2,98600 D0->627239; 98600 D1->627640
+72ba3deff3bb30bde880018cdebe7c6db675b697,sarmiz,surface,2,2,9400 D0->621875; 9975 D2->622675
+72ba3deff3bb30bde880018cdebe7c6db675b697,sarmiz,underworld,1,1,9853 D2->4404
+72ba3deff3bb30bde880018cdebe7c6db675b697,savannah,surface,1,1,138584 D3->562072
+72ba3deff3bb30bde880018cdebe7c6db675b697,scorchvalley,fields_between,1,0,71331 D5->71140
+72ba3deff3bb30bde880018cdebe7c6db675b697,scorchvalley,mount,1,0,71326 D5->9122
+72ba3deff3bb30bde880018cdebe7c6db675b697,scorchvalley,surface,1,1,71201 D1->576166
+72ba3deff3bb30bde880018cdebe7c6db675b697,scorchvalley,torg,1,0,71330 D5->29071
+72ba3deff3bb30bde880018cdebe7c6db675b697,seacaves,surface,1,1,2200 D2->558717
+72ba3deff3bb30bde880018cdebe7c6db675b697,seakngdm,plane_water_one,1,1,31500 D4->23281
+72ba3deff3bb30bde880018cdebe7c6db675b697,seveno,surface,1,1,38600 D2->516252
+72ba3deff3bb30bde880018cdebe7c6db675b697,sforest,surface,2,2,97400 D0->559312; 97423 D2->560911
+72ba3deff3bb30bde880018cdebe7c6db675b697,shabo,underdark,1,1,32919 D2->710327
+72ba3deff3bb30bde880018cdebe7c6db675b697,shadamehr_keep,dreggan_wood,1,1,41200 D2->41186
+72ba3deff3bb30bde880018cdebe7c6db675b697,shadowcl,surface,3,3,93900 D0->545307; 93900 D1->545708; 93952 D4->544905
+72ba3deff3bb30bde880018cdebe7c6db675b697,shady,surface,3,3,97648 D1->583895; 97717 D2->584294; 97755 D3->583893
+72ba3deff3bb30bde880018cdebe7c6db675b697,shafts,ghore,1,1,10043 D4->11548
+72ba3deff3bb30bde880018cdebe7c6db675b697,shafts,mountaintracks,2,2,10003 D3->20934; 10035 D2->20921
+72ba3deff3bb30bde880018cdebe7c6db675b697,shafts,underdark,1,1,10021 D5->844848
+72ba3deff3bb30bde880018cdebe7c6db675b697,shafts,underworld,2,2,10000 D5->4580; 10033 D5->4585
+72ba3deff3bb30bde880018cdebe7c6db675b697,shaughin,shaughin2,3,3,6543 D2->6699; 6546 D0->6686; 6547 D5->6695
+72ba3deff3bb30bde880018cdebe7c6db675b697,shaughin,underdark,1,1,6500 D0->804249
+72ba3deff3bb30bde880018cdebe7c6db675b697,shaughin2,shaughin,3,3,6686 D2->6546; 6695 D4->6547; 6699 D0->6543
+72ba3deff3bb30bde880018cdebe7c6db675b697,shaughin2,underdark,1,1,6696 D2->790149
+72ba3deff3bb30bde880018cdebe7c6db675b697,shipy,malch,1,1,43320 D5->23760
+72ba3deff3bb30bde880018cdebe7c6db675b697,shipy,surface,31,9,43100 D2->545743; 43139 D0->544943; 43139 D1->545344; 43140 D1->616947; 43179 D0->616546; 43179 D3->616945; 43180 D2->529227; 43219 D0->528427; 43219 D3->528826; 43322 D0->633831
+72ba3deff3bb30bde880018cdebe7c6db675b697,shortb,surface,2,2,67801 D3->569793; 67810 D1->569799
+72ba3deff3bb30bde880018cdebe7c6db675b697,shortc,split_shield,1,1,53200 D3->10327
+72ba3deff3bb30bde880018cdebe7c6db675b697,skulldrach,citadel,1,1,12796 D0->13000
+72ba3deff3bb30bde880018cdebe7c6db675b697,skulldrach,surface,1,1,12859 D2->632637
+72ba3deff3bb30bde880018cdebe7c6db675b697,smokev,surface,2,2,20201 D1->614187; 20297 D2->614586
+72ba3deff3bb30bde880018cdebe7c6db675b697,snogres,surface,1,1,87700 D4->620605
+72ba3deff3bb30bde880018cdebe7c6db675b697,split_shield,shortc,1,1,10327 D1->53200
+72ba3deff3bb30bde880018cdebe7c6db675b697,split_shield,surface,3,3,10300 D0->587095; 10334 D2->587895; 10340 D3->587494
+72ba3deff3bb30bde880018cdebe7c6db675b697,spshold,cerebusp,1,0,22649 D1->22113
+72ba3deff3bb30bde880018cdebe7c6db675b697,spshold,desolate,1,0,22649 D0->22255
+72ba3deff3bb30bde880018cdebe7c6db675b697,spshold,divhome,1,0,22649 D3->40717
+72ba3deff3bb30bde880018cdebe7c6db675b697,spshold,jade,1,0,22649 D6->76616
+72ba3deff3bb30bde880018cdebe7c6db675b697,spshold,mira,1,0,22649 D2->82540
+72ba3deff3bb30bde880018cdebe7c6db675b697,spshold,stormport,1,0,22649 D5->22423
+72ba3deff3bb30bde880018cdebe7c6db675b697,spshold,surface,3,3,22600 D0->636281; 22600 D3->636680; 22634 D1->636682
+72ba3deff3bb30bde880018cdebe7c6db675b697,stormht,surface,2,2,30800 D2->600071; 30929 D0->599271
+72ba3deff3bb30bde880018cdebe7c6db675b697,stormport,sarmiz,1,0,22541 D5->9597
+72ba3deff3bb30bde880018cdebe7c6db675b697,stormport,surface,4,4,22401 D2->587928; 22401 D3->587527; 22432 D1->587529; 22479 D0->587128
+72ba3deff3bb30bde880018cdebe7c6db675b697,suntmpl,surface,1,1,82493 D3->541275
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,4horse,1,1,515793 D0->34500
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,airshipgrave,3,3,616080 D2->77543; 617684 D3->77557; 618083 D0->77557
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,alatorin,4,4,518643 D5->83678; 519847 D2->83714; 521443 D1->83811; 522647 D5->83713
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,ants,1,1,526267 D1->10900
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,arac_wild,2,2,588318 D3->36046; 589915 D1->36000
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,arcium,2,2,591773 D3->85700; 592172 D0->85700
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,ashrumite,2,2,550080 D1->66140; 550481 D0->66140
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,asylum,1,1,551667 D0->9288
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,bandit,1,1,536467 D0->98500
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,banditca,1,1,546515 D0->14800
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,basin_wa,1,1,612059 D5->34000
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,battlefi,1,1,624087 D0->66400
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,bloody_plains,1,1,586575 D0->33681
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,bordello,1,1,563634 D0->93600
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,breale,1,1,531537 D2->2600
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,bs,5,5,602263 D2->74113; 602662 D1->74113; 604259 D1->74091; 604673 D3->74902; 605864 D0->74444
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,bugentol,1,1,589071 D3->95800
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,caves_skelenak,3,3,556876 D2->4131; 557269 D1->4125; 607420 D0->4001
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,centaur_zone,1,1,519684 D0->93300
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,ceothia,1,1,628287 D0->80800
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,cerebusp,3,3,560129 D2->22118; 561729 D3->22005; 562128 D0->22005
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,charing,2,1,513692 D1->45183; 513693 D1->45183
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,church,1,1,527483 D3->87847
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,cldgt,1,1,553314 D0->99500
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,clfhaven,1,1,620880 D0->21500
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,cloister,1,1,537902 D2->67100
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,connectorzones,41,40,510179 D5->53891; 511381 D2->53917; 513385 D3->53908; 515891 D1->53712; 515891 D2->53712; 516267 D2->53805; 518291 D0->53707; 518664 D1->53806; 526527 D1->54014; 530033 D1->53933
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,cosmic,5,5,535007 D2->76268; 535406 D1->76268; 535802 D0->76001; 536209 D3->76243; 536608 D0->76243
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,court,1,1,531688 D0->6716
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,cyrictunnel,1,1,581796 D5->54500
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,dark_forest,3,2,605089 D3->75171; 633650 D3->75171; 634049 D0->75171
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,darkfall,2,2,515272 D1->95300; 515679 D3->95348
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,delwyn,1,1,549230 D0->82805
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,desert,2,2,545019 D1->49003; 545021 D3->49431
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,desolate,2,2,560135 D3->22363; 560534 D0->22200
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,divhome,1,1,615667 D5->40780
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,dragonnia,2,2,641969 D3->6803; 642368 D0->6803
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,element,1,1,531681 D3->3800
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,elftomb,3,3,609100 D1->20600; 612309 D3->20611; 613104 D1->20615
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,elvish,2,2,517246 D3->35800; 517645 D0->35800
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,evkeep,1,1,583837 D1->44801
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,faang,2,2,597479 D1->15254; 597886 D4->15411
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,fields_between,1,1,629085 D2->71001
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,fishermans_wharf,1,1,567269 D0->88900
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,foggy_woods,5,5,575652 D2->90185; 576053 D3->90185; 578042 D1->90162; 579251 D3->90000; 579650 D0->90000
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,forgotten_forest,1,1,516090 D1->82701
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,fortb,1,1,562320 D3->38100
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,githzer,1,1,538611 D0->44400
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,goblincamp,1,1,617373 D0->11400
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,goblinht,1,1,626940 D3->70327
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,gold_hal,1,1,559699 D0->40400
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,grave,2,2,592593 D3->8427; 593389 D0->8400
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,halfcut,1,1,629274 D2->27001
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,harpyht,1,1,620042 D0->31100
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,harrow,2,2,547275 D1->29400; 547676 D0->29400
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,headless,2,2,596968 D2->2730; 597768 D0->2738
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,herders,2,2,594209 D1->94300; 594610 D0->94300
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,highmoor,1,1,526069 D0->19100
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,highway,2,2,530849 D2->41837; 531250 D3->41732
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,hunt,2,1,649695 D1->13307; 650096 D0->13307
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,hwood,1,1,517668 D0->10800
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,icecrag,1,1,511914 D1->97001
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,icetower,1,1,523117 D0->31800
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,jade,3,3,642099 D2->76928; 642498 D1->76620; 642899 D0->76620
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,jademini,3,3,555555 D5->77258; 640900 D0->77220; 642096 D0->77218
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,jin,1,1,619653 D0->82063
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,kastle,2,2,575843 D5->99439; 578633 D0->99400
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,killing_fields,1,1,585374 D2->33302
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,kimordril,3,3,542862 D3->95655; 543256 D1->95502; 543661 D0->95658
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,knight,1,1,639011 D0->70900
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,kobold,1,1,622130 D0->1400
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,krethik,2,2,617005 D1->20000; 617010 D3->20112
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,kvarkpass_connector,4,4,629815 D5->54804; 631412 D5->54844; 632614 D3->54803; 634209 D0->54600
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,lava,1,1,565027 D0->99700
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,lizard,1,1,634225 D0->6098
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,llzazan,1,0,660003 D5->36287
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,long,2,2,520903 D2->34401; 521302 D1->34401
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,lornecro,1,1,512296 D2->138978
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,malch,1,1,632944 D5->23600
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,mansion,1,1,588620 D1->3500
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,marigot,2,2,519317 D1->5315; 519319 D3->5417
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,maze_are,1,1,571011 D1->94177
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,menden,4,4,549925 D2->88863; 550324 D1->88846; 550326 D3->88870; 550725 D0->88846
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,mining,1,1,566915 D1->4900
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,minizones,10,10,517480 D2->5868; 518898 D2->5735; 525294 D0->5756; 539287 D1->5830; 568229 D1->5974; 572071 D2->5770; 572871 D0->5785; 619036 D5->5966; 622631 D2->5847; 630996 D5->5819
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,minopass,4,4,584060 D0->94878; 604472 D2->94721; 604873 D3->94721; 606867 D0->94700
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,mira,3,3,512874 D2->82670; 513273 D1->82500; 513674 D0->82500
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,mist,2,2,628063 D3->6300; 628462 D0->6300
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,mist_chasm,1,1,638825 D3->15000
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,mitashi,2,1,647288 D2->138200; 648088 D0->138409
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,mntcastl,1,1,563532 D1->37416
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,moonshae,2,2,557218 D2->26208; 557619 D3->26208
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,moria,2,2,528069 D1->99335; 528071 D3->99028
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,moss,1,1,611257 D2->23400
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,mount,1,1,517517 D4->9100
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,mountaintracks,3,3,598665 D2->21042; 607457 D3->20942; 611042 D0->20900
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,mril,1,1,522257 D3->33764
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,multiclass_temple,5,5,511126 D5->52901; 513537 D1->52914; 513539 D3->52917; 517940 D2->52920; 518740 D0->52918
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,nax,1,1,625238 D3->37800
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,new_cavecity,2,2,584184 D3->15161; 584583 D0->15161
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,newhaven,1,1,553247 D0->35200
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,newhope,2,2,618434 D3->89217; 618833 D0->89217
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,nexus_ic,4,4,511135 D2->130112; 511534 D1->130100; 511536 D3->130124; 511935 D0->130136
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,nexus_island,1,1,519153 D0->130301
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,nexus_uc,1,1,577404 D2->130200
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,nizari,1,1,575327 D2->40002
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,nlakes,3,3,537871 D5->75418; 537889 D3->75337; 539488 D3->75363
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,nomads,4,4,582095 D2->6203; 582494 D1->6221; 582496 D3->6227; 582895 D0->6246
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,nyneth,1,1,581417 D0->22900
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,oasis,1,1,611692 D1->78000
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,obcita,1,1,579804 D0->75600
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,opalphoenix,1,1,528831 D3->70875
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,orrak,1,1,610629 D0->9000
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,otower,1,1,616249 D0->11300
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,outpost,1,1,527555 D1->82124
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,prison,1,1,636262 D0->7497
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,pyramid,3,3,525659 D2->20466; 526060 D3->20466; 528459 D0->20400
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,quietus,2,2,635755 D2->1737; 636555 D0->1723
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,raiders,1,1,593506 D0->8900
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,raxthan,2,2,595852 D3->42980; 596251 D0->42980
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,realm,1,1,531694 D1->14002
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,rftjngle,1,1,568516 D3->80469
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,roguerai,2,2,541822 D3->75801; 542221 D0->75801
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,rtun,2,2,574593 D5->90376; 576997 D3->90380
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,ruins,2,2,627239 D2->98600; 627640 D3->98600
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,sarmiz,2,2,621875 D2->9400; 622675 D0->9975
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,savannah,1,1,562072 D1->138584
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,scorchvalley,1,1,576166 D3->71201
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,seacaves,1,1,558717 D0->2200
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,seveno,1,1,516252 D0->38600
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,sforest,2,2,559312 D2->97400; 560911 D0->97423
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,shadowcl,3,3,544905 D5->93952; 545307 D2->93900; 545708 D3->93900
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,shady,3,3,583893 D1->97755; 583895 D3->97648; 584294 D0->97717
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,shipy,9,9,528427 D2->43219; 528826 D1->43219; 529227 D0->43180; 544943 D2->43139; 545344 D3->43139; 545743 D0->43100; 616546 D2->43179; 616945 D1->43179; 616947 D3->43140
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,shortb,2,2,569793 D1->67801; 569799 D3->67810
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,skulldrach,1,1,632637 D0->12859
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,smokev,2,2,614187 D3->20201; 614586 D0->20297
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,snogres,1,1,620605 D5->87700
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,split_shield,3,3,587095 D2->10300; 587494 D1->10340; 587895 D0->10334
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,spshold,3,3,636281 D2->22600; 636680 D1->22600; 636682 D3->22634
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,stormht,2,2,599271 D2->30929; 600071 D0->30800
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,stormport,4,4,587128 D2->22479; 587527 D1->22401; 587529 D3->22432; 587928 D0->22401
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,suntmpl,1,1,541275 D1->82493
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,surfacemini,8,7,518753 D5->98014; 519153 D5->98014; 567418 D0->97953; 578911 D2->97908; 579310 D1->97931; 579312 D3->97951; 590430 D4->97959; 612685 D0->97900
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,swamp_one,1,1,608724 D3->26001
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,tchan,1,1,513140 D1->4800
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,temple,1,1,587801 D0->18300
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,tentro2,3,3,543736 D0->69222; 557287 D1->69080; 557688 D0->69080
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,tezcat,1,1,575445 D1->98900
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,tharnadia,4,2,570023 D2->133066; 570422 D1->133053; 570424 D3->132867; 570823 D0->133056
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,thri,1,1,603653 D3->67600
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,tikit,1,1,561015 D1->43901
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,torg,1,1,611053 D1->28900
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,torrhan,4,4,580480 D2->66689; 580879 D1->66689; 580881 D3->66712; 581280 D0->66692
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,tower,1,1,586837 D0->9334
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,trakkia,2,2,629225 D3->57000; 629624 D0->57000
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,tribal,3,3,630869 D2->42281; 631268 D1->42281; 631669 D0->42281
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,troll_caves,1,1,622564 D5->96900
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,troll_hills,2,2,625367 D2->1801; 626167 D0->1820
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,tundra,7,7,514280 D0->13712; 523898 D1->13870; 538336 D1->13703; 538746 D3->13778; 542729 D1->13796; 543120 D3->13895; 543909 D1->13936
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,twin_towers_forest,1,1,559646 D1->13500
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,twstwd,2,2,568109 D1->16300; 568510 D0->16300
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,ugta,1,1,543298 D0->39335
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,underworld,2,0,660003 D2->4575; 660003 D3->4562
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,unoutpst,1,1,605489 D0->98700
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,val,1,1,521073 D0->38575
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,vargan,2,2,604903 D2->2100; 605302 D1->2100
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,vecna,1,1,597408 D0->130000
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,verspin,1,1,531117 D0->28100
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,vrzawild,1,1,523536 D3->37090
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,wemic,1,1,572118 D1->93501
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,werrun,1,1,527537 D0->38300
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,wh,3,3,533478 D2->55315; 533875 D1->55410; 533879 D3->55503
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,willem,1,1,548452 D0->7102
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,wolfen,1,1,620706 D2->18000
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,woodseer,2,2,568910 D2->16891; 569309 D1->16915
+72ba3deff3bb30bde880018cdebe7c6db675b697,surface,yuan_ti2,1,1,600250 D3->80600
+72ba3deff3bb30bde880018cdebe7c6db675b697,surfacekeeps,alatorin,74,69,120110 D0->83735; 120620 D1->83118; 120626 D3->83119; 120667 D0->83100; 120758 D3->83891; 120851 D0->83157; 120915 D0->83199; 120917 D2->83115; 120931 D1->83136; 120993 D0->83633
+72ba3deff3bb30bde880018cdebe7c6db675b697,surfacemini,surface,11,7,97900 D2->612685; 97906 D2->564065; 97908 D0->578911; 97931 D3->579310; 97951 D1->579312; 97952 D2->578863; 97953 D2->567418; 97959 D5->590430; 98014 D4->519153; 98016 D2->522869
+72ba3deff3bb30bde880018cdebe7c6db675b697,swamp_one,surface,1,1,26001 D1->608724
+72ba3deff3bb30bde880018cdebe7c6db675b697,swamp_one,swamp_two,1,1,26019 D2->26100
+72ba3deff3bb30bde880018cdebe7c6db675b697,swamp_two,swamp_one,1,1,26100 D0->26019
+72ba3deff3bb30bde880018cdebe7c6db675b697,tchan,surface,1,1,4800 D3->513140
+72ba3deff3bb30bde880018cdebe7c6db675b697,teka2,nlakes,1,1,75546 D2->75264
+72ba3deff3bb30bde880018cdebe7c6db675b697,temple,surface,1,1,18300 D2->587801
+72ba3deff3bb30bde880018cdebe7c6db675b697,temple_laduguer,underdark,1,1,8100 D3->827455
+72ba3deff3bb30bde880018cdebe7c6db675b697,tentro2,caves_skelenak,1,1,69088 D5->4152
+72ba3deff3bb30bde880018cdebe7c6db675b697,tentro2,surface,3,3,69080 D2->557688; 69080 D3->557287; 69222 D2->543736
+72ba3deff3bb30bde880018cdebe7c6db675b697,tezcat,surface,1,1,98900 D3->575445
+72ba3deff3bb30bde880018cdebe7c6db675b697,tharnadia,brad,1,1,132650 D0->135001
+72ba3deff3bb30bde880018cdebe7c6db675b697,tharnadia,surface,4,2,132867 D1->570424; 133053 D3->570422; 133064 D2->570823; 133070 D0->570023
+72ba3deff3bb30bde880018cdebe7c6db675b697,tharnadian_ruin,braddistock,1,1,5616 D0->1300
+72ba3deff3bb30bde880018cdebe7c6db675b697,tharnadian_ruin,caertannad,1,1,5501 D3->78400
+72ba3deff3bb30bde880018cdebe7c6db675b697,tharnadian_ruin,cityruin,1,1,5588 D3->66200
+72ba3deff3bb30bde880018cdebe7c6db675b697,tharnrifts,caertannad,23,23,110710 D0->78799; 110936 D0->78803; 112517 D2->78800; 112566 D0->78760; 112989 D0->78769; 113043 D3->78824; 113392 D1->78782; 113771 D3->78761; 115518 D3->78721; 115527 D0->78669
+72ba3deff3bb30bde880018cdebe7c6db675b697,tharnrifts,surfacekeeps,2,0,110099 D1->120000; 119900 D2->120000
+72ba3deff3bb30bde880018cdebe7c6db675b697,thetis,heavens,1,0,38075 D2->38
+72ba3deff3bb30bde880018cdebe7c6db675b697,thetis,surface,1,0,38000 D2->618491
+72ba3deff3bb30bde880018cdebe7c6db675b697,thri,surface,1,1,67600 D1->603653
+72ba3deff3bb30bde880018cdebe7c6db675b697,tiamat,astral_tiamat,6,0,19620 D3->19953; 19624 D1->19953; 19625 D5->19953; 19626 D5->19953; 19627 D5->19953; 19638 D5->19953
+72ba3deff3bb30bde880018cdebe7c6db675b697,tiamat,avernus,1,1,19600 D2->32031
+72ba3deff3bb30bde880018cdebe7c6db675b697,tikit,surface,1,1,43901 D3->561015
+72ba3deff3bb30bde880018cdebe7c6db675b697,tikit,tikitt,1,1,44039 D5->44101
+72ba3deff3bb30bde880018cdebe7c6db675b697,tikitt,tikit,1,1,44101 D4->44039
+72ba3deff3bb30bde880018cdebe7c6db675b697,torg,surface,1,1,28900 D3->611053
+72ba3deff3bb30bde880018cdebe7c6db675b697,torrhan,surface,4,4,66689 D0->580480; 66689 D3->580879; 66692 D2->581280; 66712 D1->580881
+72ba3deff3bb30bde880018cdebe7c6db675b697,torture,ghore,1,1,95400 D0->11529
+72ba3deff3bb30bde880018cdebe7c6db675b697,tower,surface,1,1,9334 D2->586837
+72ba3deff3bb30bde880018cdebe7c6db675b697,trakkia,surface,2,2,57000 D1->629225; 57000 D2->629624
+72ba3deff3bb30bde880018cdebe7c6db675b697,traoul,truk,1,1,7000 D2->1622
+72ba3deff3bb30bde880018cdebe7c6db675b697,tribal,astral_main,6,0,42297 D0->19795; 42297 D1->19732; 42297 D2->19755; 42297 D3->19722; 42297 D4->19798; 42297 D5->19790
+72ba3deff3bb30bde880018cdebe7c6db675b697,tribal,surface,3,3,42281 D0->630869; 42281 D2->631669; 42281 D3->631268
+72ba3deff3bb30bde880018cdebe7c6db675b697,trnsptow,connectorzones,1,1,16212 D2->54167
+72ba3deff3bb30bde880018cdebe7c6db675b697,troll_caves,malch,1,1,96976 D3->23741
+72ba3deff3bb30bde880018cdebe7c6db675b697,troll_caves,surface,1,1,96900 D4->622564
+72ba3deff3bb30bde880018cdebe7c6db675b697,troll_hills,ghore,1,1,1909 D0->11540
+72ba3deff3bb30bde880018cdebe7c6db675b697,troll_hills,surface,2,2,1801 D0->625367; 1820 D2->626167
+72ba3deff3bb30bde880018cdebe7c6db675b697,truk,goblinht,1,1,1655 D2->70198
+72ba3deff3bb30bde880018cdebe7c6db675b697,truk,traoul,1,1,1622 D0->7000
+72ba3deff3bb30bde880018cdebe7c6db675b697,truk,underdark,1,1,1600 D1->846820
+72ba3deff3bb30bde880018cdebe7c6db675b697,ttowers,twin_towers_forest,3,3,13200 D2->13570; 13230 D0->13571; 13259 D1->13569
+72ba3deff3bb30bde880018cdebe7c6db675b697,ttowers,underworld3,1,1,13297 D3->30167
+72ba3deff3bb30bde880018cdebe7c6db675b697,tundra,surface,7,7,13703 D3->538336; 13712 D2->514280; 13778 D1->538746; 13796 D3->542729; 13870 D3->523898; 13895 D1->543120; 13936 D3->543909
+72ba3deff3bb30bde880018cdebe7c6db675b697,tundra,underworld3,1,1,13733 D2->30264
+72ba3deff3bb30bde880018cdebe7c6db675b697,turolzoo,willem,1,1,53000 D1->7123
+72ba3deff3bb30bde880018cdebe7c6db675b697,twin_towers_forest,surface,1,1,13500 D3->559646
+72ba3deff3bb30bde880018cdebe7c6db675b697,twin_towers_forest,ttowers,3,3,13569 D3->13259; 13570 D0->13200; 13571 D2->13230
+72ba3deff3bb30bde880018cdebe7c6db675b697,twstwd,krimman,1,1,16378 D1->16400
+72ba3deff3bb30bde880018cdebe7c6db675b697,twstwd,pineholl,1,1,16364 D1->16097
+72ba3deff3bb30bde880018cdebe7c6db675b697,twstwd,surface,2,2,16300 D2->568510; 16300 D3->568109
+72ba3deff3bb30bde880018cdebe7c6db675b697,udmini,connectorzones,1,0,88502 D4->54194
+72ba3deff3bb30bde880018cdebe7c6db675b697,ugta,surface,1,1,39335 D2->543298
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,ashrumite,2,2,701670 D3->66087; 702069 D0->66087
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,bogentok,2,2,812256 D1->18714; 812663 D3->18700
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,bugger,1,1,807099 D2->6400
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,caves_skelenak,1,1,709664 D4->4093
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,clwcvrn,1,1,819329 D1->80700
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,connectorzones,13,13,712320 D4->53907; 734445 D2->54114; 734844 D1->54114; 738834 D2->54115; 739233 D1->54115; 740052 D3->54116; 740451 D0->54116; 747706 D2->54141; 748506 D0->54141; 754913 D1->54142
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,cyrictunnel,3,3,743256 D5->54549; 746483 D5->54554; 757626 D4->54529
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,dlsc,1,1,784930 D0->36800
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,drst,1,1,840288 D3->34200
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,dungeon,1,1,810962 D1->93069
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,earth,1,1,804038 D1->43500
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,faang,3,3,797529 D0->15202; 817726 D1->15255; 818127 D0->15255
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,flind,1,1,829678 D0->3475
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,gibber,2,2,820318 D2->8700; 820717 D1->8700
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,goblincave,1,1,842047 D1->19000
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,gold_hal,1,1,717300 D1->40655
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,hall,1,1,813247 D2->77700
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,herders,1,1,746503 D1->94646
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,ixarkon,1,1,828097 D0->96471
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,ixxillikor,2,2,841353 D2->4200; 841752 D1->4200
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,juiblex,1,1,772524 D5->87500
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,kelek,1,1,857219 D5->87950
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,kobold,1,1,816080 D3->1542
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,library,1,1,813342 D2->402000
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,lizard,1,1,834369 D2->6120
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,llzazan,1,1,805516 D0->36262
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,malch,1,1,849235 D3->23721
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,mazzolin,2,2,802652 D1->21300; 803053 D0->21300
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,minopass,2,2,832822 D3->94818; 833221 D0->94818
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,morg,1,1,844836 D2->88600
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,mountaintracks,1,1,823315 D0->20977
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,mush1,1,1,856059 D3->10100
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,mushroom_caverns,3,3,820288 D4->24101; 823870 D4->24187; 825082 D4->24237
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,myconid,2,2,811016 D4->2392; 836064 D5->2300
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,new_cavecity,1,1,749656 D0->15102
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,nexus_roper,1,1,811645 D0->130400
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,obcita,2,2,736889 D3->75778; 737288 D0->75778
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,orogs,4,4,824965 D3->45807; 825364 D0->45807; 825760 D3->45800; 826159 D0->45800
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,pragtog,1,1,822668 D5->10649
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,pworm,3,3,814263 D1->42583; 832712 D3->42500; 833111 D0->42500
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,quietus,1,1,850045 D4->1700
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,raxthan,1,1,749737 D0->42999
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,shabo,1,1,710327 D0->32919
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,shafts,1,1,844848 D4->10021
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,shaughin,1,1,804249 D2->6500
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,shaughin2,1,1,790149 D0->6696
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,temple_laduguer,1,1,827455 D1->8100
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,truk,1,1,846820 D3->1600
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,underworld,16,16,824914 D2->4530; 825315 D3->4530; 825317 D2->4479; 825440 D3->4608; 825716 D1->4479; 833726 D3->4615; 834829 D8->4561; 836506 D2->4440; 836905 D1->4440; 841275 D2->4625
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,underworld3,2,2,709628 D4->30282; 722840 D2->30281
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,valdrak,2,2,831730 D1->53100; 832131 D0->53100
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,valinhav,1,1,798725 D3->90800
+72ba3deff3bb30bde880018cdebe7c6db675b697,underdark,worms,1,1,811708 D0->6900
+72ba3deff3bb30bde880018cdebe7c6db675b697,undermountain,bs,1,1,92501 D2->74045
+72ba3deff3bb30bde880018cdebe7c6db675b697,undermountain,underworld,1,0,92518 D5->4557
+72ba3deff3bb30bde880018cdebe7c6db675b697,underworld,ixarkon,1,1,4503 D3->96588
+72ba3deff3bb30bde880018cdebe7c6db675b697,underworld,ixxillikor,1,1,4441 D5->4398
+72ba3deff3bb30bde880018cdebe7c6db675b697,underworld,kuotoa,1,1,4454 D1->88200
+72ba3deff3bb30bde880018cdebe7c6db675b697,underworld,kvarkpass_connector,3,3,4420 D4->54805; 4440 D4->54810; 4557 D4->54841
+72ba3deff3bb30bde880018cdebe7c6db675b697,underworld,pworm,1,1,4618 D3->42588
+72ba3deff3bb30bde880018cdebe7c6db675b697,underworld,sarmiz,1,1,4404 D0->9853
+72ba3deff3bb30bde880018cdebe7c6db675b697,underworld,shafts,2,2,4580 D4->10000; 4585 D4->10033
+72ba3deff3bb30bde880018cdebe7c6db675b697,underworld,underdark,16,16,4440 D0->836506; 4440 D3->836905; 4470 D2->846118; 4479 D0->825317; 4479 D3->825716; 4530 D0->824914; 4530 D1->825315; 4547 D3->854866; 4561 D7->834829; 4580 D1->842894
+72ba3deff3bb30bde880018cdebe7c6db675b697,underworld3,foggy_woods,1,1,30281 D1->90212
+72ba3deff3bb30bde880018cdebe7c6db675b697,underworld3,mistywood,1,1,30162 D4->95045
+72ba3deff3bb30bde880018cdebe7c6db675b697,underworld3,moonshae,1,1,30000 D4->26272
+72ba3deff3bb30bde880018cdebe7c6db675b697,underworld3,otower,1,1,30172 D2->11348
+72ba3deff3bb30bde880018cdebe7c6db675b697,underworld3,ttowers,1,1,30167 D1->13297
+72ba3deff3bb30bde880018cdebe7c6db675b697,underworld3,tundra,1,1,30264 D0->13733
+72ba3deff3bb30bde880018cdebe7c6db675b697,underworld3,underdark,2,2,30281 D0->722840; 30282 D5->709628
+72ba3deff3bb30bde880018cdebe7c6db675b697,unoutpst,crypt,1,1,98737 D1->14300
+72ba3deff3bb30bde880018cdebe7c6db675b697,unoutpst,surface,1,1,98700 D2->605489
+72ba3deff3bb30bde880018cdebe7c6db675b697,v2,vargan,1,1,7800 D4->2182
+72ba3deff3bb30bde880018cdebe7c6db675b697,val,surface,1,1,38575 D2->521073
+72ba3deff3bb30bde880018cdebe7c6db675b697,valdrak,underdark,2,2,53100 D2->832131; 53100 D3->831730
+72ba3deff3bb30bde880018cdebe7c6db675b697,valinhav,dirkn,1,1,90810 D0->96800
+72ba3deff3bb30bde880018cdebe7c6db675b697,valinhav,underdark,1,1,90800 D1->798725
+72ba3deff3bb30bde880018cdebe7c6db675b697,valley_crushk,pharrvly,1,1,2006 D1->40300
+72ba3deff3bb30bde880018cdebe7c6db675b697,valley_crushk,surface,1,0,2060 D2->548133
+72ba3deff3bb30bde880018cdebe7c6db675b697,vargan,surface,2,2,2100 D0->604903; 2100 D3->605302
+72ba3deff3bb30bde880018cdebe7c6db675b697,vargan,v2,1,1,2182 D5->7800
+72ba3deff3bb30bde880018cdebe7c6db675b697,vecna,surface,1,1,130000 D2->597408
+72ba3deff3bb30bde880018cdebe7c6db675b697,verspin,surface,1,1,28100 D2->531117
+72ba3deff3bb30bde880018cdebe7c6db675b697,vrzawild,surface,1,1,37090 D1->523536
+72ba3deff3bb30bde880018cdebe7c6db675b697,wander,llzazan,36,0,36601 D0->36280; 36601 D1->36281; 36601 D2->36278; 36601 D3->36288; 36601 D4->36283; 36601 D5->36276; 36602 D0->36312; 36602 D1->36265; 36602 D2->36267; 36602 D3->36263
+72ba3deff3bb30bde880018cdebe7c6db675b697,wemic,surface,1,1,93501 D3->572118
+72ba3deff3bb30bde880018cdebe7c6db675b697,werrun,surface,1,1,38300 D2->527537
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,alatorin,2,0,55403 D0->83225; 55403 D2->83225
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,astral_tiamat,1,0,55634 D3->19953
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,asylum,1,0,55402 D5->9202
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,bahamut,1,0,55632 D5->25922
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,banditca,1,0,55614 D5->14854
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,bctdl,1,0,55633 D1->32480
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,bordello,1,0,55614 D4->93610
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,bugentol,1,0,55402 D1->95813
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,caertannad,1,0,55401 D0->78538
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,celestia,1,0,55634 D0->45718
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,clfhaven,1,0,55632 D9->21937
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,cosmic,1,0,55634 D7->76201
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,dlsc,1,0,55632 D7->36879
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,dragonnia,1,0,55633 D0->6801
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,evkeep,1,0,55634 D4->44888
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,fields_between,1,0,55633 D8->71128
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,githzer,1,0,55634 D5->44590
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,goblincamp,1,0,55402 D8->11412
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,gold_hal,1,0,55614 D9->40402
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,icecrag,1,0,55634 D8->97121
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,jade,1,0,55632 D6->76760
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,kobold,1,0,55402 D7->1402
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,krethik,1,0,55633 D7->20147
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,lizard,1,0,55402 D9->6087
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,mansion,1,0,55634 D6->3675
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,minizones,1,0,55402 D6->5849
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,mira,1,0,55614 D6->82502
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,negplane,1,0,55633 D2->26860
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,nlakes,1,1,55297 D2->75410
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,nyneth,1,0,55633 D5->22994
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,nyneth2,1,0,55632 D0->23098
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,nyneth3,1,0,55633 D4->38811
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,sarmiz,1,0,55402 D3->9401
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,scorchvalley,1,0,55634 D2->71321
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,seakngdm,1,0,55634 D9->31668
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,seveno,1,0,55632 D8->38632
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,shabo,1,0,55633 D9->32916
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,split_shield,1,0,55402 D4->10307
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,stormport,1,0,55402 D0->22424
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,surface,10,3,55315 D0->533478; 55410 D3->533875; 55503 D1->533879; 55616 D0->619576; 55616 D1->500000; 55616 D2->500007; 55616 D6->655054; 55616 D7->553861; 55616 D8->592521; 55616 D9->576768
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,surfacekeeps,1,0,55403 D1->120823
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,tentro2,1,0,55559 D4->69249
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,tezcat,1,0,55632 D3->98974
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,tikitt,1,0,55632 D1->44333
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,torg,1,0,55633 D6->29093
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,torrhan,1,0,55614 D8->66600
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,verspin,1,0,55614 D7->28109
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,wemic,1,0,55614 D2->93514
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,werrun,1,0,55614 D3->38316
+72ba3deff3bb30bde880018cdebe7c6db675b697,wh,yuan_ti,1,0,55632 D4->80545
+72ba3deff3bb30bde880018cdebe7c6db675b697,willem,surface,7,1,7102 D2->548452; 7198 D0->578047; 7198 D1->532894; 7198 D2->551641; 7198 D3->550095; 7198 D4->514897; 7198 D5->524045
+72ba3deff3bb30bde880018cdebe7c6db675b697,willem,turolzoo,1,1,7123 D3->53000
+72ba3deff3bb30bde880018cdebe7c6db675b697,wolfen,surface,1,1,18000 D0->620706
+72ba3deff3bb30bde880018cdebe7c6db675b697,woodseer,pineholl,1,1,16960 D0->16065
+72ba3deff3bb30bde880018cdebe7c6db675b697,woodseer,rftjngle,3,3,16950 D1->80000; 16951 D1->80001; 16952 D1->80002
+72ba3deff3bb30bde880018cdebe7c6db675b697,woodseer,surface,2,2,16891 D0->568910; 16915 D3->569309
+72ba3deff3bb30bde880018cdebe7c6db675b697,worms,connectorzones,1,1,6984 D2->54211
+72ba3deff3bb30bde880018cdebe7c6db675b697,worms,underdark,1,1,6900 D2->811708
+72ba3deff3bb30bde880018cdebe7c6db675b697,yuan_ti,yuan_ti2,1,1,80554 D2->80671
+72ba3deff3bb30bde880018cdebe7c6db675b697,yuan_ti2,surface,1,1,80600 D1->600250
+72ba3deff3bb30bde880018cdebe7c6db675b697,yuan_ti2,yuan_ti,1,1,80671 D0->80554

@@ -1,0 +1,163 @@
+{
+  "schema_version": 3,
+  "revision": 2,
+  "source_area": "turolzoo",
+  "coverage": "complete",
+  "introduction": "Explore the ruined zoo and help a hunter finish his collection of dangerous creatures' teeth.",
+  "orientation": [
+    "The zoo connects to the ruined city park. Its abandoned buildings and enclosures shelter strange, altered animals.",
+    "Find the hunter and ask about hunt, prey, hunting or help. These are different ways to hear the same request.",
+    "He needs one saber tooth and one gorilla tooth together. Look for the saber-toothed tiger and the four-armed gorilla, or obtain the matching teeth from another adventurer.",
+    "Carry both teeth loose in your inventory when you offer them. The hunter rewards the pair with a thin helmet of bark, then leaves.",
+    "Look carefully around the keeper's house for a way into the lower cage. Plan your return before entering unfamiliar enclosures."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 53000,
+      "name": "a malformed vulture",
+      "keyword": "vulture",
+      "description": "Too many years of nesting within these ruins have turned this vulture into a misshapen freak of nature.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53001,
+      "name": "a three-tailed zebra",
+      "keyword": "zebra",
+      "description": "This zebra is deformed in many ways, but the most noticeable deformity is the three tails that drag along the ground behind it.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53002,
+      "name": "a saber-toothed tiger",
+      "keyword": "tiger",
+      "description": "A saber-toothed tiger lurks in a filthy cage. Its long tooth is one of the two the hunter needs.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53003,
+      "name": "a hunter",
+      "keyword": "hunter",
+      "description": "A hunter searches the ruins for tracks. He needs two more teeth to finish his necklace.",
+      "topics": [
+        "hunt",
+        "prey",
+        "hunting",
+        "help"
+      ]
+    },
+    {
+      "mob_vnum": 53004,
+      "name": "a four-armed gorilla",
+      "keyword": "gorilla",
+      "description": "The four-armed gorilla has shiny red teeth. Search beneath the keeper's house for its cage.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53005,
+      "name": "a five-humped camel",
+      "keyword": "camel",
+      "description": "Five misshaped, disproportinate, swollen humps rise up from this camel's back.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53006,
+      "name": "a hairless, translucent mammoth",
+      "keyword": "translucent",
+      "description": "Something has gone terribly wrong and this mammoth is bald and its skin has become completely translucent.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53007,
+      "name": "a drider",
+      "keyword": "drider",
+      "description": "There is no telling how long this drider has lived within these ruins.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53008,
+      "name": "a fiery-eyed nightmare",
+      "keyword": "nightmare",
+      "description": "This nightmare is rampaging around the room in a rage.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53009,
+      "name": "a blue monkey",
+      "keyword": "blue",
+      "description": "This creature has less noticeable mutations than most of the other animals around here, but something about it still just doesn't quite seem right.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53010,
+      "name": "a large blue monkey",
+      "keyword": "large",
+      "description": "This monkey looks much like the smaller monkeys in this area, except that it is much larger.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53011,
+      "name": "a sewer rat",
+      "keyword": "sewer",
+      "description": "This disgusting creature needs to be driven back into the sewers.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53012,
+      "name": "a zoo keeper",
+      "keyword": "keeper",
+      "description": "The keeper still walks through the ruined zoo, cleaning up after its animals.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "collect-the-hunters-teeth",
+      "title": "Complete the hunter’s tooth collection",
+      "category": "request",
+      "summary": "The hunter is two teeth short of completing his necklace. Offer a saber tooth and a gorilla tooth together to receive a thin helmet of bark.",
+      "contracts": [
+        {
+          "giver_vnum": 53003,
+          "completion_key": "give=I:53001,I:53003;receive=I:53004;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-saber-tooth",
+          "kind": "carried_item",
+          "text": "Carry the saber tooth",
+          "hint": "Obtain the saber-toothed tiger's tooth and carry it loose in your inventory. A matching tooth supplied by another adventurer works too.",
+          "item_vnums": [
+            53001
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "prepare-gorilla-tooth",
+          "kind": "carried_item",
+          "text": "Carry the gorilla tooth",
+          "hint": "Obtain the four-armed gorilla's tooth and carry it loose in your inventory. Look for the lower cage beneath the keeper's house.",
+          "item_vnums": [
+            53003
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "accepted-tooth-pair",
+          "kind": "completion",
+          "text": "Complete the hunter’s tooth collection",
+          "hint": "Offer both different teeth together to the hunter. He rewards the pair and departs.",
+          "contracts": [
+            {
+              "giver_vnum": 53003,
+              "completion_key": "give=I:53001,I:53003;receive=I:53004;disappear=1"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

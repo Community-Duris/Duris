@@ -488,6 +488,16 @@
       "verify": "immutable/0031_player_item_runtime_state.sh",
       "verify_checksum": "c523d56f74862735f6aef0c831cbe662bed49c64fa6cbdf05bac82f81c1225e5",
       "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0032_discovered_zone_daily_state",
+      "sequence": 32,
+      "description": "Preserve discovered zones and daily progress in bounded quest-state records",
+      "apply": "immutable/0032_discovered_zone_daily_state.sql",
+      "verify": "immutable/0032_discovered_zone_daily_state.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "e2f41f9cffc51f0f9ec24639c6a69ad2a2f437af14d142ee463f6046ef70326e",
+      "verify_checksum": "c6c645d85195fdf70ae558b937e31dca146d54e5d313eae0d1a9178eb139debe"
     }
   ]
 }

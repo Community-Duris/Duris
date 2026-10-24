@@ -1,0 +1,125 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "killing_fields",
+  "coverage": "complete",
+  "introduction": "Help Maelron recover his missing friend’s message, with the wooden road, haunted fields, camp and travelling merchant as separate exploration leads.",
+  "orientation": [
+    "The northern approach joins the wooden road through the fields. Read the warning sign and watch for undead. The road is a useful guide through the fog, but its name does not promise safe passage.",
+    "Find Maelron, a wandering wizard, and ask hi or hello, then friend. He needs a message from his missing colleague. These conversation topics explain one request; speaking each word does not complete a separate quest.",
+    "The half-buried corpse-named container and its contents start hidden. Search the ground to reveal the container, then search the corpse for the exact fine-paper note; native chance and visibility can require another attempt. Retrieve the revealed note and carry it loose. Nearby skeletons and shadows remain separate encounters.",
+    "The note’s writing appears to be in code. Maelron accepts the exact note without a recorded decoding, personal recovery, earlier conversation, rescue or proof of the friend’s death. An exact note supplied by another player can also fit.",
+    "Current preparation differs from accepted history. A corpse container, generic carved part, magical stock, or held, worn or nested note does not replace the requested loose item. Spending the note can remove preparation while the accepted return remains recorded.",
+    "Scarlock’s camp, the undead and the arcane merchant are optional native leads. Purchases, item effects, combat and actual passage have their own outcomes and do not create extra accepted note returns.",
+    "Maelron departs after an accepted return. His coin reward, actual departure and fresh source availability remain separate consequences. The zone’s ordinary reset depends on age and emptiness; a new day alone does not promise another note or returning wizard."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 33300,
+      "name": "Maelron",
+      "keyword": "maelron",
+      "description": "Maelron searches for a missing friend. Ask hi or hello, then friend to hear about the message he needs. Returning the exact note earns his native coin reward and makes him depart.",
+      "topics": [
+        "hi",
+        "hello",
+        "friend"
+      ]
+    },
+    {
+      "mob_vnum": 33301,
+      "name": "Scarlock",
+      "keyword": "scarlock",
+      "description": "Scarlock waits at a small camp and appears to be looking for someone. His encounter is an optional lead; the accepted note return does not require defeating him.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 33302,
+      "name": "a undead skeleton of a human",
+      "keyword": "skeleton",
+      "description": "This human skeleton is stocked near the half-buried corpse. The exact note is inside the separate corpse-named container; defeating this creature does not itself recover the note.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 33303,
+      "name": "a undead specter of a troll warrior",
+      "keyword": "specter",
+      "description": "The specter of a troll warrior haunts the wooden road. A road description or warning sign does not guarantee safety.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 33304,
+      "name": "a skeleton of a serpent",
+      "keyword": "serpent",
+      "description": "The serpent skeleton is another native encounter in the fields. Its defeat does not complete Maelron’s note return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 33305,
+      "name": "a wraith",
+      "keyword": "wraith",
+      "description": "The wraith searches for unwary travelers. Avoiding, surviving or defeating it would need separate verified outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 33306,
+      "name": "a ghost",
+      "keyword": "ghost",
+      "description": "The ghost wanders the fields. It is a creature, distinct from the container that stocks the exact note.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 33307,
+      "name": "the undead shadow",
+      "keyword": "shadow",
+      "description": "Two shadows are stocked near the half-buried corpse. Their presence, personal combat and exact note recovery are separate facts.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 33308,
+      "name": "an arcane merchant",
+      "keyword": "merchant",
+      "description": "The arcane merchant has a roaming native shop and carries magical stock. Purchases and item use are service leads, with no additional accepted local quest return.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "maelron-missing-message",
+      "title": "Bring the missing message to Maelron",
+      "category": "request",
+      "summary": "Return the exact fine-paper note for Maelron’s native coin reward and departure. The accepted receipt records this return without proving how the note was obtained or what happened to his friend.",
+      "contracts": [
+        {
+          "giver_vnum": 33300,
+          "completion_key": "give=I:33302;receive=C:45000;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-33302",
+          "text": "Carry Maelron’s exact note loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            33302
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Search for the hidden half-buried container, then search its contents to reveal the exact note before retrieving it. Revealing the container alone does not reveal every child. A supplied exact note or one already revealed by someone else can also fit."
+        },
+        {
+          "id": "return",
+          "text": "Record Maelron’s accepted note return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 33300,
+              "completion_key": "give=I:33302;receive=C:45000;disappear=1"
+            }
+          ],
+          "hint": "Offer the exact note loose to Maelron when present. The accepted return, settled coin reward and actual departure remain distinct; decoding and personal source recovery are not native prerequisites."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

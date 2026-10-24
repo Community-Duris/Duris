@@ -1,0 +1,484 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "valdrak",
+  "coverage": "complete",
+  "introduction": "Help Xolot with the two weapons and hidden heart while exploring the myconid caverns, fungus garden, spring and web caves as distinct progression leads.",
+  "orientation": [
+    "The cavern entrance connects south and west to the registered Underdark. Find Xolot deeper in the caverns when present; merely entering the zone does not expose an unmet giver’s request.",
+    "Ask Xolot gravf, valdrak or acopiltaczet. These are three conversation families about the spider leaders, rather than three completed quests. Use the exact valid acopiltaczet keyword.",
+    "Gravf carries the blood soaked longsword, Acopiltaczet the blood stained claymore, and ValDrak the heart of living darkness. Each is a different exact item; the heart is hidden stock. Source battles, reveal and recovery remain separate.",
+    "Carry one of each requested item loose and offer all three together. Supplied exact items remain legal without remembered dialogue, personal combat, original recovery, a purchase or garden and spring prerequisites.",
+    "One accepted return has currency and experience terms, followed by Xolot’s departure. Actual reward recipients, level limits and settlement need their own qualification; narrative ritual and freedom do not create separate completed quests.",
+    "The fungus garden has purple and speckled food and its own myconid community. Food recovery and admitted eating are optional leads; their prose does not prove a hallucination, poison, cure or level gain.",
+    "Wejtew’s spring shop has food, a backpack and other declared goods. Shopping, admitted spring use and the spring’s current travel policy are separate from Xolot’s request.",
+    "The narrow single-file passage, dismal caves, web-cave creatures, ancient and paranoid myconids, Muscaria and Xolot’s zombie follower are wider leads. Future rescue, restoration, service or ritual stories need explicit participant and outcome policy."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 53110,
+      "name": "Xolot, The myconid king",
+      "keyword": "xolot",
+      "description": "Ask gravf, valdrak or acopiltaczet to hear about three spider leaders. Bring the two exact weapons and heart together for one return; his departure and later ritual advice are separate from a verified community restoration.",
+      "topics": [
+        "gravf",
+        "valdrak",
+        "acopiltaczet"
+      ]
+    },
+    {
+      "mob_vnum": 53132,
+      "name": "Gravf, Weaver of Lost Souls",
+      "keyword": "gravf",
+      "description": "Gravf carries the exact blood soaked longsword in the blood-stained chamber. This is one source, separate from the claymore and heart.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53134,
+      "name": "acopiltaczet, Bringer of Suffering",
+      "keyword": "acopiltaczet",
+      "description": "Acopiltaczet carries the exact blood stained claymore in the chamber of swaying shadows. Its source identity is separate from the other spiders.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53131,
+      "name": "ValDrak, Bringer of Whispering Death",
+      "keyword": "valdrak",
+      "description": "ValDrak carries the exact heart of living darkness in the bone-filled chamber. It is hidden stock; source combat, reveal and actual recovery are separate outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53100,
+      "name": "a violet fungus",
+      "keyword": "violet",
+      "description": "a violet fungus inhabits A Phantasmagoric Cavern, Intersection Within a Phantasmagoric Cavern. This cavern encounter is separate from Xolot’s accepted return. Similar names and narrative abilities do not identify a requested source or another native quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53101,
+      "name": "a shrieker",
+      "keyword": "shrieker",
+      "description": "a shrieker inhabits A Phantasmagoric Cavern, Intersection Inside a Phantasmagoric Cavern. This cavern encounter is separate from Xolot’s accepted return. Similar names and narrative abilities do not identify a requested source or another native quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53102,
+      "name": "a phycomid",
+      "keyword": "milk",
+      "description": "a phycomid inhabits A Dead End Within a Phantasmagoric Cavern, A Phantasmagoric Cavern. This cavern encounter is separate from Xolot’s accepted return. Similar names and narrative abilities do not identify a requested source or another native quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53103,
+      "name": "an ascomoid",
+      "keyword": "ascomoid",
+      "description": "an ascomoid inhabits A Phantasmagoric Cavern, Intersection Within a Phantasmagoric Cavern. This cavern encounter is separate from Xolot’s accepted return. Similar names and narrative abilities do not identify a requested source or another native quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53104,
+      "name": "a gas spore",
+      "keyword": "gas",
+      "description": "a gas spore inhabits A Phantasmagoric Cavern, Bend Inside A Phantasmagoric Cavern. This cavern encounter is separate from Xolot’s accepted return. Similar names and narrative abilities do not identify a requested source or another native quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53105,
+      "name": "a myconid",
+      "keyword": "tiny",
+      "description": "a myconid inhabits A Phantasmagoric Cavern, Bend Inside A Phantasmagoric Cavern. This cavern encounter is separate from Xolot’s accepted return. Similar names and narrative abilities do not identify a requested source or another native quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53106,
+      "name": "a myconid",
+      "keyword": "walking",
+      "description": "a myconid inhabits A Phantasmagoric Cavern, Bend Inside a Phantasmagoric Cavern. This cavern encounter is separate from Xolot’s accepted return. Similar names and narrative abilities do not identify a requested source or another native quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53107,
+      "name": "a myconid",
+      "keyword": "small",
+      "description": "a myconid inhabits A Phantasmagoric Cavern, Abysmal Bend Within a Phantasmagoric Cavern. This cavern encounter is separate from Xolot’s accepted return. Similar names and narrative abilities do not identify a requested source or another native quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53108,
+      "name": "an elder myconid",
+      "keyword": "elder",
+      "description": "an elder myconid inhabits A Dead End Within a Phantasmagoric Cavern, A Phantasmagoric Cavern. This cavern encounter is separate from Xolot’s accepted return. Similar names and narrative abilities do not identify a requested source or another native quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53109,
+      "name": "an elder myconid",
+      "keyword": "elder",
+      "description": "an elder myconid inhabits A Phantasmagoric Cavern, Ghastly Bend Within a Phantasmagoric Cavern. This cavern encounter is separate from Xolot’s accepted return. Similar names and narrative abilities do not identify a requested source or another native quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53111,
+      "name": "a brown mold",
+      "keyword": "brown",
+      "description": "a brown mold inhabits A Dismal Cave. This dismal-cave encounter belongs to the wider cavern journey; battle does not prove recovery of the requested weapons or heart.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53112,
+      "name": "a blue ooze",
+      "keyword": "blue",
+      "description": "a blue ooze inhabits A Damp Passage, An Underground Spring. This damp-passage or spring encounter is independent of merchant purchases, admitted drinking and the king’s return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53113,
+      "name": "a night hunter",
+      "keyword": "bat",
+      "description": "a night hunter inhabits A Dismal Cave. This dismal-cave encounter belongs to the wider cavern journey; battle does not prove recovery of the requested weapons or heart.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53114,
+      "name": "a brown ooze",
+      "keyword": "brown",
+      "description": "a brown ooze inhabits A Dismal Cave. This dismal-cave encounter belongs to the wider cavern journey; battle does not prove recovery of the requested weapons or heart.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53115,
+      "name": "a green mold",
+      "keyword": "green",
+      "description": "a green mold inhabits A Dismal Cave. This dismal-cave encounter belongs to the wider cavern journey; battle does not prove recovery of the requested weapons or heart.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53116,
+      "name": "a green slime",
+      "keyword": "green",
+      "description": "a green slime inhabits A Dismal Cave. This dismal-cave encounter belongs to the wider cavern journey; battle does not prove recovery of the requested weapons or heart.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53117,
+      "name": "a cave cricket",
+      "keyword": "cave",
+      "description": "a cave cricket inhabits A Phantasmagoric Cavern, Curve Within a Phantasmagoric Cavern. This cavern encounter is separate from Xolot’s accepted return. Similar names and narrative abilities do not identify a requested source or another native quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53118,
+      "name": "a large bat",
+      "keyword": "large",
+      "description": "a large bat inhabits A Dismal Cave. This dismal-cave encounter belongs to the wider cavern journey; battle does not prove recovery of the requested weapons or heart.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53119,
+      "name": "a hairy spider",
+      "keyword": "hairy",
+      "description": "a hairy spider inhabits A Web Filled Cave, Abysmal Bend Within a Web Filled Cave. This web-cave encounter is distinct from the three exact stocked spider leaders and does not supply a substitute for Xolot’s bundle.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53120,
+      "name": "a large spider",
+      "keyword": "hairy",
+      "description": "a large spider inhabits A Web Filled Cave, Abysmal Bend Within a Web Filled Cave. This web-cave encounter is distinct from the three exact stocked spider leaders and does not supply a substitute for Xolot’s bundle.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53121,
+      "name": "a huge spider",
+      "keyword": "huge",
+      "description": "a huge spider inhabits A Web Filled Cave, Abysmal Bend Within a Web Filled Cave. This web-cave encounter is distinct from the three exact stocked spider leaders and does not supply a substitute for Xolot’s bundle.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53122,
+      "name": "a huge spider",
+      "keyword": "dravlast",
+      "description": "a huge spider inhabits A Web Filled Cave. This web-cave encounter is distinct from the three exact stocked spider leaders and does not supply a substitute for Xolot’s bundle.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53123,
+      "name": "a sword spider",
+      "keyword": "sword",
+      "description": "a sword spider inhabits A Web Filled Cave. This web-cave encounter is distinct from the three exact stocked spider leaders and does not supply a substitute for Xolot’s bundle.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53124,
+      "name": "a whisper spider",
+      "keyword": "whisper",
+      "description": "a whisper spider inhabits Abysmal Bend Within a Web Filled Cave. This web-cave encounter is distinct from the three exact stocked spider leaders and does not supply a substitute for Xolot’s bundle.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53125,
+      "name": "a giant centipede",
+      "keyword": "creature",
+      "description": "a giant centipede inhabits A Dismal Cave. This dismal-cave encounter belongs to the wider cavern journey; battle does not prove recovery of the requested weapons or heart.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53126,
+      "name": "a huge centipede",
+      "keyword": "huge",
+      "description": "a huge centipede inhabits A Dismal Cave. This dismal-cave encounter belongs to the wider cavern journey; battle does not prove recovery of the requested weapons or heart.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53127,
+      "name": "a megalo-centipede",
+      "keyword": "man",
+      "description": "a megalo-centipede inhabits A Dismal Cave. This dismal-cave encounter belongs to the wider cavern journey; battle does not prove recovery of the requested weapons or heart.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53128,
+      "name": "a tunnel worm",
+      "keyword": "tunnel",
+      "description": "a tunnel worm inhabits A Web Filled Cave. This web-cave encounter is distinct from the three exact stocked spider leaders and does not supply a substitute for Xolot’s bundle.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53129,
+      "name": "a zombie guardian",
+      "keyword": "zombie",
+      "description": "The zombie guardian is reset as Xolot’s follower, with its own equipment. Meeting it does not prove a personal rescue, escort or Xolot’s accepted return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53130,
+      "name": "Muscaria",
+      "keyword": "muscaria",
+      "description": "Muscaria inhabits a cavern intersection. Youth, curiosity and apprehension are encounter leads; no independent accepted request is defined.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53133,
+      "name": "Nrotereb",
+      "keyword": "nrotereb",
+      "description": "Nrotereb inhabits a cavern bend. Knowledge and despair in the description do not establish an active teaching service or a recovery quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53135,
+      "name": "a myconid",
+      "keyword": "tiny",
+      "description": "a myconid inhabits A Fungus Garden. The garden’s fungi and myconid community form a separate exploration lead; an encounter does not prove food recovery, eating or community restoration.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53136,
+      "name": "a myconid",
+      "keyword": "walking",
+      "description": "a myconid inhabits A Fungus Garden. The garden’s fungi and myconid community form a separate exploration lead; an encounter does not prove food recovery, eating or community restoration.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53137,
+      "name": "a myconid",
+      "keyword": "small",
+      "description": "a myconid inhabits A Fungus Garden. The garden’s fungi and myconid community form a separate exploration lead; an encounter does not prove food recovery, eating or community restoration.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53138,
+      "name": "an elder myconid",
+      "keyword": "elder",
+      "description": "an elder myconid inhabits A Fungus Garden. The garden’s fungi and myconid community form a separate exploration lead; an encounter does not prove food recovery, eating or community restoration.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53139,
+      "name": "an elder myconid",
+      "keyword": "elder",
+      "description": "an elder myconid inhabits A Fungus Garden. The garden’s fungi and myconid community form a separate exploration lead; an encounter does not prove food recovery, eating or community restoration.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53140,
+      "name": "a violet fungus",
+      "keyword": "violet",
+      "description": "a violet fungus inhabits A Fungus Garden. The garden’s fungi and myconid community form a separate exploration lead; an encounter does not prove food recovery, eating or community restoration.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53141,
+      "name": "a shrieker",
+      "keyword": "shrieker",
+      "description": "a shrieker inhabits A Fungus Garden. The garden’s fungi and myconid community form a separate exploration lead; an encounter does not prove food recovery, eating or community restoration.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53142,
+      "name": "a crystal ooze",
+      "keyword": "crystal",
+      "description": "a crystal ooze inhabits A Phantasmagoric Cavern, Intersection Within a Phantasmagoric Cavern. This cavern encounter is separate from Xolot’s accepted return. Similar names and narrative abilities do not identify a requested source or another native quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53143,
+      "name": "a crystal mold",
+      "keyword": "crystal",
+      "description": "a crystal mold inhabits A Phantasmagoric Cavern, Bend Inside A Phantasmagoric Cavern. This cavern encounter is separate from Xolot’s accepted return. Similar names and narrative abilities do not identify a requested source or another native quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53144,
+      "name": "a crystal slime",
+      "keyword": "crystal",
+      "description": "a crystal slime inhabits A Dead End Within a Phantasmagoric Cavern, A Phantasmagoric Cavern. This cavern encounter is separate from Xolot’s accepted return. Similar names and narrative abilities do not identify a requested source or another native quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53145,
+      "name": "a myconid",
+      "keyword": "tiny",
+      "description": "a myconid inhabits A Phantasmagoric Cavern, Intersection Inside a Phantasmagoric Cavern. This cavern encounter is separate from Xolot’s accepted return. Similar names and narrative abilities do not identify a requested source or another native quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53146,
+      "name": "a myconid",
+      "keyword": "tiny",
+      "description": "a myconid inhabits A Fungus Garden. The garden’s fungi and myconid community form a separate exploration lead; an encounter does not prove food recovery, eating or community restoration.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53147,
+      "name": "an ascomoid",
+      "keyword": "ascomoid",
+      "description": "an ascomoid inhabits A Phantasmagoric Cavern, Bend Within a Phantasmagoric Cavern. This cavern encounter is separate from Xolot’s accepted return. Similar names and narrative abilities do not identify a requested source or another native quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53148,
+      "name": "a gas spore",
+      "keyword": "gas",
+      "description": "a gas spore inhabits A Phantasmagoric Cavern, Bend Inside a Phantasmagoric Cavern. This cavern encounter is separate from Xolot’s accepted return. Similar names and narrative abilities do not identify a requested source or another native quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53149,
+      "name": "a blue mold",
+      "keyword": "blue",
+      "description": "a blue mold inhabits A Damp Passage, An Underground Spring. This damp-passage or spring encounter is independent of merchant purchases, admitted drinking and the king’s return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53150,
+      "name": "a large bat",
+      "keyword": "bat",
+      "description": "a large bat inhabits A Dismal Cave. This dismal-cave encounter belongs to the wider cavern journey; battle does not prove recovery of the requested weapons or heart.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53151,
+      "name": "a giant centipede",
+      "keyword": "creature",
+      "description": "a giant centipede inhabits A Dismal Cave. This dismal-cave encounter belongs to the wider cavern journey; battle does not prove recovery of the requested weapons or heart.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53152,
+      "name": "a megalo-centipede",
+      "keyword": "man",
+      "description": "a megalo-centipede inhabits A Web Filled Cave, Abysmal Bend Within a Web Filled Cave. This web-cave encounter is distinct from the three exact stocked spider leaders and does not supply a substitute for Xolot’s bundle.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53153,
+      "name": "a tunnel worm",
+      "keyword": "tunnel",
+      "description": "a tunnel worm inhabits A Web Filled Cave. This web-cave encounter is distinct from the three exact stocked spider leaders and does not supply a substitute for Xolot’s bundle.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53154,
+      "name": "an ancient myconid",
+      "keyword": "ancient",
+      "description": "The ancient myconid inhabits a twisted cavern bend and has separate moss-covered stone stock. Its encounter is distinct from Xolot and the requested spider items.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53155,
+      "name": "a paranoid myconid",
+      "keyword": "paranoid",
+      "description": "Paranoid myconids inhabit cavern intersections. A future recovery story needs an explicit outcome; the accepted bundle does not establish that their behavior changes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 53156,
+      "name": "Wejtew, The Water Wisp Merchant",
+      "keyword": "wejtew",
+      "description": "Wejtew runs the spring shop when available. Food, a backpack and other declared shop goods are separate purchases, without a quest fee or requested-item substitution.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "xolot-three-spider-return",
+      "title": "Return the three spider items to Xolot",
+      "category": "request",
+      "summary": "Bring the blood soaked longsword, blood stained claymore and heart of living darkness together for one return. The accepted bundle does not prove personal kills, original recovery, a performed ritual or restored community behavior.",
+      "contracts": [
+        {
+          "giver_vnum": 53110,
+          "completion_key": "give=I:53108,I:53117,I:53118;receive=C:81000,E:13300;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-53108",
+          "text": "Carry the blood soaked longsword loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            53108
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The exact blood soaked longsword is stocked on Gravf in the blood-stained chamber. A supplied exact item also fits. Carry it loose; held, worn or nested stock does not prepare this offering. Personal combat and original recovery are separate outcomes."
+        },
+        {
+          "id": "material-53117",
+          "text": "Carry the blood stained claymore loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            53117
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The exact blood stained claymore is stocked on Acopiltaczet in the chamber of swaying shadows. A supplied exact item also fits. Carry it loose; held, worn or nested stock does not prepare this offering. Personal combat and original recovery are separate outcomes."
+        },
+        {
+          "id": "material-53118",
+          "text": "Carry the heart of living darkness loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            53118
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The exact heart of living darkness is stocked on ValDrak in the bone-filled chamber. The heart is hidden; search the appropriate source container or corpse when recovering it, subject to actual visibility and access. A supplied exact item also fits. Carry it loose; held, worn or nested stock does not prepare this offering. Personal combat and original recovery are separate outcomes."
+        },
+        {
+          "id": "return",
+          "text": "Record Xolot’s accepted three-item return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 53110,
+              "completion_key": "give=I:53108,I:53117,I:53118;receive=C:81000,E:13300;disappear=1"
+            }
+          ],
+          "hint": "Offer all three different exact loose items together to Xolot when present. This is one accepted return with currency and experience terms, followed by his departure. Earlier conversation, personal kills, original recovery, purchases, food, spring use and a completed ritual are not native prerequisites."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}
