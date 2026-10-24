@@ -1614,22 +1614,7 @@ void assign_objects(void)
 	obj_index[real_object0(18)].func.obj = githpc_special_weap;
 	obj_index[real_object0(19)].func.obj = githpc_special_weap;
 	obj_index[real_object0(418)].func.obj = githpc_special_weap;
-	obj_index[real_object0(89)].func.obj = board;
-	obj_index[real_object0(92)].func.obj = board;
-	obj_index[real_object0(90)].func.obj = board;
-	obj_index[real_object0(76)].func.obj = board;
-	obj_index[real_object0(84)].func.obj = board;
-	obj_index[real_object0(85)].func.obj = board;
-	obj_index[real_object0(86)].func.obj = board;
-	obj_index[real_object0(87)].func.obj = board;
-	obj_index[real_object0(88)].func.obj = board;
-	obj_index[real_object0(75)].func.obj = board;
-	obj_index[real_object0(78)].func.obj = board;
-	obj_index[real_object0(79)].func.obj = board;
-	obj_index[real_object0(80)].func.obj = board;
-	obj_index[real_object0(81)].func.obj = board;
-	obj_index[real_object0(29)].func.obj = board;
-	obj_index[real_object0(42)].func.obj = board;
+	/* initialize_boards() assigns board handlers from board_info[]. */
 
 	/* random zone stuff here please ! */
 	obj_index[real_object0(19507)].func.obj = random_tomb;
@@ -1949,8 +1934,6 @@ void assign_objects(void)
 	/* Winterhaven */
 
 	obj_index[real_object0(55008)].func.obj = storage_locker_obj_hook;
-	obj_index[real_object0(55026)].func.obj = board;
-	obj_index[real_object0(55197)].func.obj = board;
 	obj_index[real_object0(55210)].func.obj = dagger_ra;
 	obj_index[real_object0(55205)].func.obj = illithid_axe;
 	obj_index[real_object0(55211)].func.obj = deathseeker_mace;

@@ -3,6 +3,8 @@
 
 Every board_info[] row in boards.c names a board in the world make_all builds: an object,
 in an area file areas/AREA lists, whose keywords include "board" or "bulletin".
+Initialization assigns the board handler from those rows only; obsolete assignments
+in specs.assign.c must not turn unregistered objects into degenerate boards.
 Object 42 was taken for a pearl necklace from areas/obj/dalvik.obj, which is not in the
 world; the world's 42 is heavens.obj's board of IDEAS.
 No zone loads two different boards into one room: write, read <n> and remove <n> name
@@ -37,6 +39,17 @@ from _paths import ROOT, extract_function, source
 
 AREAS = ROOT / "areas"
 BOARDS = source("cmd/boards.c").read_text()
+assignments = source("specs/specs.assign.c").read_text()
+# Use the preprocessor to exclude commented assignments and disabled blocks.
+active_assignments = subprocess.run(
+    ["g++", "-E", "-P", "-x", "c++", "-"],
+    input=re.sub(r"^\s*#include[^\n]*", "", assignments, flags=re.M),
+    text=True, capture_output=True, check=True,
+).stdout
+board_bindings = re.findall(
+    r"obj_index\s*\[\s*real_object0\(\s*\d+\s*\)\s*\]\.func\.obj\s*=\s*board\s*;",
+    active_assignments,
+)
 WORLD = [line.split()[0] for line in (AREAS / "AREA").read_text(errors="replace").splitlines()
          if line.strip() and not line.startswith("*")]
 
@@ -120,6 +133,21 @@ int shown = -1;
 int Board_show_board(int board_type, char_data *, char *) { shown = board_type; return 1; }
 int Board_display_msg(int, char_data *, char *) { return 1; }
 int Board_remove_msg(int, char_data *, char *) { return 1; }
+struct index_data { struct { int (*obj)(P_obj, P_char, int, char *) = nullptr; } func; };
+index_data obj_index[7];
+int real_object(int vnum) {
+    switch (vnum) {
+    case 89: return 0;
+    case 90: return 1;
+    case 76: return 3;
+    case 86: return 4;
+    case 87: return 5;
+    case 55026: return 6;
+    default: return -1;
+    }
+}
+int real_object0(int vnum) { int rnum = real_object(vnum); return rnum < 0 ? 0 : rnum; }
+int other_special(P_obj, P_char, int, char *) { return 0; }
 '''
 
 DRIVER = r'''
@@ -155,6 +183,26 @@ void post(const char *body) {
 }
 
 int main() {
+    // Boot installs registered boards, skips a missing prototype, and respects
+    // a special already attached to an existing object.
+    obj_index[1].func.obj = other_special;
+    initialize_boards();
+    assert(obj_index[0].func.obj == board && obj_index[1].func.obj == other_special);
+    assert(BOARD_RNUM(1) == -1 && logged.size() == 1);
+    obj_index[1].func.obj = nullptr;
+    logged.clear();
+    initialize_boards();
+    assert(obj_index[0].func.obj == board && obj_index[1].func.obj == board);
+    assert(logged.size() == 1);
+    logged.clear();
+
+    // The later special-assignment pass must not register these four objects.
+    // Execute its actual board-binding statements, if any, from specs.assign.c.
+    assign_static_board_handlers();
+    for (int vnum : {76, 86, 87, 55026})
+        assert(obj_index[real_object(vnum)].func.obj == nullptr &&
+               "an unregistered object acquired the board handler");
+
     descriptor_data link;
     char_data reader;
     reader.in_room = 7;
@@ -280,6 +328,7 @@ int main() {
 
 # A definition's signature ends its line; boards.c declares some of these above the table.
 FUNCTIONS = ["int find_slot(void)\n", "int find_board(P_obj obj)\n",
+             "void initialize_boards(void)\n",
              "int board(P_obj obj, P_char ch, int cmd, char *argument)\n",
              "void Board_write_message(int board_type, struct char_data *ch, char *arg)\n",
              "void Board_save_board(int board_type)\n",
@@ -287,7 +336,9 @@ FUNCTIONS = ["int find_slot(void)\n", "int find_board(P_obj obj)\n",
              "void Board_load_board(int board_type)\n",
              "void Board_reset_board(int board_type)\n"]
 harness = "\n".join([PRELUDE.replace("BOARDS_H", str(source("cmd/boards.h"))),
-                     *(extract_function("cmd/boards.c", name) for name in FUNCTIONS), DRIVER])
+                     *(extract_function("cmd/boards.c", name) for name in FUNCTIONS),
+                     "void assign_static_board_handlers() {\n" + "\n".join(board_bindings) + "\n}",
+                     DRIVER])
 with tempfile.TemporaryDirectory(prefix="boards-") as directory:
     cpp = Path(directory) / "test.cpp"
     binary = Path(directory) / "test"
@@ -295,7 +346,9 @@ with tempfile.TemporaryDirectory(prefix="boards-") as directory:
     subprocess.run(["g++", "-std=c++20", "-Wall", "-Wextra", "-Werror",
                     "-fsanitize=address,undefined", "-g", str(cpp), "-o", str(binary)], check=True)
     subprocess.run([str(binary)], check=True, cwd=directory)
-print(f"{len(rows)} board_info rows name world boards; each board answers for its own row; "
+assert not board_bindings, "board_info[] must be the only source of board registrations"
+print(f"{len(rows)} board_info rows name world boards; initialization alone registers boards "
+      "and leaves unregistered objects without a board handler; each board answers for its own row; "
       "a headline is cut at 70 characters without writing into the command line, "
       "and a write without one takes no slot; a loaded message gets a slot of its own; "
       "a file cut short resets its board, and a failed save keeps the old file")
