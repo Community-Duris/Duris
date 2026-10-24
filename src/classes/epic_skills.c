@@ -1,6 +1,7 @@
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "net/comm.h"
+#include "net/gmcp.h"
 #include "world/db.h"
 #include "cmd/interp.h"
 #include "core/utility.h"
@@ -52,8 +53,12 @@ void epic_skill_purchase_committed(P_char pl, bool committed, const epic_command
 	const int learned = MIN(100, context.expected_skill + get_property("epic.skillGain", 10));
 	pl->only.pc->skills[context.skill].taught = learned;
 	pl->only.pc->skills[context.skill].learned = learned;
+	affect_total(pl, TRUE);
+	gmcp_char_vitals(pl);
 	char buffer[256];
-	snprintf(buffer, sizeof(buffer), "You improve your mastery of &+W%s&n.\n",
+	snprintf(buffer, sizeof(buffer),
+		 learned == 100 ? "You have mastered &+W%s&n.\n" :
+				  "You improve your mastery of &+W%s&n.\n",
 		 skills[context.skill].name);
 	send_to_char(buffer, pl);
 	if (!do_save_silent(pl, 1))

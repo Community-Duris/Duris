@@ -11,6 +11,22 @@ own schema. Flat-file journeys take a server built with
 Four of these sections note that the full-server path was never driven under sanitizers; no
 journey does that yet.
 
+## Epic training completion
+
+Successful epic skill purchases refresh derived stats before sending GMCP vitals
+and requesting a save. Reaching 100 produces a mastery-complete message; earlier
+purchases retain improvement feedback, and a maxed skill still refuses training.
+The configured training level, prices, and durable epic transaction remain unchanged.
+
+`python3 tests/async/test_epic_training.py` runs the production teacher, reward
+tables, completion callback, and epic transaction code under ASan/UBSan. It checks
+level/funds/class/prerequisite/teacher-cap refusals, intermediate and final mastery,
+no publication before acknowledgment, refresh-before-vitals/save ordering, repeated
+completion delivery, rejected/admission-failed purchases, stale-state refunds, and
+offline completion followed by reattachment. Cash, stat rebuild, client output,
+save, and writer endpoints are controlled adapters; this is not a live database
+purchase or restart journey.
+
 ## Bounded builder inspection
 
 `rlist`, `mlist`, and `olist` default to the standing zone and use the public zone
