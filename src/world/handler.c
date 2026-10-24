@@ -1629,7 +1629,7 @@ bool char_to_room(P_char ch, int room, int dir)
 	/*
 	 * justice hook
 	 */
-	if (!training_dummy_is(ch) && IS_INVADER(ch))
+	if (!training_dummy_is(ch))
 	{
 		justice_action_invader(ch);
 		if (!IS_ALIVE(ch))

@@ -412,6 +412,17 @@ void justice_action_invader(P_char ch)
 	if (training_dummy_is(ch))
 		return;
 
+	// NPCs contribute an arrival only while accompanying their player controller.
+	// The controller's eligibility applies even when the pet has a different race.
+	if (IS_NPC(ch))
+	{
+		P_char controller = GET_MASTER(ch);
+		if (!controller || IS_NPC(controller) || controller->in_room != ch->in_room ||
+		    !IS_ALIVE(controller) || IS_AFFECTED(ch, AFF_BOUND))
+			return;
+		ch = controller;
+	}
+
 	if (IS_TRUSTED(ch))
 		return;
 
@@ -428,16 +439,8 @@ void justice_action_invader(P_char ch)
 
 	zone_struct = &zone_table[world[ch->in_room].zone];
 
-	//  Re-doing justice here.  Major idea is to get rid of the overkill response
-	//  which doesn't allow for any hometown raiding, but still not make it far
-	//  too easy for a group to sit in a hometown and frag people all day long.
-	//  I've removed the constant spamming of the justice_raiding event that was
-	//  causing mobs to constantly be spawned to hunt invaders.  Instead, it will
-	//  be applied once only and give a 3 minute opportunity before it is refreshed.
-	//  When it gets refreshed, I'll add a different event as a placeholder/counter.
-	//  If this counter reaches 3x(10 minutes approx), I'll have a reinforcement
-	//  squad issued from another hometown that will 'encourage' the invaders to
-	//  leave.  Hopefully this works out better than justice ever has...  - Jexni 3/4/11
+	// Each arriving player or accompanying pet gets one roll. Pets use the same
+	// recent-raid throttle as their controller, just like additional enemy players.
 
 	if (IS_INVADER(ch) && IS_PC(ch) && IS_TOWN_RAIDED(ch))
 	{
