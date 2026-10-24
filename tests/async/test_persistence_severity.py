@@ -118,15 +118,22 @@ print('[PASS] production reporter routing, fallback severity, legacy alerts, for
 
 # Pin branch classifications, including failures sharing a progress call site.
 from contract_text import contains
+from _paths import extract_function
+
+death_report = extract_function('fight.c', 'static void death_recovery_report(')
+assert contains(death_report,
+    'persistence_report(severity, AVATAR, "player_save", "death", "none", "none", action,')
 for snippet in [
-    'persistence_report(persistence_severity::ok, AVATAR, "player_save", "death", "none", "none", outcome,',
-    'persistence_report(durable ? persistence_severity::ok : persistence_severity::alert,',
-    'persistence_report(corpse_transfer_disputed(ch) ? persistence_severity::alert : persistence_severity::info,',
+    'death_recovery_report(ch, persistence_severity::ok, outcome,',
+    'death_recovery_report(ch, durable ? persistence_severity::ok : persistence_severity::alert,',
+    'death_recovery_report(ch, corpse_transfer_disputed(ch) ? persistence_severity::alert : persistence_severity::info,',
+    'const persistence_severity wallet_severity = submitted ? persistence_severity::info : persistence_severity::alert;',
+    'death_recovery_report(ch, wallet_severity, "death_recovery_restarting_wallet",',
 ]:
     assert contains(fight, snippet), snippet
-assert len(re.findall(r'persistence_report\(\s*submitted\s*\?\s*persistence_severity::info\s*:\s*persistence_severity::alert', fight)) == 2
+assert len(re.findall(r'death_recovery_report\(\s*ch\s*,\s*submitted\s*\?\s*persistence_severity::info\s*:\s*persistence_severity::alert', fight)) == 2
 for action in ['death_recovery_schedule_failed', 'terminal_save_failed', 'death_recovery_retry']:
-    assert re.search(r'persistence_alert\(AVATAR,\s*"player_save",\s*"death",\s*"none",\s*"none",\s*"' + action + '"', fight)
+    assert contains(fight, f'death_recovery_report(ch, persistence_severity::alert, "{action}",'), action
 print('[PASS] successful death completion/progress are quiet; disputes, refused submissions and save failures alert')
 
 for file, snippet in [

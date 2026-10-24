@@ -88,6 +88,12 @@ with their year values.
   game running; removing that failure permits a clean save and restart. The
   journey also verifies that no locker player row or player-format file is created.
   See [the regression guide](../testing/REGRESSIONS.md#named-locker-entry).
+- The root test-harness and persistence-severity regressions pass with their
+  expectations aligned to the current runner and death-recovery reporter. The
+  harness checks serial scheduling for connection-limit and corpse-trap journeys;
+  severity checks retain success/progress/failure classifications through the
+  reporter helper. Related death-recovery visibility, wallet-retry, and item-custody
+  regressions also pass.
 - `./scripts/format.sh --check --rev <base-master>` and
   `git diff --check <base-master>` passed.
 
@@ -115,15 +121,6 @@ Community's flat-file locker entry/load/save UI still contains pre-existing stub
 The named-locker follow-up tests the real flat-file identity catalog and builds that
 backend; its complete locker gameplay evidence is MariaDB only. It does not port
 Luminari's newer locker engine or establish full flat-file locker support.
-
-The repository-wide `test_root_test_harness.py` has a pre-existing mismatch between
-its expected resource-intensive tests and the runner's registered set (connection
-limit and corpse-trap journeys). The locker test's discovery/manual registration
-was checked independently; this follow-up does not claim a passing whole-repository
-test gate. The broader `test_persistence_severity.py` executable checks pass, but
-its source assertion still expects a direct death-logging call that the base commit
-already routes through `death_recovery_report`; that pre-existing assertion is
-reported separately from the locker validation.
 
 Refs [Community #624](https://github.com/community-duris/duris/issues/624).
 The series also addresses confirmed, bounded portions of Luminari
