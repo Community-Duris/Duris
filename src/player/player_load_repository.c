@@ -326,6 +326,7 @@ bool load_status(MYSQL *connection, const player_load_request &request, player_l
 	append("wallet_revision");
 	append("epic_revision");
 	append("frag_revision");
+	append("base_stat_revision");
 	for (const char *column : CONDITION_COLUMNS)
 		append(column);
 	for (const char *column : QUEST_COLUMNS)
@@ -385,6 +386,18 @@ bool load_status(MYSQL *connection, const player_load_request &request, player_l
 						  unsigned_value(row[column]),
 						  spec.unsigned_value };
 		result->snapshot.status_integers.push_back(value);
+		const player_status_field stats[]{
+			player_status_field::base_strength, player_status_field::base_dexterity,
+			player_status_field::base_agility,  player_status_field::base_constitution,
+			player_status_field::base_power,    player_status_field::base_intelligence,
+			player_status_field::base_wisdom,   player_status_field::base_charisma,
+			player_status_field::base_karma,    player_status_field::base_luck
+		};
+		for (size_t i = 0; i < 10; ++i)
+			if (spec.field == stats[i])
+				result->domains.base_stats[i] =
+					static_cast<int16_t>(signed_value(row[column]));
+
 		++column;
 	}
 	result->snapshot.room_vnum = static_cast<int32_t>(signed_value(row[column++]));
@@ -398,6 +411,7 @@ bool load_status(MYSQL *connection, const player_load_request &request, player_l
 	result->domains.wallet_revision = unsigned_value(row[column++]);
 	result->domains.epic_revision = unsigned_value(row[column++]);
 	result->domains.frag_revision = unsigned_value(row[column++]);
+	result->domains.base_stat_revision = unsigned_value(row[column++]);
 	for (int32_t &condition : result->snapshot.conditions)
 		condition = static_cast<int32_t>(signed_value(row[column++]));
 	for (int32_t &quest : result->snapshot.quest_values)
@@ -1667,6 +1681,7 @@ bool load_pets(MYSQL *connection, player_load_result *result)
 		result->outcome = player_load_outcome::retryable_failure;
 		return false;
 	}
+	std::unordered_map<uint64_t, player_item_snapshot> runtime_metadata;
 	size_t pet_owned_count = 0;
 	const std::string item_sql =
 		"SELECT ppi.id,ppi.vnum,ppi.equip_slot,ppi.container_id,1,ppi.weight,ppi.cost,"
@@ -1676,7 +1691,7 @@ bool load_pets(MYSQL *connection, player_load_result *result)
 		"ppi.bitvector3,ppi.bitvector4,ppi.bitvector5,ppi.item_material,ppi.obj_uid,"
 		"ppi.item_condition,own.item_uid,own.root_item_uid,own.parent_item_uid,"
 		"own.owner_type,own.owner_id,own.owner_context_id,own.item_revision,own.vnum,"
-		"own.state,owner_revision.revision,ppi.pet_id FROM player_pet_items ppi JOIN "
+		"own.state,owner_revision.revision,ppi.pet_id,HEX(runtime.payload) FROM player_pet_items ppi LEFT JOIN player_pet_item_runtime_state runtime ON runtime.item_id=ppi.id JOIN "
 		"player_pets pp ON pp.id=ppi.pet_id LEFT JOIN item_current_owner own ON "
 		"own.item_uid=ppi.obj_uid LEFT JOIN item_owner_revision owner_revision ON "
 		"owner_revision.owner_type=own.owner_type AND owner_revision.owner_id=own.owner_id "
@@ -1721,6 +1736,31 @@ bool load_pets(MYSQL *connection, player_load_result *result)
 					    return false;
 				    }
 				    return true;
+			    }
+			    if (row[42])
+			    {
+				    std::vector<uint8_t> encoded;
+				    std::vector<player_item_snapshot> state;
+				    if (!decode_hex_payload(row[42], &encoded) ||
+					player_item_snapshot_list_decode(encoded.data(),
+									 encoded.size(), &state) !=
+						player_snapshot_codec_result::ok ||
+					state.size() != 1 ||
+					state[0].object_uid != item.object_uid ||
+					state[0].vnum != item.vnum)
+					    return false;
+				    // Canonical columns and custody still own placement and mutable base
+				    // fields. The extension supplies only state absent from those columns.
+				    item.generated_key = state[0].generated_key;
+				    item.anti_flags = state[0].anti_flags;
+				    item.anti2_flags = state[0].anti2_flags;
+				    item.extra2_flags = state[0].extra2_flags;
+				    item.craftsmanship = state[0].craftsmanship;
+				    for (size_t timer = 1; timer < item.timers.size(); ++timer)
+					    item.timers[timer] = state[0].timers[timer];
+				    item.dynamic_affects = std::move(state[0].dynamic_affects);
+				    identity.override_mask |= PLAYER_LOAD_ITEM_OVERRIDE_RUNTIME;
+				    runtime_metadata.emplace(item.object_uid, std::move(state[0]));
 			    }
 			    if (!identity.owner_revision ||
 				(identity.owner.type == item_owner_type::player &&
@@ -1855,6 +1895,14 @@ bool load_pets(MYSQL *connection, player_load_result *result)
 								   row[6], result);
 		    }))
 		return false;
+	for (auto &pet : result->snapshot.pets)
+		for (auto &item : pet.items)
+		{
+			const auto found = runtime_metadata.find(item.object_uid);
+			if (found != runtime_metadata.end() &&
+			    !preserve_runtime_metadata(found->second, &item))
+				return false;
+		}
 	const std::string pet_custody_sql =
 		"SELECT COUNT(*) FROM item_current_owner WHERE owner_type=" +
 		std::to_string(static_cast<unsigned>(item_owner_type::pet)) +

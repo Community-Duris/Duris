@@ -2,6 +2,9 @@
 
 #include "economy/boon.h"
 
+#include <iomanip>
+#include <sstream>
+#include <limits>
 #include <cerrno>
 #include <cmath>
 #include <cstdlib>
@@ -72,6 +75,13 @@ std::string bytes_hex(const uint8_t *bytes, size_t size)
 	return result;
 }
 
+std::string exact_number(double value)
+{
+	std::ostringstream out;
+	out << std::setprecision(std::numeric_limits<double>::max_digits10) << value;
+	return out.str();
+}
+
 std::string eligibility(const boon_reward_payload &payload)
 {
 	std::string clause;
@@ -102,7 +112,7 @@ std::string eligibility(const boon_reward_payload &payload)
 		clause = " AND criteria2=" + std::to_string(payload.victim_race);
 		break;
 	case BOPT_FRAG:
-		clause = " AND criteria<=" + std::to_string(payload.data);
+		clause = " AND criteria<=" + exact_number(payload.data);
 		break;
 	default:
 		break;
@@ -204,7 +214,7 @@ bool boon_reward_repository_execute(MYSQL *connection, const critical_command &c
 		     "INSERT INTO boon_reward_outcome(operation_id,pid,`option`,event_value,entry_count) "
 		     "VALUES(UNHEX('" +
 			     operation + "')," + std::to_string(payload.pid) + "," +
-			     std::to_string(payload.option) + "," + std::to_string(payload.data) +
+			     std::to_string(payload.option) + "," + exact_number(payload.data) +
 			     "," + std::to_string(boons.size()) + ")"))
 		return false;
 	for (size_t index = 0; index < boons.size(); ++index)
@@ -226,7 +236,7 @@ bool boon_reward_repository_execute(MYSQL *connection, const critical_command &c
 				     "INSERT INTO boons_progress(boonid,pid,counter) VALUES(" +
 					     std::to_string(boon.id) + "," +
 					     std::to_string(payload.pid) + "," +
-					     std::to_string(counter) + ")"))
+					     exact_number(counter) + ")"))
 				return false;
 			progress_id = mysql_insert_id(connection);
 		}
@@ -238,7 +248,7 @@ bool boon_reward_repository_execute(MYSQL *connection, const critical_command &c
 			completed = !progress_option(boon.option) || counter >= boon.criteria;
 		const double stored_counter = completed ? (boon.repeat ? 0.0 : -1.0) : counter;
 		if (!execute(connection,
-			     "UPDATE boons_progress SET counter=" + std::to_string(stored_counter) +
+			     "UPDATE boons_progress SET counter=" + exact_number(stored_counter) +
 				     " WHERE id=" + std::to_string(progress_id)))
 			return false;
 		if (completed && boon.type == BTYPE_STATS &&
@@ -265,10 +275,10 @@ bool boon_reward_repository_execute(MYSQL *connection, const critical_command &c
 			     "INSERT INTO boon_reward_outcome_entry(operation_id,entry_index,boon_id,"
 			     "counter_after,completed,reward_type,reward_value) VALUES(UNHEX('" +
 				     operation + "')," + std::to_string(index) + "," +
-				     std::to_string(boon.id) + "," +
-				     std::to_string(stored_counter) + "," +
-				     std::to_string(completed) + "," + std::to_string(boon.type) +
-				     "," + std::to_string(boon.bonus) + ")"))
+				     std::to_string(boon.id) + "," + exact_number(stored_counter) +
+				     "," + std::to_string(completed) + "," +
+				     std::to_string(boon.type) + "," + exact_number(boon.bonus) +
+				     ")"))
 			return false;
 		result->entries[index] = { boon.id,
 					   boon.type,

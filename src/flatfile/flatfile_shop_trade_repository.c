@@ -1,4 +1,5 @@
 #include "flatfile/flatfile_shop_trade_repository.h"
+#include "flatfile/flatfile_collector_repository.h"
 
 #include "flatfile/flatfile_authority_transaction.h"
 #include "flatfile/flatfile_item_repository.h"
@@ -233,12 +234,23 @@ flatfile_read_result load_catalog(const std::string &root, operation_catalog *ca
 }
 
 critical_apply_result make_result(const operation_record &operation, uint64_t revision,
-				  critical_apply_outcome success)
+				  critical_apply_outcome success, bool sealed = false)
 {
 	critical_apply_result applied = { operation.result_code ?
 						  critical_apply_outcome::terminal_failure :
 						  success,
 					  revision, operation.result_code };
+	shop_trade_result decoded;
+	if (sealed && shop_trade_command_decode_result(operation.result.data(),
+						       operation.result.size(), &decoded))
+	{
+		applied.durable_revision = std::max(
+			{ decoded.shop_revision, decoded.wallet_revision, decoded.bank_revision,
+			  decoded.player_owner_revision, decoded.counterparty_owner_revision });
+		for (size_t i = 0; i < decoded.item_count; ++i)
+			applied.durable_revision =
+				std::max(applied.durable_revision, decoded.item_revisions[i]);
+	}
 	applied.result_size = operation.result.size();
 	std::copy(operation.result.begin(), operation.result.end(), applied.result_payload.begin());
 	return applied;
@@ -291,7 +303,9 @@ critical_apply_result flatfile_shop_trade_repository_apply(const std::string &ro
 				return { critical_apply_outcome::terminal_failure, catalog.revision,
 					 EEXIST };
 			return make_result(operation, catalog.revision,
-					   critical_apply_outcome::already_applied);
+					   critical_apply_outcome::already_applied,
+					   command.schema_version ==
+						   CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION);
 		}
 	if (catalog.operations.size() >= catalog_maximum_operations ||
 	    catalog.revision == std::numeric_limits<uint64_t>::max())
@@ -360,6 +374,22 @@ critical_apply_result flatfile_shop_trade_repository_apply(const std::string &ro
 					EILSEQ);
 	}
 	shop_trade_result result = {};
+	flatfile_collector_enrollment_mutation collector;
+	if (!result_code)
+	{
+		item_transfer_payload transfer;
+		item_transfer_result moved{};
+		if (!shop_trade_item_payload(payload, &transfer))
+			return repository_failure(false, EINVAL);
+		moved.item_count = transfer.item_count;
+		moved.root_item_uid = item_transfer_result_root(transfer);
+		const auto prepared = flatfile_collector_prepare_item_boundary(
+			root, lock, transfer, moved, &collector, &result_code, &error);
+		if (prepared != flatfile_collector_repository_result::ok &&
+		    prepared != flatfile_collector_repository_result::unchanged)
+			return repository_failure(
+				prepared == flatfile_collector_repository_result::io_error, EILSEQ);
+	}
 	result.action = payload.action;
 	result.wallet = wallet.wallet;
 	result.bank = wallet.bank;
@@ -398,6 +428,8 @@ critical_apply_result flatfile_shop_trade_repository_apply(const std::string &ro
 		images.push_back({ catalog_filename, std::move(catalog_bytes) });
 		if (!result_code)
 		{
+			if (!collector.after_image.filename.empty())
+				images.push_back(std::move(collector.after_image));
 			images.push_back(std::move(shop.after_image));
 			images.push_back(std::move(items.after_image));
 			if (payload.action != shop_trade_action::discard_invalid)
@@ -412,10 +444,16 @@ critical_apply_result flatfile_shop_trade_repository_apply(const std::string &ro
 	{
 		return { critical_apply_outcome::retryable_failure, catalog.revision - 1, ENOMEM };
 	}
+	const auto prepared_result = make_result(
+		catalog.operations.back(), catalog.revision, critical_apply_outcome::applied,
+		command.schema_version == CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION);
+	if (!critical_command_outcome_matches(
+		    command, prepared_result.durable_revision, prepared_result.error_code,
+		    prepared_result.result_payload.data(), prepared_result.result_size))
+		return { critical_apply_outcome::terminal_failure, catalog.revision - 1, EILSEQ };
 	const auto committed = flatfile_authority_transaction_commit(root, lock, images, &error);
 	if (committed != flatfile_authority_transaction_result::ok)
 		return repository_failure(
 			committed == flatfile_authority_transaction_result::io_error, EILSEQ);
-	return make_result(catalog.operations.back(), catalog.revision,
-			   critical_apply_outcome::applied);
+	return prepared_result;
 }

@@ -109,6 +109,32 @@ static void qualify_locker_receipts(const std::filesystem::path &directory)
 
 // Init uses the production codecs and may quarantine a corrupt player frame.
 // This runs only on copied candidate journals; any quarantine is a hard failure.
+static void qualify_operation_receipts(const std::filesystem::path &directory)
+{
+	struct stat status
+	{
+	};
+	require(lstat(directory.c_str(), &status) == 0 && S_ISDIR(status.st_mode) &&
+		status.st_uid == geteuid() && !(status.st_mode & 0077));
+	for (const auto &entry : std::filesystem::directory_iterator(directory))
+	{
+		require(lstat(entry.path().c_str(), &status) == 0 && S_ISREG(status.st_mode) &&
+			status.st_uid == geteuid() && status.st_nlink == 1 &&
+			!(status.st_mode & 0077));
+		const auto name = entry.path().filename().string();
+		critical_operation_id id{};
+		require(name.size() == 32 &&
+			name.find_first_not_of("0123456789abcdef") == std::string::npos &&
+			critical_operation_id_from_hex(name.c_str(), &id));
+		std::vector<uint8_t> bytes;
+		require(flatfile_read(directory.string(), name, CRITICAL_RECEIPT_MAX_BYTES, &bytes,
+				      nullptr) == flatfile_read_result::ok);
+		critical_operation_receipt receipt;
+		require(critical_operation_receipt_decode(bytes.data(), bytes.size(), &receipt) &&
+			critical_operation_id_equal(id, receipt.operation_id));
+	}
+}
+
 static void qualify_journals(const std::filesystem::path &candidate, bool drained)
 {
 	require(candidate.is_absolute() &&
@@ -123,6 +149,12 @@ static void qualify_journals(const std::filesystem::path &candidate, bool draine
 		for (const auto &entry : std::filesystem::directory_iterator(directory))
 		{
 			if (std::string(name) == "critical" &&
+			    entry.path().filename() == "receipts")
+			{
+				qualify_operation_receipts(entry.path());
+				continue;
+			}
+			if (std::string(name) == "critical" &&
 			    entry.path().filename() == "locker-identification")
 			{
 				qualify_locker_receipts(entry.path());
@@ -130,6 +162,9 @@ static void qualify_journals(const std::filesystem::path &candidate, bool draine
 			}
 			require(entry.is_regular_file() && !entry.is_symlink());
 			require(entry.path().filename() == filename ||
+				(std::string(name) == "critical" &&
+				 entry.path().filename() == "critical-command.lock" &&
+				 entry.file_size() == 0) ||
 				(entry.path().filename() == "player-save.journal.quarantine" &&
 				 entry.file_size() == 0));
 		}

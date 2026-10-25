@@ -717,6 +717,9 @@ class CapacityAndInputTests(Fixture):
         self.p["journal_roots"] = {"players": journal}
         critical = self.base / "critical-journal"
         critical.mkdir(mode=0o700)
+        (critical / "critical-command.lock").write_bytes(b"")
+        (critical / "receipts").mkdir(mode=0o700)
+        (critical / "receipts" / ("a" * 32)).write_bytes(b"synthetic-receipt".ljust(95, b"x"))
         with mock.patch.dict(os.environ, {
             "PLAYER_SAVE_JOURNAL_DIR": str(journal),
             "CRITICAL_COMMAND_JOURNAL_DIR": str(critical),
@@ -724,6 +727,7 @@ class CapacityAndInputTests(Fixture):
             self.p["journal_roots"] = {"players": journal, "critical": critical}
             generation = self.create()
             self.assertEqual(backup.inventory(journal), backup.inventory(generation / "journals/players"))
+            self.assertEqual(backup.inventory(critical), backup.inventory(generation / "journals/critical"))
             captured = backup.inventory(generation)
             original = backup.flatfile_capture
             def changed_capture(stage, p, capacity_base=None):

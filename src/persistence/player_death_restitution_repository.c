@@ -1521,6 +1521,8 @@ bool player_death_restitution_repository_execute(MYSQL *connection, const critic
 	if (clock_gettime(CLOCK_REALTIME, &now) != 0 || now.tv_sec < 0)
 		return false;
 	result->delivery_epoch = static_cast<uint64_t>(now.tv_sec);
+	if (command.schema_version == CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION)
+		result->delivery_epoch = command.accepted_at_usec / 1000000;
 	if (!insert_receipt(connection, plan, result->candidate_count, result->delivered_count,
 			    result->unresolved_count))
 		return false;

@@ -1590,7 +1590,16 @@ bool copy_related_rows(MYSQL *connection, item_owner_type owner_type, uint32_t s
 		owner_type == item_owner_type::pet    ? "player_pet_item_extra_descr" :
 		owner_type == item_owner_type::player ? "player_item_extra_descr" :
 							"saved_item_extra_descr";
+	const std::string runtime =
+		owner_type == item_owner_type::pet    ? "player_pet_item_runtime_state" :
+		owner_type == item_owner_type::player ? "player_item_runtime_state" :
+							"saved_item_runtime_state";
 	return execute(connection,
+		       "INSERT INTO " + runtime + "(item_id,payload) SELECT " +
+			       std::to_string(target_id) +
+			       ",payload FROM corpse_item_runtime_state WHERE item_id=" +
+			       std::to_string(source_id)) &&
+	       execute(connection,
 		       "INSERT INTO " + affects + "(item_id,location,modifier) SELECT " +
 			       std::to_string(target_id) +
 			       ",location,modifier FROM corpse_item_affects WHERE item_id=" +
@@ -1692,13 +1701,13 @@ bool materialize_items(MYSQL *connection, const critical_command &command,
 				      "weight,cost,timer,extra_flags,wear_flags,item_type,value0,value1,"
 				      "value2,value3,value4,value5,value6,value7,name,short_descr,description,"
 				      "action_descr,obj_uid,item_material,bitvector1,bitvector2,bitvector3,"
-				      "bitvector4,bitvector5) SELECT '" +
+				      "bitvector4,bitvector5,item_condition) SELECT '" +
 				      key + "'," + std::to_string(payload.room_vnum) + ",vnum," +
 				      parent + ",quantity," + std::to_string(item.adjusted_weight) +
 				      ",cost,timer,extra_flags,wear_flags,item_type,value0,value1,value2,"
 				      "value3,value4,value5,value6,value7,name,short_descr,description,"
 				      "action_descr,obj_uid,item_material,bitvector1,bitvector2,bitvector3,"
-				      "bitvector4,bitvector5 FROM corpse_items WHERE id=" +
+				      "bitvector4,bitvector5,item_condition FROM corpse_items WHERE id=" +
 				      std::to_string(item.id);
 			}
 			if (!execute(connection, sql) || mysql_affected_rows(connection) != 1)
@@ -1727,6 +1736,11 @@ bool materialize_items(MYSQL *connection, const critical_command &command,
 bool copy_world_item_related_rows(MYSQL *connection, uint32_t source_id, uint32_t target_id)
 {
 	return execute(connection,
+		       "INSERT INTO player_pet_item_runtime_state(item_id,payload) SELECT " +
+			       std::to_string(target_id) +
+			       ",payload FROM saved_item_runtime_state WHERE item_id=" +
+			       std::to_string(source_id)) &&
+	       execute(connection,
 		       "INSERT INTO player_pet_item_affects(item_id,location,modifier) SELECT " +
 			       std::to_string(target_id) +
 			       ",location,modifier FROM saved_item_affects WHERE item_id=" +
@@ -1816,13 +1830,13 @@ bool materialize_world_pet_items(MYSQL *connection, const std::vector<physical_i
 				"weight,cost,timer,extra_flags,wear_flags,item_type,value0,value1,"
 				"value2,value3,value4,value5,value6,value7,name,short_descr,description,"
 				"action_descr,bitvector1,bitvector2,bitvector3,bitvector4,bitvector5,"
-				"obj_uid,item_material) SELECT " +
+				"obj_uid,item_material,item_condition) SELECT " +
 				std::to_string(pet_row_id) + ",vnum,0," + parent + "," +
 				std::to_string(item.adjusted_weight) +
 				",cost,timer,extra_flags,wear_flags,item_type,value0,value1,value2,"
 				"value3,value4,value5,value6,value7,name,short_descr,description,"
 				"action_descr,bitvector1,bitvector2,bitvector3,bitvector4,bitvector5,"
-				"obj_uid,item_material FROM saved_items WHERE id=" +
+				"obj_uid,item_material,item_condition FROM saved_items WHERE id=" +
 				std::to_string(item.id);
 			if (!execute(connection, sql) || mysql_affected_rows(connection) != 1)
 				return false;
@@ -2176,6 +2190,14 @@ bool corpse_lifecycle_repository_execute(MYSQL *connection, const critical_comma
 	*mutation_applied = false;
 	*collector_revision = 0;
 	collector_events->clear();
+	if (payload.action == corpse_lifecycle_action::upsert ||
+	    payload.action == corpse_lifecycle_action::remove)
+	{
+		if (!corpse_metadata_repository_execute(connection, payload, result, result_code))
+			return false;
+		*mutation_applied = !*result_code;
+		return true;
+	}
 	if (payload.action == corpse_lifecycle_action::raise_world_follower)
 		return execute_world_corpse_raise(connection, command, payload, result, result_code,
 						  mutation_applied, collector_revision,
@@ -2399,5 +2421,111 @@ bool corpse_lifecycle_repository_execute(MYSQL *connection, const critical_comma
 	if (payload.action == corpse_lifecycle_action::resurrect)
 		result->room_owner_revision = room_owner_revision;
 	*mutation_applied = true;
+	return true;
+}
+
+bool corpse_metadata_repository_execute(MYSQL *connection, const corpse_lifecycle_payload &payload,
+					corpse_lifecycle_result *result, unsigned int *result_code)
+{
+	if (!connection || !result || !result_code)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	*result = {};
+	*result_code = 0;
+	std::string name, short_description, description, keywords;
+	if (!escape_text(connection, payload.owner_name.data(), payload.owner_name.size(), &name) ||
+	    !escape_text(connection, payload.short_description.data(),
+			 payload.short_description.size(), &short_description) ||
+	    !escape_text(connection, payload.description.data(), payload.description.size(),
+			 &description) ||
+	    !escape_text(connection, payload.keywords.data(), payload.keywords.size(), &keywords))
+		return false;
+	if (!execute(
+		    connection,
+		    "SELECT catalog_revision FROM corpse_catalog_state WHERE state_id=1 FOR UPDATE"))
+		return false;
+	MYSQL_RES *rows = mysql_store_result(connection);
+	MYSQL_ROW row = rows ? mysql_fetch_row(rows) : nullptr;
+	uint64_t catalog = 0;
+	bool valid = row && parse_u64(row[0], &catalog) && catalog && catalog != UINT64_MAX;
+	if (rows)
+		mysql_free_result(rows);
+	if (!valid)
+	{
+		errno = EILSEQ;
+		return false;
+	}
+	const std::string where =
+		" WHERE player_name='" + name + "' AND save_id=" + std::to_string(payload.save_id);
+	if (!execute(connection,
+		     "SELECT id,corpse_revision,COALESCE(value3,0),COALESCE(value5,0) FROM corpses" +
+			     where + " FOR UPDATE"))
+		return false;
+	rows = mysql_store_result(connection);
+	if (!rows)
+		return false;
+	row = mysql_fetch_row(rows);
+	uint64_t id = 0, revision = 0, pid = 0, racewar = 0;
+	valid = !row || (mysql_num_rows(rows) == 1 && parse_u64(row[0], &id) &&
+			 parse_u64(row[1], &revision) && parse_u64(row[2], &pid) &&
+			 parse_u64(row[3], &racewar));
+	mysql_free_result(rows);
+	if (!valid || revision != payload.expected_corpse_revision || revision == UINT64_MAX ||
+	    (id &&
+	     (pid != payload.owner_pid || (payload.action == corpse_lifecycle_action::upsert &&
+					   racewar != static_cast<uint64_t>(payload.values[5])))))
+	{
+		*result_code = ESTALE;
+		return true;
+	}
+	if (payload.action == corpse_lifecycle_action::remove)
+	{
+		if (!id)
+		{
+			*result_code = ENOENT;
+			return true;
+		}
+		if (!execute(connection, "SELECT id FROM corpse_items WHERE corpse_id=" +
+						 std::to_string(id) + " LIMIT 1 FOR UPDATE"))
+			return false;
+		rows = mysql_store_result(connection);
+		if (!rows)
+			return false;
+		const bool empty = mysql_num_rows(rows) == 0;
+		mysql_free_result(rows);
+		if (!empty)
+		{
+			*result_code = ENOTEMPTY;
+			return true;
+		}
+		if (!execute(connection, "DELETE FROM corpses" + where))
+			return false;
+	}
+	else
+	{
+		std::string values =
+			"player_name='" + name + "',save_id=" + std::to_string(payload.save_id) +
+			",corpse_revision=" + std::to_string(revision + 1) +
+			",room_vnum=" + std::to_string(payload.room_vnum) + ",short_descr='" +
+			short_description + "',description='" + description + "',name='" +
+			keywords + "',weight=" + std::to_string(payload.weight);
+		for (size_t i = 0; i < payload.values.size(); ++i)
+			if (i != 6)
+				values += ",value" + std::to_string(i) + "=" +
+					  std::to_string(payload.values[i]);
+		if (!execute(connection, (id ? "UPDATE corpses SET " : "INSERT INTO corpses SET ") +
+						 values + (id ? where : "")))
+			return false;
+		result->corpse_revision = revision + 1;
+	}
+	if (!execute(connection, "UPDATE corpse_catalog_state SET catalog_revision=" +
+					 std::to_string(catalog + 1) + " WHERE state_id=1"))
+		return false;
+	result->owner_pid = payload.owner_pid;
+	result->save_id = payload.save_id;
+	result->action = payload.action;
+	result->catalog_revision = catalog + 1;
 	return true;
 }

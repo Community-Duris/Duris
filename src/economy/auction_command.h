@@ -93,7 +93,23 @@ struct auction_command_result
 	uint16_t item_count;
 	std::array<uint64_t, AUCTION_COMMAND_MAX_ITEMS> item_uids;
 	std::array<uint64_t, AUCTION_COMMAND_MAX_ITEMS> item_revisions;
+	// Frozen effects for sealed outcomes. Stored in the formerly reserved tail;
+	// legacy receipts decode these fields as zero.
+	uint64_t end_time = 0;
+	int64_t refund = 0;
+	int64_t seller_proceeds = 0;
+	uint64_t catalog_revision = 0;
 };
+
+uint32_t auction_command_listing_id(const critical_operation_id &operation_id);
+struct item_transfer_payload;
+// A versioned custody blob retains the legacy display serialization alongside
+// exact, UID-bound runtime snapshots. Old listings remain readable.
+bool auction_blob_parts(const auction_command_payload &, const uint8_t **legacy,
+			size_t *legacy_size, const uint8_t **runtime, size_t *runtime_size);
+bool auction_blob_pack(auction_command_payload *, const std::vector<uint8_t> &runtime);
+bool auction_item_payload(const auction_command_payload &, uint32_t auction_id,
+			  item_transfer_payload *);
 
 bool auction_command_encode_payload(const auction_command_payload &payload,
 				    std::vector<uint8_t> *encoded);

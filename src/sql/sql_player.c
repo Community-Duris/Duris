@@ -12,6 +12,10 @@
 #include "sql/sql_player.h"
 #include "player/player_playtime.h"
 #include "player/player_snapshot_codec.h"
+#include "economy/economic_state.h"
+#include "economy/shop_trade_runtime.h"
+#include "persistence/operation_log.h"
+#include "persistence/critical_command_coordinator.h"
 #include "player/player_load_items.h"
 #include "sql/item_extra_descr_codec.h"
 #include <errno.h>
@@ -447,6 +451,20 @@ bool sql_delete_guild(unsigned int guild_id)
 
 bool sql_load_account_bank(const char *account_name, int racewar, P_char ch)
 {
+	if (economic_state_active())
+	{
+		currency_command_result state;
+		if (!ch || !ch->only.pc ||
+		    !economic_state_balances(GET_PID(ch), account_name, racewar, &state))
+			return false;
+		GET_BALANCE_COPPER(ch) = state.bank.amount[0];
+		GET_BALANCE_SILVER(ch) = state.bank.amount[1];
+		GET_BALANCE_GOLD(ch) = state.bank.amount[2];
+		GET_BALANCE_PLATINUM(ch) = state.bank.amount[3];
+		ch->only.pc->bank_revision = state.bank_revision;
+		return true;
+	}
+
 	return false;
 }
 bool sql_account_bank_deposit_balances(const char *account_name, int racewar,
@@ -3319,6 +3337,64 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch, bool save_equipm
 }
 
 // The legacy save adapter uses the same runtime snapshot as asynchronous saves.
+// Runtime extensions travel with each physical item row. Canonical columns
+// continue to own placement, mutable base fields, affects and descriptions.
+static bool sql_save_item_runtime_extension(const char *table, int item_id, P_obj obj)
+{
+	std::vector<player_item_snapshot> snapshots;
+	if (player_item_snapshot_tree_capture(obj, &snapshots, nullptr) !=
+		    player_snapshot_capture_result::ok ||
+	    snapshots.empty())
+		return false;
+	snapshots.resize(1);
+	snapshots[0].parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	std::vector<uint8_t> encoded;
+	if (player_item_snapshot_list_encode(snapshots, &encoded) !=
+	    player_snapshot_codec_result::ok)
+		return false;
+	static constexpr char digits[] = "0123456789abcdef";
+	std::string hex;
+	hex.reserve(encoded.size() * 2);
+	for (uint8_t byte : encoded)
+	{
+		hex += digits[byte >> 4];
+		hex += digits[byte & 15];
+	}
+	return qry("INSERT INTO %s(item_id,payload) VALUES(%d,UNHEX('%s'))", table, item_id,
+		   hex.c_str());
+}
+
+static bool sql_load_item_runtime_extension(const char *table, int item_id, P_obj obj)
+{
+	const bool saved = !strcmp(table, "saved_item_runtime_state");
+	MYSQL_RES *rows =
+		saved ? db_query(
+				"SELECT r.payload,i.item_condition FROM saved_items i LEFT JOIN saved_item_runtime_state r ON r.item_id=i.id WHERE i.id=%d",
+				item_id) :
+			db_query("SELECT payload FROM %s WHERE item_id=%d", table, item_id);
+	if (!rows)
+		return false;
+	MYSQL_ROW row = mysql_fetch_row(rows);
+	bool valid = true;
+	if (row && saved && row[1])
+		obj->condition = atoi(row[1]);
+	if (row && row[0])
+	{
+		const auto lengths = mysql_fetch_lengths(rows);
+		std::vector<player_item_snapshot> state;
+		valid = lengths && row[0] &&
+			player_item_snapshot_list_decode(reinterpret_cast<const uint8_t *>(row[0]),
+							 lengths[0], &state) ==
+				player_snapshot_codec_result::ok &&
+			state.size() == 1 && state[0].object_uid == obj->obj_uid &&
+			state[0].vnum == OBJ_VNUM(obj);
+		if (valid)
+			player_load_item_runtime_state_apply(obj, state[0]);
+	}
+	mysql_free_result(rows);
+	return valid;
+}
+
 static bool sql_save_player_item_runtime_state(int pid, P_char ch)
 {
 	std::vector<player_item_snapshot> items;
@@ -3641,6 +3717,12 @@ static int sql_save_single_pet_item(int pet_id, P_obj obj, int equip_slot, int c
 
 	int item_id = (int)mysql_insert_id(DB);
 
+	if (!sql_save_item_runtime_extension("player_pet_item_runtime_state", item_id, obj))
+	{
+		if (own_txn)
+			sql_rollback();
+		return 0;
+	}
 	if (!sql_save_pet_item_affects(item_id, obj))
 	{
 		if (own_txn)
@@ -7785,6 +7867,12 @@ static int sql_save_corpse_item(int corpse_id, int save_id, P_obj obj, int conta
 
 	int item_id = (int)mysql_insert_id(DB);
 
+	if (!sql_save_item_runtime_extension("corpse_item_runtime_state", item_id, obj))
+	{
+		if (own_txn)
+			sql_rollback();
+		return 0;
+	}
 	if (!sql_save_corpse_item_affects(item_id, obj))
 	{
 		if (own_txn)
@@ -8584,6 +8672,11 @@ bool sql_load_all_corpses(void)
 		if (row[CORPSE_COL_ITEM_BITVECTOR5])
 			obj->bitvector5 = strtoul(row[CORPSE_COL_ITEM_BITVECTOR5], NULL, 10);
 
+		if (!sql_load_item_runtime_extension("corpse_item_runtime_state", item_id, obj))
+		{
+			extract_obj(obj, FALSE);
+			goto cleanup;
+		}
 		char owner_ref[32];
 		snprintf(owner_ref, sizeof(owner_ref), "%llu",
 			 (unsigned long long)cur_corpse_owner_id);
@@ -8992,27 +9085,29 @@ static int sql_save_shopkeeper_item(int shopkeeper_id, P_obj obj, int equip_slot
 	sql_format_item_diff_fields_and_free_proto(obj, wear_str, type_str, material_str, bv1_str,
 						   bv2_str, bv3_str, bv4_str, bv5_str);
 
-	snprintf(query, sizeof(query),
-		 "INSERT INTO shopkeeper_items ("
-		 "shopkeeper_id, vnum, equip_slot, container_id, quantity, "
-		 "weight, cost, timer, extra_flags, "
-		 "value0, value1, value2, value3, value4, value5, value6, value7, "
-		 "name, short_descr, description, action_descr, "
-		 "wear_flags, item_type, item_material, "
-		 "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5"
-		 ") VALUES ("
-		 "%d, %d, %d, %s, 1, "
-		 "%d, %d, %ld, %lu, "
-		 "%d, %d, %d, %d, %d, %d, %d, %d, "
-		 "%s, %s, %s, %s, "
-		 "%s, %s, %s, "
-		 "%s, %s, %s, %s, %s"
-		 ")",
-		 shopkeeper_id, vnum, equip_slot, container_str, obj->weight, obj->cost,
-		 (long)obj->timer[0], (unsigned long)obj->extra_flags, obj->value[0], obj->value[1],
-		 obj->value[2], obj->value[3], obj->value[4], obj->value[5], obj->value[6],
-		 obj->value[7], name_str, short_str, desc_str, action_str, wear_str, type_str,
-		 material_str, bv1_str, bv2_str, bv3_str, bv4_str, bv5_str);
+	snprintf(
+		query, sizeof(query),
+		"INSERT INTO shopkeeper_items ("
+		"shopkeeper_id, vnum, equip_slot, container_id, quantity, "
+		"weight, cost, timer, extra_flags, "
+		"value0, value1, value2, value3, value4, value5, value6, value7, "
+		"name, short_descr, description, action_descr, "
+		"wear_flags, item_type, item_material, "
+		"bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, obj_uid, item_condition"
+		") VALUES ("
+		"%d, %d, %d, %s, 1, "
+		"%d, %d, %ld, %lu, "
+		"%d, %d, %d, %d, %d, %d, %d, %d, "
+		"%s, %s, %s, %s, "
+		"%s, %s, %s, "
+		"%s, %s, %s, %s, %s, %llu, %d"
+		")",
+		shopkeeper_id, vnum, equip_slot, container_str, obj->weight, obj->cost,
+		(long)obj->timer[0], (unsigned long)obj->extra_flags, obj->value[0], obj->value[1],
+		obj->value[2], obj->value[3], obj->value[4], obj->value[5], obj->value[6],
+		obj->value[7], name_str, short_str, desc_str, action_str, wear_str, type_str,
+		material_str, bv1_str, bv2_str, bv3_str, bv4_str, bv5_str,
+		static_cast<unsigned long long>(obj->obj_uid), obj->condition);
 
 	if (esc_name)
 		free(esc_name);
@@ -9028,6 +9123,28 @@ static int sql_save_shopkeeper_item(int shopkeeper_id, P_obj obj, int equip_slot
 
 	int item_id = (int)mysql_insert_id(DB);
 
+	std::vector<player_item_snapshot> snapshots;
+	if (player_item_snapshot_tree_capture(obj, &snapshots, nullptr) !=
+		    player_snapshot_capture_result::ok ||
+	    snapshots.empty())
+		return 0;
+	snapshots.resize(1);
+	snapshots[0].parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	std::vector<uint8_t> runtime;
+	if (player_item_snapshot_list_encode(snapshots, &runtime) !=
+	    player_snapshot_codec_result::ok)
+		return 0;
+	std::string hex;
+	static constexpr char digits[] = "0123456789abcdef";
+	hex.reserve(runtime.size() * 2);
+	for (const auto byte : runtime)
+	{
+		hex += digits[byte >> 4];
+		hex += digits[byte & 15];
+	}
+	if (!qry("INSERT INTO shopkeeper_item_runtime_state(item_id,payload) VALUES(%d,UNHEX('%s'))",
+		 item_id, hex.c_str()))
+		return 0;
 	if (!sql_save_shopkeeper_item_affects(item_id, obj))
 		return 0;
 	if (!sql_save_item_extra_descr(item_id, obj, "shopkeeper_item_extra_descr"))
@@ -9073,6 +9190,16 @@ static bool sql_save_shopkeeper_affects(int shopkeeper_id, P_char ch)
 
 bool sql_save_shopkeeper(P_char ch, int shop_nr)
 {
+	if (economic_state_active() && !operation_log_projection_caught_up())
+		return false;
+	// Projection may have finished before the game thread publishes its receipt.
+	// Keep a stale keeper body from checkpointing over the accepted stock image.
+	if (shop_nr >= 0 &&
+	    critical_command_coordinator_is_fenced({ critical_entity_type::shopkeeper,
+						     item_shopkeeper_owner_id(shop_nr) },
+						   nullptr))
+		return false;
+
 	const shopkeeper_save_reason guard = validate_shopkeeper_save(ch, shop_nr);
 	if (guard != shopkeeper_save_reason::ok)
 	{
@@ -9120,6 +9247,18 @@ bool sql_save_shopkeeper(P_char ch, int shop_nr)
 	}
 
 	int shopkeeper_id = (int)mysql_insert_id(DB);
+	if (!qry("INSERT IGNORE INTO shop_trade_state(shop_id,revision) VALUES(%d,1)", shop_nr))
+	{
+		sql_rollback();
+		return false;
+	}
+	uint64_t shop_revision = 0;
+	if (!shop_trade_runtime_revision(shop_nr, &shop_revision) &&
+	    !shop_trade_runtime_seed_revision(shop_nr, 1))
+	{
+		sql_rollback();
+		return false;
+	}
 
 	if (!sql_save_shopkeeper_affects(shopkeeper_id, ch))
 	{
@@ -9267,19 +9406,20 @@ static int sql_save_saved_item_recursive(const char *item_key, int room_vnum, P_
 		"weight, cost, timer, extra_flags, "
 		"value0, value1, value2, value3, value4, value5, value6, value7, "
 		"name, short_descr, description, action_descr, wear_flags, item_type, bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
-		"item_material, obj_uid"
+		"item_material, obj_uid, item_condition"
 		") VALUES ("
 		"'%s', %d, %d, %s, 1, "
 		"%d, %d, %ld, %lu, "
 		"%d, %d, %d, %d, %d, %d, %d, %d, "
 		"%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, "
-		"%s, %lu"
+		"%s, %lu, %d"
 		")",
 		esc_key ? esc_key : "", room_vnum, vnum, container_str, obj->weight, obj->cost,
 		(long)obj->timer[0], (unsigned long)obj->extra_flags, obj->value[0], obj->value[1],
 		obj->value[2], obj->value[3], obj->value[4], obj->value[5], obj->value[6],
 		obj->value[7], name_str, short_str, desc_str, action_str, wear_str, type_str,
-		bv1_str, bv2_str, bv3_str, bv4_str, bv5_str, material_str, obj->obj_uid);
+		bv1_str, bv2_str, bv3_str, bv4_str, bv5_str, material_str, obj->obj_uid,
+		obj->condition);
 
 	if (esc_key)
 		free(esc_key);
@@ -9297,6 +9437,10 @@ static int sql_save_saved_item_recursive(const char *item_key, int room_vnum, P_
 
 	int item_id = (int)mysql_insert_id(DB);
 
+	if (!sql_save_item_runtime_extension("saved_item_runtime_state", item_id, obj))
+	{
+		return 0;
+	}
 	if (!sql_save_saved_item_affects(item_id, obj))
 		return 0;
 	if (!sql_save_item_extra_descr(item_id, obj, "saved_item_extra_descr"))
@@ -9603,8 +9747,8 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 		"SELECT si.id, si.shopkeeper_id, si.vnum, si.equip_slot, si.weight, si.cost, si.timer, "
 		"si.extra_flags, si.value0, si.value1, si.value2, si.value3, si.value4, si.value5, "
 		"si.value6, si.value7, si.name, si.short_descr, si.description, si.action_descr, si.container_id, "
-		"si.wear_flags, si.item_type, si.item_material, si.bitvector1, si.bitvector2, si.bitvector3, si.bitvector4, si.bitvector5 "
-		"FROM shopkeeper_items si "
+		"si.wear_flags, si.item_type, si.item_material, si.bitvector1, si.bitvector2, si.bitvector3, si.bitvector4, si.bitvector5, si.obj_uid, si.item_condition, runtime.payload "
+		"FROM shopkeeper_items si LEFT JOIN shopkeeper_item_runtime_state runtime ON runtime.item_id=si.id "
 		"INNER JOIN shopkeepers s ON si.shopkeeper_id = s.id "
 		"WHERE (%d < 0 OR s.shop_id=%d) ORDER BY si.shopkeeper_id, si.id",
 		only_shop, only_shop);
@@ -9714,6 +9858,54 @@ static bool sql_restore_shopkeeper_catalog(int only_shop, P_char *restored)
 				obj->bitvector4 = strtoul(row[27], NULL, 10);
 			if (row[28])
 				obj->bitvector5 = strtoul(row[28], NULL, 10);
+			const uint64_t saved_uid = row[29] ? strtoull(row[29], nullptr, 10) : 0;
+			if (saved_uid)
+				obj->obj_uid = saved_uid;
+			else if (!obj->obj_uid ||
+				 !qry("UPDATE shopkeeper_items SET obj_uid=%llu WHERE id=%d AND (obj_uid IS NULL OR obj_uid=0)",
+				      static_cast<unsigned long long>(obj->obj_uid), item_id))
+			{
+				extract_obj(obj);
+				mysql_free_result(result);
+				discard_shopkeeper_restore_stage(keepers, all_items, false);
+				return false;
+			}
+			int shop_nr = -1;
+			for (auto *keeper = keepers; keeper; keeper = keeper->next)
+				if (keeper->shopkeeper_id == shopkeeper_id)
+				{
+					shop_nr = keeper->shop_nr;
+					break;
+				}
+			item_ownership_runtime_entry custody;
+			if (item_ownership_runtime_lookup(obj->obj_uid, &custody) &&
+			    (custody.owner.type != item_owner_type::shopkeeper ||
+			     custody.owner.id != item_shopkeeper_owner_id(shop_nr) ||
+			     custody.owner.context_id ||
+			     custody.state != item_custody_state::active))
+			{
+				extract_obj(obj);
+				continue;
+			}
+			obj->condition = row[30] ? atoi(row[30]) : 100;
+			if (row[31])
+			{
+				const auto *lengths = mysql_fetch_lengths(result);
+				std::vector<player_item_snapshot> runtime;
+				if (!lengths ||
+				    player_item_snapshot_list_decode(
+					    reinterpret_cast<const uint8_t *>(row[31]), lengths[31],
+					    &runtime) != player_snapshot_codec_result::ok ||
+				    runtime.size() != 1 || runtime[0].object_uid != obj->obj_uid ||
+				    runtime[0].vnum != vnum)
+				{
+					extract_obj(obj);
+					mysql_free_result(result);
+					discard_shopkeeper_restore_stage(keepers, all_items, false);
+					return false;
+				}
+				player_load_item_runtime_state_apply(obj, runtime[0]);
+			}
 			obj->db_item_id = item_id;
 			REMOVE_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
 			if (!sql_load_item_extra_descr_from_table(item_id, obj, "shopkeeper_item"))
@@ -10229,6 +10421,8 @@ static P_obj sql_load_saved_item_contents(const char *item_key, int room_vnum, i
 			extract_obj(obj, FALSE);
 			continue;
 		}
+		if (!sql_load_item_runtime_extension("saved_item_runtime_state", item_id, obj))
+			*valid = false;
 		obj->db_item_id = item_id;
 		REMOVE_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
 		if (!sql_load_item_extra_descr_from_table(item_id, obj, "saved_item"))
@@ -10750,6 +10944,8 @@ void sql_restore_saved_items(void)
 			extract_obj(obj, FALSE);
 			continue;
 		}
+		if (!sql_load_item_runtime_extension("saved_item_runtime_state", item_id, obj))
+			valid = false;
 		obj->db_item_id = item_id;
 		REMOVE_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
 		if (!sql_load_item_extra_descr_from_table(item_id, obj, "saved_item"))
@@ -11745,6 +11941,20 @@ static bool sql_parse_account_bank_balance(const char *value, int *balance);
 
 bool sql_load_account_bank(const char *account_name, int racewar, P_char ch)
 {
+	if (economic_state_active())
+	{
+		currency_command_result state;
+		if (!ch || !ch->only.pc ||
+		    !economic_state_balances(GET_PID(ch), account_name, racewar, &state))
+			return false;
+		GET_BALANCE_COPPER(ch) = state.bank.amount[0];
+		GET_BALANCE_SILVER(ch) = state.bank.amount[1];
+		GET_BALANCE_GOLD(ch) = state.bank.amount[2];
+		GET_BALANCE_PLATINUM(ch) = state.bank.amount[3];
+		ch->only.pc->bank_revision = state.bank_revision;
+		return true;
+	}
+
 	if (!DB || !account_name || !*account_name || !ch)
 		return false;
 	GET_BALANCE_COPPER(ch) = 0;

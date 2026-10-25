@@ -517,6 +517,25 @@ static void coin_matrix(const fs::path &path, int coin_vnum)
 				"stale coin projection won over authority");
 	};
 	auto put = command(wallet(42, 1000, 900), pile(pile_uid, 0, 100));
+	const auto preview_root = path.string() + "-sealed-preview";
+	fs::copy(path, preview_root, fs::copy_options::recursive);
+	fs::permissions(preview_root, fs::perms::owner_all, fs::perm_options::replace);
+	const auto preview = flatfile_critical_command_repository_apply_selected(
+		put, const_cast<char *>(preview_root.c_str()));
+	require(preview.outcome == critical_apply_outcome::applied && preview.durable_revision,
+		"coin projection did not return its materialized revision");
+	put.schema_version = CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION;
+	put.outcome_revision = preview.durable_revision;
+	put.outcome_payload.assign(preview.result_payload.begin(),
+				   preview.result_payload.begin() + preview.result_size);
+	auto divergent_put = put;
+	++divergent_put.outcome_revision;
+	require(apply(divergent_put).error_code == EILSEQ,
+		"coin projection committed a divergent revision");
+	divergent_put = put;
+	++divergent_put.outcome_payload[0];
+	require(apply(divergent_put).error_code == EILSEQ,
+		"coin projection committed a divergent result");
 	setenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT", "1", 1);
 	require(apply(put).outcome == critical_apply_outcome::retryable_failure,
 		"coin pre-commit failure was not injected");
@@ -1015,7 +1034,21 @@ int main(int argc, char **argv)
 			result_of(batch_applied).to_owner_revision == 1,
 		"multi-root item creation replay was not idempotent");
 
-	const critical_command create = creation(1);
+	critical_command create = creation(1);
+	std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> sealed_bytes{};
+	require(item_transfer_command_encode_result({ 100, 2, 1, 1, 1, 0 }, &sealed_bytes),
+		"seal item result");
+	create.schema_version = CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION;
+	create.outcome_revision = 1;
+	create.outcome_payload.assign(sealed_bytes.begin(), sealed_bytes.end());
+	auto wrong_creation = create;
+	wrong_creation.outcome_revision = 2;
+	require(flatfile_item_repository_apply(root.string(), wrong_creation).error_code == EILSEQ,
+		"divergent sealed custody revision committed");
+	wrong_creation = create;
+	++wrong_creation.outcome_payload[0];
+	require(flatfile_item_repository_apply(root.string(), wrong_creation).error_code == EILSEQ,
+		"divergent sealed custody payload committed");
 	critical_apply_result applied = flatfile_item_repository_apply(root.string(), create);
 	require(applied.outcome == critical_apply_outcome::applied && applied.error_code == 0,
 		"item creation did not apply: outcome=" +

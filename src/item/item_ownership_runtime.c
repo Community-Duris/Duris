@@ -4,6 +4,7 @@
 #include "player/player_snapshot_codec.h"
 
 #include <algorithm>
+#include <cerrno>
 #include <limits>
 #include <new>
 #include <unordered_map>
@@ -527,6 +528,9 @@ bool item_ownership_runtime_apply_craft(const item_transfer_payload &payload,
 		return false;
 	if (!outputs.empty() && outputs[0].object_uid != payload.selected_item_uid)
 		return false;
+	uint64_t destruction_revision = 0;
+	item_ownership_runtime_peek_owner_revision({ item_owner_type::destruction, 0, 0 },
+						   &destruction_revision);
 	std::vector<item_ownership_runtime_entry> changes;
 	try
 	{
@@ -556,7 +560,7 @@ bool item_ownership_runtime_apply_craft(const item_transfer_payload &payload,
 					    target_parent,
 					    { item_owner_type::destruction, 0, 0 },
 					    expected.expected_item_revision + 1,
-					    result.from_owner_revision,
+					    destruction_revision,
 					    expected.vnum,
 					    item_custody_state::destroyed });
 		}
@@ -607,7 +611,7 @@ bool item_ownership_runtime_apply_craft(const item_transfer_payload &payload,
 	return item_ownership_runtime_hydrate_owner(payload.from_owner,
 						    result.from_owner_revision) &&
 	       item_ownership_runtime_hydrate_owner({ item_owner_type::destruction, 0, 0 },
-						    result.from_owner_revision);
+						    destruction_revision);
 }
 
 bool item_ownership_runtime_apply(const item_transfer_payload &payload,
@@ -763,6 +767,121 @@ bool item_ownership_runtime_apply(const item_transfer_payload &payload,
 			owner_revisions.erase(payload.from_owner);
 		return false;
 	}
+}
+
+unsigned int item_ownership_runtime_prepare(const item_transfer_payload &payload,
+					    item_transfer_result *result)
+{
+	if (!result || !payload.item_count || payload.item_count > ITEM_TRANSFER_MAX_ITEMS ||
+	    !item_owner_identity_valid(payload.from_owner) ||
+	    !item_owner_identity_valid(payload.to_owner))
+		return EINVAL;
+	if (payload.reason == item_transfer_reason::craft)
+	{
+		if (payload.from_owner.type != item_owner_type::player ||
+		    !item_owner_identity_equal(payload.from_owner, payload.to_owner))
+			return EINVAL;
+		std::vector<player_item_snapshot> outputs;
+		if (payload.item_blob_size &&
+		    (player_item_snapshot_list_decode(payload.item_blob.data(),
+						      payload.item_blob_size, &outputs) !=
+			     player_snapshot_codec_result::ok ||
+		     outputs.empty()))
+			return EBADMSG;
+		if (outputs.size() > ITEM_TRANSFER_MAX_ITEMS ||
+		    (!outputs.empty() && outputs.front().object_uid != payload.selected_item_uid))
+			return EBADMSG;
+		std::unordered_set<uint64_t> output_uids;
+		for (size_t i = 0; i < outputs.size(); ++i)
+		{
+			const auto &output = outputs[i];
+			if (!output.object_uid || output.vnum <= 0 ||
+			    !output_uids.insert(output.object_uid).second ||
+			    entries.contains(output.object_uid))
+				return EEXIST;
+			if (output.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+			    output.parent_index >= static_cast<int32_t>(i))
+				return EBADMSG;
+		}
+	}
+	uint64_t from = 0, to = 0;
+	item_ownership_runtime_peek_owner_revision(payload.from_owner, &from);
+	item_ownership_runtime_peek_owner_revision(payload.to_owner, &to);
+	if (from != payload.expected_from_revision || to != payload.expected_to_revision)
+		return ESTALE;
+	if (from == UINT64_MAX || to == UINT64_MAX)
+		return ERANGE;
+	item_transfer_result candidate{
+		item_transfer_result_root(payload), payload.item_count, from + 1, to + 1, 0, 0
+	};
+	const bool creation = payload.from_owner.type == item_owner_type::system;
+	std::unordered_set<uint64_t> selected;
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		const auto &item = payload.items[index];
+		if (!selected.insert(item.item_uid).second)
+			return EINVAL;
+		const auto found = entries.find(item.item_uid);
+		if (creation)
+		{
+			if (found != entries.end() ||
+			    item.expected_state != item_custody_state::absent ||
+			    item.expected_item_revision != ITEM_TRANSFER_ABSENT_REVISION)
+				return EEXIST;
+			candidate.max_item_revision = 1;
+		}
+		else
+		{
+			if (found == entries.end())
+				return ENOENT;
+			const auto &current = found->second;
+			if (!item_owner_identity_equal(current.owner, payload.from_owner) ||
+			    current.item_revision != item.expected_item_revision ||
+			    current.root_item_uid != item.root_item_uid ||
+			    current.parent_item_uid != item.parent_item_uid ||
+			    current.vnum != item.vnum || current.state != item.expected_state)
+				return ESTALE;
+			if (current.item_revision == UINT64_MAX)
+				return ERANGE;
+			candidate.max_item_revision =
+				std::max(candidate.max_item_revision, current.item_revision + 1);
+		}
+	}
+	if (!creation)
+	{
+		// A caller may not move a container while omitting one of its live
+		// descendants. No database ownership lookup participates in admission.
+		for (const auto &[uid, item] : entries)
+		{
+			if (!item_owner_identity_equal(item.owner, payload.from_owner) ||
+			    item.state != item_custody_state::active || selected.count(uid))
+				continue;
+			uint64_t ancestor = item.parent_item_uid;
+			for (size_t depth = 0; ancestor; ++depth)
+			{
+				if (depth >= PLAYER_SNAPSHOT_MAX_DEPTH)
+					return EINVAL;
+				if (selected.count(ancestor))
+					return EINVAL;
+				const auto parent = entries.find(ancestor);
+				if (parent == entries.end())
+					break;
+				ancestor = parent->second.parent_item_uid;
+			}
+		}
+	}
+	if (payload.target_parent_item_uid)
+	{
+		const auto parent = entries.find(payload.target_parent_item_uid);
+		if (selected.count(payload.target_parent_item_uid) || parent == entries.end() ||
+		    !item_owner_identity_equal(parent->second.owner, payload.to_owner) ||
+		    parent->second.root_item_uid != payload.target_root_item_uid ||
+		    parent->second.item_revision != payload.expected_target_parent_revision ||
+		    parent->second.state != item_custody_state::active)
+			return ESTALE;
+	}
+	*result = candidate;
+	return 0;
 }
 
 namespace
@@ -1297,10 +1416,9 @@ bool item_ownership_runtime_apply_world_corpse_raise(uint64_t source_uid, int32_
 				       static_cast<uint64_t>(result.save_id);
 	if (!source_uid || source_uid != result_source || room_vnum <= 0 || !player_pid ||
 	    result.action != corpse_lifecycle_action::raise_world_follower ||
-	    result.corpse_revision || result.catalog_revision != result.corpse_owner_revision ||
-	    !result.corpse_owner_revision || result.room_owner_revision ||
-	    result.player_owner_revision || result.wallet_revision || result.bank_revision ||
-	    result.item_count != durable_uids.size() ||
+	    result.corpse_revision || !result.catalog_revision || !result.corpse_owner_revision ||
+	    result.room_owner_revision || result.player_owner_revision || result.wallet_revision ||
+	    result.bank_revision || result.item_count != durable_uids.size() ||
 	    result.discarded_item_count != discarded_uids.size() || !result.discarded_item_count ||
 	    (pet_uid ? (!result.pet_owner_revision || pet_uid != source_uid) :
 		       result.pet_owner_revision))
@@ -1493,4 +1611,50 @@ void item_ownership_runtime_reset(void)
 size_t item_ownership_runtime_size(void)
 {
 	return entries.size();
+}
+
+bool item_ownership_runtime_unique_vnum(int32_t vnum, uint64_t uid)
+{
+	for (const auto &[other_uid, entry] : entries)
+		if (other_uid != uid && entry.vnum == vnum &&
+		    entry.state != item_custody_state::destroyed)
+			return false;
+	return true;
+}
+
+bool item_ownership_runtime_patch_ready(const item_ownership_runtime_patch &patch)
+{
+	if (patch.before.size() != patch.after.size())
+		return false;
+	for (size_t i = 0; i < patch.before.size(); ++i)
+	{
+		const auto &old = patch.before[i];
+		const auto found = entries.find(old.item_uid);
+		if (found == entries.end() || patch.after[i].item_uid != old.item_uid)
+			return false;
+		const auto &current = found->second;
+		if (current.item_revision != old.item_revision || current.state != old.state ||
+		    !item_owner_identity_equal(current.owner, old.owner) ||
+		    current.root_item_uid != old.root_item_uid ||
+		    current.parent_item_uid != old.parent_item_uid || current.vnum != old.vnum)
+			return false;
+	}
+	for (const auto &[owner, revision] : patch.owners)
+	{
+		const auto found = owner_revisions.find(owner);
+		if (!revision || found == owner_revisions.end() || found->second != revision - 1)
+			return false;
+	}
+	return true;
+}
+
+bool item_ownership_runtime_patch_publish(const item_ownership_runtime_patch &patch)
+{
+	if (!item_ownership_runtime_patch_ready(patch))
+		return false;
+	for (const auto &entry : patch.after)
+		entries.find(entry.item_uid)->second = entry;
+	for (const auto &[owner, revision] : patch.owners)
+		owner_revisions.find(owner)->second = revision;
+	return true;
 }

@@ -1,3 +1,5 @@
+#include "persistence/ram_runtime.h"
+#include "persistence/operation_log.h"
 #include "persistence/death_recovery_visibility.h"
 #include "account/password_async.h"
 /*
@@ -560,6 +562,11 @@ int main(int argc, char **argv)
 	{
 		fatal_boot_error("comm", "MySQL initialization failed!");
 	}
+	std::string ram_recovery_error;
+	if (!ram_runtime_recover(DB, getenv("CRITICAL_COMMAND_JOURNAL_DIR"),
+				 getenv("PLAYER_SAVE_JOURNAL_DIR"), &ram_recovery_error))
+		fatal_boot_error("comm", "Economic recovery failed: %s",
+				 ram_recovery_error.c_str());
 	if (!persistence_mode_requires_mysql() &&
 	    !item_uid_allocator_reserve(nullptr, ITEM_UID_BOOT_RESERVATION))
 		fatal_boot_error("comm", "Could not reserve a collision-free flat item UID range");
@@ -569,6 +576,10 @@ int main(int argc, char **argv)
 	if (persistence_mode_requires_mysql() && !sql_hydrate_item_owner_revisions())
 		logit(LOG_STATUS,
 		      "Authoritative item owner revisions unavailable; movement fails closed.");
+
+	if (!ram_runtime_hydrate(DB, persistence_mode_flatfile_root(), &ram_recovery_error))
+		fatal_boot_error("comm", "Economic state hydration failed: %s",
+				 ram_recovery_error.c_str());
 
 	redis_init();
 
@@ -903,10 +914,7 @@ int run_the_game(int port, int sslport)
 				  "check PLAYER_SAVE_JOURNAL_DIR");
 	}
 	const char *critical_journal_directory = getenv("CRITICAL_COMMAND_JOURNAL_DIR");
-	critical_apply_fn critical_apply = critical_command_repository_apply_from_pool;
-#ifdef __NO_MYSQL__
-	critical_apply = flatfile_critical_command_repository_apply_selected;
-#else
+#ifndef __NO_MYSQL__
 	const bool critical_outbox_ready =
 		critical_outbox_init(critical_gameplay_outbox_delivery, NULL);
 #endif
@@ -914,10 +922,7 @@ int run_the_game(int port, int sslport)
 #ifndef __NO_MYSQL__
 		!critical_outbox_ready ||
 #endif
-		!critical_command_coordinator_init(
-			critical_journal_directory, critical_apply, NULL,
-			CRITICAL_COORDINATOR_DEFAULT_WORKERS,
-			player_death_restitution_runtime_restore_replayed_command, NULL))
+		!ram_runtime_start())
 	{
 		player_death_restitution_runtime_abort_all();
 		critical_command_coordinator_shutdown();
@@ -926,6 +931,8 @@ int run_the_game(int port, int sslport)
 		      "Critical command pipeline unavailable; critical gameplay fails closed.");
 		persistence_alert(AVATAR, "critical_command", "pipeline", "none", "none",
 				  "start_failed", "check critical schema and journal");
+		fatal_boot_error("comm",
+				 "RAM authority could not start; refusing gameplay admission");
 	}
 	if (!collector_catalog_cache_refresh())
 		logit(LOG_STATUS,
@@ -998,6 +1005,8 @@ int run_the_game(int port, int sslport)
 		locker_async_shutdown();
 		player_save_pipeline_shutdown();
 	}
+
+	ram_runtime_shutdown();
 
 	/* Don't need this anymore, as dropped artis are handled in real time on the DB.
 	// Look for dropped artis and remove them from the next boot.
@@ -1977,10 +1986,8 @@ static void run_recurring_persistence_phase(game_loop_pulse_context &ctx)
 		locker_async_pulse();
 		corpse_lifecycle_transaction_pulse();
 		critical_completion critical_completions[64] = {};
-		const size_t critical_completion_count =
-			critical_command_coordinator_pulse(critical_completions, 64);
-		critical_gameplay_handle_completions(critical_completions,
-						     critical_completion_count);
+		const size_t critical_completion_count = critical_command_coordinator_pump(
+			critical_completions, 64, critical_gameplay_handle_completions, 10000);
 		auction_transaction_publish_outbox();
 		corpse_lifecycle_transaction_publish_outbox();
 		collector_transaction_publish_outbox();
@@ -2401,6 +2408,10 @@ void game_loop(int port, int sslport)
 	if (!mini_mode)
 	{
 		reconcile_shopkeepers(copyover_boot != 0);
+		if (persistence_mode_requires_mysql() && !save_dirty_shopkeepers(true))
+			fatal_boot_error(
+				"shopkeeper",
+				"Could not persist reconciled shop identities before admission");
 		initialize_transport();
 	}
 
