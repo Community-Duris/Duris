@@ -16,19 +16,10 @@ Earlier coverage, back to December 14, 2025, and the archive follow.
 &+Y-&n Pets with invalid saved vital stats are held for staff review while
   you enter the game. Their saved equipment is retained.
 
-&+R10/16/26&n &+L-&n &+YNews at a glance, errands back on the road&n
+&+R10/16/26&n &+L-&n &+YErrands, travel, traps and saves&n
 &+W----------------------------------------------------------------------&n
 
-&+Y-&n Your prompt now shows &+Y(news)&n when you have unread player news.
-  Turn paging on with &+C'toggle page on'&n and open &+C'news'&n to clear it.
-  Each character remembers which update you opened across logins;
-  a later update brings the reminder back. Refreshed news also stays
-  consistent when the game restarts.
-
-&+CEpic errands have destinations again&n
-&+Y-&n The restored roster gives epic tasks &+Y107&n eligible zones to choose
-  from. Already-completed zones remain excluded for your character;
-  this does not reset your history, epics or existing task.
+&+CEpic errands recover safely&n
 &+Y-&n New characters can receive earned epic tasks during their first
   session. A task waiting for its destination can be assigned once its
   zone choices and your history are ready, without earning it again.
@@ -54,62 +45,20 @@ Earlier coverage, back to December 14, 2025, and the archive follow.
   a restart. Saved carried items and pets' items also retain trap state.
   This preserves newly saved state; it cannot recover old missing records.
 
-&+CCharacter saves, titles and the high seas&n
-&+Y-&n Base attributes above the old small-number limit can now save without
-  wrapping or rejecting the save. Staff stat edits write the complete
-  value and reject numbers that do not fit; gameplay stat caps still apply.
+&+CCharacter saves and the high seas&n
+&+Y-&n Staff stat edits write the complete base stat value and reject numbers
+  that do not fit; gameplay stat caps still apply.
 &+Y-&n After a failed final save, logging in again can load your last saved
   state once the old session's save attempts finish. This does not recover
   changes that never saved.
-&+Y-&n Guild titles longer than &+Y512 bytes&n, including colors and the guild
-  name, are rejected before they can break your character save.
 &+Y-&n Sinking or removing an NPC ship no longer stalls ship activity or
   leaves other ships following a vanished escort or boarding target.
 &+Y-&n The &+MTotem of Mastery&n and &+MCirclet of Light&n now name the item properly
   in their whisper activation messages.
 
-&+R10/15/26&n &+L-&n &+YFamiliar roads and clearer rules&n
+&+R10/15/26&n &+L-&n &+YIcerazor and client panels&n
 &+W----------------------------------------------------------------------&n
 
-&+CThree routes worth another look&n
-&+Y-&n &+MOutcasts Tower&n is back on the Good Continent, south of Kimordril.
-  Follow the scorched trail north from the Hearth Valley grasslands.
-  Its old entrance now leads through ordinary DarkPeak foothills.
-&+Y-&n &+MArcium&n now lies northwest of Evermeet on the Good Continent.
-  Enter west from the foothills or north from the Myrabolus valley.
-  Its former jungle approaches now lead into the surrounding hills.
-&+Y-&n A stone stair connects the &+MChasm of the Misty Vale&n to the
-  &+MUnderdark&n. Descend from the misty cliff trail, or climb back up
-  from the narrow tunnel below; the passage works in both directions.
-
-&+CFair play, clear expectations&n
-&+Y-&n Read &+C'help rules'&n for the consolidated rules. Conflicting older
-  copies have been removed; &+C'help immortals'&n reflects the staff policy.
-  Staff may not actively play player characters; active players may not
-  serve as staff. This applies across all of a person's accounts and
-  characters: stop playing before joining staff, or step down to play.
-&+Y-&n Reporting a bug does not permit continued exploitation. Report bugs
-  with &+C'bug'&n and keep exploit details off public channels and boards.
-  Use &+C'petition'&n to ask staff about uncertain behavior or report abuse.
-&+Y-&n The rules explicitly cover harassment, threats, private information,
-  impersonation, account access, spam, false reports and punishment
-  evasion. PvP and corpse looting remain part of Duris; they do not excuse
-  misconduct. Keep disagreements civil and respect other players' privacy.
-&+Y-&n Unattended play and letting another player control your character
-  through triggers are prohibited. Check &+C'help robots'&n for client-action
-  limits and &+C'help multi-playing'&n for the limited inn-storage exception.
-  That exception does not allow alt assistance in combat, scouting,
-  travel or corpse retrieval. Ask staff before using uncertain automation.
-
-&+R10/15/26&n &+L-&n &+YThe winds have changed their treasures&n
-&+W----------------------------------------------------------------------&n
-
-&+Y-&n Hunting wind artifacts? &+MYan-C-Bin&n now carries the &+Mdagger of Wind&n,
-  while &+MAkadi&n carries the &+Msphere of wind&n. Their rewards have traded places.
-&+Y-&n The dagger's wind escape no longer triggers for monsters wielding it.
-&+Y-&n To unleash the sphere's whirlwind, wear it and &+C'rub sphere'&n.
-  Rubbing another item no longer sets it off. The whirlwind respects safe
-  rooms and avoids friendly targets; its &+Y500-second&n reuse time remains.
 &+Y-&n Reavers using &+MThrym's Icerazor&n now receive its intended extra cold
   damage while Coldshield is active. Slow no longer grants that bonus.
 
@@ -124,370 +73,85 @@ Earlier coverage, back to December 14, 2025, and the archive follow.
 &+Y-&n Ship panels refresh when you step onto a bridge and clear when you
   leave it. Room and item names no longer show stray escape backslashes.
 
-&+CReaching staff and planning your training&n
-&+Y-&n The optional staff-only Discord petition feed now shows your actual
-  character name, even when hidden or invisible. Staff replies identify
-  both characters there too. In-game visibility rules stay the same.
-  This replaces the earlier news about concealed names showing as Someone.
-&+Y-&n &+C'help epic skill cost'&n lists first-step and full-training prices,
-  including the extra cost when only your secondary class can learn a skill.
-  Ask your teacher for the exact cost of your next lesson.
-&+Y-&n Website hints and &+C'credits'&n have refreshed links and information.
-&+Y-&n MUD listing services can now read Duris's live player count and uptime.
-  This count includes connected mortals in the game, not staff.
-
-&+R10/14/26&n &+L-&n &+YBattle records and your website presence&n
+&+R10/14/26&n &+L-&n &+YHealing, area listings and hometown alarms&n
 &+W----------------------------------------------------------------------&n
 
-&+Y-&n New PvP battle records again retain each participant's level, class,
-  name, guild, race, equipment and public combat log as they were captured
-  before death. Long public logs now fit; older missing text is not restored.
-&+Y-&n New characters start with Web Info enabled. Use &+C'toggle webinfo off'&n
-  if you do not want the extra character details shown on the website.
-  Existing characters keep their saved setting.
-
-&+R10/14/26&n &+L-&n &+YPetitions can reach the Gods on Discord&n
-&+W----------------------------------------------------------------------&n
-
-&+Y-&n An optional staff-only Discord feed can now carry your accepted
-  &+C'petition'&n messages and staff replies, even with no Gods online.
-  Concealed names appear as Someone, and dollar signs stay as typed.
-  Delivery is best effort; Discord messages cannot reply into the game.
-  Your usual in-game petition controls and delivery still work as before.
-&+Y-&n Scheduled reboot warnings now show the reason supplied by staff.
-
-&+R10/14/26&n &+L-&n &+YEpic adventures at every level&n
-&+W----------------------------------------------------------------------&n
-
-&+Y-&n You can earn epic points at &+Yany level&n, including from enemy kills,
-  runestones and epic potions. The old level-50 earning requirement is gone.
-  Epic skill lessons still begin at &+Ylevel 30&n, with their usual costs and
-  other requirements.
-&+Y-&n &+C'score'&n shows your total earned epics and current task at every level.
-  If the Gods assign you a task, you can check it again after reconnecting.
-&+Y-&n An epic potion stays in your hand or pack if its award cannot be given.
-  A successful quaff consumes one potion and awards &+Y75 epic points&n.
-
-&+CRewards, training and recovery&n
-&+Y-&n Artifact and guild rewards now keep up correctly when you earn several
-  epic awards in quick succession, including across saves and reconnects.
-&+Y-&n Epic boons report whether points were actually awarded. Paid epic
-  training updates derived hit points and client displays immediately,
-  and announces when you master the skill.
+&+CRecovery and area listings&n
 &+Y-&n Healing correctly clears an incapacitated or stunned posture once
   you recover. Combat stops processing a strike when either fighter dies.
-&+Y-&n Area listings stay within their output limit and show corrected zone
-  averages. Help now covers &+C'web spray'&n, &+C'seadog'&n and &+C'quickstep'&n.
+&+Y-&n Area listings stay within their output limit.
 
-&+CHometown warnings and racial shrug&n
+&+CHometown warnings&n
 &+Y-&n Evil hometown invasion alarms are enabled, using the same alarm
   chances and timing as before. Good hometown alarms remain enabled.
-&+Y-&n Grey Elf shrug returns to &+Y30&n and Drow Elf shrug to &+Y38&n.
 
-&+R10/12/26 - 10/13/26&n &+L-&n &+YOld battle rhythms and earlier epic training&n
+&+R10/12/26 - 10/13/26&n &+L-&n &+YEarthen Grasp and recovery&n
 &+W----------------------------------------------------------------------&n
 
-&+CFive allies, one chance to open the next level&n
-&+Y-&n A qualifying kill now needs a base share of at least &+Y0.20 frag&n:
-  no more than &+Yfive&n of the killer's side may be in the room, including
-  the killer and ungrouped allies. Level-based frag bonuses cannot make
-  a larger force qualify. The timer, leading-side and victim-level
-  requirements still apply; &+C'fraglist'&n shows the current requirements.
-&+Y-&n Kills made before this update cannot unlock a level under the new rule.
-  Your existing frags and unlocked levels remain yours.
-
-&+CEpic lessons from level 30&n
-&+Y-&n You can begin learning epic skills at &+Ylevel 30&n, down from level 56,
-  if you meet the skill's other requirements and can pay its epic-point
-  and platinum costs. Use &+C'epic skills'&n to find the available teachers.
-  Earning new epic points still requires &+Ylevel 50&n; stone costs are unchanged.
-
-&+CYour race's familiar rhythm returns&n
-&+Y-&n Melee attacks become faster for Drow Elves, Grey Elves, Halflings,
-  Gnomes, Tieflings, Goblins, Driders and Kobolds.
-&+Y-&n Melee attacks become slower for Barbarians, Mountain Dwarves, Duergar
-  Dwarves, Ogres, Trolls, Thri-Kreen, Centaurs, Minotaurs and Firbolgs.
-  These restore the older racial melee rates. Racial spellcasting rates,
-  attributes and innate powers keep their current settings.
-&+Y-&n Newly created copies of affected equipment regain their old combat
-  and spell speed bonuses, replacing the attributes previously given
-  in exchange. &+WEquipment you already saved keeps its saved bonuses.&n
-&+Y-&n A spirit totem summoned at &+Ylevel 56&n or above once again improves
-  casting speed instead of granting the replacement &+Y3 Wisdom&n.
-
-&+CEarthen fists, recovery and connecting&n
+&+CEarthen fists and recovery&n
 &+Y-&n Greater Earthen Grasp gives victims a better chance to resist
   paralysis: the caster's Strength advantage has a smaller, capped
   influence on the save. Ordinary Earthen Grasp, including the Earth
   Reaver version, keeps its existing saves. Hold durations are unchanged.
 &+Y-&n Positive character regeneration returns to its normal baseline,
   removing the reduced recovery setting.
-&+Y-&n Browser connections handle delayed connection details correctly,
-  so login limits count your own address instead of confusing players
-  sharing the website's connection to the game.
-&+Y-&n &+C'help boon'&n now explains current boon requirements and rewards,
-  participation toggling, and how to spend boon shop stat points.
 
-&+R10/12/26&n &+L-&n &+YNew roads, sharper blades and a blood bargain&n
+&+R10/12/26&n &+L-&n &+YPrime shifting&n
 &+W----------------------------------------------------------------------&n
 
-&+CYour next level is your side's next victory&n
-&+Y-&n Good and Evil now unlock one level at a time. Once the timer expires,
-  the side leading in total frags needs a fresh qualifying frag to unlock
-  its next level. On equal totals, either side can claim the next unlock.
-&+Y-&n Levels between spell circles open for the winning side. Circle levels
-  &+Y31, 36, 41, 46, 51 and 56&n open for everyone. Other sides use that shared
-  cap. Each unlock starts a &+Ythree-day&n wait; an expired timer alone does
-  not grant a level. The old cap-unlock experience boon is gone.
-&+Y-&n The victim must be no more than &+Yfive levels&n below the shared cap, and
-  at least one individual gain must reach &+Y0.10 frag&n. Small shares from
-  several groupmates do not add together to meet that minimum. Check
-  &+C'fraglist'&n for both sides' caps and the timer. Hardcore keeps its
-  &+Ytwo-level&n allowance, with &+Y56&n still the maximum. Existing caps carry
-  over; future new seasons begin with level &+Y30&n open to everyone.
-
-&+CAnti-paladins: let the enemy pay your group&n
-&+Y-&n Dark Knights and Demonic Riders gain the &+Y10th-circle&n spell
-  &+C'blood tithe'&n. Cast it on yourself: enemy damage builds malice that
-  boosts your player groupmates' weapon and spell damage in the same room.
-  The caster receives no bonus. &+C'score'&n shows the available group bonus.
-&+Y-&n At full charge, up to three groupmates gain &+Y12%&n damage. Larger groups
-  share a smaller benefit: about &+Y9%&n with five, &+Y7%&n with eight and &+Y5%&n with
-  fifteen. The bonus is halved against players. Only the strongest tithe
-  applies; tithe casters and allies under Battle Lust gain no tithe bonus.
-&+Y-&n Each hit feeds at most &+Y5%&n of your maximum hit points into malice, which
-  loses &+Yone quarter&n each combat round. Sustaining full charge takes about
-  &+Y15%&n of your maximum hit points in enemy damage per round. Your group,
-  its pets and players of your own side cannot feed it. The spell lasts
-  &+Y15 ticks&n plus one per ten points of Devotion.
-
-&+CFreedom of Movement: lasting footing, later training&n
-&+Y-&n Freedom of Movement moves to &+Y11th circle, level 51&n for Druids,
-  Blighters, Clerics, Bards, Reavers and Rangers. Previously prepared
-  copies no longer bypass your current spell-circle eligibility.
-&+Y-&n While the spell lasts, takedown chances are multiplied by &+Y0.80&n and
-  backstab chances by &+Y0.70&n. Takedowns no longer consume the spell for an
-  outright block. Its protections against bindings and webbing still can
-  exhaust it. Land travel costs &+Yone move&n per room; water costs half the
-  usual movement, with a minimum of one.
-
-&+CSwashbucklers and a better-aimed sweep&n
-&+Y-&n Swashbucklers' attacks are harder to parry. Triple Attack arrives at
-  &+Ylevel 41&n with a &+Y90%&n training cap, and Vicious Attack's cap rises to
-  &+Y100%&n at level 56. Dual Wield remains at level 30.
-&+Y-&n Legsweep now works against a foe one size category smaller or larger,
-  at &+Y75%&n of the normal chance. A bigger size gap still topples the sweeper.
-
-&+CA flight map you earn by exploring&n
-&+Y-&n Use &+C'list'&n at each of &+Y25 ordinary flight carriers&n to learn its stop
-  and earn discovery experience once per character. &+C'flights'&n shows your
-  discoveries anywhere, even in the air. Save and relog retain them; a
-  new season resets them. Alts discover their own routes.
-&+Y-&n Carriers list learned destinations in distance order. &+C'buy <number>'&n
-  buys the matching ticket; &+C'give ticket <carrier>'&n boards that same
-  waiting carrier. Ordinary fares are &+Yhalf a platinum per room flown&n,
-  with no minimum or maximum, level limit or race restriction. You must
-  see the carrier. Passing a ticket to an alt does not teach the stop;
-  old route tickets may need replacing.
-&+Y-&n Discovery rewards grow with your discoveries: your current EXP-gain
-  cap times the number of stops learned, divided by &+Y27&n, before normal
-  racial, rested and difficulty adjustments and limits. You still learn
-  a stop when unable to gain EXP; no repeat reward is saved for later.
-&+Y-&n Extra Destinations remain separate one-way journeys: Storm Port's
-  Stronghold costs &+Y10 platinum&n; the Snow Ogres cavern approach costs
-  &+Y50 platinum&n; the Desolate Island approach to Scorched costs &+Y200&n.
-  Both epic trips require &+Ylevel 51&n. Their departure dragons and entrances
-  are outside the ordinary network, with no passenger return service.
-
-&+CShifting home and sailing for profit&n
+&+CShifting home&n
 &+Y-&n Githyanki, Illithid and Pillithid prime shifting now includes Clavikord,
   Bugentolen, Storm Port and Quietus Quay in place of Killing Fields,
   Drustl, Crescent Chasm and Kelek. Each picks an eligible room in that
   area, avoiding private, protected, hometown, ocean and groundless rooms.
   &+C'innate shift_prime'&n requires the Astral Plane, no combat and no PvP
   adrenaline. Missing destinations now fail cleanly.
-&+Y-&n Deramuth cargo and contraband prices now follow measured sailing
-  distances in both directions. Recheck your trade routes: &+Ycargo already
-  aboard sells at the new prices&n, too.
-&+Y-&n Racial innate help now lists active abilities, unlock levels and
-  command names more accurately, including Web Spray and shade movement.
 
-&+R10/11/26&n &+L-&n &+YHooves, webs and a few convincing doubles&n
+&+R10/11/26&n &+L-&n &+YTrue names and monster resistance&n
 &+W----------------------------------------------------------------------&n
 
-&+CNew tricks for old races&n
-&+Y-&n Centaurs gain a more useful &+C'stampede'&n at &+Ylevel 21&n. Both that command and
-  &+C'innate stampede'&n work during combat and can knock down and stun enemies
-  already fighting someone else. They do not force those enemies to target
-  you; a stunned foe whose fight breaks resumes when its opponent hits it.
-&+Y-&n Stampede is player-only, with a &+Y60-second&n cooldown. You need footing, the
-  front rank and a room wider than single file. Failing those requirements
-  spends no cooldown. Enemies in a group's back rank always dodge.
-&+Y-&n Driders at &+Ylevel 31&n can use &+C'innate web_spray <target>'&n. A hit leaves
-  &+Y30 seconds&n of undispellable webbing that drains movement each combat
-  round: &+Y3 moves&n at level 31, rising to &+Y7&n at level 56. Another hit refreshes
-  the web instead of stacking it.
-&+Y-&n Web Spray has a &+Y5-minute&n cooldown and &+Yone combat round&n of recovery. Level
-  and agility affect your hit chance; Freedom of Movement and Evade can stop
-  it. A valid attempt starts combat even if it misses or is defended. Each
-  completed room move gives the victim a &+Y10%&n escape chance, including
-  movement while mounted.
-&+Y-&n Gnomes and Kobolds at &+Ylevel 31&n can use &+C'innate reflection'&n on themselves.
-  It creates one image at level 31, two at 36, three at 41 and four from 46,
-  drawing attackers onto a double. It has a &+Y5-minute&n cooldown and
-  &+Yone combat round&n of recovery. An existing summoned titan blocks it without
-  spending either.
-
 &+CNames and commands&n
-&+Y-&n A command argument with an unfinished quote no longer repeats its own text
-  while being interpreted.
 &+Y-&n &+CReveal True Name&n handles random weapons with unfamiliar spell effects
   without risking a crash.
 
-&+CYour racial strengths have shifted&n
-&+Y-&n These are &+Yracial stat multipliers&n, not flat points added to your score.
-  The new values replace the old ones below; race help has been updated too.
-&+Y-&n Mountain Dwarves: dexterity &+Y95% to 100%&n, agility &+Y85% to 95%&n. Duergar:
-  dexterity &+Y90% to 100%&n, agility &+Y90% to 95%&n, constitution &+Y135% to 125%&n,
-  intelligence &+Y75% to 85%&n and wisdom &+Y130% to 125%&n.
-&+Y-&n Trolls: agility &+Y100% to 90%&n, intelligence &+Y75% to 70%&n and wisdom
-  &+Y90% to 95%&n. Trolls also lose their racial &+RGroundfighting&n innate.
-&+Y-&n Centaurs: wisdom &+Y100% to 110%&n. Tieflings: strength &+Y110% to 100%&n and luck
-  &+Y110% to 95%&n.
-&+Y-&n Driders: strength &+Y95% to 120%&n, constitution &+Y115% to 120%&n, power &+Y85% to 90%&n
-  and intelligence &+Y100% to 110%&n.
-
-&+CSpell preparation: mind the race you choose&n
-&+Y-&n The racial part of spell preparation has been retuned. Lower percentages
-  mean faster preparation; your spell, class and other modifiers still
-  matter. The new racial factors are:
-&+Y-&n Gnome and Kobold &+Y70%&n; Halfling and Goblin &+Y73%&n; Drow and Grey Elf &+Y82%&n;
-  Mountain Dwarf, Duergar, Githyanki and Githzerai &+Y85%&n; Tiefling &+Y87.5%&n.
-  These races prepare spells faster than before.
-&+Y-&n Centaur and Drider &+Y109%&n; Minotaur &+Y115%&n; Barbarian and Troll &+Y122%&n; Ogre and
-  Firbolg &+Y131%&n. These races prepare spells more slowly than before. Human,
-  Orc and Thri-kreen remain at &+Y100%&n.
+&+CMonster spell resistance&n
 &+Y-&n Several monster races have their stronger spell resistance restored:
   Illithids, monster Vampires, Demons, Devils, Dragons, Beholders and
   Shadows. &+WPlayable Vampires keep their existing resistance.&n The &+CRrakkma&n
   group bonus now follows its configured resistance increase correctly.
 
-&+R10/05/26 - 10/10/26&n &+L-&n &+YClearer conversations, steadier footing&n
+&+R10/05/26 - 10/10/26&n &+L-&n &+YBoards, falls and steadier play&n
 &+W----------------------------------------------------------------------&n
 
-&+CKingdoms take a rest&n
-&+Y-&n &+WKingdoms are disabled in the shipped configuration.&n Kingdom commands,
-  upkeep and resource harvesting are inactive while that switch is off, and
-  ordinary guildhall placement is available again. The September kingdom
-  workshop and store announcements below describe the earlier rules, not a
-  service enabled by default now.
-
-&+CYour conversations and your privacy&n
-&+Y-&n Tells, whispers, asks, says, emotes, projects, beeps, guild and alliance
-  chat, jchat and shouts are no longer saved as chat transcripts by the
-  game. Their message text is also withheld from the command debug log.
-  &+WPetitions, nchat and staff commands remain logged.&n See &+C'help channels'&n for
-  who hears each channel.
-&+Y-&n Ordinary staff snooping now tells you when it starts and ends, and records
-  those actions.
-  &+WLevel-62 staff retain an audited silent-snoop option requiring a reason.&n
-  Staff can no longer read another player's recall history. Your own
-  &+C'recall'&n and the Channel spell's shared sight are unchanged.
-&+Y-&n Stored network addresses now age out after &+Y30 days&n since their last use,
-  with cleanup running hourly. Temporary address-lookup files are removed
-  when connections close. Addresses on the ban list remain while the ban
-  does.
-
 &+CWatch that first step&n
-&+Y-&n Once you are falling, movement and most commands are refused until you
-  land. You see each downward tumble, so a queued walk cannot quietly turn a
-  canyon fall into a landing at the inn. A teleport onto solid ground ends
-  the old fall; a teleport into open air starts a new one there.
-&+Y-&n Short falls hurt less: the flat part of impact damage now grows with the
-  fall's speed. Long falls, the minimum damage and Safe Fall retain their
-  rules. Faang's canyon-wall rooms no longer admit wandering monsters,
-  though the spiders still roam the surrounding area.
-&+Y-&n Broken downward loops no longer leave you falling forever. The northern
-  wilderness chasm now leads to its bottom, and the Pocket of Exile lands
-  you on its disc of force.
+&+Y-&n Broken downward loops no longer leave you falling forever.
 
-&+CQuests, boards and familiar faces&n
-&+Y-&n Artifacts and outposts created during boot now keep their stored records,
-  and artifact lists fill correctly after the world has finished loading.
-&+Y-&n Zone-story achievements now put quest givers in their actual areas. This
-  reunites progress that had split into nameless "This area" rows and
-  corrects the count of fully completed zones. &+C'achievements zones'&n lists
-  areas where you have completions, most completed first, with ties sorted
-  by name.
-&+Y-&n &+C'achievements zone <area>'&n now accepts area names properly, including
-  multiword names. World-quest reward messages show the XP you actually
-  receive, rather than an amount that ignores your modifiers or limits.
-&+Y-&n Your bartender-quest allowance waits for your history to load before
-  appearing in &+C'score'&n or your client's quest panel. The panel then updates
-  automatically, instead of staying blank or displaying -1.
-&+Y-&n The Black Pearl's pirates, quest characters and special items have their
-  missing behavior restored, including Long John Silver's companions and the
-  dragonslayer. Charing's quest givers, city services and Royal Stables work
-  again, as do the City of Brass's Staff of Blue Flames and Ring of
-  Elemental Control.
-&+Y-&n Charing and the City of Brass now enforce their intended guild, temple and
-  palace entrances: guards that had been standing idle once again check who
-  may pass. The relocated CBL hall's inner sanctum also works as an inn
-  again.
+&+CQuests and boards&n
+&+Y-&n World-quest reward messages show the XP you actually receive, rather
+  than an amount that ignores your modifiers or limits.
 &+Y-&n Boards now answer only where they stand. Empty or aborted posts cannot
   borrow another board's text after a restart, and blank headlines no longer
   exhaust the shared message supply. Long headlines are safely limited to
   &+Y70 characters&n. A failed board save preserves its previous file; a damaged
   board no longer stops the whole game from starting.
 
-&+CGear, clients and everyday play&n
-&+Y-&n New CHAOS Centaurs receive their horse-body kit piece, and Driders receive
-  their spider-body piece. Those slots were being checked before their
-  level-one racial abilities existed.
+&+CGear and everyday play&n
 &+Y-&n Firbolgs, Tieflings, Wood Elves, Kuo-toa and Pillithids are no longer
   mistaken for other races by equipment restrictions. They can use gear with
   a deny list that does not name them, but do not qualify for gear
   restricted to a list of other races.
-&+Y-&n Large shop listings now arrive complete, including with paging off. An
-  invalid item in stock no longer hides all the items after it.
-&+Y-&n Relogging after an item handover and a crash no longer revives an older
-  copy in the giver's inventory. Pending paid deliveries also keep the
-  ownership information they need to reach you.
+&+Y-&n An invalid item in a shop's stock no longer hides all the items after
+  it.
 &+Y-&n A damaged character save is refused as damaged instead of being mistaken
   for an empty character.
-&+Y-&n When your pet kills something that drops random equipment, &+Wyou&n receive the
-  salvage notice. The roll still uses the pet's level and luck.
-  &+C'help random equipment'&n now recognizes that full phrase.
 &+Y-&n Busy moments no longer add every delayed casting segment onto the next
   one. Casts aim for their intended completion time, although a busy server
   can still delay the final segment.
-&+Y-&n Monster regeneration and spell expiration are spread through the tick to
-  reduce recurring pauses. Monster affects still count down once per tick,
-  but may end at a different point within it. Player timers, including
-  shapechanged players, keep their normal tick timing.
-&+Y-&n An address may hold up to &+Y8&n connections that have not logged in; an IPv6
-  /64 shares that allowance. Login prompts close after &+Y2 minutes&n without
-  input, except an emailed reset-code wait, which keeps &+Y15 minutes&n. Reaching
-  the connection limit does not ban you.
-&+Y-&n Website logins behind the trusted proxy no longer close unrelated players'
-  login windows. Active website login messages refresh the idle timer, so
-  taking time to sign in does not disconnect you while you are still typing
-  requests.
 &+Y-&n Connection handling now avoids a server crash on a banned connection and
   releases the resources of refused secure connections.
-&+Y-&n &+C'time'&n reports the server's actual timezone. Shutdown notices appear once,
-  with their colors rendered, and the farewell now closes Duris like a book
-  of starlight.
 &+Y-&n Finishing or abandoning a text edit no longer wastes memory with every use
   or risks a crash when closing an edit.
 &+Y-&n Kick messages now match insect, aquatic and beholder victims correctly.
-&+Y-&n The welcome, credits and staff list now identify this Duris port. The
-  rules point you to Discord or &+C'petition'&n for staff help with bugs;
-  multiplaying and robots remain prohibited.
-&+Y-&n The project hub and Power Atlas now point to the maintained Duris site.
-  Find the main website at &+Chttps://duris.sbs/&n and the documentation and
-  atlas at &+Chttps://luminarimud.github.io/Duris/&n. The project site's
-  navigation also fits narrow phone screens.
 
 &+R09/28/26 - 10/04/26&n &+L-&n &+YYour belongings, your boat, your next adventure&n
 &+W----------------------------------------------------------------------&n
@@ -498,145 +162,61 @@ Earlier coverage, back to December 14, 2025, and the archive follow.
   and resurrection no longer wait on the old recovery holds. Quit, rent and
   camp return you to the account menu without waiting for the save to
   finish.
-&+Y-&n &+C'empty'&n checks item restrictions before moving anything, but a container
-  that runs out of room can receive only part of the load. The rest stays in
-  the source. The older promise of an all-or-nothing transfer no longer
-  applies to a capacity limit.
-&+Y-&n Ordinary charmed creatures can receive gear again under the usual give
-  restrictions. Crafted or forged items still cannot be given to monsters.
-  The September restriction on giving saved gear to ordinary charmies has
-  gone.
-&+Y-&n &+WAn abrupt crash can lose recent unsaved progress.&n Use &+C'save'&n when you want
-  a checkpoint: "Save complete" now means the save has actually been
-  written. A clean shutdown saves what it can within its time limit; a
-  copyover that cannot finish its saves is called off.
-&+Y-&n The old death-restitution system has been removed, including its
-  deleted-character recovery bags and locker notices. That September
-  announcement is historical. Full-world recovery is also &+Woff by default&n;
-  saved characters, pets, corpses, lockers, banks and shops do not depend on
-  it. Ordinary ground loot is not a substitute for storage.
-&+Y-&n Item transfers and destruction now leave fewer stale copies behind: an
-  item destroyed after an older save stays destroyed. Spellbooks keep every
-  recorded spell instead of only the last entry.
+&+Y-&n Use 'save' when you want a checkpoint: "Save complete" now means the
+  save has actually been written.
+&+Y-&n Spellbooks keep every recorded spell instead of only the last entry.
 &+Y-&n Carrying an item with a very long world description no longer prevents
   your whole character from saving.
 &+Y-&n The idle-connection timeout that could leave all later saves and loads
-  waiting forever has been fixed. Account screens, listings and other stored
-  information are also read without holding up everyone's commands; a
-  requested list may take a moment to arrive.
+  waiting forever has been fixed.
 
 &+CLockers, corpses and raised companions&n
 &+Y-&n Shopkeepers keep the right stock with the right shop through saves and
   recovery, including shops that share a keeper type. Quest and tradeskill
   shopkeepers now save their stock too.
 &+Y-&n A save while you are inside a locker now saves its contents too and
-  remembers the room outside its door for your next login. Leaving during an
-  earlier save no longer replaces newer locker contents with an older
-  version.
-&+Y-&n Items added to a player corpse with &+C'put'&n, &+C'put all'&n or &+C'empty'&n are now
-  saved with that corpse, so the additions survive a restart.
+  remembers the room outside its door for your next login.
 &+Y-&n Raised undead, golems, titans, avatars and dracoliches now carry the items
   from their corpse again instead of handing the gear to the caster. Your
   owned pet's save includes that gear. Hidden monster-only pieces remain
   unequippable, even when ordered by keyword.
-&+Y-&n Corpses containing older coin piles can be raised again, and raising a
-  corpse no longer leaves a second saved corpse behind. Saving an offline
-  character for staff or artifact maintenance no longer erases pets that
-  were not loaded for that task.
-&+Y-&n &+WCoins in your purse now go into your corpse when you die.&n Picking up a
-  pile too large for your purse leaves the pile intact, and retrying a bank
-  deposit or withdrawal no longer applies it twice.
+&+Y-&n Corpses containing older coin piles can be raised again.
 
 &+CAuctions, rewards and progress&n
 &+Y-&n Removing an auction now returns the winning bidder's money through
-  &+C'auction pickup'&n. Bids and listing fees are reserved when you submit them
-  and returned if the request fails. A buy-now bid returns any excess over
-  the price.
-&+Y-&n To raise your own bid, have the &+Yfull new bid&n available while the bid is
-  processed; only the increase is ultimately charged. An item you list
-  leaves your inventory while the listing is processed and comes back if the
-  listing is refused.
-&+Y-&n Your selected epic bonus now returns on login and copyover. You no longer
-  need to choose it again or restart its timer to make it work; while it is
-  being read, the display says it is loading.
-&+Y-&n Earning epics while wearing an artifact now feeds the artifact and credits
-  guild prestige correctly. Artifact lists reflect the new feeding timers.
-  When an offline owner's artifact expires, their other belongings stay with
-  them instead of dropping onto the floor.
-&+Y-&n Spending a boon-shop stat point on a stat already at &+Y100&n now returns the
-  point. Boon extensions and reactivations announce their result, and author
-  filters in &+C'boon list'&n handle names containing apostrophes.
-&+Y-&n Daily world-quest and shop/quest trophy counts now agree on the &+YUTC day&n,
-  preventing an extra reset at local midnight. Poll creation, voting and
-  expiry also use the correct times again.
+  'auction pickup'.
 &+Y-&n Very large item values no longer wrap around to a zero price, including
   the Dark Sun's cargo hold.
 &+Y-&n Map updates no longer risk a crash because another character has quit or
   rented and is sitting at the account menu.
 &+Y-&n Quest tag changes, achievement checks, missing polls and artifact repairs
   have guards against missing data that could crash the game.
-&+Y-&n Jewels supplied in a CHAOS pouch can be used for encrusting again.
-  &+CEmbrace Death&n once more adjusts its bonus as your wounds change and
+&+Y-&n Embrace Death once more adjusts its bonus as your wounds change and
   removes that bonus when you heal.
-&+Y-&n Areas that do not reset on the normal schedule now use their own
-  repopulation chance, rather than another area's setting.
 
-&+CNames and accounts stay together&n
-&+Y-&n A character rename now carries your account listing, ship ownership,
-  personal locker, locker permissions, guild roster and leaderboard credit
-  with it. Old broken account listings are repaired on login. Your old
-  corpse still belongs to you for resurrection and your map marker, even
-  though its name does not change.
-&+Y-&n You cannot delete a character who is still in the game. A refused deletion
-  keeps guilds and ships intact, and a newly created character cannot
-  inherit a deleted character's identity or possessions. Characters can also
-  be deleted when zone-story tracking is disabled and they have no stored
-  story progress.
-&+Y-&n After a copyover, quitting returns you to the correct account even when
-  its name differs from your character's. Racewar side-change waiting times
-  survive relogging, and character-creation locks apply to both native and
-  website creation.
+&+CCharacters&n
+&+Y-&n Characters can be deleted when zone-story tracking is disabled and they
+  have no stored story progress.
 
-&+CCaptains: altitude finally counts&n
-&+Y-&n Flying ships now sit &+Y4 squares&n above the water for weapon range. A surface
-  ship three squares away is five squares from a flying ship; surface
-  weapons with reach &+Y4 or less&n cannot hit it. Two flying ships remain level
-  with one another.
-&+Y-&n &+CShip Damage Control&n now reduces hull and sail hits while the owner is
-  aboard. Warship sails also take &+Y15% less damage&n before that skill's
-  reduction, with at least one point of damage still getting through.
-&+Y-&n &+C'look sight'&n and firing messages show the actual hit percentage from the
+&+CCaptains&n
+&+Y-&n Ship Damage Control now reduces hull and sail hits while the owner is
+  aboard.
+&+Y-&n 'look sight' and firing messages show the actual hit percentage from the
   ship combat roll. The displayed odds changed, not the hit roll itself.
-  Counter-ram damage now uses the defending ship's own ram and hull.
 &+Y-&n Speed now affects your chance of crashing into the coast, so slow down
   before docking. Disembarking checks your actual position on the ship
   instead of sometimes rejecting an edge room as the middle.
-&+Y-&n A ship sunk by a fleet now loses the &+Wfull frag penalty&n. The victorious
-  ships still divide the reward among themselves.
 
 &+CTrade, ownership and a berth to come home to&n
 &+Y-&n Contraband bought repeatedly at the same port stacks with that port's
-  contraband already aboard. Captains at &+Y1000 alignment&n can no longer buy
-  it. A shipwright's summons quote now matches the amount charged, rather
-  than quoting twice the price.
-&+Y-&n Cargo-market swings are bounded to &+Y90% to 115%&n of their neutral modifier;
-  contraband uses &+Y85% to 130%&n. These limits apply to the market's price
-  adjustment, not to the entire value of a cargo load.
+  contraband already aboard. A shipwright's summons quote now matches the
+  amount charged, rather than quoting twice the price.
 &+Y-&n The game saves the ship you own even when you are aboard someone else's.
-  Restarts load all stored ships rather than stopping at the first hundred,
-  and old summons are cleared when a ship returns.
-&+Y-&n A full ship-room pool no longer silently loses a stored ship. Placement
-  retries when space opens, and hull changes check for room before charging
-  you or refund the cost if the room disappears during the purchase. Failed
+  Old summons are cleared when a ship returns.
+&+Y-&n A full ship-room pool no longer silently loses a stored ship. Failed
   saves no longer turn an existing vessel into a second new ship.
 &+Y-&n Boarding pirates now appear inside the ship they attacked, rather than
-  another vessel's rooms. Client ship panels show the people actually
-  aboard, the proper maximum sails for the hull and readable status text.
-&+Y-&n Ship help now gives the actual firing arcs: &+Y80 degrees&n fore and aft,
-  &+Y100 degrees&n on each side. Ships turn faster at speed; maneuvering into a
-  berth requires speed &+Y20 or below&n. Use &+C'repair weapon <slot number>'&n for a
-  weapon or &+C'repair all'&n for everything. Help for ship NPCs, weapons and
-  &+C'toggle shipmap'&n is now available.
+  another vessel's rooms.
 
 &+R09/21/26 - 09/27/26&n &+L-&n &+YFerry fares and the earth beneath your feet&n
 &+W----------------------------------------------------------------------&n
@@ -825,7 +405,7 @@ Earlier coverage, back to December 14, 2025, and the archive follow.
 &+Y-&n The interactive &+CPower Atlas&n now includes all &+Y56&n legal Human and Orc
   multiclass pairings, compared at levels &+Y21&n, &+Y31&n, &+Y46&n,
   &+Y50&n and &+Y56&n. Browse it at:
-  &+Chttps://luminarimud.github.io/Duris/power-atlas/&n
+  &+Chttps://community-duris.github.io/Duris/power-atlas/&n
 
 &+CLogin, clients and everyday stability&n
 &+Y-&n Login and reconnect are more resilient: a temporary problem loading
