@@ -15,6 +15,7 @@
 #include <strings.h>
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
+#include "world/zone_story_quest_runtime.h"
 
 /*
    external vars
@@ -31,6 +32,17 @@ extern int top_of_zone_table;
 extern struct time_info_data time_info;
 extern struct zone_data *zone;
 extern struct zone_data *zone_table;
+
+namespace
+{
+void record_bordello_hire(P_char npc, P_char player, bool pet_created)
+{
+	if (pet_created && npc->following == player && GET_MASTER(npc) == player &&
+	    IS_AFFECTED(npc, AFF_CHARM))
+		zone_story_quest_runtime::record_scripted_completion(player, npc, "bordello",
+								     "hire-companion");
+}
+}
 
 int troll_slave(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
@@ -485,10 +497,12 @@ int sex_crazed_prostitute(P_char ch, P_char pl, int cmd, char *arg)
 					    FALSE, pl, 0, ch, TO_CHAR);
 					act("$N walks up to $n, engages in a brief exchange, and kisses $m eagerly.",
 					    TRUE, pl, 0, ch, TO_NOTVICT);
-					setup_pet(ch, pl, 10, 0);
+					bool pet_created = false;
+					setup_pet(ch, pl, 10, 0, &pet_created);
 					if (ch->following)
 						stop_follower(ch);
 					add_follower(ch, pl);
+					record_bordello_hire(ch, pl, pet_created);
 				}
 			}
 			return (TRUE);
@@ -691,10 +705,12 @@ int well_built_prostitute(P_char ch, P_char pl, int cmd, char *arg)
 					    FALSE, pl, 0, ch, TO_CHAR);
 					act("$N walks up to $n, engages in a brief exchange, and kiss eagerly.",
 					    TRUE, pl, 0, ch, TO_NOTVICT);
-					setup_pet(ch, pl, 10, 0);
+					bool pet_created = false;
+					setup_pet(ch, pl, 10, 0, &pet_created);
 					if (ch->following)
 						stop_follower(ch);
 					add_follower(ch, pl);
+					record_bordello_hire(ch, pl, pet_created);
 				}
 			}
 			return (TRUE);
@@ -898,11 +914,13 @@ int sleezy_prostitute(P_char ch, P_char pl, int cmd, char *arg)
 					    FALSE, pl, 0, ch, TO_CHAR);
 					act("$N walks up to $n, engages in a brief exchange, and kiss eagerly.",
 					    TRUE, pl, 0, ch, TO_NOTVICT);
-					setup_pet(ch, pl, 10, 0);
+					bool pet_created = false;
+					setup_pet(ch, pl, 10, 0, &pet_created);
 
 					if (ch->following)
 						stop_follower(ch);
 					add_follower(ch, pl);
+					record_bordello_hire(ch, pl, pet_created);
 				}
 			}
 			return (TRUE);

@@ -1,0 +1,570 @@
+{
+  "schema_version": 3,
+  "revision": 3,
+  "source_area": "harrow",
+  "coverage": "complete",
+  "introduction": "Visit Harrow's artists and craftspeople, return a lost ring, commission Alorka's creations and explore the village's stranger corners.",
+  "orientation": [
+    "A young girl has lost the ring her father made. Ask her about lost, ring or sad, then search the gardens. Her thank-you token can pay for one of Alorka's crafts.",
+    "Ask Alorka about craft or list. Each creation needs a token and two more ingredients. Four creations mean four tokens; you can return on later visits or obtain materials from other adventurers.",
+    "Alorka offers a glass horn, a robe of many colors, a swirling wand of light and a lucky alchemist sack. Choose the ingredients for the creation you want.",
+    "Bom Fitherwood, by the lake, would like a painting for his cabin. Ask him about fish or trade. He wants the artists' near-finished painting and offers fish in return.",
+    "The unusual fishbowl leads to a world of its own. Bring fish food to a goldfish there, and remember where you entered.",
+    "A leprechaun has promised a lucky clover for a pot of gold. His home is secluded; the journal has no verified ordinary route to offer yet.",
+    "Carry the requested items loose in your inventory. An earlier quest reward can supply a later request, but you still need the actual item when you make the offering."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 29418,
+      "name": "a young girl",
+      "keyword": "girl",
+      "description": "A young girl is searching for the ring her father made.",
+      "topics": [
+        "lost",
+        "ring",
+        "sad"
+      ]
+    },
+    {
+      "mob_vnum": 29421,
+      "name": "Alorka",
+      "keyword": "alorka",
+      "description": "Alorka crafts unusual treasures in his workshop. Ask him for his list of recipes.",
+      "topics": [
+        "treasure",
+        "craft",
+        "list"
+      ]
+    },
+    {
+      "mob_vnum": 29444,
+      "name": "Bom Fitherwood",
+      "keyword": "bom",
+      "description": "Bom fishes beside the lake and would like a painting for his cabin.",
+      "topics": [
+        "fish",
+        "artsy",
+        "items",
+        "trade",
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 29449,
+      "name": "a goldfish",
+      "keyword": "goldfish",
+      "description": "A hungry goldfish welcomes fish food.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 29454,
+      "name": "a leprechaun",
+      "keyword": "leprechaun",
+      "description": "A pipe-smoking leprechaun offers a lucky clover for a pot of gold.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 29422,
+      "name": "a lonely bard",
+      "keyword": "bard",
+      "description": "The lonely bard has the stylish horn used in one of Alorka's creations.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 29428,
+      "name": "an art instructor",
+      "keyword": "instructor",
+      "description": "The art instructor wears a simple robe.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 29434,
+      "name": "Brwra the head glassblower",
+      "keyword": "brwra",
+      "description": "Brwra works at the glassblowers and carries a jagged piece of glass.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 29438,
+      "name": "a sleeping artist",
+      "keyword": "artist",
+      "description": "The sleeping artists have a near-finished painting and a pretty doll.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 29440,
+      "name": "an artist",
+      "keyword": "artist",
+      "description": "A working artist tends to a near-finished painting.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 29450,
+      "name": "a whale",
+      "keyword": "whale",
+      "description": "A whale in the fishbowl carries the pot of gold.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 29404,
+      "name": "Lomya the crafter",
+      "keyword": "lomya",
+      "description": "Lomya sells sacks, including the leather alchemist sack Alorka uses.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 29429,
+      "name": "Torker Knotwood",
+      "keyword": "torker",
+      "description": "Torker sells craft supplies, including faerie dust.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 29406,
+      "name": "a small child",
+      "keyword": "child",
+      "description": "Small children play with scraps of cloth.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "ring-token",
+      "title": "Young girl: recover the lost ring",
+      "category": "story",
+      "summary": "Find the girl's lost ring and return it. Her token of thanks can be used for one of Alorka's creations.",
+      "contracts": [
+        {
+          "giver_vnum": 29418,
+          "completion_key": "give=I:29405;receive=I:29406;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "ring",
+          "text": "Carry the sapphire ring",
+          "kind": "carried_item",
+          "item_vnums": [
+            29405
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Search the gardens for the ring the girl lost. Carry it loose in your inventory for the offering."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the request",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 29418,
+              "completion_key": "give=I:29405;receive=I:29406;disappear=1"
+            }
+          ],
+          "hint": "Offer the requested materials together to the quest giver."
+        }
+      ]
+    },
+    {
+      "id": "glass-horn",
+      "title": "Alorka: the rose glass horn",
+      "category": "story",
+      "summary": "Offer a fresh token, stylish horn and jagged glass together for the rose-colored glass horn.",
+      "contracts": [
+        {
+          "giver_vnum": 29421,
+          "completion_key": "give=I:29406,I:29407,I:29414;receive=I:29416;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "earlier-ring",
+          "text": "Optional earlier route: return the girl’s ring",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 29418,
+              "completion_key": "give=I:29405;receive=I:29406;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "The girl rewards her ring with a token. A token supplied by another adventurer also works."
+        },
+        {
+          "id": "token",
+          "text": "Carry a fresh token",
+          "kind": "carried_item",
+          "item_vnums": [
+            29406
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Return the lost ring for a token, or obtain a matching token from another adventurer. Each craft spends one token. Carry it loose in your inventory for the offering."
+        },
+        {
+          "id": "stylish-horn",
+          "text": "Carry the stylish horn",
+          "kind": "carried_item",
+          "item_vnums": [
+            29407
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The lonely bard has the stylish horn Alorka needs. Carry it loose in your inventory for the offering."
+        },
+        {
+          "id": "glass",
+          "text": "Carry the jagged glass",
+          "kind": "carried_item",
+          "item_vnums": [
+            29414
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Brwra the head glassblower carries the jagged glass. Carry it loose in your inventory for the offering."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the request",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 29421,
+              "completion_key": "give=I:29406,I:29407,I:29414;receive=I:29416;disappear=0"
+            }
+          ],
+          "hint": "Offer the requested materials together to the quest giver."
+        }
+      ]
+    },
+    {
+      "id": "many-colors-robe",
+      "title": "Alorka: the robe of many colors",
+      "category": "story",
+      "summary": "Offer a fresh token, exact spider silk and simple robe together for the robe of many colors.",
+      "contracts": [
+        {
+          "giver_vnum": 29421,
+          "completion_key": "give=I:29406,I:29410,I:29415;receive=I:29417;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "earlier-ring",
+          "text": "Optional earlier route: return the girl’s ring",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 29418,
+              "completion_key": "give=I:29405;receive=I:29406;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "The girl rewards her ring with a token. A token supplied by another adventurer also works."
+        },
+        {
+          "id": "token",
+          "text": "Carry a fresh token",
+          "kind": "carried_item",
+          "item_vnums": [
+            29406
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Return the lost ring for a token, or obtain a matching token from another adventurer. Each craft spends one token. Carry it loose in your inventory for the offering."
+        },
+        {
+          "id": "silk",
+          "text": "Carry the spider silk",
+          "kind": "carried_item",
+          "item_vnums": [
+            29410
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Search the dead-end tunnel for spider silk. Carry it loose in your inventory for the offering."
+        },
+        {
+          "id": "robe",
+          "text": "Carry the simple robe",
+          "kind": "carried_item",
+          "item_vnums": [
+            29415
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The art instructor wears the simple robe Alorka needs. Carry it loose in your inventory for the offering."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the request",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 29421,
+              "completion_key": "give=I:29406,I:29410,I:29415;receive=I:29417;disappear=0"
+            }
+          ],
+          "hint": "Offer the requested materials together to the quest giver."
+        }
+      ]
+    },
+    {
+      "id": "wand-of-light",
+      "title": "Alorka: the swirling wand of light",
+      "category": "story",
+      "summary": "Bring Alorka a token, a scrap of cloth and the pretty doll. He rewards the offering with a swirling wand of light.",
+      "contracts": [
+        {
+          "giver_vnum": 29421,
+          "completion_key": "give=I:29406,I:29413,I:29419;receive=I:29418;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "earlier-ring",
+          "text": "Optional earlier route: return the girl’s ring",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 29418,
+              "completion_key": "give=I:29405;receive=I:29406;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "The girl rewards her ring with a token. A token supplied by another adventurer also works."
+        },
+        {
+          "id": "token",
+          "text": "Carry a fresh token",
+          "kind": "carried_item",
+          "item_vnums": [
+            29406
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Return the lost ring for a token, or obtain a matching token from another adventurer. Each craft spends one token. Carry it loose in your inventory for the offering."
+        },
+        {
+          "id": "cloth",
+          "text": "Carry the scrap of cloth",
+          "kind": "carried_item",
+          "item_vnums": [
+            29413
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The small children carry scraps of cloth. A shop bolt of cloth is a different item. Carry it loose in your inventory for the offering."
+        },
+        {
+          "id": "doll",
+          "text": "Carry the pretty doll",
+          "kind": "carried_item",
+          "item_vnums": [
+            29419
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Look for the pretty doll carried by a sleeping artist. Carry it loose in your inventory for the offering."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the request",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 29421,
+              "completion_key": "give=I:29406,I:29413,I:29419;receive=I:29418;disappear=0"
+            }
+          ],
+          "hint": "Offer the requested materials together to the quest giver."
+        }
+      ]
+    },
+    {
+      "id": "lucky-alchemist-sack",
+      "title": "Alorka: the lucky alchemist sack",
+      "category": "story",
+      "summary": "Offer a fresh token, leather alchemist sack and faerie dust together for the lucky sack.",
+      "contracts": [
+        {
+          "giver_vnum": 29421,
+          "completion_key": "give=I:29400,I:29402,I:29406;receive=I:29404;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "earlier-ring",
+          "text": "Optional earlier route: return the girl’s ring",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 29418,
+              "completion_key": "give=I:29405;receive=I:29406;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "The girl rewards her ring with a token. A token supplied by another adventurer also works."
+        },
+        {
+          "id": "token",
+          "text": "Carry a fresh token",
+          "kind": "carried_item",
+          "item_vnums": [
+            29406
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Return the lost ring for a token, or obtain a matching token from another adventurer. Each craft spends one token. Carry it loose in your inventory for the offering."
+        },
+        {
+          "id": "sack",
+          "text": "Carry the leather alchemist sack",
+          "kind": "carried_item",
+          "item_vnums": [
+            29400
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Lomya sells the leather alchemist sack used for this craft. Carry it loose in your inventory for the offering."
+        },
+        {
+          "id": "dust",
+          "text": "Carry the faerie dust",
+          "kind": "carried_item",
+          "item_vnums": [
+            29402
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Look for faerie dust at Torker's shop. Carry it loose in your inventory for the offering."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the request",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 29421,
+              "completion_key": "give=I:29400,I:29402,I:29406;receive=I:29404;disappear=0"
+            }
+          ],
+          "hint": "Offer the requested materials together to the quest giver."
+        }
+      ]
+    },
+    {
+      "id": "painting-for-fish",
+      "title": "Bom Fitherwood: a painting for fish",
+      "category": "story",
+      "summary": "Offer the near-finished painting to Bom for a large pike, impressive lobster and large hairy crab.",
+      "contracts": [
+        {
+          "giver_vnum": 29444,
+          "completion_key": "give=I:29440;receive=I:318,I:319,I:330;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "painting",
+          "text": "Carry the near-finished painting",
+          "kind": "carried_item",
+          "item_vnums": [
+            29440
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The artists have the near-finished painting Bom wants. The colorful floor painting is different. Carry it loose in your inventory for the offering."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the request",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 29444,
+              "completion_key": "give=I:29440;receive=I:318,I:319,I:330;disappear=0"
+            }
+          ],
+          "hint": "Offer the requested materials together to the quest giver."
+        }
+      ]
+    },
+    {
+      "id": "feed-goldfish",
+      "title": "Goldfish: offer fish food",
+      "category": "story",
+      "summary": "Offer the exact fish food to a goldfish for the native experience reward.",
+      "contracts": [
+        {
+          "giver_vnum": 29449,
+          "completion_key": "give=I:29460;receive=E:4000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "food",
+          "text": "Carry the fish food",
+          "kind": "carried_item",
+          "item_vnums": [
+            29460
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Look for fish food inside the fishbowl. Carry it loose in your inventory for the offering."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the request",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 29449,
+              "completion_key": "give=I:29460;receive=E:4000;disappear=0"
+            }
+          ],
+          "hint": "Offer the requested materials together to the quest giver."
+        }
+      ]
+    },
+    {
+      "id": "pot-for-clover",
+      "title": "Leprechaun: the pot of gold",
+      "category": "story",
+      "summary": "The leprechaun promises a lucky clover for a pot of gold. This exchange is recorded when accepted, though an ordinary route to his home still needs to be verified.",
+      "contracts": [
+        {
+          "giver_vnum": 29454,
+          "completion_key": "give=I:29444;receive=C:77777,I:29453;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "pot",
+          "text": "Carry the pot-of-gold item",
+          "kind": "carried_item",
+          "item_vnums": [
+            29444
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The whale in the fishbowl carries the pot of gold. The leprechaun wants the pot itself. Carry it loose in your inventory for the offering."
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the request",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 29454,
+              "completion_key": "give=I:29444;receive=C:77777,I:29453;disappear=1"
+            }
+          ],
+          "hint": "Offer the requested materials together to the quest giver."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

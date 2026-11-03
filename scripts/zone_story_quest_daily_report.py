@@ -123,6 +123,7 @@ def quest_report(definition: dict, observations: list[dict], policy: dict) -> di
     current = definition["content_revision"] == definition["_catalog_revision"]
     checks = {
         "active": definition["active"],
+        "daily_content_policy": definition.get("daily_eligible", False),
         "eligible_for_zone_completion": definition["eligible_for_zone_completion"],
         "current_catalog_revision": current,
         "minimum_attempts": len(observations) >= policy["minimum_attempts"],

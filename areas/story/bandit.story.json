@@ -1,0 +1,461 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "bandit",
+  "coverage": "complete",
+  "introduction": "Explore the Bandit Canyons, find Olat and prepare his exact three-material exchange. Learn the lodge and bookshelf routes while keeping camp help, rescue, forest care and safe river travel as distinct stories.",
+  "orientation": [
+    "Enter the canyon from its current southern surface route. Learn the exits, warning sign and a safe return before exploring the camp.",
+    "Olat exchanges one exact heart of Bel, orb of unmaking and mystic runed stone tablet for a Strength scroll. The native request has three materials, despite the tablet’s older mention of another artifact.",
+    "Bring each exact material loose in your inventory. Equipped or packed-away copies do not satisfy this preparation. Supplied compatible copies are eligible without your own source visit or boss victory.",
+    "The heart and orb have foreign source leads and competing uses. Plan which exchange to make; receiving one scroll does not complete the other givers’ requests.",
+    "Speaking Olat’s name can unlock the lodge door from the canyon. You still need to open and pass the door. Knowing a word and successfully entering are separate.",
+    "The two torn notes point toward a backroom bookshelf. PULL the backroom shelf to clear the way east; PUSH the meeting-room shelf to clear the way west. Shared open passages remain usable.",
+    "Opening the lodge or bookshelf passage is useful access guidance, not a required personal history for offering supplied materials to Olat.",
+    "The waterfall and cliff have real fall hazards; the stream can resist or sweep movement. Prepare for water, load, flight, climbing and a living return rather than trusting a room title.",
+    "Fresh and spoiled salmon look alike by name. The lost watch’s inscription, camp’s attack plan and captive gnomes suggest different ways to help; collecting their items does not itself prove useful help.",
+    "The accepted exchange stays recorded after its materials are spent. Receiving a Strength scroll is separate from confirming lasting strength, safe rescue, camp work or forest care."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 98500,
+      "name": "a vicious guard dog",
+      "keyword": "dog",
+      "description": "This hound appears to be a cross between a mastiff and a hunting dog.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98501,
+      "name": "a giant leech",
+      "keyword": "leech",
+      "description": "This leech is truely of a giant species, measuring 7 meters and length.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98502,
+      "name": "a swarmfish",
+      "keyword": "swarmfish",
+      "description": "This large fish has huge jaws with a row of very sharp looking teeth.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98503,
+      "name": "a hulking thug",
+      "keyword": "hulking",
+      "description": "This huge, dumb looking fellow appears to be quite the bully as he snarls 'You wanna hold it fer me?'.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98504,
+      "name": "a bandit blacksmith",
+      "keyword": "man",
+      "description": "The blacksmith and apprentices work at the kiln. Helping them usefully is separate from meeting them or taking their tools.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98505,
+      "name": "a huge warg",
+      "keyword": "huge",
+      "description": "This warg is larger than any other you have seen, an astounding three and a half feet high at the shoulder.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98506,
+      "name": "a dun pony",
+      "keyword": "pony",
+      "description": "This pony is wonderful chestnut brown.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98507,
+      "name": "a dappled horse",
+      "keyword": "dappled",
+      "description": "The black and white patches on this light riding horse look like someone threw a bucket of paint on it.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98508,
+      "name": "a large buzzard",
+      "keyword": "buzzard",
+      "description": "The feathers on this black buzzard are mottled and ruffled.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98509,
+      "name": "a warty thorneater",
+      "keyword": "warty",
+      "description": "This strange creature looks like a cross between a giant warg and a giant frog.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98510,
+      "name": "the forest keeper",
+      "keyword": "keeper",
+      "description": "The forest keeper cares for the rare blackthorn trees. His work and the lumberjacks suggest a story of useful forest care, separate from gathering loot.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98511,
+      "name": "a lumberjack",
+      "keyword": "lumberjack",
+      "description": "This human woodsman is kept very strong and healthy from his rigorous work taking care of the forest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98512,
+      "name": "a thorn lizard",
+      "keyword": "lizard",
+      "description": "This large lizard is about 1 meter in length with a thick scaled skin.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98513,
+      "name": "a large warg",
+      "keyword": "huge",
+      "description": "This warg is larger than any other you have seen, an astounding three and a half feet high at the shoulder.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98514,
+      "name": "a thieving rogue",
+      "keyword": "thieving",
+      "description": "This skulking man wears a large hood, concealing his features.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98515,
+      "name": "a half-orc bandit",
+      "keyword": "half-orc",
+      "description": "This ugly creature wears a gaudy mish-mash of clothes stolen from passing merchants.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98516,
+      "name": "a brown bear",
+      "keyword": "bear",
+      "description": "The hungry bear has recently healed wounds. Useful wildlife care would require helping a living animal, rather than treating a kill as rescue.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98517,
+      "name": "a large buzzard",
+      "keyword": "buzzard",
+      "description": "The feathers on this black buzzard are mottled and ruffled.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98518,
+      "name": "a bandit sentry",
+      "keyword": "bandit",
+      "description": "This young man looks very nervous.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98519,
+      "name": "a grim bandit",
+      "keyword": "grim",
+      "description": "This bandit appears to be quite serious.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98520,
+      "name": "a vicious guard dog",
+      "keyword": "dog",
+      "description": "This hound appears to be a cross between a mastiff and a hunting dog.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98521,
+      "name": "an experienced bandit",
+      "keyword": "experienced",
+      "description": "This bandit appears to be quite serious.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98522,
+      "name": "a female bandit",
+      "keyword": "female",
+      "description": "This female human is practically naked, the only piece of clothing that can be seen is a tight fitting money belt.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98523,
+      "name": "a female bandit",
+      "keyword": "female",
+      "description": "This human female looks meaner than the male bandits in the area as she toils over a boiling pot of stew.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98524,
+      "name": "a hungry bandit",
+      "keyword": "hungry",
+      "description": "This bandit appears to be quite serious.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98525,
+      "name": "a young bandit",
+      "keyword": "bandit",
+      "description": "This young man looks very nervous.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98526,
+      "name": "a peeping tom",
+      "keyword": "bandit",
+      "description": "This young man looks very nervous.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98527,
+      "name": "a vicious guard dog",
+      "keyword": "dog",
+      "description": "This hound appears to be a cross between a mastiff and a hunting dog.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98528,
+      "name": "a young bandit sentry",
+      "keyword": "bandit",
+      "description": "This young man looks very nervous.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98529,
+      "name": "a bandit child",
+      "keyword": "child",
+      "description": "This young child looks to be around 10 years old and is still quite content with playing in the field.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98530,
+      "name": "a bandit child",
+      "keyword": "child",
+      "description": "This young child looks to be around 10 years old and is still quite content sparring with his friends.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98531,
+      "name": "a bandit",
+      "keyword": "bandit",
+      "description": "This bandit appears to be quite serious.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98532,
+      "name": "a young female bandit",
+      "keyword": "female",
+      "description": "This human female looks meaner than the male bandits in the area as she toils over a boiling pot of stew.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98533,
+      "name": "a visiting bandit",
+      "keyword": "bandit",
+      "description": "Only eyes and teeth can be seen through the leather hooded mask that this man wears.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98534,
+      "name": "Olat",
+      "keyword": "olat",
+      "description": "Olat accepts the exact heart of Bel, orb of unmaking and mystic runed stone tablet for a Strength scroll. Recovered or supplied copies fit. Receiving the scroll records the exchange; a lasting strength gain is a separate outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98535,
+      "name": "a male bandit",
+      "keyword": "bandit",
+      "description": "This bandit appears to be quite serious.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98536,
+      "name": "a female bandit",
+      "keyword": "bandit",
+      "description": "This selected female bandit carries the right half of a torn note. The notes point toward a backroom bookshelf, but possessing or reading them is not required for Olat’s exchange.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98537,
+      "name": "a thieving rogue",
+      "keyword": "thieving",
+      "description": "This skulking man wears a large hood, concealing his features.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98538,
+      "name": "a thieving rogue",
+      "keyword": "thieving",
+      "description": "This skulking man wears a large hood, concealing his features.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98539,
+      "name": "a gnome slave",
+      "keyword": "gnome",
+      "description": "The gnome captives bear signs of abuse. One selected captive carries the left note half. Recovering a note is separate from freeing a living captive and reaching safety.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98540,
+      "name": "Talia",
+      "keyword": "talia",
+      "description": "Talia leads the bandits. The hidden meeting-room route and camp’s attack plan suggest a larger story; defeating a leader alone does not prove that travelers or captives are safe.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98541,
+      "name": "Schwenk",
+      "keyword": "schwenk",
+      "description": "Schwenk is a dangerous bandit leader. Prepare for the actual route and combat risk; the accepted scroll exchange does not require defeating him.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98542,
+      "name": "a young bandit",
+      "keyword": "young",
+      "description": "This young child looks to be around 10 years old and is still quite content sparring with his friends.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98543,
+      "name": "a half-orc matron",
+      "keyword": "half-orc",
+      "description": "This stout half-orc woman is hideously ugly.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98544,
+      "name": "a young bandit",
+      "keyword": "young",
+      "description": "This young child looks to be around 10 years old and is still quite content playing in the dirty water.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98545,
+      "name": "a half-orc matron",
+      "keyword": "half-orc",
+      "description": "This stout half-orc woman is hideously ugly.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98546,
+      "name": "a half-orc matron",
+      "keyword": "half-orc",
+      "description": "This stout half-orc woman is hideously ugly.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98547,
+      "name": "a hungry alligator",
+      "keyword": "alligator",
+      "description": "This huge reptile is equally comfortable in or out of water.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98548,
+      "name": "a large buzzard",
+      "keyword": "buzzard",
+      "description": "The feathers on this black buzzard are mottled and ruffled.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98549,
+      "name": "a fishing bandit",
+      "keyword": "young",
+      "description": "Only selected fishing bandits carry salmon. Fresh and spoiled salmon share a name but are different items; useful feeding and safe food need their own outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98550,
+      "name": "a thin young bandit",
+      "keyword": "thin",
+      "description": "This young woman appears to be new to the life of banditry.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98551,
+      "name": "a young bandit",
+      "keyword": "young",
+      "description": "This young child looks to be around 10 years old and is still quite content playing in the dirty water.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98552,
+      "name": "a bandit sentry",
+      "keyword": "bandit",
+      "description": "This young man looks very nervous.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 98553,
+      "name": "a young apprentice",
+      "keyword": "young",
+      "description": "The young apprentices work with the smithy. Their current following behavior does not by itself record useful repair work or anyone’s freedom.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "olat-strength-scroll",
+      "title": "Olat’s Strength scroll",
+      "category": "story",
+      "summary": "Offer the heart of Bel, orb of unmaking and mystic runed stone tablet for Olat’s Strength scroll. Recovered or supplied copies are eligible without a personal boss, clue or access history. The accepted exchange is recorded separately from any permanent strength gain.",
+      "contracts": [
+        {
+          "giver_vnum": 98534,
+          "completion_key": "give=I:402,I:26614,I:32490;receive=I:403;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-32490",
+          "kind": "carried_item",
+          "text": "Carry the heart of Bel",
+          "hint": "Bring one exact heart of Bel loose in your inventory. Recovered or supplied copies fit; current possession does not claim your personal source recovery or a boss victory.",
+          "item_vnums": [
+            32490
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "prepare-26614",
+          "kind": "carried_item",
+          "text": "Carry the orb of unmaking",
+          "hint": "Bring one exact orb of unmaking loose in your inventory. Recovered or supplied copies fit; current possession does not claim your personal source recovery or a boss victory.",
+          "item_vnums": [
+            26614
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "prepare-402",
+          "kind": "carried_item",
+          "text": "Carry the mystic runed stone tablet",
+          "hint": "Bring one exact mystic runed stone tablet loose in your inventory. Recovered or supplied copies fit; current possession does not claim your personal source recovery or a boss victory.",
+          "item_vnums": [
+            402
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "kind": "completion",
+          "text": "Record Olat’s accepted exchange",
+          "hint": "The accepted three-material exchange stays recorded after payment. Receiving the scroll and confirming a permanent strength gain are separate outcomes.",
+          "contracts": [
+            {
+              "giver_vnum": 98534,
+              "completion_key": "give=I:402,I:26614,I:32490;receive=I:403;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

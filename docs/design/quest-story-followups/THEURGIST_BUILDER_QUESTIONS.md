@@ -1,0 +1,24 @@
+# `theurgist` builder and source-owner questions
+
+These questions preserve the distinction between the class notes, their four-room WLD, the separate map JSON, active same-number records, and the maintained Theurgist class implementation. See [THEURGIST_AUDIT_REVIEW.md](THEURGIST_AUDIT_REVIEW.md).
+
+1. **Source owner:** Who owns `areas/wld/theurgist.wld`, `areas/mob/theurgist.mob`, `areas/obj/theurgist.obj`, and `areas/zon/theurgist.zon`? **Recommendation:** retain the four files until their data and export owners are identified.
+2. **2010 purpose:** Does the 2010 commit title “This is not a live zone, it is theurgist notes” describe the intended continuing use? **Recommendation:** keep the files classified as notes unless an owner provides a different source-backed decision.
+3. **Area membership:** Is the candidate intentionally excluded from `areas/AREA`? **Recommendation:** do not add it to the active list based on its matching stem or map asset alone.
+4. **Map owner:** Which editor, map viewer, or export tool owns `areas/map/theurgist.json`? **Recommendation:** preserve the JSON and ask its consumer before moving or renaming it.
+5. **Room layout:** Are the map positions for #1–#4 intended to mirror the four WLD rooms? **Recommendation:** retain the mapping and verify it with the map owner before editing either representation.
+6. **Zone title:** Is `The Horrible Tracts of the Unnamed` an internal class-test label or a proposed in-world title? **Recommendation:** do not treat it as a current zone alias; no active exact title match was found.
+7. **Class document:** Who maintains the `Pets`, `Innates`, and `Spells` material in OBJ #1–#3? **Recommendation:** keep the authored notes intact while their documentation owner is identified.
+8. **Narrative scope:** Should these files remain class-design notes without a QST or story sidecar? **Recommendation:** do not invent a quest, setting, or player-facing adventure from the spell prose.
+9. **Prototype purpose:** Are MOB #1–#14 examples, old prototypes, or intended placeable mobiles? **Recommendation:** keep their current source records and avoid adding resets until the class/data owner resolves their purpose.
+10. **MOB VNUMs:** Why do candidate MOB IDs #1–#14 overlap same-number active Limbo/Heavens records whose bodies differ? **Recommendation:** preserve separate source identities and require the loader owner to resolve VNUM scope before co-loading or renumbering.
+11. **OBJ VNUMs:** Why do candidate OBJ IDs #1–#3 overlap different active Limbo objects? **Recommendation:** retain the class-reference bodies and ask the object/loader owner before any shared-ID change.
+12. **Room VNUMs:** Should candidate rooms #1, #3, and #4 remain distinct from their different active Limbo/Heavens room records? **Recommendation:** preserve the source records and map positions; do not use low-number matches as proof of room identity.
+13. **Raw active exits:** Are the nine Desert targets to #1 and one Heavens target to #4 understood as current Limbo/Heavens routes? **Recommendation:** keep candidate-specific active ingress at zero unless an owner identifies a different loaded target.
+14. **Reset intent:** Are the three ZON O resets meant to place the documentation objects in rooms #2–#4? **Recommendation:** preserve those local reset targets while the zone owner confirms the intended test or viewing workflow.
+15. **Mobile resets:** Is the absence of M resets intentional even though fourteen MOB definitions are present? **Recommendation:** keep the current source layout and do not infer that the class uses those prototypes.
+16. **Runtime class path:** Is it intentional for the maintained class path to build pets from `undead_data` and active mobile #1201 while this file keeps separate examples? **Recommendation:** have the class owner reconcile the notes with code before treating them as current mechanics documentation.
+17. **Numeric kind IDs:** Can future maintainers keep `summoned_pet_kind` values 1–14 distinct from MOB VNUMs 1–14? **Recommendation:** retain the typed distinction; the enum values are creation kinds, not area prototype IDs.
+18. **Low-number code callers:** Who owns the unrelated `read_mobile(7)`, `read_mobile(14)`, and corpse `read_object(2)` code paths that share candidate numbers? **Recommendation:** preserve their current bindings and ask the code/loader owners before linking them to this source.
+19. **Map history:** Why was `areas/map/theurgist.json` added by the 2025 “pfile migration tool” commit, and does that tool still consume it? **Recommendation:** preserve the map and clarify its lifecycle before cleanup.
+20. **Disposition authority:** Who can authorize retiring or relocating this note set and its map asset? **Recommendation:** keep all five files RETAIN IN PLACE and require a separate documented owner decision before activation, co-loading, movement, merge, or archive.

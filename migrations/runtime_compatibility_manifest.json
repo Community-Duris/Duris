@@ -10,11 +10,11 @@
     "mariadb10_11": "2b5a7bb31cac9e1fc77d77619d257ab5b344b2c81cd21ca62710c1fac751b665"
   },
   "migration_head": {
-    "id": "0031_player_item_runtime_state",
-    "sequence": 31,
-    "apply_checksum": "ab0e11959207cca0579dcc5635f9c124c655d07635a14c62334a8a2d02c3c7d8",
-    "verify_checksum": "c523d56f74862735f6aef0c831cbe662bed49c64fa6cbdf05bac82f81c1225e5",
-    "history_checksum": "30be02f71b0cb9d0e70812c5762b112b1636f9ceb07f95e08d94743a5e971120"
+    "id": "0032_discovered_zone_daily_state",
+    "sequence": 32,
+    "apply_checksum": "e2f41f9cffc51f0f9ec24639c6a69ad2a2f437af14d142ee463f6046ef70326e",
+    "verify_checksum": "c6c645d85195fdf70ae558b937e31dca146d54e5d313eae0d1a9178eb139debe",
+    "history_checksum": "25e7862cedf27a1d7b8bf2ee0eb4ef0608b309dc0269153d4e233a758741c079"
   },
   "connection": {
     "character_set": "utf8mb4",

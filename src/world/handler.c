@@ -9,6 +9,7 @@
  */
 
 #include "core/prototypes.h"
+#include "world/zone_story_quest_runtime.h"
 #include "item/objmisc.h"
 #include "telemetry/telemetry_runtime.h"
 #include "item/item_actions.h"
@@ -1428,6 +1429,12 @@ bool char_to_room(P_char ch, int room, int dir)
 
 	AddCharToZone(ch);
 	world_activity_character_enter(ch);
+	if (IS_PC(ch))
+		zone_story_quest_runtime::arrived(ch);
+	else
+		for (P_char present = world[ch->in_room].people; present;
+		     present = present->next_in_room)
+			zone_story_quest_runtime::encountered(present, ch);
 
 	if ((t_ch = get_linked_char(ch, LNK_RIDING)) && t_ch->in_room != ch->in_room)
 	{

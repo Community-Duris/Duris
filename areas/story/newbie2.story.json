@@ -1,0 +1,28 @@
+{
+  "schema_version": 2,
+  "revision": 2,
+  "source_area": "newbie2",
+  "coverage": "complete",
+  "introduction": "Welcome to the Plains of Life. Follow the signs to learn the basics before entering the world.",
+  "orientation": [
+    "Follow the trail north, east, east, north, east, and east. Use look sign at each tutorial sign.",
+    "The first two signs offer armor and bless when examined with look sign. These are optional aids, not recorded journal achievements.",
+    "Practice attributes, score, wear all, equipment, skills, innates, and help commands as the signs and rooms explain.",
+    "Meet the paladin and ask paladin racewars or ask paladin racewar. New arrivals need this conversation before entering the Life Stream.",
+    "At the end of the trail, use enter stream to travel to Ailvio. Sword possession does not open the stream; the tutorial state does."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 22801,
+      "name": "a solemn paladin",
+      "keyword": "paladin",
+      "description": "The paladin explains racewar and offers a blessed sword to a tagged new arrival. Repeating the lesson does not award another sword. Then enter stream at the end of the trail. The journal does not yet record these scripted milestones.",
+      "topics": [
+        "racewars",
+        "racewar"
+      ]
+    }
+  ],
+  "stories": [],
+  "exclusions": []
+}

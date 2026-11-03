@@ -1,0 +1,695 @@
+{
+  "schema_version": 3,
+  "revision": 2,
+  "source_area": "bastine",
+  "coverage": "complete",
+  "stories": [
+    {
+      "id": "the-bastine-road-young-warrior-7600",
+      "title": "The Bastine Road: Young Warrior",
+      "category": "request",
+      "summary": "Return the listed trophy to King Mrotha for his Young Warrior commission. The King describes an ordered campaign, but each exchange accepts its trophy independently. Gifts are accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 7600,
+          "completion_key": "give=I:41388;receive=C:2000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-41388",
+          "text": "Carry 1 x a dirk called 'intimidator'",
+          "kind": "carried_item",
+          "hint": "The thief captain on the Breale trade route carries the intimidator. A valid trophy supplied by another player also works.",
+          "item_vnums": [
+            41388
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Present a dirk called 'intimidator' to King Mrotha",
+          "kind": "completion",
+          "hint": "Find the King at his throne. This exchange awards 20 gold. His next commission asks for an iron crown of King Vinzor.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:41388;receive=C:2000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-bastine-road-warrior-7600",
+      "title": "The Bastine Road: Warrior",
+      "category": "request",
+      "summary": "Return the listed trophy to King Mrotha for his Warrior commission. The King describes an ordered campaign, but each exchange accepts its trophy independently. Gifts are accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 7600,
+          "completion_key": "give=I:41407;receive=C:10000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-41407",
+          "text": "Carry 1 x an iron crown of King Vinzor",
+          "kind": "carried_item",
+          "hint": "Look for the iron crown where King Vinzor's spirit haunts the surrounding lands. The crown can be found in his room; possession does not prove a kill. A valid trophy supplied by another player also works.",
+          "item_vnums": [
+            41407
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Present an iron crown of King Vinzor to King Mrotha",
+          "kind": "completion",
+          "hint": "Find the King at his throne. This exchange awards 100 gold. His next commission asks for a blessed shield of defense.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:41407;receive=C:10000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-bastine-road-adept-warrior-7600",
+      "title": "The Bastine Road: Adept Warrior",
+      "category": "request",
+      "summary": "Return the listed trophy to King Mrotha for his Adept Warrior commission. The King describes an ordered campaign, but each exchange accepts its trophy independently. Gifts are accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 7600,
+          "completion_key": "give=I:12802;receive=C:5000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-12802",
+          "text": "Carry 1 x a blessed shield of defense",
+          "kind": "carried_item",
+          "hint": "The stone golem near Skulldrach Lake carries the blessed shield. A valid trophy supplied by another player also works.",
+          "item_vnums": [
+            12802
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Present a blessed shield of defense to King Mrotha",
+          "kind": "completion",
+          "hint": "Find the King at his throne. This exchange awards 50 gold. His next commission asks for an anti-orc scimitar.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:12802;receive=C:5000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-bastine-road-veteran-7600",
+      "title": "The Bastine Road: Veteran",
+      "category": "request",
+      "summary": "Return the listed trophy to King Mrotha for his Veteran commission. The King describes an ordered campaign, but each exchange accepts its trophy independently. Gifts are accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 7600,
+          "completion_key": "give=I:41327;receive=C:15000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-41327",
+          "text": "Carry 1 x an anti-orc scimitar",
+          "kind": "carried_item",
+          "hint": "The Bishop in the surrounding lands carries the anti-orc scimitar. A valid trophy supplied by another player also works.",
+          "item_vnums": [
+            41327
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Present an anti-orc scimitar to King Mrotha",
+          "kind": "completion",
+          "hint": "Find the King at his throne. This exchange awards 150 gold. His next commission asks for an ebony staff.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:41327;receive=C:15000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-bastine-road-soldier-7600",
+      "title": "The Bastine Road: Soldier",
+      "category": "request",
+      "summary": "Return the listed trophy to King Mrotha for his Soldier commission. The King describes an ordered campaign, but each exchange accepts its trophy independently. Gifts are accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 7600,
+          "completion_key": "give=I:41924;receive=C:50000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-41924",
+          "text": "Carry 1 x an ebony staff",
+          "kind": "carried_item",
+          "hint": "Johan in the Forest of Mir carries the ebony staff. A valid trophy supplied by another player also works.",
+          "item_vnums": [
+            41924
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Present an ebony staff to King Mrotha",
+          "kind": "completion",
+          "hint": "Find the King at his throne. This exchange awards 500 gold. His next commission asks for the broom of air.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:41924;receive=C:50000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-bastine-road-lieutenant-7600",
+      "title": "The Bastine Road: Lieutenant",
+      "category": "request",
+      "summary": "Return the listed trophy to King Mrotha for his Lieutenant commission. The King describes an ordered campaign, but each exchange accepts its trophy independently. Gifts are accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 7600,
+          "completion_key": "give=I:2607;receive=C:75000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-2607",
+          "text": "Carry 1 x the broom of air",
+          "kind": "carried_item",
+          "hint": "Pontif beneath Breale carries the broom of air. A valid trophy supplied by another player also works.",
+          "item_vnums": [
+            2607
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Present the broom of air to King Mrotha",
+          "kind": "completion",
+          "hint": "Find the King at his throne. This exchange awards 750 gold. His next commission asks for a cloth mask.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:2607;receive=C:75000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-bastine-road-third-ranked-captain-7600",
+      "title": "The Bastine Road: Third Ranked Captain",
+      "category": "request",
+      "summary": "Return the listed trophy to King Mrotha for his Third Ranked Captain commission. The King describes an ordered campaign, but each exchange accepts its trophy independently. Gifts are accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 7600,
+          "completion_key": "give=I:41408;receive=C:100000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-41408",
+          "text": "Carry 1 x a cloth mask",
+          "kind": "carried_item",
+          "hint": "Sir Montel in the surrounding lands carries the cloth mask, identified as his mask. A valid trophy supplied by another player also works.",
+          "item_vnums": [
+            41408
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Present a cloth mask to King Mrotha",
+          "kind": "completion",
+          "hint": "Find the King at his throne. This exchange awards 1,000 gold. His next commission asks for the face of Mythra.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:41408;receive=C:100000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-bastine-road-second-ranked-captain-7600",
+      "title": "The Bastine Road: Second Ranked Captain",
+      "category": "request",
+      "summary": "Return the listed trophy to King Mrotha for his Second Ranked Captain commission. The King describes an ordered campaign, but each exchange accepts its trophy independently. Gifts are accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 7600,
+          "completion_key": "give=I:41922;receive=C:100000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-41922",
+          "text": "Carry 1 x the face of Mythra",
+          "kind": "carried_item",
+          "hint": "Mythra the witch in the Forest of Mir carries the face of Mythra. A valid trophy supplied by another player also works.",
+          "item_vnums": [
+            41922
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Present the face of Mythra to King Mrotha",
+          "kind": "completion",
+          "hint": "Find the King at his throne. This exchange awards 1,000 gold. His next commission asks for a strip of hide of Xort beast.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:41922;receive=C:100000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-bastine-road-first-ranked-captain-7600",
+      "title": "The Bastine Road: First Ranked Captain",
+      "category": "request",
+      "summary": "Return the listed trophy to King Mrotha for his First Ranked Captain commission. The King describes an ordered campaign, but each exchange accepts its trophy independently. Gifts are accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 7600,
+          "completion_key": "give=I:41920;receive=C:50000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-41920",
+          "text": "Carry 1 x a strip of hide of Xort beast",
+          "kind": "carried_item",
+          "hint": "The ravenous Xort beast in the Forest of Mir carries this hide. A valid trophy supplied by another player also works.",
+          "item_vnums": [
+            41920
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Present a strip of hide of Xort beast to King Mrotha",
+          "kind": "completion",
+          "hint": "Find the King at his throne. This exchange awards 500 gold. His next commission asks for an ankh of the black sword.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:41920;receive=C:50000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-bastine-road-captain-7600",
+      "title": "The Bastine Road: Captain",
+      "category": "request",
+      "summary": "Return the listed trophy to King Mrotha for his Captain commission. The King describes an ordered campaign, but each exchange accepts its trophy independently. Gifts are accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 7600,
+          "completion_key": "give=I:41375;receive=C:100000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-41375",
+          "text": "Carry 1 x an ankh of the black sword",
+          "kind": "carried_item",
+          "hint": "The Black Knight in the surrounding lands carries the ankh of the black sword. The ankh is accepted even though the King later calls it a helm. A valid trophy supplied by another player also works.",
+          "item_vnums": [
+            41375
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Present an ankh of the black sword to King Mrotha",
+          "kind": "completion",
+          "hint": "Find the King at his throne. This exchange awards 1,000 gold. His next commission asks for the spotted hide of the kearonor beast.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:41375;receive=C:100000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-bastine-road-general-7600",
+      "title": "The Bastine Road: General",
+      "category": "request",
+      "summary": "Return the listed trophy to King Mrotha for his General commission. The King describes an ordered campaign, but each exchange accepts its trophy independently. Gifts are accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 7600,
+          "completion_key": "give=I:41411;receive=C:200000,I:41304;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-41411",
+          "text": "Carry 1 x the spotted hide of the kearonor beast",
+          "kind": "carried_item",
+          "hint": "The Kearonor Beast in the surrounding lands carries this spotted hide. Bring the original hide; the King's returned cursed version is a different item. A valid trophy supplied by another player also works.",
+          "item_vnums": [
+            41411
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Present the spotted hide of the kearonor beast to King Mrotha",
+          "kind": "completion",
+          "hint": "Find the King at his throne. This exchange awards 2,000 gold. He also supplies a cursed version of the hide. The final commission asks for the wand of Life from the Test of Knights.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:41411;receive=C:200000,I:41304;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-bastine-road-knight-of-the-bastine-order-7600",
+      "title": "The Bastine Road: Knight of the Bastine Order",
+      "category": "request",
+      "summary": "Return the listed trophy to King Mrotha for his Knight of the Bastine Order commission. The King describes an ordered campaign, but each exchange accepts its trophy independently. Gifts are accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 7600,
+          "completion_key": "give=I:70970;receive=C:1000000,I:7616,I:7617;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "earlier-41388",
+          "text": "Complete the Young Warrior commission",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Optional earlier commission. A supplied wand of Life is accepted without these receipts.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:41388;receive=C:2000;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "earlier-41407",
+          "text": "Complete the Warrior commission",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Optional earlier commission. A supplied wand of Life is accepted without these receipts.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:41407;receive=C:10000;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "earlier-12802",
+          "text": "Complete the Adept Warrior commission",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Optional earlier commission. A supplied wand of Life is accepted without these receipts.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:12802;receive=C:5000;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "earlier-41327",
+          "text": "Complete the Veteran commission",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Optional earlier commission. A supplied wand of Life is accepted without these receipts.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:41327;receive=C:15000;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "earlier-41924",
+          "text": "Complete the Soldier commission",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Optional earlier commission. A supplied wand of Life is accepted without these receipts.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:41924;receive=C:50000;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "earlier-2607",
+          "text": "Complete the Lieutenant commission",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Optional earlier commission. A supplied wand of Life is accepted without these receipts.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:2607;receive=C:75000;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "earlier-41408",
+          "text": "Complete the Third Ranked Captain commission",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Optional earlier commission. A supplied wand of Life is accepted without these receipts.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:41408;receive=C:100000;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "earlier-41922",
+          "text": "Complete the Second Ranked Captain commission",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Optional earlier commission. A supplied wand of Life is accepted without these receipts.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:41922;receive=C:100000;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "earlier-41920",
+          "text": "Complete the First Ranked Captain commission",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Optional earlier commission. A supplied wand of Life is accepted without these receipts.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:41920;receive=C:50000;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "earlier-41375",
+          "text": "Complete the Captain commission",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Optional earlier commission. A supplied wand of Life is accepted without these receipts.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:41375;receive=C:100000;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "earlier-41411",
+          "text": "Complete the General commission",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Optional earlier commission. A supplied wand of Life is accepted without these receipts.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:41411;receive=C:200000,I:41304;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-70970",
+          "text": "Carry 1 x the wand of Life",
+          "kind": "carried_item",
+          "hint": "Kithron in the Test of Knights carries the wand of Life. This is the item the King calls the Staff of Life. A valid trophy supplied by another player also works.",
+          "item_vnums": [
+            70970
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Present the wand of Life to King Mrotha",
+          "kind": "completion",
+          "hint": "Find the King at his throne. This exchange awards 10,000 gold. He also awards the seal of the Bastine Knights and the platemail of knighthood. This completes his final commission; earlier promotions remain separate accomplishments.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:70970;receive=C:1000000,I:7616,I:7617;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-werewolf-prince-7600",
+      "title": "The Werewolf Prince",
+      "category": "story",
+      "summary": "Bring the Prince Prisoner's bloody werewolf head to King Mrotha for the werewolf-hide leggings. Explore the castle's concealed history to understand the King's reaction. A supplied head is accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 7600,
+          "completion_key": "give=I:7673;receive=I:7674;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "tower-key",
+          "text": "Carry the tower key",
+          "kind": "carried_item",
+          "optional": true,
+          "hint": "The key and a note to Phex are in the desk beneath the King's bedroom passage. The key opens the locked door at the top of the tower stairs reached from the south guard quarters.",
+          "item_vnums": [
+            7601
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-7673",
+          "text": "Carry 1 x the bloody head of a werewolf",
+          "kind": "carried_item",
+          "hint": "The Prince Prisoner carries this head in the locked tower. The journal records its delivery; it does not establish who defeated the prince.",
+          "item_vnums": [
+            7673
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Bring the werewolf head to King Mrotha",
+          "kind": "completion",
+          "hint": "The King supplies werewolf-hide leggings. His grief and disease warning are part of the response; this checklist does not record infection, a cure or a temporary banishment.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:7673;receive=I:7674;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-apprentice-s-trust-7603",
+      "title": "The Apprentice's Trust",
+      "category": "story",
+      "summary": "Earn Victor's trust with Sir Lamerok's signet ring. He supplies a small steel key and the apprentice's ring for Morlanthra's rescue in Esterra's Cavern. That later rescue belongs to the surrounding lands.",
+      "contracts": [
+        {
+          "giver_vnum": 7603,
+          "completion_key": "give=I:41397;receive=I:41394,I:41398;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-41397",
+          "text": "Carry 1 x a shiny signet ring",
+          "kind": "carried_item",
+          "hint": "Sir Lamerok carries the shiny signet ring in Esterra's Cavern. Identification reveals his name. A supplied valid ring is also accepted.",
+          "item_vnums": [
+            41397
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Present Lamerok's ring to Victor",
+          "kind": "completion",
+          "hint": "Victor is in Morlanthra's bedroom. His steel key opens Esterra's room; Esterra carries the plain iron key, and Nynevena the transparent key. A separate tree-shaped key opens the prison. Give the apprentice's ring to Morlanthra for his own rescue reward.",
+          "contracts": [
+            {
+              "giver_vnum": 7603,
+              "completion_key": "give=I:41397;receive=I:41394,I:41398;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": [],
+  "introduction": "Answer King Mrotha's call for adventure, investigate the hidden prince, or help Victor reach his imprisoned master.",
+  "orientation": [
+    "Ask the King about knight, then yes to hear his first commission. His twelve trophy requests form a narrated road to knighthood; each can be completed independently.",
+    "Victor offers a separate rescue lead involving Sir Lamerok, Esterra's keys and Morlanthra. His trust reward starts that route; it does not complete the later rescue.",
+    "The checklist records supplies and accepted exchanges. Claimed ranks, personal kills, discovered clues and opened locks need their own evidence before becoming earned stages."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 7600,
+      "name": "King Mrotha",
+      "keyword": "mrotha",
+      "description": "Ask about knight, no or yes for the invitation and reply. Return the specific trophies for independent commissions.",
+      "topics": [
+        "knight",
+        "no",
+        "yes"
+      ]
+    },
+    {
+      "mob_vnum": 7603,
+      "name": "Victor the Apprentice",
+      "keyword": "victor",
+      "description": "Ask about morlanthra to learn why Victor needs Lamerok's signet ring. His reward supplies the next rescue leads.",
+      "topics": [
+        "morlanthra"
+      ]
+    }
+  ]
+}

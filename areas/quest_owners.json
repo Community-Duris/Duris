@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "owners": [
+    {
+      "giver_vnum": 87860,
+      "completion_key": "give=I:87869;receive=C:250000,E:100000;disappear=0",
+      "previous_zone_number": 879,
+      "previous_source_area": "kelek",
+      "zone_number": 878,
+      "source_area": "church",
+      "content_revision": 2
+    },
+    {
+      "giver_vnum": 87869,
+      "completion_key": "give=I:87870,I:87871,I:87872;receive=I:87873;disappear=0",
+      "previous_zone_number": 879,
+      "previous_source_area": "kelek",
+      "zone_number": 878,
+      "source_area": "church",
+      "content_revision": 2
+    }
+  ]
+}

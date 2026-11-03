@@ -1,0 +1,286 @@
+{
+  "schema_version": 2,
+  "revision": 1,
+  "source_area": "ugta",
+  "coverage": "complete",
+  "introduction": "Explore Ugta and meet its people to uncover local requests.",
+  "orientation": [
+    "Start with look and exits to learn your surroundings.",
+    "Use help home to learn about hometowns and help quest for quest commands."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 39100,
+      "name": "a plump barbarian woman",
+      "keyword": "female",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 39101,
+      "name": "a brawny barbarian",
+      "keyword": "male",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 39102,
+      "name": "a barbarian child",
+      "keyword": "child",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 39103,
+      "name": "a barbarian warrior",
+      "keyword": "justice",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 39104,
+      "name": "a large barbarian warrior",
+      "keyword": "muscled",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 39105,
+      "name": "a towering barbarian warrior",
+      "keyword": "towering",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 39106,
+      "name": "a barbarian shaman",
+      "keyword": "shaman",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 39107,
+      "name": "a barbarian woman",
+      "keyword": "woman",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 39108,
+      "name": "a small barbarian child",
+      "keyword": "small",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 39109,
+      "name": "a slightly chubby barbarian",
+      "keyword": "food",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 39110,
+      "name": "a thick-muscled barbarian",
+      "keyword": "armory",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 39111,
+      "name": "a lithe barbarian woman",
+      "keyword": "tool",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 39112,
+      "name": "a burly barbarian",
+      "keyword": "burly",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi",
+        "quest"
+      ]
+    },
+    {
+      "mob_vnum": 39113,
+      "name": "a barbarian warrior",
+      "keyword": "warrior",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 39114,
+      "name": "the master conjurer",
+      "keyword": "master",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 39115,
+      "name": "a large barbarian",
+      "keyword": "large",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 39116,
+      "name": "a bored-looking barbarian",
+      "keyword": "bored",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 39117,
+      "name": "an elderly barbarian shaman",
+      "keyword": "elderly",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 39118,
+      "name": "a member of the king's guard",
+      "keyword": "member",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 39119,
+      "name": "Atgu, leader of the barbarians",
+      "keyword": "atgu",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 39120,
+      "name": "a weary barbarian",
+      "keyword": "weary",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 39121,
+      "name": "a gaunt barbarian",
+      "keyword": "gaunt",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 39122,
+      "name": "a short, stubby barbarian",
+      "keyword": "cont",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 39123,
+      "name": "a pot-bellied barbarian",
+      "keyword": "pot",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 39124,
+      "name": "a barbarian bridge guard",
+      "keyword": "bridge",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 39125,
+      "name": "a sleeping barbarian",
+      "keyword": "sleeping",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 39126,
+      "name": "a gaudily-attired barbarian",
+      "keyword": "gaudy",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 39127,
+      "name": "a large barbarian jail guard",
+      "keyword": "jail",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 39128,
+      "name": "a war-hardened warrior",
+      "keyword": "warrior",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 39129,
+      "name": "a barbarian bridge guard",
+      "keyword": "bridge",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    }
+  ],
+  "stories": [],
+  "exclusions": []
+}

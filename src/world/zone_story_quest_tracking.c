@@ -131,8 +131,12 @@ bool validate_definition(const quest_definition &definition, std::string *error)
 		return fail(error, "definition_id must be non-empty");
 	if (definition.source_system != ZONE_STORY_QUEST_SOURCE_SYSTEM)
 		return fail(error, "source_system must be zone_story");
-	if (definition.zone_number <= 0)
-		return fail(error, "zone_number must be positive");
+	if (definition.zone_number < 0)
+		return fail(error, "zone_number must be nonnegative");
+	if (definition.previous_zone_number != -1 &&
+	    (definition.previous_zone_number <= 0 ||
+	     definition.previous_zone_number == definition.zone_number))
+		return fail(error, "previous quest owner must be a different playable zone");
 	if (definition.source_area.empty())
 		return fail(error, "source_area must be non-empty");
 	if (definition.giver_vnum <= 0)
@@ -141,21 +145,22 @@ bool validate_definition(const quest_definition &definition, std::string *error)
 		return fail(error, "completion_key must be non-empty");
 	if (definition.content_revision == 0)
 		return fail(error, "content_revision must be positive");
-	if (!definition.repeatable)
-		return fail(error, "zone-story definitions must be repeatable");
+	if (definition.daily_eligible && (!definition.repeatable || !definition.active))
+		return fail(error, "daily definitions must be active and repeatable");
 	return true;
 }
 
 bool validate_transaction(const completion_transaction &transaction, std::string *error)
 {
-	if (transaction.schema_version != ZONE_STORY_QUEST_TRACKING_SCHEMA_VERSION)
+	if (transaction.schema_version != 1 &&
+	    transaction.schema_version != ZONE_STORY_QUEST_TRACKING_SCHEMA_VERSION)
 		return fail(error, "unsupported transaction schema_version");
 	if (transaction.transaction_id.empty())
 		return fail(error, "transaction_id must be non-empty");
 	if (transaction.quest_definition_id.empty())
 		return fail(error, "quest_definition_id must be non-empty");
-	if (transaction.zone_number <= 0)
-		return fail(error, "zone_number must be positive");
+	if (transaction.zone_number < 0)
+		return fail(error, "zone_number must be nonnegative");
 	if (transaction.direct_completer_pid == 0)
 		return fail(error, "direct_completer_pid must be positive");
 	if (transaction.credited_pids.empty())
@@ -175,6 +180,15 @@ bool validate_transaction(const completion_transaction &transaction, std::string
 		return fail(error, "credited_pids must not contain duplicates");
 	if (!contains_pid(transaction.credited_pids, transaction.direct_completer_pid))
 		return fail(error, "direct_completer_pid must receive credit");
+	if (transaction.daily_credited_pids.size() > 64 ||
+	    has_duplicate_pid(transaction.daily_credited_pids) ||
+	    transaction.daily_policy_revision > 1 ||
+	    (!transaction.daily_credited_pids.empty() &&
+	     (transaction.schema_version < 2 || transaction.daily_policy_revision != 1)))
+		return fail(error, "invalid frozen daily recipients");
+	for (uint32_t pid : transaction.daily_credited_pids)
+		if (!contains_pid(transaction.credited_pids, pid))
+			return fail(error, "daily recipient did not receive completion credit");
 	return true;
 }
 
@@ -216,16 +230,20 @@ std::string serialize_transaction(const completion_transaction &transaction, std
 {
 	if (!validate_transaction(transaction, error))
 		return {};
-	return "v" + std::to_string(transaction.schema_version) + "|" +
-	       hex_encode(transaction.transaction_id) + "|" +
-	       hex_encode(transaction.quest_definition_id) + "|" +
-	       std::to_string(transaction.zone_number) + "|" +
-	       std::to_string(transaction.direct_completer_pid) + "|" +
-	       std::to_string(transaction.room_vnum) + "|" +
-	       std::to_string(transaction.completed_at) + "|" +
-	       std::to_string(transaction.season_id) + "|" +
-	       std::to_string(transaction.content_revision) + "|" +
-	       serialize_pids(transaction.credited_pids);
+	std::string encoded = "v" + std::to_string(transaction.schema_version) + "|" +
+			      hex_encode(transaction.transaction_id) + "|" +
+			      hex_encode(transaction.quest_definition_id) + "|" +
+			      std::to_string(transaction.zone_number) + "|" +
+			      std::to_string(transaction.direct_completer_pid) + "|" +
+			      std::to_string(transaction.room_vnum) + "|" +
+			      std::to_string(transaction.completed_at) + "|" +
+			      std::to_string(transaction.season_id) + "|" +
+			      std::to_string(transaction.content_revision) + "|" +
+			      serialize_pids(transaction.credited_pids);
+	if (transaction.schema_version >= 2)
+		encoded += "|" + std::to_string(transaction.daily_policy_revision) + "|" +
+			   serialize_pids(transaction.daily_credited_pids);
+	return encoded;
 }
 
 bool deserialize_transaction(std::string_view encoded, completion_transaction *transaction,
@@ -236,10 +254,13 @@ bool deserialize_transaction(std::string_view encoded, completion_transaction *t
 	*transaction = {};
 
 	const std::vector<std::string_view> fields = split_fields(encoded);
-	if (fields.size() != 10 || fields[0].size() < 2 || fields[0][0] != 'v')
+	if ((fields.size() != 10 && fields.size() != 12) || fields[0].size() < 2 ||
+	    fields[0][0] != 'v')
 		return fail(error, "invalid transaction field count or version");
 	if (!parse_integer(fields[0].substr(1), &transaction->schema_version))
 		return fail(error, "invalid transaction schema version");
+	if (fields.size() != (transaction->schema_version == 1 ? 10U : 12U))
+		return fail(error, "transaction version and fields disagree");
 	if (!hex_decode(fields[1], &transaction->transaction_id) ||
 	    !hex_decode(fields[2], &transaction->quest_definition_id))
 		return fail(error, "invalid hexadecimal transaction identity");
@@ -268,6 +289,27 @@ bool deserialize_transaction(std::string_view encoded, completion_transaction *t
 		begin = separator + 1;
 		if (begin == fields[9].size())
 			return fail(error, "trailing credited PID separator");
+	}
+	if (transaction->schema_version >= 2)
+	{
+		if (!parse_integer(fields[10], &transaction->daily_policy_revision))
+			return fail(error, "invalid daily policy revision");
+		begin = 0;
+		while (begin < fields[11].size())
+		{
+			const size_t separator = fields[11].find(',', begin);
+			const size_t end = separator == std::string_view::npos ? fields[11].size() :
+										 separator;
+			uint32_t pid = 0;
+			if (!parse_integer(fields[11].substr(begin, end - begin), &pid))
+				return fail(error, "invalid daily recipient PID");
+			transaction->daily_credited_pids.push_back(pid);
+			if (separator == std::string_view::npos)
+				break;
+			begin = separator + 1;
+			if (begin == fields[11].size())
+				return fail(error, "trailing daily PID separator");
+		}
 	}
 	return validate_transaction(*transaction, error);
 }

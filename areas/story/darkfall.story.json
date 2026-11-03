@@ -1,0 +1,118 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "darkfall",
+  "coverage": "complete",
+  "introduction": "Explore Darkfall’s forest paths, meet Grellinar and prepare his exact Agility-scroll exchange. Learn about Myle’s wreck, Graly’s camp and useful music while keeping travel, teaching, care and rescue as distinct stories.",
+  "orientation": [
+    "Enter from the current western or eastern surface route, or the reciprocal bushes route from Myrabolus. Learn the forest paths and a safe return before approaching the su lairs.",
+    "Grellinar exchanges one exact heart of Bel, orb of unmaking and mystic runed stone tablet for an Agility scroll. His current request has three materials, despite the tablet’s older mention of another artifact.",
+    "Bring each exact material loose in your inventory. Equipped or packed-away copies do not satisfy this preparation. Supplied compatible copies fit without your own boss victory, source visit or earlier lesson.",
+    "The heart and orb have foreign source leads and competing uses. Choose which giver’s exchange to make; a Grellinar receipt does not complete the other commissions.",
+    "Look for Grellinar at the tree house. Bring his three requested materials when you are ready to make the exchange.",
+    "The bushes passage connects Darkfall with Myrabolus. You do not need to SEARCH it for Grellinar’s exchange; learn the path and plan a safe return.",
+    "Graly and Grellinar can offer development guidance for your class. Ask about your level to hear their advice; following that advice and learning a skill are further steps.",
+    "Graly’s golden lyre suits lyre songs, including healing. To perform one, learn the song and equip a suitable instrument. Healing verses help eligible members of your group.",
+    "Myle’s carriage, Graly’s camp, jungle plants, trapped pets and endangered travelers suggest different ways to help. Their useful living or repaired outcomes are separate from scenery, collecting loot or ordinary kills.",
+    "The accepted exchange stays recorded after its materials are spent. Receiving the Agility scroll is separate from confirming a permanent stat gain, camp work, useful music or safe rescue."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 95300,
+      "name": "a su-monster",
+      "keyword": "su",
+      "description": "Su-monsters inhabit the forest paths and lairs. Prepare for encounters while you explore.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 95301,
+      "name": "the su-elder",
+      "keyword": "elder",
+      "description": "The su-elder wears spiked talons and carries fingerless su-monster gloves. These are different from the three materials Grellinar requests.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 95302,
+      "name": "Graly, the traveling bard",
+      "keyword": "graly",
+      "description": "Graly tends a campsite and carries a golden lyre. Ask about your level for advice suited to your class. Her camp and music suggest further stories that are not recorded as completed tasks yet.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 95303,
+      "name": "Myle, the merchant",
+      "keyword": "myle",
+      "description": "Myle is struggling to repair his wrecked carriage. His distress suggests a further story; this journal has no accepted carriage-repair task yet.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 95304,
+      "name": "Grellinar, the high ranger",
+      "keyword": "grellinar",
+      "description": "Grellinar accepts the heart of Bel, orb of unmaking and mystic runed stone tablet for an Agility scroll. You may recover the materials yourself or receive them from another player. Ask about your level for development advice suited to your class.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "grellinar-agility-scroll",
+      "title": "Grellinar’s Agility scroll",
+      "category": "story",
+      "summary": "Offer the heart of Bel, orb of unmaking and mystic runed stone tablet for Grellinar’s Agility scroll. Recovered or supplied copies fit without personal boss, route or teaching history. The accepted exchange is recorded separately from any lasting agility gain.",
+      "contracts": [
+        {
+          "giver_vnum": 95304,
+          "completion_key": "give=I:402,I:26614,I:32490;receive=I:406;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-32490",
+          "kind": "carried_item",
+          "text": "Carry the heart of Bel",
+          "hint": "Bring one heart of Bel loose in your inventory. You may recover it yourself or receive it from another player.",
+          "item_vnums": [
+            32490
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "prepare-26614",
+          "kind": "carried_item",
+          "text": "Carry the orb of unmaking",
+          "hint": "Bring one orb of unmaking loose in your inventory. You may recover it yourself or receive it from another player.",
+          "item_vnums": [
+            26614
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "prepare-402",
+          "kind": "carried_item",
+          "text": "Carry the mystic runed stone tablet",
+          "hint": "Bring one mystic runed stone tablet loose in your inventory. You may recover it yourself or receive it from another player.",
+          "item_vnums": [
+            402
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "kind": "completion",
+          "text": "Record Grellinar’s accepted exchange",
+          "hint": "The accepted three-material exchange stays recorded after payment. Receiving the scroll, completing a lesson and confirming lasting agility are separate outcomes.",
+          "contracts": [
+            {
+              "giver_vnum": 95304,
+              "completion_key": "give=I:402,I:26614,I:32490;receive=I:406;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

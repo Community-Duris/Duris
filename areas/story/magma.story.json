@@ -1,0 +1,194 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "magma",
+  "coverage": "complete",
+  "introduction": "Help Palenian study a drake’s smoldering heart, with the magma creatures, emperor’s court and fire giant emissary as separate encounter leads.",
+  "orientation": [
+    "Palenian studies elemental drakes on the molten plane. Find the planeswalker when present and ask hi, then task. These topics explain one request; each word does not complete a separate quest.",
+    "Cypheral, the greater magma drake, carries the exact smoldering heart. The ordinary magma drake and a generic carved part are different sources and items. Encounter, battle, recovery and accepted return remain separate.",
+    "Carry the exact heart loose for Palenian’s offering. A supplied exact heart can also fit; the native request does not require earlier conversation, a recorded personal kill or proof of original recovery.",
+    "Palenian exchanges the heart for a wand of writhing magma, his pipe of neverending flavors and vambraces of greater elemental defense, then departs. These three rewards belong to one accepted return.",
+    "The connected molten expanse includes a charred platform and a torrent of raging fire. Obsidian gates and the fire giant citadel are described in the lore, but the reviewed map does not establish an open route through those gates.",
+    "The planeswalker and Cypheral begin outside the ordinary grid and may move into it under native conditions. Current encounters establish where they are; remembered contacts and a new day do not promise availability.",
+    "The emperor, guardians, emissaries, dragon, efreeti, dao and captive elemental offer wider story leads. Their encounters, diplomacy, battles and rescue outcomes remain separate from Palenian’s accepted heart return."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 142014,
+      "name": "Palenian, the legendary planeswalker",
+      "keyword": "plaenian",
+      "description": "Palenian studies the power within elemental drakes. Address him as plaenian or planes and ask hi, then task, to hear his request. He accepts the exact smoldering heart, gives three magic items and departs.",
+      "topics": [
+        "hi",
+        "task"
+      ]
+    },
+    {
+      "mob_vnum": 142018,
+      "name": "the greater magma drake Cypheral",
+      "keyword": "cypheral",
+      "description": "Cypheral is the greater magma drake carrying the exact heart Palenian requests. Encountering the drake, defeating it and recovering that heart are separate events.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 142000,
+      "name": "a magma mephit",
+      "keyword": "mephit",
+      "description": "A magma mephit inhabits the molten expanse. Its encounter is separate from the exact heart return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 142001,
+      "name": "a magma mephit lord",
+      "keyword": "lord",
+      "description": "The magma mephit lord is another dangerous native encounter. Its defeat does not replace Palenian’s requested heart.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 142002,
+      "name": "a magma drake",
+      "keyword": "drake",
+      "description": "This magma drake differs from Cypheral. Its fiery-heart description does not establish that it carries the exact requested item.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 142003,
+      "name": "Sainafinalil the ancient red dragon",
+      "keyword": "sainafinalil",
+      "description": "Sainafinalil, the ancient red dragon, is an independent encounter. Palenian’s request does not require a recorded victory over this dragon.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 142017,
+      "name": "Chilimba, the Searing Emperor and Lord of All Magma",
+      "keyword": "chilimba",
+      "description": "Chilimba rules the magma realm with guardian mephits. His court is a separate exploration and encounter lead.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 142016,
+      "name": "a guardian magma mephit",
+      "keyword": "guardian",
+      "description": "Guardian magma mephits accompany Chilimba. Their protection of the emperor is separate from the accepted heart return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 142009,
+      "name": "Grish, emissary of the fire giants",
+      "keyword": "grish",
+      "description": "Grish represents the fire giants. An emissary and escort can be encountered separately from Palenian’s research.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 142010,
+      "name": "a fire giant shaman",
+      "keyword": "shaman",
+      "description": "A fire giant shaman guards an emissary. Its presence does not create another accepted local quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 142007,
+      "name": "a fire giant soldier",
+      "keyword": "soldier",
+      "description": "A fire giant soldier serves in the emissary’s escort. Escort encounters and any future diplomatic story need their own outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 142008,
+      "name": "a fire giant commander",
+      "keyword": "commander",
+      "description": "A fire giant commander organizes the escort. This is an optional encounter lead alongside the heart request.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 142004,
+      "name": "an efreeti patrol leader",
+      "keyword": "leader",
+      "description": "The efreeti patrol leader belongs to the wider plane’s lore. The reviewed placements do not establish a regularly available patrol encounter.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 142005,
+      "name": "an efreeti soldier",
+      "keyword": "efreeti",
+      "description": "The efreeti soldier belongs to the patrol lore. Its availability and any patrol objective need a defined source and outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 142006,
+      "name": "a magman warrior",
+      "keyword": "magman",
+      "description": "A magman warrior belongs to the plane’s inhabitants. Its description alone does not establish a current encounter or accepted request.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 142011,
+      "name": "a dao slave trader",
+      "keyword": "trader",
+      "description": "The dao slave trader is a narrative lead. No accepted local trade or captive-rescue quest is defined for it.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 142012,
+      "name": "a dao enforcer",
+      "keyword": "enforcer",
+      "description": "The dao enforcer belongs to the slaver narrative. A battle or rescue involving it would need its own verified outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 142013,
+      "name": "Erthol, the greater dao warlord",
+      "keyword": "erthol",
+      "description": "Erthol, the greater dao warlord, is a possible invasion lead. The current heart request does not require defeating him.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 142015,
+      "name": "a captive water elemental",
+      "keyword": "mob",
+      "description": "The captive water elemental suggests a rescue story. A captive description alone does not establish a playable rescue or completed liberation.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "palenian-drake-heart",
+      "title": "Bring the smoldering heart to Palenian",
+      "category": "request",
+      "summary": "Return the exact smoldering heart for Palenian’s three magic items and departure. The accepted return records this exchange without proving who defeated the drake or originally recovered the heart.",
+      "contracts": [
+        {
+          "giver_vnum": 142014,
+          "completion_key": "give=I:142000;receive=I:142002,I:142003,I:142004;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-142000",
+          "text": "Carry the exact smoldering heart loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            142000
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Cypheral carries the requested heart. Recover the exact item and carry it loose; a generic carved part, shard, reward item or held or nested heart does not prepare this offering. A supplied exact heart can also fit."
+        },
+        {
+          "id": "return",
+          "text": "Record Palenian’s accepted heart return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 142014,
+              "completion_key": "give=I:142000;receive=I:142002,I:142003,I:142004;disappear=1"
+            }
+          ],
+          "hint": "Offer the exact loose heart to the planeswalker when present. The accepted return, delivery of all three rewards and actual departure are separate consequences; personal source recovery and earlier dialogue are not native prerequisites."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

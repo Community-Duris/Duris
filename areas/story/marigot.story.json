@@ -1,0 +1,24 @@
+{
+  "schema_version": 2,
+  "revision": 1,
+  "source_area": "marigot",
+  "coverage": "complete",
+  "introduction": "Explore Fort Marigot and meet its people to uncover local requests.",
+  "orientation": [
+    "Start with look and exits to learn your surroundings.",
+    "Use help home to learn about hometowns and help quest for quest commands."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 5317,
+      "name": "Kerbien",
+      "keyword": "druid",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    }
+  ],
+  "stories": [],
+  "exclusions": []
+}

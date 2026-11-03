@@ -1,0 +1,27 @@
+# surface2011 builder questions and recommended resolutions
+
+Checkpoint 535, source snapshot c500ac51b8cd26540943257e7ca4e9807263ef74. These questions concern the historical full-area entry, the Norabi Map title, overlapping Surf and UnderDark map identities, the current Surface Sa’Dah campaign, 145 ambiguous active inbound references, and source-only QST content. They do not authorize activation, source edits, movement, merging, or archiving.
+
+## Explicit builder questions and recommended resolutions
+
+1. **Who owns the five surface2011 source files and can decide their status?** Recommended resolution: identify map, quest, deployment, and tool owners before proposing a change.
+2. **Why was surface2011 removed from areas/AREA in the 2013 merge-conflict commit?** Recommended resolution: ask the source-history owner whether this was retirement, replacement, or conflict cleanup; the commit message does not say.
+3. **Is “Norabi Map” an approved title for both surface2011 and underdark2011?** Recommended resolution: record distinct titles or approved aliases without using title equality to merge the two sources.
+4. **How does this map relate to the separately active Surface Realm?** Recommended resolution: confirm map and narrative lineage with both owners; the active map has different room VNUMs even though Sa’Dah’s quest text overlaps.
+5. **What is the intended relationship among surface2011, surf, and underdark2011?** Recommended resolution: retain all three as separate maps until their owners resolve the shared room, mobile, and object IDs.
+6. **Is the 300 by 300 grid and full 90,000-room map the intended editor/export output?** Recommended resolution: have the map owner confirm the complete grid and identify the source generator or editor.
+7. **Why does surface2011.zon have reset mode 2 but no reset commands?** Recommended resolution: confirm the intended zone/reset role; retain the historic 2011 flag change as evidence without inferring behavior.
+8. **Should surface2011 remain outside areas/AREA and areas/qst/AREA?** Recommended resolution: ask the manifest owner to state intended current WLD and QST loading; do not restore the historical row without that decision.
+9. **Which candidate map owns the 145 active inbound exit targets?** Recommended resolution: resolve each number against a builder-approved map; 134 also match Surf and 11 match all three maps.
+10. **Are the active sources’ 145 directions into #200000–#289999 intended entrances?** Recommended resolution: verify the destination and source owners for each of the 17 contributors before retaining or redirecting a route.
+11. **Is the internal four-direction graph complete?** Recommended resolution: have the mapper confirm all 360,000 authored directions and the one-component map; do not infer traversability from a source graph alone.
+12. **Should the map have any outbound connectors?** Recommended resolution: confirm whether its lack of external WLD exits is intentional; no candidate source return currently matches the active inbound set.
+13. **Does the current Surface Sa’Dah quest intentionally continue or replace the 2011 story?** Recommended resolution: document the shared text and the changed requirements/rewards as story lineage; do not treat it as proof that the map or its QST was retired.
+14. **Are the 37 QST giver records and 23 QA response blocks the complete intended campaign?** Recommended resolution: have the quest owner review giver coverage, completion branches, and any missing continuation without changing the authored contracts.
+15. **Are the 56 local item references in the QST meant to use surface2011.obj?** Recommended resolution: preserve the local items and document how they become available since the zone has no placement resets.
+16. **Are the 20 external QST item references intended to resolve to active Heavens, Breale, and Ship Yards objects?** Recommended resolution: confirm each of the 14 distinct active object identities with both source owners before moving or rewriting a reference.
+17. **Should code continue to bind #200011 and #200012 while their candidate mobiles are unlisted?** Recommended resolution: confirm the desired special-procedure behavior with code and mobile owners; do not infer a live binding from the numeric call.
+18. **Which repository or external source is authoritative for the 2011 map and QST content?** Recommended resolution: record editor, generator, export, and deployment provenance so the distinct variants can be preserved.
+19. **Does the active Surface area supersede only some narrative, or anything else in this source family?** Recommended resolution: decide this by explicit map, quest, and ownership records; the maps and full prototype records differ.
+20. **What disposition should apply after these questions are resolved?** Recommended resolution: retain the WLD, MOB, OBJ, ZON, and QST files in place until owners document their status; do not activate, merge, move, or archive them based only on the old manifest entry.
+21. **Do same-number QST values in Surf’s mobile range belong to Surf?** Recommended resolution: preserve the source QST grammar and owning file types: the 37 `surface2011.qst` headers are local giver keys and its 56 item operands in this numeric range reference local OBJs; `underdark2011.qst` has its own giver and four local OBJ references in that range. Neither QST is listed in `areas/qst/AREA`, so do not assign a Surf dependency from numeric overlap alone.

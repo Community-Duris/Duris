@@ -1,0 +1,23 @@
+# Underworld3 active boundary and typed-dependency supplement
+
+This supplement reconciles the [source-backed Underworld3 dossier](../zone-stories/UNDERWORLD3.md), current exit registers, candidate-map overlaps, exact typed-source scans, and bounded title identity. Results are source evidence only; installed access, portal use, and migration eligibility are not qualified.
+
+## Active map, boundaries, and title identity
+
+Active Underworld3 is listed at [areas/AREA](../../../areas/AREA#L145) and the QST index at [areas/qst/AREA](../../../areas/qst/AREA#L134), although no local QST, SHP, or story sidecar is present. Its title “The Underworld” is also used by active `underworld`, but the two are separately keyed contributors with distinct ranges. This is a title overlap, not evidence of replacement or a combined map; retain the identity result in [DUPLICATE_AND_REPLACED_ZONES.md](DUPLICATE_AND_REPLACED_ZONES.md).
+
+The active WLD has 283 rooms and 682/682 resolving exits in two weak components, the largest containing 238 rooms. It has nine inbound records, eight outbound records, and eight reciprocal reverse records. The single inbound-only edge is active `mobs_underdark` #24007 north to Underworld3 #30149 ([source](../../../areas/wld/mobs_underdark.wld#L174), [exit register](WORLD_CROSS_AREA_EXIT_REGISTER.csv#L389)); it is not an attic/source-only entrance. Outbound records connect to Moonshae, Mistywood, Twin Towers, Otower, Tundra, Foggy Woods, and Underdark as detailed in [Checkpoint 414](WORLD_CONNECTIVITY.md#checkpoint-414-underworld3-boundaries-and-directed-access). No fall or current fields are authored. Static adjacency does not qualify ordinary arrival, door/reset state, safe return, or portal availability.
+
+The all-95 inactive-WLD result records zero outside target references to Underworld3's active room VNUMs. Current cumulative source-only totals remain 11,993 overall / 415 Surf. Several unregistered candidate sources independently reuse some of the same room or prototype numbers; these are identity collisions, not active ingress. Preserve their existing candidate-specific dispositions: Cabal Hall row 22, Bastard row 13, Light Guildhall row 60, Nah row 77, Shadow Hall row 92, and Sunhall row 96. Their own WLD/ZON/MOB/OBJ/SHP identities must remain attached to those RETAIN proposals. In particular, active Underworld3 owns room #30104 and its compiled inn binding ([assignment](../../../src/specs/specs.assign.c#L2451)); Cabal Hall's same-number room describes a separate candidate map.
+
+## Typed dependencies and numeric false positives
+
+The exact active QST scan found no item command using Underworld3 object prototypes #30100–#30110; structured parsing found no external story-sidecar integer field for rooms #30000–#30282. No active outside ZON reset or SHP stock references a local Underworld3 mobile/object prototype. Broad numeric hits at `R C 30000` / `R E 30000` are currency and experience values, not item VNUM dependencies. Candidate-only reset and shop rows with overlapping numeric values are captured on the six RETAIN plans above and do not establish current consumers.
+
+A structured parse of all 442 OBJ source files counted 713 type-25 declarations in area-listed groups and 872 across all sources. No external active type-25 object targets an Underworld3 room. Underworld3's own paired portal objects #30009 and #30010 target its reset destinations #30219 and #30242 ([objects](../../../areas/obj/underworld3.obj#L137), [placements](../../../areas/zon/underworld3.zon#L18)). Unregistered candidate `nah` independently defines portal objects #30100/#30101 with same-number targets #30111/#30103; those target identities belong to Nah's unregistered WLD, not active Underworld3. Preserve that source-local interpretation on [Nah candidate row 77](ATTIC_CANDIDATE_DEPENDENCY_REGISTER.csv#L77).
+
+The compiled `inn` assignment at #30104 is the direct local room binding noted above. Other raw C/C++ occurrences in the scanned range are numeric constants or generic range arithmetic, not external Underworld3 route or prototype bindings. The source dossier remains authoritative for the 283-room environmental narrative, local reset-placed portals, kraken, Kromor approach, exile story, mining, and builder questions.
+
+## Migration disposition
+
+Keep active `underworld3` **DO NOT MOVE**, independently of active `underworld`. Add no Underworld3 candidate and grant no migration clearance. Keep each unregistered numeric-overlap source and its resets, shops, portals, and map claims with its current candidate owner until that candidate's separate map/dependency/editor/tooling review is resolved. See [coverage row 327](ZONE_COVERAGE_REGISTER.csv#L327).

@@ -1,0 +1,14 @@
+{
+  "schema_version": 2,
+  "revision": 1,
+  "source_area": "faang",
+  "coverage": "complete",
+  "introduction": "Explore Faang and meet its people to uncover local requests.",
+  "orientation": [
+    "Start with look and exits to learn your surroundings.",
+    "Use help home to learn about hometowns and help quest for quest commands."
+  ],
+  "contacts": [],
+  "stories": [],
+  "exclusions": []
+}

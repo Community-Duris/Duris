@@ -1,0 +1,542 @@
+{
+  "schema_version": 3,
+  "revision": 3,
+  "source_area": "willem",
+  "coverage": "complete",
+  "introduction": "Explore the ruins of Turolopolis: recover the Ring of Glory's badges, strengthen a bloodsaber, help the city's visitors and confront Willem's legacy.",
+  "orientation": [
+    "Lothrell, the sorrowful elf in the foothills outside the city, can tell you about Turolopolis and the Ring of Glory. Ask him about turol, story, spell and favor.",
+    "The five statues in the plaza lead to hostile, imprisoned heroes. Rub a statue to enter a mirrored chamber. Recovering a badge directly means defeating its bearer and looting it. Each colored badge also serves as a key, so keep the ones you need for travel before offering them.",
+    "Lothrell asks for five different Glory Badges: brown, green, blue, red and black. His reward includes a lesser bloodsaber. Sprecken can tell you how Kurtukr could improve that blade.",
+    "Corwyck studies the city's altered animals. The drow emissary longs for news of his people, while an inventive minotaur experiments with blue ooze in the sewers. Ask them about their troubles.",
+    "The minotaur carries the letter the emissary wants, but leaves after receiving his ooze. These two requests may take separate visits, another reset or materials obtained from another adventurer.",
+    "A weary slave seeks proof of Willem's death. Delivering the requested skull earns his reward; the journal records that exchange.",
+    "Bring the requested items loose in your inventory. Gifts and trades can supply them. Each accepted request remains in your journal after its materials are spent; gathering every ingredient yourself is optional."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 7103,
+      "name": "Corwyck",
+      "keyword": "corwyck",
+      "description": "An elderly druid studies the changes to the city and its animals. Ask about his work.",
+      "topics": [
+        "fountain",
+        "hopeless",
+        "holy",
+        "item",
+        "druid",
+        "park",
+        "forest",
+        "animals"
+      ]
+    },
+    {
+      "mob_vnum": 7105,
+      "name": "Gorma",
+      "keyword": "gorma",
+      "description": "Gorma wears the red Glory Badge in a mirrored room reached by RUB the battle-ready woman’s statue at the southern end of the plaza’s row.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7106,
+      "name": "Okhell",
+      "keyword": "okhell",
+      "description": "Okhell wears the black Glory Badge in a mirrored room reached by RUB the cloaked figure’s statue just south of the plaza’s centre.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7107,
+      "name": "Kalmidor",
+      "keyword": "kalmidor",
+      "description": "Kalmidor wears the blue Glory Badge in a mirrored room reached by RUB the Mountain Dwarf’s statue in the plaza’s centre.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7108,
+      "name": "Chlyridia",
+      "keyword": "chlyridia",
+      "description": "Chlyridia wears the green Glory Badge in a mirrored room reached by RUB the staff-bearing woman’s statue just north of the plaza’s centre.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7110,
+      "name": "Ballic",
+      "keyword": "ballic",
+      "description": "Ballic wears the brown Glory Badge in a mirrored room reached by RUB the rogue’s statue at the northern end of the plaza’s row.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7115,
+      "name": "a blue ooze",
+      "keyword": "ooze",
+      "description": "Four blue oozes start in a corner of the Plaza of Statues; only one placement carries the exact blue lump.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7120,
+      "name": "a naive adventurer",
+      "keyword": "adventurer",
+      "description": "The naive adventurer starts near the southern gate with a dusty book.",
+      "topics": [
+        "willem",
+        "palace",
+        "father"
+      ]
+    },
+    {
+      "mob_vnum": 7121,
+      "name": "Lothrell",
+      "keyword": "lothrell",
+      "description": "A sorrowful elf remembers the Ring of Glory and seeks its lost badges. Look for him in the foothills outside the city.",
+      "topics": [
+        "turol",
+        "yes",
+        "story",
+        "spell",
+        "favor"
+      ]
+    },
+    {
+      "mob_vnum": 7123,
+      "name": "a frenzied unicorn",
+      "keyword": "unicorn",
+      "description": "The mutated unicorn starts in the stables carrying the exact horn Corwyck accepts.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7124,
+      "name": "a Crimson Watch sentinel",
+      "keyword": "sentinel",
+      "description": "Two palace sentinels start at the guard post; only the second placement carries the crimson palace key.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7125,
+      "name": "a drow emissary",
+      "keyword": "emissary",
+      "description": "A drow emissary has been cut off from news of his people.",
+      "topics": [
+        "brooding",
+        "fate"
+      ]
+    },
+    {
+      "mob_vnum": 7126,
+      "name": "Kurtukr",
+      "keyword": "kurtukr",
+      "description": "A dwarven smith seeks a lesser bloodsaber and a caecilia stinger for his work.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7127,
+      "name": "Sprecken",
+      "keyword": "sprecken",
+      "description": "Kurtukr's enthusiastic companion explains their search for a bloodsaber.",
+      "topics": [
+        "bloodsaber",
+        "saber"
+      ]
+    },
+    {
+      "mob_vnum": 7128,
+      "name": "Orvalus",
+      "keyword": "orvalus",
+      "description": "A wandering mage accompanied by a young wood drake.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7129,
+      "name": "the caecilia",
+      "keyword": "caecilia",
+      "description": "The sewer caecilia starts in a smelly tunnel carrying a hidden stinger.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7130,
+      "name": "an inventive minotaur",
+      "keyword": "minotaur",
+      "description": "An inventive minotaur experiments with magical wrappings for his horns.",
+      "topics": [
+        "horn",
+        "horns"
+      ]
+    },
+    {
+      "mob_vnum": 7132,
+      "name": "a Crimson Watch jailor",
+      "keyword": "jailor",
+      "description": "The withered jailor starts in the prison intersection with the jail key.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7133,
+      "name": "a thri-kreen prisoner",
+      "keyword": "prisoner",
+      "description": "The thri-kreen prisoner starts in a prison holding room with routes to the cells.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7134,
+      "name": "a wooddrake",
+      "keyword": "drake",
+      "description": "The young wood drake shares Orvalus’s holding-room source.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7135,
+      "name": "a holy shaman",
+      "keyword": "shaman",
+      "description": "The old thri-kreen shaman has a rare holding-room placement.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7136,
+      "name": "Mishka",
+      "keyword": "mishka",
+      "description": "Mishka starts in a holding room with bedroom routes and several paths into a room with no exits.",
+      "topics": [
+        "willem"
+      ]
+    },
+    {
+      "mob_vnum": 7137,
+      "name": "Jalk",
+      "keyword": "jalk",
+      "description": "Jalk follows Willem from the bedchamber.",
+      "topics": [
+        "willem",
+        "winterhaven"
+      ]
+    },
+    {
+      "mob_vnum": 7138,
+      "name": "Willem",
+      "keyword": "willem",
+      "description": "Willem starts in his bedchamber carrying the hidden named skull, with Jalk and Amanthia following.",
+      "topics": [
+        "trap",
+        "fate",
+        "palace",
+        "gods",
+        "tharnadia",
+        "winterhaven",
+        "statue",
+        "ring",
+        "glory",
+        "hero",
+        "heroes"
+      ]
+    },
+    {
+      "mob_vnum": 7139,
+      "name": "Amanthia",
+      "keyword": "amanthia",
+      "description": "Amanthia follows Willem from the bedchamber.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 7140,
+      "name": "a servant of Willem",
+      "keyword": "slave",
+      "description": "A weary slave offers a reward for proof of Willem's death.",
+      "topics": [
+        "slave",
+        "rest",
+        "willem"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "corwyck-unicorn-horn",
+      "title": "Corwyck: bring the unicorn horn",
+      "category": "story",
+      "summary": "Corwyck believes a unicorn horn will help him treat the fountain. Bring him the horn from the city's frenzied unicorn; he offers an iron key before leaving to begin his work.",
+      "contracts": [
+        {
+          "giver_vnum": 7103,
+          "completion_key": "give=I:7103;receive=E:25000,I:7100;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "unicorn-horn",
+          "text": "Carry the unicorn’s exact horn",
+          "kind": "carried_item",
+          "item_vnums": [
+            7103
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The mutated unicorn can be found in the stables carrying this horn. Carry this item loose in your inventory for the offering."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Corwyck: bring the unicorn horn",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 7103,
+              "completion_key": "give=I:7103;receive=E:25000,I:7100;disappear=1"
+            }
+          ],
+          "hint": "Bring the requested materials together and offer them to the quest giver."
+        }
+      ]
+    },
+    {
+      "id": "lothrell-five-badges",
+      "title": "Lothrell: honour the five heroes",
+      "category": "story",
+      "summary": "Lothrell wants his companions' five colored Glory Badges for a memorial. Their imprisoned bearers are hostile; defeat them to recover their badges, or obtain matching badges from another adventurer. Bring all five together for his lesser bloodsaber.",
+      "contracts": [
+        {
+          "giver_vnum": 7121,
+          "completion_key": "give=I:7107,I:7110,I:7113,I:7116,I:7124;receive=E:500000,I:7131;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "brown-badge",
+          "text": "Carry one brown Glory Badge",
+          "kind": "carried_item",
+          "item_vnums": [
+            7124
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Ballic wears the brown badge in a mirrored room reached by RUB statue at the northernmost rogue statue in the plaza. Carry this item loose in your inventory for the offering."
+        },
+        {
+          "id": "green-badge",
+          "text": "Carry one green Glory Badge",
+          "kind": "carried_item",
+          "item_vnums": [
+            7116
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Chlyridia wears the green badge in a mirrored room reached by RUB statue at the staff-bearing woman just north of the plaza’s centre. Carry this item loose in your inventory for the offering."
+        },
+        {
+          "id": "blue-badge",
+          "text": "Carry one blue Glory Badge",
+          "kind": "carried_item",
+          "item_vnums": [
+            7113
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Kalmidor wears the blue badge in a mirrored room reached by RUB statue at the Mountain Dwarf in the centre of the plaza. Carry this item loose in your inventory for the offering."
+        },
+        {
+          "id": "red-badge",
+          "text": "Carry one red Glory Badge",
+          "kind": "carried_item",
+          "item_vnums": [
+            7107
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Gorma wears the red badge in a mirrored room reached by RUB statue at the battle-ready woman at the southern end of the row. Carry this item loose in your inventory for the offering."
+        },
+        {
+          "id": "black-badge",
+          "text": "Carry one black Glory Badge",
+          "kind": "carried_item",
+          "item_vnums": [
+            7110
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Okhell wears the black badge in a mirrored room reached by RUB statue at the cloaked figure just south of the plaza’s centre. Carry this item loose in your inventory for the offering."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Lothrell: honour the five heroes",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 7121,
+              "completion_key": "give=I:7107,I:7110,I:7113,I:7116,I:7124;receive=E:500000,I:7131;disappear=1"
+            }
+          ],
+          "hint": "Bring the requested materials together and offer them to the quest giver."
+        }
+      ]
+    },
+    {
+      "id": "emissary-timeworn-letter",
+      "title": "The drow emissary: recover the timeworn letter",
+      "category": "story",
+      "summary": "The imprisoned drow emissary wants news of his people. Bring him the timeworn letter carried by the inventive minotaur; he rewards you with a blue ribbon laced with silver thread.",
+      "contracts": [
+        {
+          "giver_vnum": 7125,
+          "completion_key": "give=I:7135;receive=E:50000,I:7137;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "timeworn-letter",
+          "text": "Carry the minotaur’s timeworn letter",
+          "kind": "carried_item",
+          "item_vnums": [
+            7135
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The minotaur begins in a dead end of the sewers carrying the letter. Carry this item loose in your inventory for the offering."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete The drow emissary: recover the timeworn letter",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 7125,
+              "completion_key": "give=I:7135;receive=E:50000,I:7137;disappear=1"
+            }
+          ],
+          "hint": "Bring the requested materials together and offer them to the quest giver."
+        }
+      ]
+    },
+    {
+      "id": "kurtukr-bloodsaber-upgrade",
+      "title": "Kurtukr: strengthen the bloodsaber",
+      "category": "story",
+      "summary": "Kurtukr can strengthen a lesser bloodsaber using the caecilia's stinger. Lothrell's reward is one way to obtain the blade; one supplied by another adventurer also works.",
+      "contracts": [
+        {
+          "giver_vnum": 7126,
+          "completion_key": "give=I:7131,I:7139;receive=I:7138;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "optional-badge-route",
+          "text": "Optional earlier route: honour Lothrell’s five heroes",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 7121,
+              "completion_key": "give=I:7107,I:7110,I:7113,I:7116,I:7124;receive=E:500000,I:7131;disappear=1"
+            }
+          ],
+          "optional": true,
+          "hint": "Lothrell rewards the five badges with a lesser bloodsaber. You can also obtain the blade from another adventurer."
+        },
+        {
+          "id": "lesser-bloodsaber",
+          "text": "Carry a lesser bloodsaber",
+          "kind": "carried_item",
+          "item_vnums": [
+            7131
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Obtain Lothrell’s lesser blade or a supplied copy. Carry this item loose in your inventory for the offering."
+        },
+        {
+          "id": "caecilia-stinger",
+          "text": "Carry the sewer caecilia’s exact stinger",
+          "kind": "carried_item",
+          "item_vnums": [
+            7139
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The sewer caecilia can be found in a smelly tunnel with the hidden stinger. Carry this item loose in your inventory for the offering."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete Kurtukr: strengthen the bloodsaber",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 7126,
+              "completion_key": "give=I:7131,I:7139;receive=I:7138;disappear=0"
+            }
+          ],
+          "hint": "Bring the requested materials together and offer them to the quest giver."
+        }
+      ]
+    },
+    {
+      "id": "minotaur-blue-ooze",
+      "title": "The minotaur: supply the blue ooze",
+      "category": "story",
+      "summary": "The inventive minotaur needs a lump of blue ooze for his horn-wrapping experiments. He shares the finished gauze wrappings, then leaves to try them.",
+      "contracts": [
+        {
+          "giver_vnum": 7130,
+          "completion_key": "give=I:7141;receive=E:10000,I:7142;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "blue-ooze",
+          "text": "Carry the exact lump of blue ooze",
+          "kind": "carried_item",
+          "item_vnums": [
+            7141
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Several blue oozes start in a corner of the Plaza of Statues, but only one placement carries this lump. Carry this item loose in your inventory for the offering."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete The minotaur: supply the blue ooze",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 7130,
+              "completion_key": "give=I:7141;receive=E:10000,I:7142;disappear=1"
+            }
+          ],
+          "hint": "Bring the requested materials together and offer them to the quest giver."
+        }
+      ]
+    },
+    {
+      "id": "slave-willems-skull",
+      "title": "The slave: deliver Willem’s named skull",
+      "category": "story",
+      "summary": "A weary slave has gathered a reward for proof of Willem's death. Bring him Willem's skull so he can spread the news.",
+      "contracts": [
+        {
+          "giver_vnum": 7140,
+          "completion_key": "give=I:7154;receive=C:200000;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "willems-skull",
+          "text": "Carry Willem’s named bloodstained skull",
+          "kind": "carried_item",
+          "item_vnums": [
+            7154
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Willem begins in his bedchamber with the hidden named skull and following companions. Carry this item loose in your inventory for the offering."
+        },
+        {
+          "id": "accepted-offering",
+          "text": "Complete The slave: deliver Willem’s named skull",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 7140,
+              "completion_key": "give=I:7154;receive=C:200000;disappear=1"
+            }
+          ],
+          "hint": "Bring the requested materials together and offer them to the quest giver."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

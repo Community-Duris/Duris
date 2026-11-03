@@ -8,6 +8,7 @@
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
+#include "world/zone_story_quest_runtime.h"
 #include "core/utils.h"
 #include "net/gmcp.h"
 #include <cjson/cJSON.h>
@@ -1202,6 +1203,7 @@ void gmcp_quest_status(struct char_data *ch)
 /* generate and send quest.map for bartender quests */
 void gmcp_quest_map(struct char_data *ch)
 {
+	zone_story_quest_runtime::temporary_placement placement;
 	int old_room, map_room;
 
 	if (!ch || !ch->desc)

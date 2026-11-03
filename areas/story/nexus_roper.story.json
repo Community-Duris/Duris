@@ -1,0 +1,125 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "nexus_roper",
+  "coverage": "complete",
+  "introduction": "Find Sebastian Lodehammer, prepare four exact ancient roper tentacles, and keep the accepted key exchange separate from wider cavern and nexus progression.",
+  "orientation": [
+    "Arrive in the Roper Den nexus area to discover it. Look for Sebastian Lodehammer to reveal his request; the journal keeps your current supplies separate from accepted history.",
+    "Sebastian’s home is a concealed cave near the cave mouth. Finding and entering that passage is different from meeting him or completing his request; look for him where he is actually present.",
+    "Ask Sebastian about roper, tentacle, ropers, hello or hi. These words lead to one response about tentacles and a key. Hearing it does not complete the exchange.",
+    "Bring four exact ancient roper tentacles together, loose in your inventory. Exact copies supplied by another player also fit; a prior conversation, remembered recovery or personal kill is not required.",
+    "The optional tentacle row describes what you carry now. Fewer than four are incomplete preparation, and packed supplies must be taken out before offering them. A flaming key cannot replace tentacles.",
+    "Tentacles are stocked on some colossal ropers in the den. Remaining stock and lawful recovery depend on the actual encounter; the item’s name does not establish a carving recipe or guarantee every roper carries one.",
+    "Sebastian’s accepted exchange consumes the four offered tentacles and awards a flaming key. Later missing materials, a transferred key or a used reward do not erase the recorded exchange.",
+    "The flaming key’s intended onward access needs builder integration. Carrying it does not prove that a hatch was unlocked, that you crossed a barrier or that flames protected you.",
+    "Young, baby, mature, large, elder, ancient and colossal ropers are different encounters. Their native combat and movement rules matter; a sighting or defeat alone does not record a useful ecological result or protected traveler.",
+    "The cave winds through side caverns toward hot, fiery passages and a nexus chamber. Follow the exits actually available. Entering a room does not by itself record guided travel, rescue or a lasting safe route.",
+    "A nexus stone, when actually installed, follows its own guardian, allegiance, level and waiting rules. Approaching it, touching it, fully turning it and sharing its rewards are different outcomes.",
+    "The builder plan covers route knowledge, lawful supply, roper encounters, onward access, guided return and useful nexus control. Further objectives will appear as their successful actions and lasting results are integrated."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 130400,
+      "name": "a young roper",
+      "keyword": "young",
+      "description": "A young roper is one of the den’s native encounters. Its presence alone does not establish a quest contribution or a useful outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 130401,
+      "name": "an mature roper",
+      "keyword": "mature",
+      "description": "A mature roper is a distinct native encounter. Its movement and sneaking reactions need actual encounter qualification before they become story objectives.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 130402,
+      "name": "a baby roper",
+      "keyword": "baby",
+      "description": "A baby roper is native mobile stock. Care, protection or ecological work would need an explicit task and a surviving beneficiary.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 130403,
+      "name": "a large roper",
+      "keyword": "large",
+      "description": "A large roper is one of the den’s threatening encounters. A defeat is separate from an accepted protection or guidance task.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 130404,
+      "name": "an elder roper",
+      "keyword": "elder",
+      "description": "An elder roper is native encounter stock. Its title does not establish a special ingredient, lesson or quest reward.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 130405,
+      "name": "an ancient roper",
+      "keyword": "ancient",
+      "description": "An ancient roper is distinct from the stocked colossal tentacle carriers. The tentacle’s name does not guarantee this creature is its source.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 130406,
+      "name": "a colossal roper",
+      "keyword": "colossal",
+      "description": "Some colossal ropers carry the native ancient tentacles. Recovery, supplied custody, combat and Sebastian’s accepted four-item exchange are separate events.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 130407,
+      "name": "Sebastian Lodehammer",
+      "keyword": "sebastian",
+      "description": "Sebastian offers a flaming key for four exact ancient roper tentacles. His five topic words share one response. Supplied copies remain eligible; his native exchange has no departure.",
+      "topics": [
+        "roper",
+        "tentacle",
+        "ropers",
+        "hello",
+        "hi"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "tentacles-for-sebastian",
+      "title": "Four tentacles for Sebastian",
+      "category": "request",
+      "summary": "Sebastian trades a flaming key for four ancient roper tentacles brought together. Recovered or supplied exact copies fit; onward access needs its own integration.",
+      "contracts": [
+        {
+          "giver_vnum": 130407,
+          "completion_key": "give=I:130400,I:130400,I:130400,I:130400;receive=I:130401;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-tentacles",
+          "kind": "carried_item",
+          "text": "Carry four ancient roper tentacles together",
+          "hint": "Keep all four loose in your inventory before offering. Supplied exact copies also fit. A remembered source find or a flaming key cannot replace them.",
+          "item_vnums": [
+            130400
+          ],
+          "count": 4,
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "kind": "completion",
+          "text": "Complete Sebastian’s four-tentacle exchange",
+          "hint": "Offer the exact tentacles to Sebastian when he can accept them. The accepted exchange records history separately from current supplies or later key ownership.",
+          "contracts": [
+            {
+              "giver_vnum": 130407,
+              "completion_key": "give=I:130400,I:130400,I:130400,I:130400;receive=I:130401;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

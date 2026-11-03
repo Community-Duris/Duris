@@ -1,0 +1,332 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "valley_crushk",
+  "coverage": "complete",
+  "introduction": "Follow Flazoh’s bandit bounty and explore the valley’s woodland, faerie courtesy and court, quiet hermit, hungry villager, young warrior, village trade and guarded civic stories.",
+  "orientation": [
+    "Discover the valley, follow its wooded paths and hill road, and meet the faeries, hermit and people of Minthka. Keep a known route back as you explore.",
+    "Flazoh offers a bounty for the human bandits’ shivs. Hi and hello share one response; asking both words does not complete two quests.",
+    "Prepare one exact bandit shiv loose in your inventory. An equipped or packed-away shiv does not satisfy this current preparation, and a different sword cannot replace it.",
+    "A shiv recovered from its source or an exact copy supplied by another player fits Flazoh’s request. A supplied copy does not claim your own first recovery or personal bandit kill.",
+    "The local sneaky bandit is different from the human bandits that supply this shiv. Find the correct item rather than assume all bandits carry the same weapon.",
+    "Offer the exact shiv when Flazoh can accept it. His accepted bounty stays recorded after the shiv is spent; current coin holdings alone do not prove a completed bounty or confirm payment.",
+    "The old sign and faerie gate descriptions suggest courtesy as the way forward. Speaking, unlocking, opening the gate, crossing and returning safely are different actions.",
+    "The faerie court has inner doors and residents with their own possessions. Reaching the king or holding his jewellery does not yet prove a useful service to the court.",
+    "The healing clearing and wildlife suggest longer stories about refuge and care. Passive recovery, ordinary combat and loot do not yet count as completed rescue or habitat work.",
+    "Esroh values his quiet home. The poor villager needs help, and the boy dreams of being a warrior. Their descriptions guide exploration; useful favors, feeding and training need further integration before they can be recorded as completed quests.",
+    "Minthka’s bakery, grocer and magician offer their listed goods. A successful purchase, receiving an item and using it for someone’s benefit are different outcomes; carried merchant equipment is not automatically for sale.",
+    "The leader’s home and guarded closet have doors, keys and a dangerous dog. Keep their costs and a way back; gaining access is separate from an authored civic favor or a surviving return."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 2001,
+      "name": "a furry white rabbit",
+      "keyword": "rabbit",
+      "description": "This is a small, white rabbit with very soft fur.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2002,
+      "name": "a brown squirrel",
+      "keyword": "squirrel",
+      "description": "This is a tiny, brown squirrel with a bushy tail.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2003,
+      "name": "a tiny sparrow",
+      "keyword": "sparrow",
+      "description": "This is a very beautiful, tiny bird with brown body and wings.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2004,
+      "name": "a small rodent",
+      "keyword": "rodent",
+      "description": "This is a small, brown rodent that looks almost like a mouse.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2005,
+      "name": "a white wolf",
+      "keyword": "wolf",
+      "description": "This is a very beautiful, majestic looking wolf with snow white fur.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2006,
+      "name": "a wise old owl",
+      "keyword": "owl",
+      "description": "This is a very large owl with brown feathers and bright yellow eyes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2007,
+      "name": "a sneaky bandit",
+      "keyword": "bandit",
+      "description": "This is a small man dressed in black leather and a mask to hide his identity.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2008,
+      "name": "a wandering gypsy",
+      "keyword": "gypsy",
+      "description": "This is an old, scruffy woman with strangly, grey hair.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2009,
+      "name": "a seasoned warrior",
+      "keyword": "warrior",
+      "description": "This is a scruffy human dressed in leather.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2010,
+      "name": "a young cleric",
+      "keyword": "cleric",
+      "description": "He smiles at you and says, 'Do you know the way to the town of Verzanan?'.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2011,
+      "name": "an evil magician",
+      "keyword": "magician",
+      "description": "He growls at you, 'What are you looking at?!?!?!'.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2012,
+      "name": "a wise, old man",
+      "keyword": "man",
+      "description": "He says, 'Did I tell you the story about when I slayed a dragon bare-handed?'.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2013,
+      "name": "a deer",
+      "keyword": "deer",
+      "description": "This is a large, beautiful deer with soft brown and grey fur.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2014,
+      "name": "a small grey fox",
+      "keyword": "fox",
+      "description": "This is a small fox with grey fur and small white blotches around its eyes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2015,
+      "name": "a merchant",
+      "keyword": "merchant",
+      "description": "This is a tall, human merchant trying to earn an honest living.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2016,
+      "name": "a moon faerie",
+      "keyword": "faerie",
+      "description": "This faerie glows with an inner radiance much like the full moon on a dark night.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2017,
+      "name": "an iridescent faerie",
+      "keyword": "faerie",
+      "description": "The iridescent faerie swirls in a myriad of colors blending each color into itself seeming to blur.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2018,
+      "name": "an opal faerie",
+      "keyword": "faerie",
+      "description": "The opal faerie glints like the fog that leaves morning dew, and you see glints of fire-light dancing inside.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2019,
+      "name": "a rainbow faerie",
+      "keyword": "faerie",
+      "description": "The rainbow faerie is splashed with vivid colors of the rainbow brightly hued.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2020,
+      "name": "an emerald faerie",
+      "keyword": "faerie",
+      "description": "This is a tiny faerie that emits bright breen glints of light which sparkle vividly.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2021,
+      "name": "a glass faerie",
+      "keyword": "faerie",
+      "description": "This faerie is totally transluscent and the images behind it are blurred from the refraction of light passing through.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2022,
+      "name": "a spider faerie",
+      "keyword": "faerie",
+      "description": "This faerie is obsidian black with hair that looks like fine silk.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2023,
+      "name": "the royal king of the faeries",
+      "keyword": "faerie",
+      "description": "The royal king of the faeries has a regal aura about him.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2024,
+      "name": "the faerie cleric",
+      "keyword": "faerie",
+      "description": "The faerie cleric is surrounded by a bright, white aura.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2025,
+      "name": "the faerie mage",
+      "keyword": "faerie",
+      "description": "The magical essence of this faerie brings forth power from the earth, and channels it into the air around it as magical energy.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2026,
+      "name": "Esroh the hermit",
+      "keyword": "esroh",
+      "description": "Esroh welcomes visitors while enjoying solitude. Meeting him can guide a respectful visit; a useful favor needs further integration.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2027,
+      "name": "a village guardian",
+      "keyword": "guardian",
+      "description": "This is a large warrior hired to protect the town of Minthka.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2028,
+      "name": "a village salesman",
+      "keyword": "salesman",
+      "description": "He looks like he would bargain for hours and hours to try to make a deal.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2029,
+      "name": "a village poor man",
+      "keyword": "man",
+      "description": "The poor villager begs for help and appears hungry. Meeting him, buying food and making him better off are different outcomes; his deeper assistance needs further integration.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2030,
+      "name": "the village blacksmith",
+      "keyword": "blacksmith",
+      "description": "He looks very muscular from pounding iron all day.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2031,
+      "name": "the village baker",
+      "keyword": "baker",
+      "description": "The village baker is covered in flour as he is busy preparing his bread.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2032,
+      "name": "the village grocer",
+      "keyword": "grocer",
+      "description": "The village grocer smiles and says, 'What would ya like?'.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2033,
+      "name": "the village magician",
+      "keyword": "magician",
+      "description": "The village magician says, 'Yes? How may I help you?'.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2034,
+      "name": "the village leader",
+      "keyword": "leader",
+      "description": "The village leader is a large man about 6'1\" tall and weighing 300 lbs.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2035,
+      "name": "a village boy",
+      "keyword": "boy",
+      "description": "The village boy dreams of becoming a warrior and asks for a sword in his description. This does not yet create an accepted sword quest or recorded training outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2036,
+      "name": "a village girl",
+      "keyword": "girl",
+      "description": "She is a petit little thing with long, curly hair.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2037,
+      "name": "the guardian dog",
+      "keyword": "dog",
+      "description": "The dog is hardly small enough to fit in the closet -- his neck is so thick his master uses belts for a collar -- the normal dog collar type things just don't work since they're too small.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 2038,
+      "name": "Flazoh the bounty hunter",
+      "keyword": "flazoh",
+      "description": "Flazoh fears the human bandits and offers a bounty for their shivs. Hi and hello share one briefing. One exact recovered or supplied bandit shiv fits his request; a personal kill is not a separate requirement.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "claim-flazohs-bandit-bounty",
+      "title": "Claim Flazoh’s bandit bounty",
+      "category": "request",
+      "summary": "Flazoh accepts one exact bandit shiv for his promised coin bounty. A recovered or supplied copy fits. Current preparation, accepted turn-in, personal sourcing and confirmed payment have distinct evidence.",
+      "contracts": [
+        {
+          "giver_vnum": 2038,
+          "completion_key": "give=I:43143;receive=C:4000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-bandit-shiv",
+          "kind": "carried_item",
+          "text": "Carry the bandit shiv",
+          "hint": "Bring one exact bandit shiv loose in your inventory. Recovered or supplied copies fit. Equipping or packing it does not satisfy this preparation, and this row does not claim a personal kill or first source recovery.",
+          "item_vnums": [
+            43143
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "accepted-bandit-bounty",
+          "kind": "completion",
+          "text": "Complete Flazoh’s bandit bounty",
+          "hint": "Offer the exact shiv when Flazoh can accept it. The accepted turn-in stays recorded after the material is spent. Confirming the promised coin payment is separate from current preparation and coin possession.",
+          "contracts": [
+            {
+              "giver_vnum": 2038,
+              "completion_key": "give=I:43143;receive=C:4000;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

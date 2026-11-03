@@ -210,9 +210,16 @@ void event_pet_death(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*
 
 int setup_pet(P_char mob, P_char ch, int duration, int flag)
 {
+	return setup_pet(mob, ch, duration, flag, nullptr);
+}
+
+int setup_pet(P_char mob, P_char ch, int duration, int flag, bool *applied)
+{
 	struct affected_type af;
 	P_obj globe;
 	string name;
+	if (applied)
+		*applied = false;
 	if (collector_presence_is_npc(mob) || !training_dummy_capture_target_allowed(mob) ||
 	    !training_dummy_capture_target_allowed(ch))
 		return -1;
@@ -271,6 +278,8 @@ int setup_pet(P_char mob, P_char ch, int duration, int flag)
 		mob->player.name = str_dup(name.c_str());
 	}
 
+	if (applied)
+		*applied = true;
 	return duration;
 }
 

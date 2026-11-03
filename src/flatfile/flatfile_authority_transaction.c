@@ -19,7 +19,7 @@ constexpr uint32_t transaction_version = 2;
 constexpr uint32_t transaction_legacy_version = 1;
 constexpr size_t transaction_maximum_images = flatfile_authority_transaction_maximum_operations;
 constexpr size_t transaction_maximum_filename = 192;
-constexpr size_t transaction_maximum_bytes = 256 * 1024 * 1024;
+constexpr size_t transaction_maximum_bytes = flatfile_authority_transaction_maximum_bytes;
 constexpr const char *transaction_filename = ".critical-authority-transaction";
 constexpr const char *lock_filename = ".critical-authority.lock";
 std::mutex authority_mutex;

@@ -1,0 +1,249 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "bugger",
+  "coverage": "complete",
+  "introduction": "Explore the bugger colony, meet its agitated Queen, and recover her two lost eggs and an abandoned carapace.",
+  "orientation": [
+    "The colony connects with the underdark through its entrance and with a mossy tunnel through a hidden passage. Searching, opening a passage and crossing it are different actions.",
+    "Ask the Queen hello or agitated in her chamber. Hi is another greeting for the same conversation lead.",
+    "Several eggs look alike. Examine their descriptions: the lost egg and the misplaced egg are the two requested kinds. The tasty food egg from an attendant’s pouch is returned with a wrong-kind response.",
+    "The requested eggs are hidden room objects. Search the storage cavern and unfinished tunnels, then recover the exact eggs you find. Searching alone does not put an egg in your inventory.",
+    "The abandoned carapace is inside a dead bugger in the workers’ tunnel. Recover the contents; the body itself does not need to be carried or carved.",
+    "Carry the two distinct eggs and the carapace loose together before offering one to the Queen. Three copies of one egg, a held item or an item still inside a pouch do not prepare the complete set.",
+    "The Queen returns spiked carapace armor for the accepted set. Current item checklists change as items are spent, while recorded acceptance remains in the journal.",
+    "Sentinels, attendants, workers, caretakers, fungi, brood and slime pools describe a larger colony story. Caring for young, transporting eggs and resolving the colony’s threats need their own defined outcomes."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 6402,
+      "name": "the bugger Queen",
+      "keyword": "queen",
+      "description": "Ask hello or agitated about her lost eggs and an abandoned carapace. Gather the two distinct requested eggs and the carapace, then carry the complete set loose before offering one.",
+      "topics": [
+        "hi",
+        "hello",
+        "agitated"
+      ]
+    },
+    {
+      "mob_vnum": 6400,
+      "name": "a bugger sentinel",
+      "keyword": "sentinel",
+      "description": "This sentinel guards the colony entrance. Its encounter and battle are separate from returning the Queen’s requested items.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6401,
+      "name": "a bugger sentinel",
+      "keyword": "sentinel",
+      "description": "This other sentinel also guards the entrance. Similar names do not make the two sentinels one creature or a required quest battle.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6403,
+      "name": "a larvae",
+      "keyword": "larvae",
+      "description": "The larvae wait in the brooding tunnels. Their care and growth form a wider colony story.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6404,
+      "name": "a pupa",
+      "keyword": "pupa",
+      "description": "The pupa wait in the brooding tunnels. Their growth is a wider story lead, separate from the Queen’s item return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6405,
+      "name": "a baby adult",
+      "keyword": "baby",
+      "description": "These young adults inhabit the brood. Their encounter does not record nursing, maturation or transport.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6406,
+      "name": "a bugger attendant",
+      "keyword": "attendant",
+      "description": "An attendant tends the colony. Several attendants share this name; their roles and equipment can differ.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6407,
+      "name": "a bugger attendant",
+      "keyword": "attendant",
+      "description": "An attendant tends the colony. Several attendants share this name; their roles and equipment can differ.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6408,
+      "name": "a bugger attendant",
+      "keyword": "attendant",
+      "description": "An attendant tends the colony. Several attendants share this name; their roles and equipment can differ.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6409,
+      "name": "a bugger attendant",
+      "keyword": "attendant",
+      "description": "This attendant wears a carrying pouch with food eggs. Those tasty eggs are the kind the Queen rejects, rather than the two requested lost eggs.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6410,
+      "name": "a spotted fungus",
+      "keyword": "fungus",
+      "description": "Spotted fungus grows among the colony tunnels. Its encounter and threats belong to the wider colony story.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6411,
+      "name": "a bugger",
+      "keyword": "caretaker",
+      "description": "The caretaker works in the storage cavern, where one lost egg can be found by searching.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6412,
+      "name": "a bugger",
+      "keyword": "digging",
+      "description": "Workers enlarge the unfinished tunnels. Search those rooms for a misplaced egg; excavation and room search are different actions.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6413,
+      "name": "a bugger",
+      "keyword": "digging",
+      "description": "Other workers also enlarge the tunnels. Their similar names do not record a personal recovery or a completed excavation.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6414,
+      "name": "a bugger",
+      "keyword": "bugger",
+      "description": "This bugger inhabits the deeper tunnels. Exploration and battle are separate from accepted return history.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6415,
+      "name": "a bugger",
+      "keyword": "drone",
+      "description": "Drones move through the colony. Egg transport and care are wider story leads that need defined outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6416,
+      "name": "a bugger",
+      "keyword": "servant",
+      "description": "The Queen’s servants occupy her chamber. Their presence and the pheromone trail help explain the colony.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6417,
+      "name": "a wriggling pupa",
+      "keyword": "pupa",
+      "description": "A wriggling pupa inhabits the slime pools. Its encounter does not record maturation or rescue.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6418,
+      "name": "a grotesque larvae",
+      "keyword": "larvae",
+      "description": "A grotesque larva inhabits the slime pools. Its encounter belongs to the wider brood story.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6419,
+      "name": "a bugger slime matron",
+      "keyword": "matron",
+      "description": "The slime matron inhabits the pools. Her encounter and any battle remain separate from the Queen’s request.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6420,
+      "name": "a spotted fungus",
+      "keyword": "fungus",
+      "description": "This other spotted fungus also inhabits the tunnels. Its similar name does not merge its encounter with another fungus.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6421,
+      "name": "a six-legged insect",
+      "keyword": "six",
+      "description": "The six-legged insects inhabit the tunnels. Their threats form an exploration lead, separate from accepted quest completion.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "queen-eggs-and-carapace",
+      "title": "Return the Queen’s lost eggs and abandoned carapace",
+      "category": "request",
+      "summary": "Gather the lost egg, the misplaced egg and an abandoned carapace, then return the complete set for spiked carapace armor. The tasty food egg is a rejected offering, rather than a second quest.",
+      "contracts": [
+        {
+          "giver_vnum": 6402,
+          "completion_key": "give=I:6403,I:6404,I:6405;receive=I:6406;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-6403",
+          "text": "Carry the lost bugger egg loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            6403
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Search the storage cavern and examine the egg described as lost. Carry that exact egg loose; the tasty food egg and a second misplaced egg do not substitute for it."
+        },
+        {
+          "id": "material-6404",
+          "text": "Carry the misplaced bugger egg loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            6404
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Search the unfinished tunnels and examine the egg described as misplaced. Carry that exact egg loose with the lost egg and carapace."
+        },
+        {
+          "id": "material-6405",
+          "text": "Carry the abandoned bugger carapace loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            6405
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Look inside the dead bugger in the deep workers’ tunnel and recover the carapace. Carry it loose; you do not need to carry the body or carve a fresh kill."
+        },
+        {
+          "id": "return",
+          "text": "Record the Queen’s accepted eggs-and-carapace return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6402,
+              "completion_key": "give=I:6403,I:6404,I:6405;receive=I:6406;disappear=0"
+            }
+          ],
+          "hint": "Carry both distinct requested eggs and the carapace loose together, then offer one to the Queen when present. The whole set is consumed for spiked carapace armor. Supplied exact items also fit; getting the reward and wearing it are later outcomes."
+        }
+      ]
+    }
+  ],
+  "exclusions": [
+    {
+      "reason": "The Queen rejects food egg6402 and returns the same prototype kind. Preserve native settlement evidence without counting this wrong-egg response as a completed story, achievement or daily. Same-kind replacement is not proof of returning the same physical UID.",
+      "contracts": [
+        {
+          "giver_vnum": 6402,
+          "completion_key": "give=I:6402;receive=I:6402;disappear=0"
+        }
+      ]
+    }
+  ]
+}

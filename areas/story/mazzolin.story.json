@@ -1,0 +1,380 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "mazzolin",
+  "coverage": "complete",
+  "introduction": "Gather the five different pieces of Aeirayne’s hematite star, with the queen’s court, sewers, dungeons, shrine and barracks as separate encounter leads.",
+  "orientation": [
+    "Find Aeirayne at the Shrine of the Spider Queen when she is present. Ask hello, hi or help, then star, to hear her request. These words describe one request rather than separate completed quests.",
+    "The five star pieces look identical. Their sources are Queen Ze’rila, one white blugrul, Zantilanis, one whirlpool tentamort and the sludge dragon. Five copies of the same piece cannot replace one of each.",
+    "Carry all five different pieces loose and offer them together. Supplied exact pieces can also fit; the native request does not require a remembered conversation, personal kills or proof of original recovery.",
+    "Aeirayne gives the sleeves of zephyrs and the wand of the Spider Queen, then departs. One recorded return describes the exchange; actual reward delivery and departure remain separate consequences.",
+    "The basalt cave connects to the surrounding UnderDark. Protected doors, hidden passages and the dungeon’s downward routes make access and return separate challenges.",
+    "Hidden humming orbs in the dungeons can lead back to the Hall of Golems after discovery. The shrine leads to a blasted plain with tar and acid pools providing different return routes. Current visibility and admitted travel matter.",
+    "The court, inquisition, undead illithids, spiders, sewer creatures, guards and gladiator are wider encounter leads. Their battles and any future rescue, arena or temple stories remain separate from the accepted star return."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 21323,
+      "name": "Aeirayne",
+      "keyword": "aeirayne",
+      "description": "Aeirayne needs all five pieces of her hematite star. Ask hello, hi or help, then star. She accepts the exact five-piece bundle for her sleeves and a wand, then departs.",
+      "topics": [
+        "hello",
+        "hi",
+        "help",
+        "star"
+      ]
+    },
+    {
+      "mob_vnum": 21301,
+      "name": "Ze'rila",
+      "keyword": "zerila",
+      "description": "Queen Ze’rila carries one of the five distinct star pieces. Her court and followers are separate encounter leads.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21308,
+      "name": "a white blugrul",
+      "keyword": "white",
+      "description": "One white blugrul in the sewers carries a distinct star piece. Other white blugrul encounters do not guarantee that piece.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21315,
+      "name": "Zantilanis the Rouge Elf",
+      "keyword": "zantilanis",
+      "description": "Zantilanis in the Pit of Lost Hope carries a distinct star piece. Recovering it and finding a return route are separate outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21325,
+      "name": "a mentenozan tentamort",
+      "keyword": "tentamort",
+      "description": "A mentenozan tentamort in the festering whirlpool carries a distinct star piece. Another tentamort of the same kind does not guarantee it.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21328,
+      "name": "a sludge dragon",
+      "keyword": "sludge",
+      "description": "The sludge dragon in the sewers carries a distinct star piece and a separate rune stone. The stone is not a piece of Aeirayne’s star.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21300,
+      "name": "a drow golem",
+      "keyword": "golem",
+      "description": "Drow golems guard the polished basalt approach. Their encounters are separate from the accepted star return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21302,
+      "name": "Arl'Karoth",
+      "keyword": "arlkaroth",
+      "description": "Warlord Arl’Karoth follows the queen. His protection of the court does not make him the source of her star piece.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21303,
+      "name": "Zanzilanen",
+      "keyword": "zanzilanen",
+      "description": "Zanzilanen accompanies the queen. His encounter and equipment remain separate from her star piece.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21304,
+      "name": "an elite guard",
+      "keyword": "elite",
+      "description": "Elite guards defend the stairs and court. Their battles are optional encounter leads alongside the star request.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21305,
+      "name": "a Mazzolin stormtrooper",
+      "keyword": "stormtrooper",
+      "description": "Mazzolin stormtroopers guard the private quarters. Their presence does not record access through a protected door.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21306,
+      "name": "a black blugrul",
+      "keyword": "black",
+      "description": "Black blugruls inhabit the sewers. They are distinct from the particular white blugrul carrying a star piece.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21307,
+      "name": "a red blugrul",
+      "keyword": "red",
+      "description": "Red blugruls are another sewer encounter. Their defeat does not substitute for an exact star piece.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21309,
+      "name": "an iridescent blugrul",
+      "keyword": "iridescent",
+      "description": "An iridescent blugrul belongs to the wider sewer encounters. Its appearance does not establish another accepted quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21310,
+      "name": "a green blugrul",
+      "keyword": "green",
+      "description": "Green blugruls inhabit the sewers. They are optional encounters rather than additional star-piece sources.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21311,
+      "name": "the augurist",
+      "keyword": "augurist",
+      "description": "The augurist’s chamber is a separate court and religious lead. No accepted local augury request is defined.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21312,
+      "name": "an inquisitor",
+      "keyword": "inquisitor",
+      "description": "The inquisitor presides over the drowish council. Its encounter does not prove a captive has been freed.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21313,
+      "name": "a torturer",
+      "keyword": "torturer",
+      "description": "The torturer accompanies the inquisitor. A future captive-rescue story needs a defined liberation outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21314,
+      "name": "an executioner",
+      "keyword": "executioner",
+      "description": "The executioner accompanies the inquisitor. Defeating it does not by itself complete Aeirayne’s return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21316,
+      "name": "an undead illithid",
+      "keyword": "undead",
+      "description": "An undead illithid inhabits the dungeons. It is a separate encounter, not a star-piece source.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21317,
+      "name": "an undead illithid",
+      "keyword": "undead",
+      "description": "Another undead illithid variant inhabits the dungeons. Identical names do not establish identical encounter roles.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21318,
+      "name": "an undead illithid",
+      "keyword": "undead",
+      "description": "A further undead illithid variant belongs to the dungeon encounters. Its battle remains independent of the star return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21319,
+      "name": "an illithid ghost",
+      "keyword": "ghost",
+      "description": "An illithid ghost haunts the dungeons. A haunting story would need its own verified outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21320,
+      "name": "a vampire illithid",
+      "keyword": "vampire",
+      "description": "A vampire illithid inhabits the dungeons. Its encounter is separate from Zantilanis and the star piece.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21321,
+      "name": "a death widow",
+      "keyword": "widow",
+      "description": "A death widow inhabits the keep. It is an independent spider encounter alongside the shrine story.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21322,
+      "name": "a death widow",
+      "keyword": "widow",
+      "description": "Another death widow variant inhabits the keep. Its encounter does not complete a separate native request.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21324,
+      "name": "a death widow",
+      "keyword": "widow",
+      "description": "A further death widow variant belongs to the keep’s spider encounters. It does not replace Aeirayne’s requested pieces.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21326,
+      "name": "a mentenozan tentamort",
+      "keyword": "tentamort",
+      "description": "This mentenozan tentamort variant belongs to the whirlpool encounters. It is distinct from the exact stocked star-piece source.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21327,
+      "name": "a mentenozan tentamort",
+      "keyword": "tentamort",
+      "description": "Another mentenozan tentamort variant inhabits the whirlpool. Its encounter does not guarantee a star piece.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21329,
+      "name": "a shadowy blugrul",
+      "keyword": "shadowy",
+      "description": "The shadowy blugrul is a narrative lead whose reviewed stock does not establish a regular encounter. Any new objective needs its own source and outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21330,
+      "name": "A Mazzolin Gladiator",
+      "keyword": "gladiator",
+      "description": "A Mazzolin gladiator belongs to the colosseum encounters. A future arena challenge needs a defined participation and victory outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21331,
+      "name": "A Mazzolin Warrior",
+      "keyword": "warrior",
+      "description": "A Mazzolin warrior serves in the barracks. Its encounter is independent of the accepted star return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21332,
+      "name": "A Mazzolin Warrior",
+      "keyword": "warrior",
+      "description": "Another Mazzolin warrior variant serves in the barracks. Similar names do not establish one shared victory objective.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21333,
+      "name": "A Mazzolin Warrior",
+      "keyword": "warrior",
+      "description": "A further Mazzolin warrior variant belongs to the barracks encounters. It does not carry a requested star piece.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21334,
+      "name": "a chef",
+      "keyword": "chef",
+      "description": "The chef is a narrative lead without a reviewed regular placement or shop. No purchase or cooking quest is defined.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21335,
+      "name": "an acolyte",
+      "keyword": "acolyte",
+      "description": "The acolyte is a religious narrative lead without a reviewed regular placement. A future temple story needs an available participant and outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21336,
+      "name": "a patrolling Mazzolin guard",
+      "keyword": "blue",
+      "description": "Patrolling Mazzolin guards may move within the keep. An actual encounter establishes their current location.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21337,
+      "name": "a death widow",
+      "keyword": "widow",
+      "description": "A death widow variant guards the wider keep. Its battle is a separate encounter lead.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21338,
+      "name": "a death widow",
+      "keyword": "widow",
+      "description": "Another death widow variant belongs to the keep’s spider encounters. Its presence is separate from Aeirayne’s accepted return.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "aeirayne-hematite-star",
+      "title": "Return the five pieces of Aeirayne’s star",
+      "category": "request",
+      "summary": "Bring one of each distinct hematite star piece to Aeirayne for her sleeves, a wand and departure. The accepted return does not prove who defeated each source or originally recovered each piece.",
+      "contracts": [
+        {
+          "giver_vnum": 21323,
+          "completion_key": "give=I:21309,I:21310,I:21311,I:21312,I:21313;receive=I:21316,I:21320;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-21309",
+          "text": "Carry the whirlpool tentamort star piece loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            21309
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The first stocked mentenozan tentamort in the festering whirlpool carries this exact piece. It looks like the other hematite shards, but another piece cannot substitute. A supplied exact piece can also fit; held, worn or nested pieces do not prepare this offering."
+        },
+        {
+          "id": "material-21310",
+          "text": "Carry the sludge dragon star piece loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            21310
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The sludge dragon in the sewers carries this exact piece; its rune stone is a different item. It looks like the other hematite shards, but another piece cannot substitute. A supplied exact piece can also fit; held, worn or nested pieces do not prepare this offering."
+        },
+        {
+          "id": "material-21311",
+          "text": "Carry the Zantilanis star piece loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            21311
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Zantilanis in the Pit of Lost Hope carries this exact piece. Search for the hidden orb when planning a return. It looks like the other hematite shards, but another piece cannot substitute. A supplied exact piece can also fit; held, worn or nested pieces do not prepare this offering."
+        },
+        {
+          "id": "material-21312",
+          "text": "Carry the white blugrul star piece loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            21312
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The particular stocked white blugrul in the sewers carries this exact piece; other white blugruls need not carry it. It looks like the other hematite shards, but another piece cannot substitute. A supplied exact piece can also fit; held, worn or nested pieces do not prepare this offering."
+        },
+        {
+          "id": "material-21313",
+          "text": "Carry the Queen Ze’rila star piece loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            21313
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Queen Ze’rila in the throne room carries this exact piece, rather than her followers. It looks like the other hematite shards, but another piece cannot substitute. A supplied exact piece can also fit; held, worn or nested pieces do not prepare this offering."
+        },
+        {
+          "id": "return",
+          "text": "Record Aeirayne’s accepted five-piece return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 21323,
+              "completion_key": "give=I:21309,I:21310,I:21311,I:21312,I:21313;receive=I:21316,I:21320;disappear=1"
+            }
+          ],
+          "hint": "Offer all five different loose pieces together to Aeirayne when present. This is one accepted exchange for two rewards and departure; earlier dialogue, a personal kill, original recovery and an escort are not native prerequisites."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}
