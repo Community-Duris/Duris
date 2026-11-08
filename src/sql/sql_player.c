@@ -315,8 +315,7 @@ bool sql_locker_owner_can_access(const char *locker_name, int owner_pid, int rac
 		return false;
 	/* Locate the one case-insensitive locker name supplied by the caller. */
 	auto locker =
-		std::find_if(lockers.begin(), lockers.end(),
-			     [locker_name](const auto &entry)
+		std::find_if(lockers.begin(), lockers.end(), [locker_name](const auto &entry)
 			     { return strcasecmp(entry.locker_name.c_str(), locker_name) == 0; });
 	if (locker == lockers.end() || locker->owner_pid != owner_pid || locker->owner_assoc_id ||
 	    locker->racewar != racewar)
@@ -10800,8 +10799,7 @@ void sql_restore_saved_items(void)
 		}
 		std::unordered_set<uint64_t> tree_uids;
 		if (!sql_saved_item_collect_uids(obj, &tree_uids) ||
-		    std::any_of(tree_uids.begin(), tree_uids.end(),
-				[&published_uids](uint64_t uid)
+		    std::any_of(tree_uids.begin(), tree_uids.end(), [&published_uids](uint64_t uid)
 				{ return published_uids.find(uid) != published_uids.end(); }))
 		{
 			extract_obj(obj, FALSE);
