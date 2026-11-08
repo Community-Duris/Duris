@@ -325,15 +325,53 @@ verify the pruning policy; they do not reproduce every reported encounter.
 
 ## Epic point and epic skill levels
 
-`epic.gain.minLevel` (default 50) is the lowest level that earns epic points. The
-gate sits in `prepare_epic_award()`, which every `gain_epic()` caller and each epic stone
+Experience alone levels a character to 56: `exp.maxExpLevel` is 56, `exp.required.NN`
+sets every level's cost (each higher than the one before), and `epic.forLevel.51`-`56`
+are 0. The keys stay, because `epic_stone_level_char_from_level()` treats a missing
+key as an error.
+
+`epic.gain.minLevel` (default 50) is the lowest level that earns epic awards. The gate
+sits in `prepare_epic_award()`, which every `gain_epic()` caller and each epic stone
 participant pass through, and in `epic_calculate_pvp_award()` for PvP. A zone-touch
 payload needs the toucher as its first recipient and a positive award for every
 recipient, so a toucher below the level is refused and group members below it are left
-out of the award. Touch-stone level costs are unchanged. `epic.skills.minLevel` (default
-56) is the lowest level at which an epic teacher will teach. Epic potions use the same
-gain-level requirement before quaffing, so an ineligible character keeps the potion
-and receives the required level without consuming it or incurring a wait.
+out of the award.
+
+`epic.bank.minLevel` (default 56) is the lowest level that keeps epic points. Between
+the two levels an award is still earned, and still feeds artifacts and guild prestige
+from its full epic amount, but it is paid as experience: epics x
+`epic.convert.exp.<level>` through the `EXP_EPIC` type (racial factor and the exp
+dial apply; rest does not). `gain_epic()` converts directly. A stone touch marks those
+members `ZONE_TOUCH_AWARD_CONVERTED`, so the touch still claims the stone and records
+the zone atomically while the repository credits them no points. A PvP award below the
+bank level travels in `combat_outcome_participant::epic_converted`, which is never
+encoded, and is paid when the outcome commits. Epic potions wait for the bank level;
+unspecialize and unmulti waive their epic fee below it.
+
+Nobody below the bank level holds epic points. `epic_forfeit_below_bank()` debits the
+whole balance through the epic ledger (reason `bank_level_forfeit`) when
+`lose_level_impl()` takes a character below the bank level (a death that costs level 56),
+and at login in `nanny.c`, which clears balances left from before the bank level and any
+debit that could not be queued. Immortals are exempt; CHAOS characters are raised to 56
+before the login check runs.
+
+`epic.skills.minLevel` (default 56) is the lowest level at which an epic teacher will
+teach. A purchase costs `epic.skill.costMultiplier` (5) x the skill's base cost x the
+progress step; refunds use `epic.skill.refundMultiplier` (3), the lowest price ever
+charged, so a refund can never exceed what was paid.
+
+## Artifact feeding rates
+
+`guild/artifact_feed_rates.c` owns how much time an epic award adds to an artifact:
+epics x `artifact.feeding.epic.point.seconds` x the source's
+`artifact.feeding.epic.typeMod.*` rate x the artifact-feeding difficulty dial, x1.5
+within `epic.frag.thrill.duration` of a frag. PvP and ship PvP can fill a timer to
+`ARTIFACT_BLOOD_DAYS`; every other source stops at
+`artifact.feeding.nonPvp.ceilingHours` ahead and never lowers a timer already above it.
+Each rate is a property with its default in the source table, read live, so the
+`artifeed` command (Forger and up) can show, set or reset a rate in game; a change is
+saved to `lib/duris.properties` at once by `set_and_save_property()` and applies to the
+next award.
 
 ## Server difficulty dials
 

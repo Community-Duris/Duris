@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Verify that unspecialize denies invalid state before charging epic points."""
+"""Verify that unspecialize denies invalid state before charging epic points.
+
+Below epic.bank.minLevel nobody holds epic points, so the fee is waived there.
+"""
 
 from pathlib import Path
 import subprocess
@@ -24,17 +27,21 @@ PRELUDE = r'''
 #include "core/utils.h"
 #include "net/comm.h"
 #include "world/epic.h"
+#include "world/epic_bank.h"
 #include "world/epic_transaction.h"
 #include <cassert>
 #include <cstdio>
 
 static int message_count = 0;
 static int submissions = 0;
+static int commits = 0;
+
+bool epic_level_can_bank(P_char ch) { return ch->player.level >= 56; }
 
 void send_to_char(const char *, P_char) { ++message_count; }
 void act(const char *, int, P_char, P_obj, void *, int) {}
 void unspecialize_committed(P_char, bool, const epic_command_result &, unsigned int,
-                            const uint8_t *, size_t) {}
+                            const uint8_t *, size_t) { ++commits; }
 bool epic_transaction_submit(P_char, int64_t, epic_reason_type, int64_t, uint16_t,
                              critical_source_site, critical_deadline_class,
                              epic_completion_fn, const void *, size_t) {
@@ -60,8 +67,17 @@ int main() {
     specialized.only.pc = &specialized_pc;
     specialized_pc.epics = 10;
     specialized.player.spec = 1;
+    specialized.player.level = 56;
     unspecialize(&specialized, nullptr);
-    assert(submissions == 1);
+    assert(submissions == 1 && commits == 0);
+
+    char_data below_bank{};
+    pc_only_data below_bank_pc{};
+    below_bank.only.pc = &below_bank_pc;
+    below_bank.player.spec = 1;
+    below_bank.player.level = 50;
+    unspecialize(&below_bank, nullptr);
+    assert(submissions == 1 && commits == 1);
 
     std::puts("unspecialize invalid-state charge guard regression passed");
 }

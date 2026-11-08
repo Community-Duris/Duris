@@ -45,6 +45,10 @@ struct combat_outcome_participant
 	uint64_t expected_bank_revision;
 	std::array<char, CURRENCY_ACCOUNT_NAME_MAX_BYTES + 1> account_name;
 	std::array<char, COMBAT_OUTCOME_DESCRIPTION_MAX_BYTES + 1> description;
+	// Not encoded: the epic award of a participant below epic.bank.minLevel, which
+	// credits no points and is paid as experience when the outcome commits. An
+	// outcome recovered only after a restart pays no experience.
+	int64_t epic_converted = 0;
 };
 
 struct combat_outcome_payload

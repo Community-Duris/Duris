@@ -1916,6 +1916,11 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 					  });
 				for (size_t i : order)
 				{
+					// Members below epic.bank.minLevel are paid in experience,
+					// so their award credits no epic points.
+					if (zone_payload.awards[i].flags &
+					    ZONE_TOUCH_AWARD_CONVERTED)
+						continue;
 					critical_command child = {};
 					std::array<uint8_t, SHA256_DIGEST_LENGTH>
 						child_hash = {},

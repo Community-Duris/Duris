@@ -941,9 +941,9 @@ nevent_schedule_result add_event_owned_payload(event_func, int, P_char, P_char, 
 					       nevent_payload_destroy_type);
 
 template <typename T>
-requires(!std::is_void_v<T>) inline nevent_schedule_result
-	add_event(event_func func, int delay, P_char ch, P_char victim, P_obj obj, int flag,
-		  T *data, int data_size)
+	requires(!std::is_void_v<T>)
+inline nevent_schedule_result add_event(event_func func, int delay, P_char ch, P_char victim,
+					P_obj obj, int flag, T *data, int data_size)
 {
 	static_assert(std::is_trivially_copyable_v<std::remove_cv_t<T>>,
 		      "raw event payloads must be trivially copyable; use add_event_owned");
@@ -968,9 +968,10 @@ nevent_schedule_result nevent_replace_owned_payload(nevent_handle, event_func, i
 						    nevent_payload_destroy_type);
 
 template <typename T>
-requires(!std::is_void_v<T>) inline nevent_schedule_result
-	nevent_replace(nevent_handle existing, event_func func, int delay, P_char ch, P_char victim,
-		       P_obj obj, int flag, T *data, int data_size)
+	requires(!std::is_void_v<T>)
+inline nevent_schedule_result nevent_replace(nevent_handle existing, event_func func, int delay,
+					     P_char ch, P_char victim, P_obj obj, int flag, T *data,
+					     int data_size)
 {
 	static_assert(std::is_trivially_copyable_v<std::remove_cv_t<T>>,
 		      "raw event payloads must be trivially copyable; use nevent_replace_owned");
@@ -2947,6 +2948,8 @@ void trapdamage(P_char ch, P_obj obj);
 /* properties.c */
 bool initialize_properties();
 void do_properties(P_char, char *, int);
+bool set_and_save_property(const char *key, float value);
+void do_artifeed(P_char, char *, int);
 void do_difficulty(P_char, char *, int);
 void do_pulse(P_char, char *, int);
 float get_property(const char *, double);

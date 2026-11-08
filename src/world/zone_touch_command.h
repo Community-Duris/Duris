@@ -14,8 +14,12 @@ struct zone_touch_award
 {
 	int32_t amount = 0;
 	int32_t errand = 0;
-	uint8_t flags = 0; // blessing=1, outstanding task penalty=2
+	uint8_t flags = 0; // blessing=1, outstanding task penalty=2, converted=4
 };
+
+// The member is below epic.bank.minLevel: the award is recorded and feeds artifacts,
+// but no epic points are credited; the member is paid in experience instead.
+constexpr uint8_t ZONE_TOUCH_AWARD_CONVERTED = 4;
 
 struct zone_touch_payload
 {

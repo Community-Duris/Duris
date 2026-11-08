@@ -43,7 +43,7 @@ bool valid(const zone_touch_payload &payload)
 		{
 			const auto &award = payload.awards[index];
 			if (index < payload.group_size ?
-				    (award.amount <= 0 || award.flags > 3) :
+				    (award.amount <= 0 || award.flags > 7) :
 				    (award.amount || award.errand || award.flags))
 				return false;
 		}

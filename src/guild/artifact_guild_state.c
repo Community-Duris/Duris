@@ -1,5 +1,6 @@
 #include "guild/artifact_guild_state.h"
 
+#include "guild/artifact_feed_rates.h"
 #include "guild/assocs.h"
 #include "world/db.h"
 #include "world/epic.h"
@@ -58,50 +59,18 @@ bool parse_u64(const char *text, uint64_t *value)
 }
 #endif
 
+/*
+ * seconds fed = epics x point seconds x the source's rate (artifact_feed_rates.c)
+ *               x the artifact-feeding difficulty dial
+ *               x 1.5 within epic.frag.thrill.duration of a frag
+ */
 int artifact_feed_seconds(P_char character, int epics, int epic_type)
 {
-	int seconds = epics * get_property("artifact.feeding.epic.point.seconds", 3600);
-	switch (epic_type)
-	{
-	case EPIC_ZONE:
-		seconds = static_cast<int>(seconds *
-					   get_property("artifact.feeding.epic.typeMod.zone", 1.0));
-		break;
-	case EPIC_PVP:
-		seconds = static_cast<int>(seconds *
-					   get_property("artifact.feeding.epic.typeMod.pvp", 2.0));
-		break;
-	case EPIC_SHIP_PVP:
-		seconds = static_cast<int>(
-			seconds * get_property("artifact.feeding.epic.typeMod.pvpShip", 2.0));
-		break;
-	case EPIC_ELITE_MOB:
-		seconds = static_cast<int>(
-			seconds * get_property("artifact.feeding.epic.typeMod.eliteMob", 1.0));
-		break;
-	case EPIC_QUEST:
-		seconds = static_cast<int>(
-			seconds * get_property("artifact.feeding.epic.typeMod.quest", 1.0));
-		break;
-	case EPIC_RANDOM_ZONE:
-		seconds = static_cast<int>(
-			seconds * get_property("artifact.feeding.epic.typeMod.randomZone", 1.0));
-		break;
-	case EPIC_NEXUS_STONE:
-		seconds = static_cast<int>(
-			seconds * get_property("artifact.feeding.epic.typeMod.nexusStone", 1.0));
-		break;
-	case EPIC_BOON:
-		seconds = static_cast<int>(
-			seconds * get_property("artifact.feeding.epic.typeMod.boon", 0.25));
-		break;
-	case EPIC_STRAHDME:
-	case EPIC_RANDOMMOB:
-		break;
-	default:
-		seconds = 0;
-		break;
-	}
+	const double rate = artifact_feed_type_mod(epic_type);
+	if (epics <= 0 || rate <= 0.0)
+		return 0;
+	int seconds =
+		static_cast<int>(static_cast<double>(epics) * artifact_feed_point_seconds() * rate);
 	seconds = difficulty_scale_int(seconds, difficulty_multiplier(DIFFICULTY_ARTIFACT_FEEDING));
 	if (affected_by_spell(character, TAG_PLR_RECENT_FRAG))
 		seconds = (seconds * 3) / 2;
@@ -212,8 +181,13 @@ artifact_guild_state_capture(P_char character, int epics, int epic_type,
 	if (!IS_TRUSTED(character))
 	{
 		const int feed_seconds = artifact_feed_seconds(character, epics, epic_type);
-		const int64_t maximum = static_cast<int64_t>(time(nullptr)) +
-					ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY;
+		// PvP fills the timer to the full ARTIFACT_BLOOD_DAYS; every other source only
+		// up to the non-PvP ceiling (artifact.feeding.nonPvp.ceilingHours).
+		const int64_t maximum =
+			static_cast<int64_t>(time(nullptr)) +
+			(artifact_feed_is_pvp(epic_type) ?
+				 static_cast<int64_t>(ARTIFACT_BLOOD_DAYS) * SECS_PER_REAL_DAY :
+				 artifact_feed_nonpvp_ceiling_seconds());
 		for (int slot = 0; slot < MAX_WEAR && feed_seconds &&
 				   payload->artifact_count < payload->artifacts.size();
 		     ++slot)
@@ -230,10 +204,13 @@ artifact_guild_state_capture(P_char character, int epics, int epic_type,
 			    state->second.bind_owner_pid != GET_PID(character))
 				continue;
 			int64_t target = state->second.timer + feed_seconds;
+			// A ceiling caps the feed; it never lowers a timer already above it.
 			if (target > maximum)
-				target = maximum;
+				target = std::max(state->second.timer, maximum);
 			if (target < 0)
 				target = 0;
+			if (target <= state->second.timer)
+				continue;
 			auto &delta = payload->artifacts[payload->artifact_count++];
 			delta = { vnum,
 				  ARTIFACT_DELTA_FEED,
