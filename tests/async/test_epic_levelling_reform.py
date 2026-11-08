@@ -198,7 +198,7 @@ def test_pvp_awards_below_the_bank_level_feed_then_convert() -> None:
 
 def test_converted_experience_is_not_doubled_by_rest() -> None:
     gain = _flat(_definition("world/limits.c", "int gain_exp("))
-    assert "if(type==EXP_RESURRECT||type==EXP_EPIC){;}elseif(affected_by_spell(ch,TAG_WELLRESTED))" in gain
+    assert "if(type==EXP_RESURRECT||type==EXP_EPIC){;}elseif(has_active_rested_bonus(ch,TAG_WELLRESTED))" in gain
     assert "#define EXP_EPIC 11" in source("core/structs.h").read_text()
     assert "epic_conversion = 13," in source("telemetry/telemetry_types.h").read_text()
 

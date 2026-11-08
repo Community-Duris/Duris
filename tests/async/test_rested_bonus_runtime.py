@@ -30,7 +30,7 @@ def body(name, signature):
 
 def harness():
     limits = source("world/limits.c")
-    xp = limits[limits.index("if (type == EXP_RESURRECT)", limits.index("int gain_exp(")):]
+    xp = limits[limits.index("if (type == EXP_RESURRECT || type == EXP_EPIC)", limits.index("int gain_exp(")):]
     xp = xp[:xp.index("if (progression_reason_for_type(type)")]
     login = source("account/nanny.c")
     login = login[login.index("\t// Add well-rested or rested bonus, if applicable."):login.index("\tGetMIA(ch->player.name, Gbuf1);")]
@@ -59,7 +59,7 @@ using byte = unsigned char;
 using uint = unsigned;
 constexpr int TAG_RESTED=1, TAG_WELLRESTED=2, TAG_INNATE_TIMER=3,
     TAG_LAYONHANDS=4, INNATE_LAY_HANDS=1, MAX_WEAR_OFF_MESSAGES=2,
-    SPELL_BLINDNESS=5, EXP_RESURRECT=1, EXP_KILL=2, EXP_QUEST=3;
+    SPELL_BLINDNESS=5, EXP_RESURRECT=1, EXP_KILL=2, EXP_QUEST=3, EXP_EPIC=11;
 constexpr int AFFTYPE_PERM=1, AFFTYPE_NODISPEL=2, AFFTYPE_REMOVEBYDURATION=4,
     AFFTYPE_OFFLINE=8, AFFTYPE_NOMSG=16, AFFTYPE_NOSHOW=32, AFFTYPE_DOTCHAR=64,
     AFFTYPE_CUSTOM1=128;
@@ -154,9 +154,9 @@ int main() {
         for(int tag : {0,TAG_RESTED,TAG_WELLRESTED}) {
             ch.effects.clear();
             if(tag) ch.effects.push_back({.type=tag,.duration=60});
-            for(int type : {EXP_KILL,EXP_QUEST,EXP_RESURRECT}) {
+            for(int type : {EXP_KILL,EXP_QUEST,EXP_RESURRECT,EXP_EPIC}) {
                 unsigned flags=0;
-                const bool boosted=on && type!=EXP_RESURRECT && tag;
+                const bool boosted=on && type!=EXP_RESURRECT && type!=EXP_EPIC && tag;
                 assert(earned(&ch,type,flags)==(boosted?(tag==TAG_RESTED?150:200):100));
                 assert(flags==(boosted?(tag==TAG_RESTED?1U:2U):0U));
             }

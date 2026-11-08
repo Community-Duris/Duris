@@ -183,7 +183,8 @@ static void bought(int before, int learned)
 	// Repeated worker completions must not charge or refresh again.
 	epic_transaction_handle_completions(&completion, 1);
 	const int multiplier = 1 + before / 30;
-	assert(pc.epics == 10000 - 150 * multiplier);
+	// epic.skill.costMultiplier (5, was a hard-coded 3) x the toughness base cost (50).
+	assert(pc.epics == 10000 - 250 * multiplier);
 	assert(GET_MONEY(&pupil) == 10000000 - 1000000 * multiplier);
 	assert(pc.skills[SKILL_TOUGHNESS].learned == learned &&
 	       pc.skills[SKILL_TOUGHNESS].taught == learned);
@@ -227,9 +228,9 @@ int main(int argc, char **argv)
 		unchanged();
 		assert(feedback.find("not yet mastered") != std::string::npos);
 		reset(56);
-		pc.epics = 149;
+		pc.epics = 249;
 		practice();
-		assert(pc.epics == 149 && GET_MONEY(&pupil) == 10000000 && !cash_charges && !saves);
+		assert(pc.epics == 249 && GET_MONEY(&pupil) == 10000000 && !cash_charges && !saves);
 		reset(56);
 		pupil.points.cash[0] = 999999;
 		practice();
@@ -302,7 +303,7 @@ int main(int argc, char **argv)
 			assert(feedback.find("being refunded") != std::string::npos);
 			epic_command_payload refund{};
 			assert(epic_command_decode_payload(ledger.back(), &refund));
-			assert(refund.delta == 150 &&
+			assert(refund.delta == 250 &&
 			       refund.reason == epic_reason_type::epic_skill_refund);
 		}
 		reset(56);

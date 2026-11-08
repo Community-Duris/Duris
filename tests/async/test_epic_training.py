@@ -13,6 +13,7 @@ production = '\n'.join((
     extract_function('utility.c', 'int BOUNDED(int a, int b, int c)'),
     extract_function('interp.c', 'bool is_abbrev('),
     extract_function('epic.c', 'int epic_skills_min_level()'),
+    extract_function('epic.c', 'int epic_skill_cost_multiplier()'),
     context,
     extract_function('epic_skills.c', 'void epic_skill_purchase_committed('),
     tables,
