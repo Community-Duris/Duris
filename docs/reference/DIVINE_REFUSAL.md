@@ -32,6 +32,68 @@ The deadline belongs to the live NPC instance. It survives movement, transfer,
 and re-charm of that instance, but is intentionally not persisted across
 extraction/recreation, copyover, or restart.
 
+## Authored allegiance and content
+
+The second-phase authored rows live in the server-side JSON file
+`lib/misc/divine_refusal.json`. This is deliberately separate from
+`lib/duris.properties`: the properties file is a numeric key/value store and
+cannot safely represent a per-vnum dictionary of patrons and messages.
+
+The current schema is:
+
+```json
+{
+  "version": 1,
+  "revision": 1,
+  "entries": {
+    "66026": {
+      "patron": "Garl",
+      "message": "{patron} has forbidden it. I will not act against that warning.",
+      "enabled": true,
+      "percent": 10
+    }
+  }
+}
+```
+
+Each entry is keyed by the exact NPC template vnum. `patron` and `message` are
+optional so a row can only override policy, but an authored line requires both
+fields and a patron in the reviewed canonical catalog. `{patron}` is the only
+supported placeholder. `enabled` and `percent` inherit the shared properties
+when absent; an entry-level `enabled: false` disables the pilot for that exact
+vnum, while an entry-level `enabled: true` cannot bypass the global master
+switch. An entry-level percentage never changes the existing refusal decision
+or its retry state; it only supplies that template's effective chance.
+
+The shipped pilot intentionally contains only two reviewed Garl cleric rows:
+
+| Vnum | Template evidence | Patron evidence | Intended rate |
+| ---: | --- | --- | --- |
+| 66026 | `areas/mob/ashrumite.mob` names it `guildguard cleric`; its `PG` class mask is `32`, the loader value for `CLASS_CLERIC` (`BIT_6`). | The lore says the guildguard would rather pray in the temple, wears Garl's clerical robe, and wears Garl's symbol. | Inherits `pets.divine_refusal.percent` (shipped 10%). |
+| 66031 | The same mob file names it `guildmaster cleric`; its `PG` class mask is `32` (`CLASS_CLERIC`). | Its lore explicitly describes the holy symbol of Garl and calls it a cleric of Garl. | Inherits `pets.divine_refusal.percent` (shipped 10%). |
+
+These rows do not make an NPC summonable, charmable, owned, or orderable. The
+existing runtime eligibility check still requires a live PC master, the normal
+charm/ownership relationship, a cleric NPC, and (by default) a summoner master.
+The rows are therefore authored lore for templates that can enter the ordinary
+`spell_charm_person`/`setup_pet` control path, not a new control mechanism. New
+rows should be added only after the same class, controllability, and direct
+patron-lore review; priest- or temple-named mobs are not mass-tagged.
+
+The content parser bounds the file, entry count, vnums, patron names, and
+messages; rejects unknown fields, duplicate keys, control characters, invalid
+percentages, unsupported placeholders, and malformed JSON. Unknown or missing
+patrons, missing message fields, and any other incomplete row render the
+generic refusal line. Authored `$` characters are escaped before entering the
+existing speech-styled `act()` renderer, so content cannot become an `act`
+format directive. The pilot uses no `do_say`, `mobsay`, command, or magic-door
+path.
+
+The file is loaded at boot and by the existing `properties reload` boundary.
+An invalid or unreadable revision is logged and leaves the last valid snapshot
+active; there is no partial publication. Each `order` dispatch borrows one
+immutable snapshot, so a reload cannot produce mixed rows within a group order.
+
 ## Rollout and rollback
 
 Keep the master switch at zero until the proposed chance and duration have been

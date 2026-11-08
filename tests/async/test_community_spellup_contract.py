@@ -32,7 +32,7 @@ class CommunitySpellupContractTest(unittest.TestCase):
             "spell_agility",
             "spell_dexterity",
             "spell_accel_healing",
-            "spell_rest",
+            "grant_staff_rested_bonus",
         )
         positions = [ACTWIZ.index(name, ACTWIZ.index("void newb_spellup")) for name in default_order]
         self.assertEqual(positions, sorted(positions))

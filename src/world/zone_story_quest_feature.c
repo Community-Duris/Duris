@@ -581,7 +581,9 @@ result service::record_completion(const completion_event &event, std::string *er
 		return fail(error,
 			    "direct completer is deleted and must re-identify before earning credit"),
 		       result::rejected;
-	const std::string before = serialize_state();
+	const std::string before = serialize_state(error);
+	if (before.empty())
+		return result::rejected;
 	const result recorded = apply_transaction(event.transaction, event.character_name,
 						  event.racewar, false, true, error);
 	if (recorded == result::invalid || recorded == result::conflict ||
@@ -843,8 +845,18 @@ personal_summary service::summary_for_at(uint32_t season_id, uint32_t pid,
 			progress_for_zone_at(season_id, pid, zone, all_completed_ids);
 		if (zone_state.available && zone_state.completed == zone_state.total)
 			++summary.full_zones;
-		summary.zones.push_back(zone_state);
+		if (zone_state.completed > 0)
+			summary.zones.push_back(std::move(zone_state));
 	}
+	std::sort(summary.zones.begin(), summary.zones.end(),
+		  [](const auto &left, const auto &right)
+		  {
+			  if (left.completed != right.completed)
+				  return left.completed > right.completed;
+			  if (left.zone_name != right.zone_name)
+				  return left.zone_name < right.zone_name;
+			  return left.zone_number < right.zone_number;
+		  });
 	return summary;
 }
 
@@ -1365,7 +1377,6 @@ std::string service::render_daily_score(uint32_t season_id, uint32_t pid, int le
 
 std::string service::serialize_state(std::string *error) const
 {
-	(void)error;
 	std::ostringstream output;
 	output << "ZSQF|1\n";
 	for (const auto &[id, stored] : transactions_)
@@ -1423,6 +1434,12 @@ std::string service::serialize_state(std::string *error) const
 		if (!deleted_pid)
 			output << "E|" << hex_encode(id) << "|"
 			       << hex_encode(serialize_observation(observation)) << "\n";
+	}
+	if (!output.good())
+	{
+		if (error)
+			*error = "zone-story state serialization failed";
+		return {};
 	}
 	return output.str();
 }

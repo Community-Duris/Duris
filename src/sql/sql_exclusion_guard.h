@@ -93,9 +93,12 @@ static inline bool duris_sql_exclusion_guard_validate(MYSQL *probe)
 		state.lost = true;
 		return false;
 	}
+	// A probe that fails says nothing of the lock: MariaDB closes a pooled connection
+	// left idle past wait_timeout, and only an answer naming another owner loses it.
 	char value[4];
-	if (!duris_sql_exclusion_guard_scalar(probe, query, value, sizeof(value)) ||
-	    strcmp(value, "1"))
+	if (!duris_sql_exclusion_guard_scalar(probe, query, value, sizeof(value)))
+		return false;
+	if (strcmp(value, "1"))
 	{
 		state.lost = true;
 		return false;

@@ -217,10 +217,8 @@ class device_adapter final : public item_action_adapter
 		std::string arguments = effect.arguments;
 		if (IS_SET(skills[effect.spell].targets, TAR_AREA | TAR_IGNORE))
 		{
-			skills[effect.spell].spell_pointer(
-				effect.power, actor,
-				IS_AGG_SPELL(effect.spell) ? arguments.data() : nullptr,
-				SPELL_TYPE_SPELL, nullptr, nullptr);
+			skills[effect.spell].spell_pointer(effect.power, actor, arguments.data(),
+							   SPELL_TYPE_SPELL, nullptr, nullptr);
 			return;
 		}
 		std::vector<uint64_t> targets;

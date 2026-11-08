@@ -727,10 +727,12 @@ error_count = 0
 for title, content in entries:
     # Create SQL with hex encoding
     content_hex = content.encode('utf-8').hex()
+    # The SQL renderer follows redirects only for category 1 pages.
+    category = 1 if content.startswith('Redirect: ') else 0
 
     sql = f"""DELETE FROM pages WHERE title = '{title.replace("'", "''")}';
 INSERT INTO pages (title, text, last_update, last_update_by, category_id)
-VALUES ('{title.replace("'", "''")}', 0x{content_hex}, '{now}', 'Arih_importDB', 0);"""
+VALUES ('{title.replace("'", "''")}', 0x{content_hex}, '{now}', 'Arih_importDB', {category});"""
 
     with open(os.environ["IMPORT_SQL_FILE"], "a", encoding="utf-8") as staged:
         staged.write(sql + "\n")

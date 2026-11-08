@@ -16,7 +16,9 @@ flush_all = text[text.index("bool persistence_flush_all_character_saves"):text.i
 
 checks = {
     "save helper reports character failure": "return false;" in save,
-    "save helper reports ship failure": "if (!write_ship(ship))" in save,
+    "save helper reports owned-ship failure": "P_ship ship = owned_player_ship(ch);" in save and
+                                              "if (ship && !write_ship(ship))" in save,
+    "save helper never saves the ship the player stands in": "get_ship_from_char" not in save,
     "direct flush captures result": "bool saved = do_save_silent" in flush,
     "direct flush clears only success": flush.index("if (saved)") < flush.index("memset(slot, 0"),
     "direct flush retains and rearms failure": "schedule_deferred_save" in flush,

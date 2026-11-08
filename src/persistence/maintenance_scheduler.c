@@ -1,5 +1,6 @@
 #include "persistence/maintenance_scheduler.h"
 #include "sql/sql_thread_init.h"
+#include "core/utility.h"
 
 #include "persistence/persistence_observability.h"
 
@@ -16,6 +17,7 @@
 #include <mutex>
 #include <new>
 #include <string>
+#include <sys/random.h>
 #include <sys/stat.h>
 #include <thread>
 #include <unistd.h>
@@ -91,6 +93,7 @@ struct durable_scheduler_state_v2
 
 durable_scheduler_state durable_state = {};
 bool durable_state_dirty = false;
+bool persist_failing = false;
 
 uint64_t state_checksum(const durable_scheduler_state &state)
 {
@@ -134,6 +137,15 @@ bool write_all(int descriptor, const void *raw, size_t size)
 	return true;
 }
 
+bool persist_failed()
+{
+	if (!persist_failing)
+		logit(LOG_STATUS, "Maintenance scheduler state not written to %s: %s",
+		      state_path.c_str(), strerror(errno));
+	persist_failing = true;
+	return false;
+}
+
 bool persist_state(const durable_scheduler_state &state)
 {
 	if (state_path.empty())
@@ -144,15 +156,33 @@ bool persist_state(const durable_scheduler_state &state)
 	const int descriptor = open(temporary.c_str(),
 				    O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC | O_NOFOLLOW, 0600);
 	if (descriptor < 0)
-		return false;
+		return persist_failed();
 	const bool written = write_all(descriptor, &stored, sizeof(stored));
 	const bool synced = written && fsync(descriptor) == 0;
 	const bool closed = close(descriptor) == 0;
 	if (!synced || !closed || rename(temporary.c_str(), state_path.c_str()) != 0)
 	{
+		const int error = errno;
 		unlink(temporary.c_str());
-		return false;
+		errno = error;
+		return persist_failed();
 	}
+	const size_t slash = state_path.rfind('/');
+	const std::string parent =
+		slash == std::string::npos ? "." : state_path.substr(0, slash ? slash : 1);
+	const int directory = open(parent.c_str(), O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+	if (directory < 0)
+		return persist_failed();
+	const bool directory_synced = fsync(directory) == 0;
+	const int error = errno;
+	const bool directory_closed = close(directory) == 0;
+	if (!directory_synced || !directory_closed)
+	{
+		if (!directory_synced)
+			errno = error;
+		return persist_failed();
+	}
+	persist_failing = false;
 	return true;
 }
 
@@ -241,9 +271,27 @@ size_t index_of(maintenance_job_id id)
 	return static_cast<size_t>(id);
 }
 
-uint64_t next_work_id(maintenance_job_id id, uint64_t scheduled_tick)
+uint64_t next_work_id()
 {
-	return (scheduled_tick << 8) | (static_cast<uint64_t>(id) + 1);
+	// A fresh process (or a missing state file) must not reuse a previous boot's
+	// tick IDs. Keep the 64-bit on-disk identity and reserve the legacy low bytes
+	// for replay only. Retries continue to use the persisted request's ID.
+	uint64_t id = 0;
+	do
+	{
+		size_t offset = 0;
+		while (offset < sizeof(id))
+		{
+			const ssize_t count = getrandom(reinterpret_cast<char *>(&id) + offset,
+							sizeof(id) - offset, GRND_NONBLOCK);
+			if (count < 0 && errno == EINTR)
+				continue;
+			if (count <= 0)
+				return 0;
+			offset += static_cast<size_t>(count);
+		}
+	} while ((id & 255) <= MAINTENANCE_JOB_COUNT);
+	return id;
 }
 
 void refresh_health_locked()
@@ -289,6 +337,11 @@ void worker_main()
 					lock.lock();
 					if (!stop_requested)
 						durable_state_dirty = true;
+					// Try again in a second, or with the next job: retried at
+					// once, a state file that cannot be written held a core.
+					work_available.wait_for(
+						lock, std::chrono::seconds(1),
+						[] { return stop_requested || !queue.empty(); });
 				}
 				continue;
 			}
@@ -330,7 +383,14 @@ void worker_main()
 		try
 		{
 			if (!result.error_code)
+			{
+				// Queueing and state sync are not repository execution. A slow
+				// capture write must not expire a sample before its first attempt.
+				queued.request.deadline_usec =
+					persistence_observability_now_usec() +
+					queued.request.time_budget_usec;
 				result = execute_callback(queued.request, execute_context);
+			}
 		}
 		catch (const std::bad_alloc &)
 		{
@@ -413,8 +473,14 @@ void submit_due_locked(uint64_t tick)
 	    completions.size() >= MAINTENANCE_COMPLETION_MAX)
 		return;
 	auto &job = health.jobs[index_of(selected->id)];
-	const uint64_t work_id = job.work_id ? job.work_id :
-					       next_work_id(selected->id, job.next_due_tick);
+	const uint64_t work_id = job.work_id ? job.work_id : next_work_id();
+	if (!work_id)
+	{
+		++job.failures;
+		job.next_due_tick = tick + MAINTENANCE_RETRY_MAX_TICKS;
+		logit(LOG_STATUS, "Maintenance identity allocation failed: %s", strerror(errno));
+		return;
+	}
 	maintenance_request request = { work_id,
 					selected->id,
 					job.cursor,
@@ -423,7 +489,10 @@ void submit_due_locked(uint64_t tick)
 						selected->time_budget_usec,
 					selected->row_budget,
 					selected->time_budget_usec };
-	if (prepare_callback && !prepare_callback(request, prepare_callback_context))
+	const auto &durable = durable_state.jobs[index_of(selected->id)];
+	if (durable.request_pending)
+		request = durable.request;
+	else if (prepare_callback && !prepare_callback(request, prepare_callback_context))
 	{
 		job.next_due_tick += selected->cadence_ticks;
 		return;
@@ -476,8 +545,12 @@ void apply_completion_locked(const maintenance_result &result, uint64_t tick)
 	auto &durable = durable_state.jobs[index_of(result.job_id)];
 	durable.work_id = job.work_id;
 	durable.cursor = job.cursor;
-	durable.request_pending = false;
-	durable.request = {};
+	if (result.outcome != maintenance_outcome::retryable_failure &&
+	    result.outcome != maintenance_outcome::cancelled)
+	{
+		durable.request_pending = false;
+		durable.request = {};
+	}
 	durable.completion_pending = false;
 	durable.completion = {};
 	durable_state_dirty = true;
@@ -556,6 +629,9 @@ bool maintenance_scheduler_init(uint64_t instance_seed, maintenance_execute_fn e
 		return false;
 	if (!load_state())
 		return false;
+	// Catalogue pages accumulate only in memory. After restart, reread from the
+	// beginning instead of publishing a durable continuation without its prefix.
+	durable_state.jobs[index_of(maintenance_job_id::epic_task_catalog)] = {};
 	health = {};
 	instance = instance_seed;
 	execute_callback = execute;

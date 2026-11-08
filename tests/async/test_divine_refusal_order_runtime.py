@@ -49,6 +49,8 @@ def main() -> int:
                 str(ROOT / "src"),
                 str(generated),
                 str(source("divine_refusal_policy.c")),
+                str(source("divine_refusal_content.c")),
+                "-lcjson",
                 "-o",
                 str(binary),
             ],

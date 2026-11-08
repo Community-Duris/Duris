@@ -17,7 +17,8 @@ constexpr size_t PLAYER_SNAPSHOT_MAX_BYTES = 4 * 1024 * 1024;
 constexpr size_t PLAYER_SNAPSHOT_MAX_ROWS = 8192;
 constexpr size_t PLAYER_SNAPSHOT_MAX_OBJECTS = 4096;
 constexpr size_t PLAYER_SNAPSHOT_MAX_DEPTH = 32;
-constexpr size_t PLAYER_SNAPSHOT_MAX_STRING_BYTES = 4096;
+// Above every string the world gives an item: some extra descriptions pass 8 KiB.
+constexpr size_t PLAYER_SNAPSHOT_MAX_STRING_BYTES = 16384;
 constexpr int32_t PLAYER_SNAPSHOT_NO_PARENT = -1;
 
 enum class player_snapshot_capture_result : uint8_t

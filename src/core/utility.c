@@ -2688,7 +2688,7 @@ bool ac_can_see(P_char sub, P_char obj, bool /*check_z*/)
 
 	// Now, we need to look at the room obj is in too see if sub can see anything in it.
 	oroom = obj->in_room;
-	if (!IS_MAP_ROOM(oroom) && oroom >= 0)
+	if (oroom >= 0 && oroom <= top_of_world && !IS_MAP_ROOM(oroom))
 	{
 		// Check for dayblind: Light room with dayblind subject.
 		if (dayblind && !CAN_NIGHTPEOPLE_SEE(oroom))
@@ -3064,7 +3064,7 @@ static void currency_adjustment_committed(P_char ch, bool committed,
 					  unsigned int error_code, const uint8_t *context,
 					  size_t context_size);
 
-void ADD_MONEY(P_char ch, int amount)
+void ADD_MONEY(P_char ch, int amount, const char *committed_message)
 {
 	int t = 0;
 
@@ -3076,12 +3076,18 @@ void ADD_MONEY(P_char ch, int amount)
 
 	if (amount == 0)
 		return;
+	const size_t message_size = committed_message ? strlen(committed_message) + 1 : 0;
+	if (message_size > CURRENCY_PENDING_CONTEXT_MAX_BYTES)
+	{
+		logit(LOG_WIZ, "ADD_MONEY: credit acknowledgement exceeds context capacity");
+		return;
+	}
 	if (IS_PC(ch) && GET_PID(ch) > 0)
 	{
 		if (!currency_transaction_submit_wallet_value(
 			    ch, amount, currency_reason_type::wallet_reward, 0,
 			    critical_source_site::command, critical_deadline_class::interactive,
-			    currency_adjustment_committed, nullptr, 0))
+			    currency_adjustment_committed, committed_message, message_size))
 		{
 			logit(LOG_WIZ, "ADD_MONEY: wallet transaction submission failed for pid %d",
 			      GET_PID(ch));
@@ -3092,6 +3098,8 @@ void ADD_MONEY(P_char ch, int amount)
 			else
 				send_to_char("Your coin credit is pending staff review.\r\n", ch);
 		}
+		else if (committed_message)
+			send_to_char("Your coin credit is pending confirmation.\r\n", ch);
 		return;
 	}
 
@@ -3122,6 +3130,8 @@ void ADD_MONEY(P_char ch, int amount)
 
 	/* Update web client */
 	gmcp_char_vitals(ch);
+	if (committed_message)
+		send_to_char(committed_message, ch);
 }
 
 /* TOWARDS BANK MONEY
@@ -3180,6 +3190,8 @@ void publish_account_bank_balances_revision(const char *account_name, int racewa
 	for (P_desc desc = descriptor_list; desc; desc = desc->next)
 	{
 		P_char target = desc->original ? desc->original : desc->character;
+		if (target && IS_MORPH(target))
+			target = MORPH_ORIG(target);
 		if (desc->connected != CON_PLAYING || !target || IS_NPC(target) || !desc->account ||
 		    !desc->account->acct_name ||
 		    strcasecmp(desc->account->acct_name, account_name) ||
@@ -3199,15 +3211,19 @@ void publish_account_bank_balances_revision(const char *account_name, int racewa
 
 static void currency_adjustment_committed(P_char ch, bool committed,
 					  const currency_command_result & /*result*/,
-					  unsigned int error_code, const uint8_t * /*context*/,
-					  size_t /*context_size*/)
+					  unsigned int error_code, const uint8_t *context,
+					  size_t context_size)
 {
+	if (committed && ch && context && context_size && context[context_size - 1] == 0)
+		send_to_char(reinterpret_cast<const char *>(context), ch);
 	if (!committed && ch)
 	{
 		logit(LOG_DEBUG, "Currency adjustment rejected for pid %d (error %u)", GET_PID(ch),
 		      error_code);
 		send_to_char(
-			"Your coin transaction could not be completed. Please contact staff if goods were delivered.\r\n",
+			context_size ?
+				"Your coin credit could not be completed. Please contact staff.\r\n" :
+				"Your coin transaction could not be completed. Please contact staff if goods were delivered.\r\n",
 			ch);
 	}
 }
@@ -4221,21 +4237,17 @@ char *PERS(P_char ch, P_char vict, int short_d, bool noansi)
 	{
 		// Changed this for the 6/3/2016 wipe.
 	}
-	else
+	else if (ch->in_room >= 0 && ch->in_room <= top_of_world)
 	{
 		if (IS_DAYBLIND(vict) && !CAN_NIGHTPEOPLE_SEE(ch->in_room))
 		{
 			bool globe = FALSE;
-			if (ch->in_room >= 0)
+			for (P_char rch = world[ch->in_room].people; rch; rch = rch->next_in_room)
 			{
-				for (P_char rch = world[ch->in_room].people; rch;
-				     rch = rch->next_in_room)
+				if (IS_AFFECTED4(rch, AFF4_GLOBE_OF_DARKNESS))
 				{
-					if (IS_AFFECTED4(rch, AFF4_GLOBE_OF_DARKNESS))
-					{
-						globe = TRUE;
-						break;
-					}
+					globe = TRUE;
+					break;
 				}
 			}
 			if (!globe)
@@ -4247,16 +4259,12 @@ char *PERS(P_char ch, P_char vict, int short_d, bool noansi)
 		else if (!IS_AFFECTED2(vict, AFF2_ULTRAVISION) && !CAN_DAYPEOPLE_SEE(ch->in_room))
 		{
 			bool flame = FALSE;
-			if (ch->in_room >= 0)
+			for (P_char rch = world[ch->in_room].people; rch; rch = rch->next_in_room)
 			{
-				for (P_char rch = world[ch->in_room].people; rch;
-				     rch = rch->next_in_room)
+				if (IS_AFFECTED4(rch, AFF4_MAGE_FLAME))
 				{
-					if (IS_AFFECTED4(rch, AFF4_MAGE_FLAME))
-					{
-						flame = TRUE;
-						break;
-					}
+					flame = TRUE;
+					break;
 				}
 			}
 			if (!flame)
@@ -6262,7 +6270,7 @@ void cast_as_area(P_char ch, int spl, int level, char *arg)
 	}
 	else if (IS_SET(skills[spl].targets, TAR_AREA) || IS_SET(skills[spl].targets, TAR_IGNORE))
 	{
-		((*spell_func)(level, ch, 0, SPELL_TYPE_SPELL, 0, 0));
+		((*spell_func)(level, ch, arg, SPELL_TYPE_SPELL, 0, 0));
 	}
 	else
 	{
@@ -6652,6 +6660,9 @@ bool is_hot_in_room(int room)
 //   If none found, it defaults to return FALSE.  The one exception is the room flag ROOM_DARK.
 bool IS_TWILIGHT_ROOM(int r)
 {
+	if (r < 0 || r > top_of_world)
+		return FALSE;
+
 	int sect = world[r].sector_type;
 	int flags = world[r].room_flags;
 
@@ -6761,6 +6772,9 @@ bool IS_TWILIGHT_ROOM(int r)
 //   it's not outdoors, ok?
 bool IS_OUTDOORS(int r)
 {
+	if (r < 0 || r > top_of_world)
+		return FALSE;
+
 	int sect = world[r].sector_type;
 	int flags = world[r].room_flags;
 

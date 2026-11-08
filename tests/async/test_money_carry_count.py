@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Execute the production direct/bulk pickup gates at and above the count cap.
 
-Currency commit/rollback is covered separately by test_currency_input_queue.py;
-this harness checks which objects reach that existing transaction path.
+Money moving in memory is covered separately by test_currency_in_memory.py;
+this harness checks which objects reach the pickup.
 """
 
 from pathlib import Path
@@ -32,7 +32,8 @@ PRELUDE = r'''
 #include <cstring>
 #include <string>
 #include <vector>
-constexpr int ITEM_MONEY = 20, ITEM2_ACCOUNT_BOUND = 1, ITEM2_NOLOOT = 2;
+constexpr int ITEM_MONEY = 20, ITEM_CORPSE = 21, ITEM2_ACCOUNT_BOUND = 1,
+              ITEM2_NOLOOT = 2, CORPSE_FLAGS = 1, PC_CORPSE = 1;
 constexpr size_t CURRENCY_DENOMINATION_COUNT = 4;
 constexpr int LOWEST_MAT_VNUM = 100, HIGHEST_MAT_VNUM = 200;
 constexpr int MAX_STRING_LENGTH = 1024;
@@ -55,7 +56,6 @@ struct bulk_get_state {
     std::vector<std::string> rejections;
     bool failed = false;
     bool count_limit_reported = false;
-    std::vector<uint64_t> durable_items;
     std::vector<synchronous_item> synchronous_items;
 };
 #define GET_ITEM_TYPE(o) ((o)->type)
@@ -67,6 +67,7 @@ struct bulk_get_state {
 #define OBJ_VNUM(o) ((o)->vnum)
 #define GETDBG_LOG(...) ((void)0)
 #define IS_OBJ_STAT2(o,f) false
+#define IS_SET(value,flag) ((value) & (flag))
 #define IS_TRUSTED(c) false
 #define OBJS(o,c) ((o)->name)
 #define PERS(...) "someone"
@@ -82,7 +83,7 @@ bool isname(const char *filter, const char *name) { return !strcmp(filter, name)
 bool item_command_object_is_takeable(P_char, P_obj obj) { return obj->takeable; }
 bool account_bound_reward_owner(P_char, P_obj) { return true; }
 bool checkgetput(P_char, P_obj) { return false; }
-bool item_command_uses_durable_ownership(P_obj obj) { return obj->type != ITEM_MONEY; }
+void writeCorpse(P_obj) {}
 void reject_bulk_get_object(bulk_get_state &state, P_obj, const char *) { state.failed = true; }
 '''
 
@@ -131,8 +132,7 @@ int main()
                     assert(carried == before_coins);
                     if (filter)
                         assert(state.rejections.empty());
-                    assert(state.synchronous_items.size() == 1);
-                    assert(state.durable_items.size() == (accepted ? 1u : 0u));
+                    assert(state.synchronous_items.size() == (accepted ? 2u : 1u));
                 }
                 // Other eligibility gates still reject money.
                 money.visible = false;

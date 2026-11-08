@@ -184,10 +184,11 @@ class RestitutionCliTests(unittest.TestCase):
             bridge = Path(directory) / "bridge"
             for output, sources in (
                 (fixture, (fixture_source, codec_source)),
-                (bridge, (bridge_source, codec_source)),
+                (bridge, (bridge_source, codec_source, ROOT / "src/player/player_load_items.c")),
             ):
                 subprocess.run(
                     ["g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
+                     "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections", "-I/usr/include/libxml2",
                      "-Isrc", "-I.", *(str(source) for source in sources), "-o", str(output)],
                     cwd=ROOT, check=True, capture_output=True, text=True,
                 )

@@ -64,6 +64,13 @@ struct decoder
 	size_t objects = 0;
 	player_snapshot_codec_result result = player_snapshot_codec_result::ok;
 
+	player_snapshot_codec_result failure() const
+	{
+		return result == player_snapshot_codec_result::ok ?
+			       player_snapshot_codec_result::invalid_value :
+			       result;
+	}
+
 	template <typename T> bool number(T &value)
 	{
 		if (result != player_snapshot_codec_result::ok || size - offset < sizeof(T))
@@ -493,7 +500,7 @@ player_item_snapshot_list_decode(const uint8_t *encoded, size_t encoded_size,
 		decoder in = { encoded, encoded_size };
 		std::vector<player_item_snapshot> items;
 		if (!decode_items(in, items))
-			return in.result;
+			return in.failure();
 		if (in.offset != in.size || !valid_item_relationships(items))
 			return player_snapshot_codec_result::invalid_value;
 		*items_out = std::move(items);
@@ -752,7 +759,7 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 		player_snapshot snapshot = {};
 		uint64_t encoded_bound = 0;
 		if (!in.number(snapshot.schema_version))
-			return in.result;
+			return in.failure();
 		const uint32_t wire_version = snapshot.schema_version;
 		if (wire_version == 1 || wire_version == 3 || wire_version == 5)
 			snapshot.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
@@ -764,7 +771,7 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 		if (!in.number(snapshot.pid) || !in.number(snapshot.revision) ||
 		    !in.number(snapshot.components) || !in.number(snapshot.save_intent) ||
 		    !in.number(snapshot.room_vnum) || !in.number(encoded_bound))
-			return in.result;
+			return in.failure();
 		snapshot.encoded_size_bound = encoded_bound;
 		if (!valid_metadata(snapshot))
 			return player_snapshot_codec_result::invalid_value;
@@ -794,13 +801,13 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 				       row.field = static_cast<player_status_string_field>(field);
 				       return true;
 			       }))
-			return in.result;
+			return in.failure();
 		for (int32_t &value : snapshot.conditions)
 			if (!in.number(value))
-				return in.result;
+				return in.failure();
 		for (int32_t &value : snapshot.quest_values)
 			if (!in.number(value))
-				return in.result;
+				return in.failure();
 		if (!decode_index_rows(in, snapshot.languages) ||
 		    !decode_index_rows(in, snapshot.introductions) ||
 		    !decode_index_rows(in, snapshot.timers) ||
@@ -863,15 +870,15 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 			    snapshot.trophies, [&](auto &row)
 			    { return in.number(row.zone_number) && in.number(row.experience); }) ||
 		    !in.boolean(snapshot.recipes_are_external))
-			return in.result;
+			return in.failure();
 		if (wire_version >= 5 &&
 		    !in.string(snapshot.output_preferences, OUTPUT_PREFERENCE_MAX_BYTES))
-			return in.result;
+			return in.failure();
 		if (snapshot.schema_version == PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION)
 		{
 			snapshot.death.emplace();
 			if (!decode_death(in, *snapshot.death))
-				return in.result;
+				return in.failure();
 		}
 		if (!valid_death(snapshot))
 			return player_snapshot_codec_result::invalid_value;

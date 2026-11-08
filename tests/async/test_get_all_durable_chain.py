@@ -48,7 +48,7 @@ submit_batch = function_body(
 )
 room_finalize = function_body(ACTOBJ, "static void do_get_finalize_room_item(")
 container_finalize = function_body(
-    ACTOBJ, "static void do_get_finalize_container_item("
+    ACTOBJ, "static bool do_get_finalize_container_item("
 )
 
 ok = True

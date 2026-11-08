@@ -10,6 +10,7 @@
  */
 
 #include "core/prototypes.h"
+#include "world/rested.h"
 #include "telemetry/telemetry_runtime.h"
 #include "world/difficulty.h"
 #include "core/structs.h"
@@ -29,6 +30,7 @@
 #include "core/defines.h"
 #include "world/epic_bonus.h"
 #include "world/epic_bank.h"
+#include "world/epic.h"
 #include "combat/frag_cap_config.h"
 #include "world/hardcore_config.h"
 #include "core/files.h"
@@ -113,17 +115,17 @@ int vitality_limit(P_char ch)
 	return (max);
 }
 
-/*
- * calculate ch's mana regeneration rate, return regen/minute for mobs,
- * regen/hour for players.  Convert mobs to same scale when they cast like
- * players do.  JAB
- */
+/* PSP per game tick, shared by event admission, callbacks and staff display. */
 
 int mana_regen(P_char ch, bool display_only)
 {
 	int gain;
 
-	if (ch->points.mana_reg >= 0 && GET_MANA(ch) == GET_MAX_MANA(ch) && !display_only)
+	if (GET_STAT(ch) <= STAT_INCAP || IS_FIGHTING(ch))
+		return 0;
+
+	if (has_innate(ch, INNATE_VULN_SUN) && IS_SUNLIT(ch->in_room) &&
+	    !IS_TWILIGHT_ROOM(ch->in_room) && !IS_AFFECTED4(ch, AFF4_GLOBE_OF_DARKNESS))
 		return 0;
 
 	if (GET_MANA(ch) > GET_MAX_MANA(ch))
@@ -132,27 +134,14 @@ int mana_regen(P_char ch, bool display_only)
 		return MIN(-1, gain);
 	}
 
-	if (IS_NPC(ch))
-	{
-		gain = GET_LEVEL(ch) >> 1;
-	}
-	else if (!IS_PUNDEAD(ch))
-	{
-		gain = 14;
-	}
-	else
-		gain = 20;
+	gain = IS_AFFECTED(ch, AFF_MEDITATE) ? ((GET_C_POW(ch) + GET_C_INT(ch)) / .2) :
+					       ((GET_C_POW(ch) + GET_C_INT(ch)) / 2.5);
 
 	if (affected_by_spell(ch, SPELL_FEEBLEMIND))
 		gain >>= 2;
 
-	switch (GET_POS(ch))
+	switch (GET_STAT(ch))
 	{
-	case STAT_DEAD:
-	case STAT_DYING:
-	case STAT_INCAP:
-		gain = 0;
-		break;
 	case STAT_SLEEPING:
 		gain <<= 1;
 		break;
@@ -161,35 +150,15 @@ int mana_regen(P_char ch, bool display_only)
 		break;
 	}
 
-	if (IS_AFFECTED(ch, AFF_MEDITATE))
-		gain += 5 + GET_CHAR_SKILL(ch, SKILL_MEDITATE);
-
-	/*
-	if (USES_MANA(ch))
-	{
-	  if (GET_CHAR_SKILL(ch, SKILL_ADVANCED_MEDITATION) >= 90)
-	  {
-	    gain = (int) (gain * 2.5);
-	            notch_skill(ch, SKILL_ADVANCED_MEDITATION, 2);
-	  }
-	  else
-	  {
-	    gain *= 2;
-	           notch_skill(ch, SKILL_ADVANCED_MEDITATION, 2);
-	  }
-	}
-	*/
-
 	gain += ch->points.mana_reg;
+	gain = difficulty_scale_player_regen(ch, gain);
 
-	if (IS_FIGHTING(ch))
-		gain = 0;
+	if (gain > 0 && GET_MANA(ch) == GET_MAX_MANA(ch) && !display_only)
+		return 0;
+	if (gain < 0 && GET_MANA(ch) <= 0)
+		return 0;
 
-	if (has_innate(ch, INNATE_VULN_SUN) && IS_SUNLIT(ch->in_room) &&
-	    !IS_TWILIGHT_ROOM(ch->in_room) && !IS_AFFECTED4(ch, AFF4_GLOBE_OF_DARKNESS))
-		gain = 0;
-
-	return difficulty_scale_player_regen(ch, gain * gain / 8);
+	return gain;
 }
 
 /* * calculate ch's hit regeneration rate, return regen/minute */
@@ -928,6 +897,11 @@ void display_gain(P_char ch, int gain, int type)
 		snprintf(buffer, MAX_STRING_LENGTH, "&+CEXP:&+G %d \r\n", gain);
 		send_to_char(buffer, ch);
 	}
+	else if (IS_SET(ch->specials.act2, PLR2_EXP) && type == EXP_WORLD_QUEST && gain > 0)
+	{
+		snprintf(buffer, MAX_STRING_LENGTH, "&+CQuest EXP:&+G %d \r\n", gain);
+		send_to_char(buffer, ch);
+	}
 }
 
 void update_exp_table()
@@ -1230,12 +1204,12 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 	{
 		;
 	}
-	else if (affected_by_spell(ch, TAG_WELLRESTED))
+	else if (has_active_rested_bonus(ch, TAG_WELLRESTED))
 	{
 		progression_modifier_flags |= TELEMETRY_PROGRESSION_MODIFIER_WELLRESTED;
 		XP *= 2;
 	}
-	else if (affected_by_spell(ch, TAG_RESTED))
+	else if (has_active_rested_bonus(ch, TAG_RESTED))
 	{
 		progression_modifier_flags |= TELEMETRY_PROGRESSION_MODIFIER_RESTED;
 		XP *= 1.5;
@@ -1598,7 +1572,7 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 			static_cast<std::int64_t>(before_exp), static_cast<std::int64_t>(after_exp),
 			static_cast<std::uint16_t>(GET_LEVEL(ch)), progression_modifier_flags,
 			TELEMETRY_QUALITY_NONE));
-	display_gain(ch, (int)XP_final, type);
+	display_gain(ch, type == EXP_WORLD_QUEST ? after_exp - before_exp : (int)XP_final, type);
 	if (GET_LEVEL(ch) >= MINLVLIMMORTAL)
 	{
 		return 0;
@@ -1779,6 +1753,9 @@ void point_update(void)
 
 		if (i->desc && (i->desc->connected != CON_PLAYING))
 			continue;
+
+		if (affected_by_spell(i, TAG_EPIC_TASK_PENDING))
+			epic_choose_new_epic_task(i);
 
 		if (!IS_AFFECTED(i, AFF_WRAITHFORM))
 		{

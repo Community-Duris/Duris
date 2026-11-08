@@ -343,6 +343,13 @@ scan_result scan_journal()
 			payload_checksum(bytes.data() + offset + header_size, payload_size);
 		const auto decoded = player_snapshot_decode(bytes.data() + offset + header_size,
 							    payload_size, &frame.snapshot);
+		// Resource exhaustion says nothing about the stored bytes. Retain the
+		// entire journal for retry instead of quarantining and compacting this save.
+		if (decoded == player_snapshot_codec_result::allocation_failure)
+		{
+			scanned.result = player_save_journal_result::io_failure;
+			return scanned;
+		}
 		if (decoded != player_snapshot_codec_result::ok ||
 		    static_cast<uint32_t>(frame.snapshot.pid) !=
 			    get_u32(bytes.data() + offset, 40) ||
@@ -384,6 +391,7 @@ scan_result scan_journal_safe()
 }
 
 bool write_compacted(const std::vector<journal_frame> &frames)
+try
 {
 	const std::string temporary = journal_directory + "/" + JOURNAL_TEMP_NAME;
 	const int fd = open_safe_file(temporary, O_WRONLY | O_CREAT | O_EXCL, 0600);
@@ -407,6 +415,10 @@ bool write_compacted(const std::vector<journal_frame> &frames)
 	if (!ok)
 		unlink(temporary.c_str());
 	return ok;
+}
+catch (const std::bad_alloc &)
+{
+	return false;
 }
 
 void refresh_health(const std::vector<journal_frame> &frames)

@@ -15,6 +15,36 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  telemetry-sql:
+    name: telemetry SQL (${{ matrix.database }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [ "mysql:8.4", "mariadb:11.4" ]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install telemetry repository test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes build-essential python3 default-libmysqlclient-dev libssl-dev mariadb-client
+      - name: Apply all migrations and round-trip telemetry records
+        env:
+          TELEMETRY_REPOSITORY_DB_IMAGE: ${{ matrix.database }}
+        run: tests/async/run_telemetry_repository_sql.sh
+
+  telemetry-sql-required:
+    name: telemetry SQL required
+    if: always()
+    needs: telemetry-sql
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require every supported SQL engine
+        env:
+          MATRIX_RESULT: ${{ needs.telemetry-sql.result }}
+        run: test "$MATRIX_RESULT" = success
+
   flatfile-build:
     runs-on: ubuntu-24.04
     steps:

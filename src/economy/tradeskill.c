@@ -48,6 +48,7 @@
 #include "economy/crafting.h"
 #include "world/weather.h"
 #include "core/safe_format.h"
+#include "persistence/persistence_checkpoint.h"
 
 #define SMITH_MAX_ITEMS 20
 
@@ -1018,6 +1019,8 @@ void event_bandage_check(P_char ch, P_char victim, P_obj, void *data)
 	{
 		send_to_char("&+WThe poison in your bloodstream is neutralized!\n", victim);
 		poison_common_remove(victim);
+		if (IS_PC(victim))
+			mark_player_dirty_components(GET_PID(victim), PLAYER_COMPONENT_AFFECTS);
 	}
 
 	if (healed == 0)
@@ -1028,6 +1031,10 @@ void event_bandage_check(P_char ch, P_char victim, P_obj, void *data)
 	}
 
 	GET_VITALITY(ch) -= (number(0, 100) > GET_CHAR_SKILL(ch, SKILL_BANDAGE)) ? 3 : 2;
+	if (IS_PC(ch))
+		mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
+	if (victim != ch && IS_PC(victim))
+		mark_player_dirty_components(GET_PID(victim), PLAYER_COMPONENT_STATUS);
 	add_event(event_bandage_check, PULSE_VIOLENCE, ch, victim, 0, 0, mdata,
 		  sizeof(struct bandage_data));
 }
@@ -2476,12 +2483,17 @@ void do_refine(P_char ch, char *arg, int /*cmd*/)
 		}
 	}
 
+	char mat_name[MAX_INPUT_LENGTH];
+	strlcpy(mat_name, (obj && obj->short_description) ? obj->short_description : "material",
+		sizeof(mat_name));
+
 	i = 2;
 	for (t_obj = ch->carrying; t_obj; t_obj = nextobj)
 	{
 		nextobj = t_obj->next_content;
+		const int input_vnum = OBJ_VNUM(t_obj);
 
-		if ((OBJ_VNUM(t_obj) == vnum) && i > 0)
+		if ((input_vnum == vnum) && i > 0)
 		{
 			obj_from_char(t_obj);
 			extract_obj(t_obj, TRUE); // Not an arti, but 'in game.'
@@ -2490,12 +2502,12 @@ void do_refine(P_char ch, char *arg, int /*cmd*/)
 				ch);
 			i--;
 		}
-		if (o && (OBJ_VNUM(t_obj) > 193) && (OBJ_VNUM(t_obj) < 234))
+		else if (o && (input_vnum > 193) && (input_vnum < 234))
 		{
 			o--;
+			orechance = input_vnum - 194;
 			obj_from_char(t_obj);
 			extract_obj(t_obj, TRUE); // Not an arti, but 'in game.'
-			orechance = (OBJ_VNUM(t_obj) - 194);
 		}
 	}
 
@@ -2507,20 +2519,20 @@ void do_refine(P_char ch, char *arg, int /*cmd*/)
 		if (plat)
 		{
 			act("&+W$n &+Ltakes their &+Wcoins&+L and begins to &+rh&+Rea&+Yt &+Lit in the &+yforge&+L.\r\n"
-			    "&+W$n &+Lgently removes the &+rm&+Ro&+Ylt&+Re&+rn &+ymetal &+Land starts to spread it about their $ps&+L, which &-L&+Rshatters&n &+Lfrom the intense &+rheat&+L!&N",
-			    TRUE, ch, obj, 0, TO_ROOM);
+			    "&+W$n &+Lgently removes the &+rm&+Ro&+Ylt&+Re&+rn &+ymetal &+Land starts to spread it about their $T&+L, which &-L&+Rshatters&n &+Lfrom the intense &+rheat&+L!&N",
+			    TRUE, ch, nullptr, mat_name, TO_ROOM);
 			act("&+LYou &+Ltake your &+Wcoins&+L and &+rh&+Rea&+Yt &+Lit in the &+yforge&+L.\r\n"
-			    "&+LYou &+Lgently remove the &+rm&+Ro&+Ylt&+Re&+rn &+ymetal &+Land start to spread it about your $ps&+L, which &-L&+Rshatters&n &+Lfrom the intense &+rheat&+L!&N",
-			    FALSE, ch, obj, 0, TO_CHAR);
+			    "&+LYou &+Lgently remove the &+rm&+Ro&+Ylt&+Re&+rn &+ymetal &+Land start to spread it about your $T&+L, which &-L&+Rshatters&n &+Lfrom the intense &+rheat&+L!&N",
+			    FALSE, ch, nullptr, mat_name, TO_CHAR);
 		}
 		else
 		{
 			act("&+W$n &+Ltakes their &+yore&+L and begins to &+rh&+Rea&+Yt &+Lit in the &+yforge&+L.\r\n"
-			    "&+W$n &+Lgently removes the &+rm&+Ro&+Ylt&+Re&+rn &+yore &+Land starts to spread it about their $ps&+L, which &-L&+Rshatters&n &+Lfrom the intense &+rheat&+L!&N",
-			    TRUE, ch, obj, 0, TO_ROOM);
+			    "&+W$n &+Lgently removes the &+rm&+Ro&+Ylt&+Re&+rn &+yore &+Land starts to spread it about their $T&+L, which &-L&+Rshatters&n &+Lfrom the intense &+rheat&+L!&N",
+			    TRUE, ch, nullptr, mat_name, TO_ROOM);
 			act("&+LYou &+Ltake your &+yore&+L and &+rh&+Rea&+Yt &+Lit in the &+yforge&+L.\r\n"
-			    "&+LYou &+Lgently remove the &+rm&+Ro&+Ylt&+Re&+rn &+yore &+Land start to spread it about your $ps&+L, which &-L&+Rshatters&n &+Lfrom the intense &+rheat&+L!&N",
-			    FALSE, ch, obj, 0, TO_CHAR);
+			    "&+LYou &+Lgently remove the &+rm&+Ro&+Ylt&+Re&+rn &+yore &+Land start to spread it about your $T&+L, which &-L&+Rshatters&n &+Lfrom the intense &+rheat&+L!&N",
+			    FALSE, ch, nullptr, mat_name, TO_CHAR);
 		}
 		return;
 	}

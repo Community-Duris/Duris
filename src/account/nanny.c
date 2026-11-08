@@ -8,6 +8,7 @@
  *****************************************************************************/
 
 #include "core/prototypes.h"
+#include "world/rested.h"
 #include "telemetry/telemetry_runtime.h"
 #include "account/newbie_kit_plan.h"
 #include "world/object_template.h"
@@ -139,7 +140,6 @@ extern void ereglog(int, const char *, ...);
 extern void whois_ip(P_char ch, char *ip_address);
 
 void displayShutdownMsg(P_char ch);
-void event_hatred_check(P_char, P_char, P_obj, void *);
 void event_halfling_check(P_char, P_char, P_obj, void *);
 void event_smite_evil(P_char, P_char, P_obj, void *);
 long unsigned int ip2ul(const char *ip);
@@ -1229,9 +1229,8 @@ void schedule_pc_events(P_char ch)
 	}
 
 	add_event(event_autosave, 1200, ch, 0, 0, 0, 0, 0);
-	if (has_innate(ch, INNATE_HATRED))
-		add_event(event_hatred_check, get_property("innate.timer.hatred", WAIT_SEC), ch, 0,
-			  0, 0, 0, 0);
+	// Keep watching through the level unlock and temporary race/innate changes.
+	start_hatred_check(ch);
 	if (GET_CHAR_SKILL(ch, SKILL_SMITE_EVIL))
 		add_event(event_smite_evil,
 			  get_property("skill.timer.secs.smiteEvil", 5) * WAIT_SEC, ch, 0, 0, 0, 0,
@@ -1245,6 +1244,63 @@ void schedule_pc_events(P_char ch)
 	if (affected_by_spell(ch, SPELL_BLEAK_FOEMAN))
 		add_event(event_bleak_foeman_check, WAIT_SEC, ch, 0, 0, 0, 0, 0);
 }
+
+static int resolve_entry_room(P_char ch, int rent_type, time_t now)
+{
+	int room = NOWHERE;
+	if ((rent_type == RENT_QUIT && GET_LEVEL(ch) < 2) || rent_type == RENT_DEATH)
+		room = real_room(GET_BIRTHPLACE(ch));
+	else
+	{
+		// The load leaves the character in no room and its saved room in was_in_room.
+		room = real_room(ch->specials.was_in_room);
+	}
+
+	if (ch->only.pc->pc_timer[PC_TIMER_HEAVEN] > now)
+	{
+		if (IS_RACEWAR_GOOD(ch))
+			room = real_room(GOOD_HEAVEN_ROOM);
+		else if (IS_RACEWAR_EVIL(ch))
+			room = real_room(EVIL_HEAVEN_ROOM);
+		else if (IS_RACEWAR_UNDEAD(ch))
+			room = real_room(UNDEAD_HEAVEN_ROOM);
+		else if (IS_ILLITHID(ch))
+			room = real_room(NEUTRAL_HEAVEN_ROOM);
+		else if (IS_RACEWAR_NEUTRAL(ch))
+			room = real_room(NEUTRAL_HEAVEN_ROOM);
+		else
+			room = real_room(VROOM_CAGE);
+	}
+
+	if (room == NOWHERE)
+	{
+		room = GET_HOME(ch) ? real_room(GET_HOME(ch)) : real_room(GET_BIRTHPLACE(ch));
+		if (room == NOWHERE)
+			room = IS_TRUSTED(ch) ? real_room0(1200) :
+						real_room(GET_ORIG_BIRTHPLACE(ch));
+		if (room == NOWHERE)
+			room = real_room0(11);
+	}
+	if (room < 0 || room > top_of_world)
+		room = real_room0(11);
+	else if (IS_SHIP_ROOM(room))
+		room = real_room(GET_BIRTHPLACE(ch));
+
+	// A ship or closed zone can send the candidate back through a missing
+	// birthplace. Validate it before indexing world or zone_table.
+	if (room >= 0 && room <= top_of_world && (zone_table[world[room].zone].flags & ZONE_CLOSED))
+		room = real_room(GET_BIRTHPLACE(ch));
+	if (room > top_of_world)
+		room = real_room(11);
+	if (room < 0)
+		room = real_room(1197);
+	if (room < 0 || room > top_of_world)
+		room = real_room0(11);
+
+	room = check_gh_home(ch, room);
+	return room >= 0 && room <= top_of_world ? room : real_room0(11);
+}
+
 /*
  *    existing or new character entering game
  */
@@ -1252,7 +1308,6 @@ void enter_game(P_desc d)
 {
 	struct affected_type af1, *afp1, *afp2;
 	int cost;
-	int r_room = NOWHERE;
 	long time_gone = 0, hit_g, move_g, heal_time, rest;
 	time_t ct = time(NULL);
 	int mana_g;
@@ -1279,85 +1334,8 @@ void enter_game(P_desc d)
 	// Bring them to life!
 	SET_POS(ch, POS_STANDING + STAT_NORMAL);
 
-	// Then put them in a room.
-	if ((d->rtype == RENT_QUIT && GET_LEVEL(ch) < 2) || d->rtype == RENT_DEATH)
-	{
-		/* defaults to birthplace on quit/death */
-		r_room = real_room(GET_BIRTHPLACE(ch));
-	}
-	else if (d->rtype == RENT_CRASH)
-	{
-		r_room = real_room(ch->specials.was_in_room);
-	}
-	else
-	{
-		r_room = real_room(ch->specials.was_in_room);
-		if (r_room == NOWHERE)
-			r_room = ch->in_room;
-	}
-
-	if (ch->only.pc->pc_timer[PC_TIMER_HEAVEN] > ct)
-	{
-		if (IS_RACEWAR_GOOD(ch))
-			r_room = real_room(GOOD_HEAVEN_ROOM);
-		else if (IS_RACEWAR_EVIL(ch))
-			r_room = real_room(EVIL_HEAVEN_ROOM);
-		else if (IS_RACEWAR_UNDEAD(ch))
-			r_room = real_room(UNDEAD_HEAVEN_ROOM);
-		else if (IS_ILLITHID(ch))
-			r_room = real_room(NEUTRAL_HEAVEN_ROOM);
-		else if (IS_RACEWAR_NEUTRAL(ch))
-			r_room = real_room(NEUTRAL_HEAVEN_ROOM);
-		// Cage people on undefined racewar sides.  That'll get a fix quick
-		else
-			r_room = real_room(VROOM_CAGE);
-	}
-
-	if (r_room == NOWHERE)
-	{
-		if (GET_HOME(ch))
-			r_room = real_room(GET_HOME(ch));
-		else
-			r_room = real_room(GET_BIRTHPLACE(ch));
-
-		if (r_room == NOWHERE)
-		{
-			if (IS_TRUSTED(ch))
-				r_room = real_room0(1200);
-			else
-				r_room = real_room(GET_ORIG_BIRTHPLACE(ch));
-		}
-
-		if (r_room == NOWHERE)
-			r_room = real_room0(11);
-	}
-	if (r_room < 0 || r_room > top_of_world)
-		r_room = real_room0(11);
-	// old guildhalls (deprecated)
-	//  else if (world[r_room].number >= 48000 &&
-	//           world[r_room].number <= 48999 &&
-	//           find_house(world[r_room].number) == NULL)
-	//  {
-	//    GET_HOME(ch) = GET_BIRTHPLACE(ch) = GET_ORIG_BIRTHPLACE(ch);
-	//    r_room = real_room(GET_HOME(ch));
-	//  }
-	else if (IS_SHIP_ROOM(r_room))
-	{
-		r_room = real_room(GET_BIRTHPLACE(ch));
-	}
-
-	if (zone_table[world[r_room].zone].flags & ZONE_CLOSED)
-		r_room = real_room(GET_BIRTHPLACE(ch));
-
-	// Stick them in the cage of smoke!
-	if (r_room > top_of_world)
-		r_room = real_room(11);
-	// Stick them in An Empty Dimension
-	if (r_room < 0)
-		r_room = real_room(1197);
-
-	// check home/birthplace/spawn room to see if it's in a GH and if ch is allowed
-	r_room = check_gh_home(ch, r_room);
+	// Resolve every entry-room policy before moving the live character.
+	const int r_room = resolve_entry_room(ch, d->rtype, ct);
 
 	ch->in_room = NOWHERE;
 	char_to_room(ch, r_room, -2);
@@ -1733,7 +1711,7 @@ void enter_game(P_desc d)
 	}
 
 	// Add well-rested or rested bonus, if applicable.
-	if (nobonus)
+	if (nobonus || !rested_bonus_enabled())
 	{
 	}
 	// 20 hrs (almost a day) -> 2.5h well-rested bonus.
@@ -1981,9 +1959,7 @@ void enter_game(P_desc d)
 	 * leaking GMCP frames into the login stream. */
 	if (!d->websocket || d->ws_handshake_done)
 	{
-		gmcp_char_status(ch);
-		gmcp_char_vitals(ch);
-		gmcp_quest_status(ch);
+		gmcp_send_initial_state(ch);
 	}
 
 	redis_player_online(ch);
@@ -4577,6 +4553,8 @@ void init_char(P_char ch)
 	ch->only.pc->epic_revision = 0;
 	ch->only.pc->frag_revision = 0;
 	ch->only.pc->numb_deaths = 0;
+	// A new character has no durable history; make it usable on the first login.
+	gameplay_read_state_publish(&ch->only.pc->gameplay_reads, nullptr, 0, nullptr, 0);
 
 	/* Initialize bank balances (spare1-spare4 map to copper/silver/gold/platinum) */
 	ch->only.pc->spare1 = 0; /* GET_BALANCE_COPPER */

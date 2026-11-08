@@ -89,6 +89,12 @@ int item_switch(P_obj obj, P_char, int cmd, char *)
 {
     assert_published(obj); assert(cmd == CMD_SET_PERIODIC); ++periodic_calls; return 1;
 }
+int invoke_object_special(P_obj obj, P_char actor, int command, char *argument)
+{
+    assert_published(obj);
+    assert(obj_index[obj->R_num].func.obj == item_switch);
+    return obj_index[obj->R_num].func.obj(obj, actor, command, argument);
+}
 int proclibObj_add(P_obj obj, char *name, char *args)
 {
     assert_published(obj);
@@ -178,8 +184,56 @@ static void cleanup()
     }
     assert(allocations.empty());
 }
+static void check_boot_names()
+{
+    // Execute the boot generator and ordinary object loader with both supported
+    // terminators. Sentinels have no string payload and must not be parsed.
+    for (const char *ending : {"#9999999\n$~\n", ""})
+    {
+        obj_f = tmpfile(); assert(obj_f);
+        fputs("#100\n", obj_f);
+        write_record(0, "COLD_KEYWORDS", ITEM_CONTAINER, 12, ITEM_TAKE, false);
+        fputs("#101\nempty~\n~\nempty long~\n~\n0\n", obj_f);
+        fputs(ending, obj_f);
+        fflush(obj_f);
+        int top = -2;
+        P_index generated = generate_indices(obj_f, &top);
+        assert(top == 1 && generated[0].virtual_number == 100);
+        assert(generated[1].virtual_number == 101 && !generated[1].desc2);
+        assert(!generated[0].keys && generated[0].number == 0);
+        assert(generated[0].desc2 && strcmp(generated[0].desc2, "A &+Csynthetic item&n") == 0);
+        assert(generated[0].pos == indexes[0].pos);
+        indexes[0] = generated[0];
+        FREE(generated);
+        auto *shared = indexes[0].desc2;
+        const auto prototype = parse_object_template(0);
+        assert(prototype.name == "cold_keywords" && prototype.value[0] == 12);
+        assert(prototype.short_description == shared);
+        P_obj first = instantiate_object_template(prototype);
+        P_obj second = instantiate_object_template(prototype);
+        assert(first->short_description == shared && second->short_description == shared);
+        assert(indexes[0].desc2 == shared && indexes[0].number == 2);
+        cleanup();
+        assert(allocations.empty());
+        memset(indexes, 0, sizeof(indexes));
+        fclose(obj_f); obj_f = nullptr;
+        pool_allocations = uid_allocations = proc_calls = conversion_calls = 0;
+        periodic_calls = event_calls = duplicate_strings = 0;
+    }
+    for (const char *empty : {"", "$~\n", "#9999999\n$~\n"})
+    {
+        FILE *file = tmpfile(); assert(file); fputs(empty, file); fflush(file);
+        int top = 42;
+        P_index generated = generate_indices(file, &top);
+        assert(top == -1);
+        if (generated) FREE(generated);
+        fclose(file);
+    }
+    assert(allocations.empty());
+}
 int main()
 {
+    check_boot_names();
     obj_f = tmpfile(); assert(obj_f);
     write_record(0, "BAG random_exit", ITEM_CONTAINER, 12, ITEM_TAKE, true);
     write_record(1, "BOOMERANG", ITEM_WEAPON, WEAPON_2HANDSWORD, ITEM_HOLD, false);
@@ -330,6 +384,7 @@ def main() -> int:
         extract_function("core/utility.c", "int strn_cmp(const char *arg1, const char *arg2, uint n)"),
         extract_function("handler.c", "bool isname(const char *str, const char *namelist)"),
         extract_function("db.c", "void skip_fread(FILE *fl)"),
+        extract_function("db.c", "P_index generate_indices(FILE *fl, int *top)"),
         extract_function("db.c", "std::string read_template_string(FILE *file,"),
         extract_function("db.c", "object_template parse_object_template(int nr)"),
         extract_function("db.c", "bool cache_object_template(int vnum)"),
@@ -342,7 +397,8 @@ def main() -> int:
         source.write_text("\n".join([PRELUDE, *functions, DRIVER]), encoding="utf-8")
         subprocess.run([
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-g", "-O1",
-            "-fsanitize=address,undefined", "-Isrc", str(source), "-o", str(binary),
+            "-fsanitize=address,undefined", "-fno-sanitize-recover=all",
+            "-fno-omit-frame-pointer", "-fno-pie", "-no-pie", "-Isrc", str(source), "-o", str(binary),
         ], cwd=ROOT, check=True)
         subprocess.run([str(binary)], check=True)
     print("All newbie object template checks passed.")

@@ -224,7 +224,7 @@ void Ferry::activity()
 		}
 		else if (state_timer <= 0)
 		{
-			snprintf(buffer, MAX_STRING_LENGTH, "The %s departs for %s&n.\r\n",
+			snprintf(buffer, MAX_STRING_LENGTH, "%s departs for %s&n.\r\n",
 				 name.c_str(), cur_dest_name());
 			act_to_all_on_board(buffer);
 			send_to_room(buffer, cur_room());

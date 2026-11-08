@@ -7,6 +7,7 @@
 #include "core/files.h"
 #include "core/utils.h"
 #include "classes/necromancy.h"
+#include "item/objmisc.h"
 #include "economy/collector_presence.h"
 #include "player/pet_restore_runtime.h"
 #include <cstdint>
@@ -246,6 +247,9 @@ int setup_pet(P_char mob, P_char ch, int duration, int flag)
 	}
 
 	linked_affect_to_char(mob, &af, ch, LNK_PET);
+	// Charm may add the follower before this owner link exists. Normalize only
+	// after ownership is established, retaining hidden items in this pet's custody.
+	item_restrict_player_pet_equipment(mob);
 
 	if (flag & PET_NOCASH)
 	{

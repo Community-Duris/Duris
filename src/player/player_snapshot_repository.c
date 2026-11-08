@@ -238,13 +238,15 @@ query_result apply_status(MYSQL *connection, const player_snapshot &snapshot)
 	sql << ",output_preferences=" << quote(connection, snapshot.output_preferences);
 	for (const player_snapshot_integer &row : snapshot.status_integers)
 	{
-		if (row.field == player_status_field::epics ||
-		    row.field == player_status_field::frags ||
-		    row.field == player_status_field::old_frags ||
-		    row.field == player_status_field::copper ||
+		// Transaction-owned balances may advance after capture, before publication.
+		// A delayed checkpoint must never overwrite those committed balances.
+		if (row.field == player_status_field::copper ||
 		    row.field == player_status_field::silver ||
 		    row.field == player_status_field::gold ||
-		    row.field == player_status_field::platinum)
+		    row.field == player_status_field::platinum ||
+		    row.field == player_status_field::epics ||
+		    row.field == player_status_field::frags ||
+		    row.field == player_status_field::old_frags)
 			continue;
 		const char *column = status_column(row.field);
 		if (!column)
@@ -437,6 +439,26 @@ query_result insert_item_rows(MYSQL *connection, const std::vector<player_item_s
 		if (!item_id)
 			return { false, EIO };
 		ids.push_back(item_id);
+		if (!pet_items)
+		{
+			player_item_snapshot standalone = row;
+			standalone.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+			std::vector<uint8_t> runtime;
+			if (player_item_snapshot_list_encode({ standalone }, &runtime) !=
+			    player_snapshot_codec_result::ok)
+				return { false, EINVAL };
+			result = execute(
+				connection,
+				"INSERT INTO player_item_runtime_state(item_id,payload) VALUES(" +
+					std::to_string(item_id) + "," +
+					quote(connection,
+					      std::string(reinterpret_cast<const char *>(
+								  runtime.data()),
+							  runtime.size())) +
+					")");
+			if (!result.ok)
+				return result;
+		}
 
 		std::unordered_set<uint64_t> affect_keys;
 		std::unordered_set<std::string> description_keys;
@@ -1197,6 +1219,29 @@ query_result apply_death(MYSQL *connection, const player_snapshot &snapshot)
 	}
 	if (!result.ok)
 		return result;
+	// Retain durable-only descendants in the existing custody evidence before
+	// quarantine. Their UID must survive later movement/retirement of the root.
+	result = execute(
+		connection,
+		"INSERT INTO player_death_custody (pid,save_revision,item_uid,root_item_uid,parent_item_uid,"
+		"item_revision,vnum,state,owner_type,owner_id,owner_context_id,owner_revision) "
+		"SELECT " +
+			pid + "," + revision +
+			",own.item_uid,own.root_item_uid,own.parent_item_uid,"
+			"own.item_revision,own.vnum,own.state,own.owner_type,own.owner_id,own.owner_context_id,rev.revision "
+			"FROM item_current_owner own JOIN item_owner_revision rev ON rev.owner_type=own.owner_type "
+			"AND rev.owner_id=own.owner_id AND rev.owner_context_id=own.owner_context_id "
+			"WHERE own.owner_type=1 AND own.owner_id=" +
+			pid +
+			" AND own.owner_context_id=0 AND own.state=1 "
+			"AND EXISTS (SELECT 1 FROM (SELECT root_item_uid FROM player_death_custody WHERE pid=" +
+			pid + " AND save_revision=" + revision +
+			") roots WHERE roots.root_item_uid=own.root_item_uid) "
+			"AND NOT EXISTS (SELECT 1 FROM (SELECT item_uid FROM player_death_custody WHERE pid=" +
+			pid + " AND save_revision=" + revision +
+			") captured WHERE captured.item_uid=own.item_uid)");
+	if (!result.ok)
+		return result;
 	// A rejected handoff leaves custody with the player. Preserve those rows
 	// for recovery, but prevent a subsequent load from restoring disputed items.
 	const std::string owner =
@@ -1249,6 +1294,38 @@ player_save_apply_result read_durable_revision(MYSQL *connection, int pid)
 	if (!valid)
 		return { player_save_apply_outcome::terminal_failure, 0, EINVAL };
 	return { player_save_apply_outcome::already_applied, revision, 0 };
+}
+
+player_save_apply_result apply_log_entry(MYSQL *connection, const log_entry_snapshot &entry)
+{
+	if (!connection || entry.kind.empty())
+		return { player_save_apply_outcome::terminal_failure, 0, EINVAL };
+	const query_result result = execute(
+		connection,
+		"INSERT INTO log_entries (date,kind,ip_address,pid,player_name,zone_number,"
+		"room_vnum,message) VALUES (FROM_UNIXTIME(" +
+			std::to_string(entry.logged_at) + ")," + quote(connection, entry.kind) +
+			',' + quote(connection, entry.ip_address) + ',' +
+			std::to_string(entry.pid) + ',' + quote(connection, entry.player_name) +
+			',' + std::to_string(entry.zone_number) + ',' +
+			std::to_string(entry.room_vnum) + ',' + quote(connection, entry.message) +
+			')');
+	if (!result.ok)
+		return failure(result.error_code);
+	return { player_save_apply_outcome::applied, 0, 0 };
+}
+
+template <typename Apply> player_save_apply_result apply_with_pool(Apply apply)
+{
+	MYSQL *connection = sql_pool_acquire();
+	if (!connection)
+		return { player_save_apply_outcome::retryable_failure, 0, ETIMEDOUT };
+	const player_save_apply_result applied = apply(connection);
+	if (applied.outcome == player_save_apply_outcome::ambiguous_commit ||
+	    connection_error(applied.error_code))
+		connection = sql_pool_replace_connection(connection);
+	sql_pool_release(connection);
+	return applied;
 }
 } // namespace
 
@@ -1361,7 +1438,6 @@ player_save_apply_result player_snapshot_repository_apply_from_pool(const player
 		MYSQL *replacement = sql_pool_replace_connection(connection);
 		if (!replacement)
 		{
-			sql_pool_release(connection);
 			return applied;
 		}
 		connection = replacement;
@@ -1385,4 +1461,16 @@ player_save_apply_result player_snapshot_repository_apply_from_pool(const player
 	}
 	sql_pool_release(connection);
 	return applied;
+}
+
+player_save_apply_result log_entry_repository_apply(MYSQL *connection,
+						    const log_entry_snapshot &entry)
+{
+	return apply_log_entry(connection, entry);
+}
+
+player_save_apply_result log_entry_repository_apply_from_pool(const log_entry_snapshot &entry)
+{
+	return apply_with_pool([&](MYSQL *connection)
+			       { return apply_log_entry(connection, entry); });
 }

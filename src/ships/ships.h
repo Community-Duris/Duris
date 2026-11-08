@@ -196,7 +196,7 @@
 #define WEIGHT_CARGO 2
 #define WEIGHT_CONTRABAND 2
 
-#define MINCONTRAALIGN 1000
+#define MINCONTRAALIGN 1000 // alignment at or above which contraband is refused
 #define MINCONTRAFRAGS 100
 
 // defines for adjust_ship_market
@@ -712,7 +712,7 @@ int load_ship(P_ship shipdata, int to_room);
 void delete_ship(P_ship ship, bool npc = false);
 void delete_ship(char *owner_name);
 void delete_ship_runtime(const char *owner_name);
-void clear_references_to_ship(P_ship ship);
+void clear_references_to_ship(P_ship ship, bool deleting);
 
 void init_ship_layout(P_ship ship);
 void clear_ship_layout(P_ship ship);
@@ -759,6 +759,7 @@ int weaponsight(P_ship ship, int slot, int t_contact, P_char ch);
 int fire_weapon(P_ship ship, int w_num, int t_contact, P_char ch);
 int fire_weapon(P_ship ship, int w_num, int t_contact, int hit_chance, P_char ch);
 void volley_hit_event(P_char ch, P_char victim, P_obj obj, void *data);
+int volley_hit_percent(int hit_chance);
 void stun_all_in_ship(P_ship ship, int timer);
 int damage_sail(P_ship ship, P_ship target, int dam);
 int damage_hull(P_ship ship, P_ship target, int dam, int arc, int armor_pierce);

@@ -52,7 +52,7 @@ def test_spawn_rooms_keep_the_dummy_without_triggering_justice_or_unsafe_combat(
     fight = source("src/combat/fight.c")
     spells = source("src/net/sparser.c")
 
-    assert 'if (!training_dummy_is(ch) && IS_INVADER(ch))' in handler
+    assert 'if (!training_dummy_is(ch))\n\t{\n\t\tjustice_action_invader(ch);' in handler
     assert '(GET_MASTER(ch) == NULL) && !training_dummy_is(ch)' in handler
     assert 'if (training_dummy_is(ch))\n\t\treturn;' in justice
     assert 'CHAR_IN_SAFE_ROOM(ch) && !training_dummy_is(victim)' in fight_move

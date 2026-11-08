@@ -1354,7 +1354,8 @@ int look_weapon(P_char ch, P_ship ship, char *arg)
 		send_to_char("Target out of range or out of sight!\r\n", ch);
 		return TRUE;
 	}
-	send_to_char_f(ch, "Chance to hit target: &+W%d%%&N\r\n", weaponsight(ship, slot, j, ch));
+	send_to_char_f(ch, "Chance to hit target: &+W%d%%&N\r\n",
+		       volley_hit_percent(weaponsight(ship, slot, j, ch)));
 	return TRUE;
 }
 

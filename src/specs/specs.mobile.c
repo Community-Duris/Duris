@@ -8,6 +8,7 @@
  */
 
 #include "core/prototypes.h"
+#include "world/rested.h"
 #include "world/difficulty.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -13963,6 +13964,9 @@ int witch_doctor(P_char witch, P_char customer, int cmd, char *arg)
 		    witch, 0, customer, TO_VICT);
 		for (i = 0; elixir_list[i].keyword; i++)
 		{
+			if (elixir_list[i].affect_vector == 0 &&
+			    elixir_list[i].affect_flag == TAG_RESTED && !rested_bonus_enabled())
+				continue;
 			snprintf(buf, 256, "&+W%d)&n %s  - %d &+Wplatinum&n\r\n", i + 1,
 				 elixir_list[i].desc, elixir_list[i].price);
 			send_to_char(buf, customer);
@@ -13981,6 +13985,13 @@ int witch_doctor(P_char witch, P_char customer, int cmd, char *arg)
 				// Static for TAG_RESTED potion for exp
 				if (i == 5)
 				{
+					if (!rested_bonus_enabled())
+					{
+						send_to_char(
+							"Rested and well-rested experience bonuses are disabled.\n",
+							customer);
+						return TRUE;
+					}
 					if (affected_by_spell(customer, TAG_RESTED) ||
 					    affected_by_spell(customer, TAG_WELLRESTED))
 					{

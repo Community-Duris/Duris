@@ -941,9 +941,9 @@ nevent_schedule_result add_event_owned_payload(event_func, int, P_char, P_char, 
 					       nevent_payload_destroy_type);
 
 template <typename T>
-	requires(!std::is_void_v<T>)
-inline nevent_schedule_result add_event(event_func func, int delay, P_char ch, P_char victim,
-					P_obj obj, int flag, T *data, int data_size)
+requires(!std::is_void_v<T>) inline nevent_schedule_result
+	add_event(event_func func, int delay, P_char ch, P_char victim, P_obj obj, int flag,
+		  T *data, int data_size)
 {
 	static_assert(std::is_trivially_copyable_v<std::remove_cv_t<T>>,
 		      "raw event payloads must be trivially copyable; use add_event_owned");
@@ -968,10 +968,9 @@ nevent_schedule_result nevent_replace_owned_payload(nevent_handle, event_func, i
 						    nevent_payload_destroy_type);
 
 template <typename T>
-	requires(!std::is_void_v<T>)
-inline nevent_schedule_result nevent_replace(nevent_handle existing, event_func func, int delay,
-					     P_char ch, P_char victim, P_obj obj, int flag, T *data,
-					     int data_size)
+requires(!std::is_void_v<T>) inline nevent_schedule_result
+	nevent_replace(nevent_handle existing, event_func func, int delay, P_char ch, P_char victim,
+		       P_obj obj, int flag, T *data, int data_size)
 {
 	static_assert(std::is_trivially_copyable_v<std::remove_cv_t<T>>,
 		      "raw event payloads must be trivially copyable; use nevent_replace_owned");
@@ -1399,6 +1398,8 @@ int io_con_hitp(P_char);
 
 /* innates.c */
 void assign_innates();
+void event_hatred_check(P_char, P_char, P_obj, void *);
+bool start_hatred_check(P_char);
 string list_innates(int, int, int);
 void do_innate_decrepify(P_char, P_char);
 bool has_divine_force(P_char);
@@ -2944,7 +2945,7 @@ bool checkopen(P_char ch, P_obj obj);
 void trapdamage(P_char ch, P_obj obj);
 
 /* properties.c */
-void initialize_properties();
+bool initialize_properties();
 void do_properties(P_char, char *, int);
 bool set_and_save_property(const char *key, float value);
 void do_artifeed(P_char, char *, int);
@@ -3070,7 +3071,8 @@ struct time_info_data age(P_char);
 struct time_info_data mud_time_passed(time_t, time_t);
 struct time_info_data real_time_passed(time_t, time_t);
 struct time_info_data real_time_countdown(time_t, time_t, int);
-void ADD_MONEY(P_char, int);
+// Optional success text is copied into the currency continuation (at most 64 bytes, including NUL).
+void ADD_MONEY(P_char, int, const char *committed_message = nullptr);
 void CAP(char *);
 void DECAP(char *);
 void InitGrantFastLookup(void);
@@ -3214,13 +3216,8 @@ void do_specialize(P_char, char *, int);
 void event_enchant(P_char ch, P_char victim, P_obj obj, void *data);
 void do_encrust(P_char, char *, int);
 void do_spellbind(P_char, char *, int);
-void do_mix(P_char, char *, int);
 void do_fix(P_char, char *, int);
 void do_forge(P_char, char *, int);
-P_obj get_bottle(P_char);
-int spl2potion(int);
-P_obj get_potion(P_char);
-bool MobAlchemistGetPotions(P_char, int, int);
 bool randomize_potion_non_damage(P_obj, int);
 void do_enchant(P_char, char *, int);
 P_obj check_furnace(P_char);

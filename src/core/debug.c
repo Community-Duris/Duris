@@ -102,7 +102,7 @@ void cmdlog(P_char ch, char *str)
 	}
 	if (IS_NPC(ch))
 		return;
-	if (cmdfile && (*(str + 1) != '\0'))
+	if (cmdfile && *str != '\0')
 	{
 		logcount++;
 		if (!(logcount % 500))

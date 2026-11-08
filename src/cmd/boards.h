@@ -46,7 +46,7 @@ struct board_info_type
 
 /* boards.c */
 int find_slot(void);
-int find_board(struct char_data *ch);
+int find_board(P_obj obj);
 int board(P_obj obj, P_char ch, int cmd, char *argument);
 void Board_write_message(int board_type, struct char_data *ch, char *arg);
 int Board_show_board(int board_type, struct char_data *ch, char *arg);

@@ -21,9 +21,15 @@ constexpr std::uint32_t FLOAT_0050 = 0x3D4CCCCDU; // 0.05f
 
 /*
  * This is deliberately a small reviewed allowlist.  The hard-coded entries
- * are the effective branches in limits.c, trophy.c and epic.c.  Frequency
- * modifiers stay visible as maintained-but-unused evidence, but are excluded
- * from property_version because the payout path does not read them.
+ * are the effective branches in limits.c, trophy.c and epic.c.  The rested
+ * multipliers remain fixed constants; the separate rested.enabled entry
+ * captures automatic applicability (staff grants can override it). Frequency
+ * modifiers stay visible
+ * as maintained-but-unused evidence, but are excluded from property_version
+ * because the payout path does not read them.
+ *
+ * Registry IDs are append-only.  Keep existing IDs and their catalog mappings
+ * intact so sealed historical rows remain resolvable when new context is added.
  */
 constexpr telemetry_config_property_definition PROPERTY_REGISTRY[] = {
 	{ 1U, telemetry_config_property_role::hardcoded_effective,
@@ -70,6 +76,8 @@ constexpr telemetry_config_property_definition PROPERTY_REGISTRY[] = {
 	{ 19U, telemetry_config_property_role::maintained_but_unused,
 	  telemetry_config_property_kind::float32, "unused.epic.freqMod.max", "epic.freqMod.max",
 	  FLOAT_0020 },
+	{ 20U, telemetry_config_property_role::effective, telemetry_config_property_kind::boolean,
+	  "rested.enabled", "exp.rested.enabled", 1U },
 };
 
 constexpr std::size_t PROPERTY_REGISTRY_COUNT =

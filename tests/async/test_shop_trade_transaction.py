@@ -23,6 +23,7 @@ with tempfile.TemporaryDirectory(prefix="duris-shop-trade-transaction-") as temp
         rel("shop_trade_transaction.c"),
         rel("shop_trade_command.c"),
         rel("item_transfer_command.c"),
+        rel("player_snapshot_codec.c"),
         rel("currency_command.c"),
         rel("critical_command.c"),
     ]

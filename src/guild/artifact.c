@@ -1289,6 +1289,7 @@ void artifact_update_sql(P_obj arti, char owned, time_t timer)
 			      vnum);
 			arti->loc_p = LOC_NOWHERE;
 			obj_to_room(arti, real_room0(ROOM_LIMBO_VNUM));
+			obj1 = arti;
 		}
 		else
 		{
@@ -2123,11 +2124,6 @@ void poof_artifact(P_obj arti)
 			obj_from_obj(arti);
 			obj_to_char(arti, owner);
 		}
-		act("Your $p vanishes with a bright flash of light!", FALSE, owner, arti, 0,
-		    TO_CHAR);
-		act("$n's $p suddenly vanishes in a bright flash of light!", FALSE, owner, arti, 0,
-		    TO_ROOM);
-		do_shout(owner, writable_arg("Ouch!"), 0);
 		break;
 	case LOC_WORN:
 		owner = cont->loc.wearing;
@@ -2136,11 +2132,6 @@ void poof_artifact(P_obj arti)
 			obj_from_obj(arti);
 			obj_to_char(arti, owner);
 		}
-		act("Your $p vanishes with a bright flash of light!", FALSE, owner, arti, 0,
-		    TO_CHAR);
-		act("$n's $p suddenly vanishes in a bright flash of light!", FALSE, owner, arti, 0,
-		    TO_ROOM);
-		do_shout(owner, writable_arg("Ouch!"), 0);
 		break;
 	case LOC_INSIDE:
 		logit(LOG_ARTIFACT, "poof_artifact: Bad loc arti(%d)-container(%d) inside nothing.",
@@ -2148,6 +2139,28 @@ void poof_artifact(P_obj arti)
 	case LOC_NOWHERE:
 	default:
 		break;
+	}
+
+	if (owner)
+	{
+		if (owner->in_room >= 0 && owner->in_room <= top_of_world)
+		{
+			act("Your $p vanishes with a bright flash of light!", FALSE, owner, arti, 0,
+			    TO_CHAR);
+			act("$n's $p suddenly vanishes in a bright flash of light!", FALSE, owner,
+			    arti, 0, TO_ROOM);
+		}
+		// Shout across the world even if owner is offline so active players are alerted.
+		do_shout(owner, writable_arg("Ouch!"), 0);
+	}
+	else
+	{
+		char pbuf[MAX_STRING_LENGTH];
+		snprintf(
+			pbuf, sizeof(pbuf),
+			"&+RA planar tremor echoes across the realms as %s &+Rdissolves into the ether.&N\r\n",
+			OBJ_SHORT(arti));
+		send_to_all(pbuf);
 	}
 	if (cont == arti)
 	{
@@ -4632,7 +4645,6 @@ void arti_fixit_sql(P_char ch)
 		// If the arti is on a different PC, we want to update artifact_bind AND increase the timer to max in artifacts.
 		if (location != pid)
 		{
-			extract_obj(arti);
 			sql_update_bind_data(vnum, &location, &timer);
 			qry("UPDATE artifacts SET timer = FROM_UNIXTIME(%lu), lastUpdate=SYSDATE() WHERE vnum = %d",
 			    new_time, vnum);
@@ -4643,7 +4655,8 @@ void arti_fixit_sql(P_char ch)
 				       pad_ansi(arti ? OBJ_SHORT(arti) : "NULL", 35, TRUE).c_str(),
 				       vnum, get_player_name_from_pid(location), location);
 		}
-		extract_obj(arti);
+		if (arti)
+			extract_obj(arti);
 	}
 	if (counter == 0)
 	{

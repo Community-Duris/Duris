@@ -1,11 +1,299 @@
 &+W======================================================================&n
 &+Y                           DURIS PLAYER NEWS&n
 &+W======================================================================&n
-&+WUpdated: September 21, 2026&n
+&+WUpdated: October 17, 2026&n
 
-Welcome back! This catch-up covers December 14, 2025 to September 21, 2026.
-The newest changes come first. Each month has short sections so you can
-find what matters to your character. Later updates replace older rules.
+Welcome back! Catch up on September 15 to October 17, 2026 below.
+The newest changes come first; later updates replace older rules.
+Earlier coverage, back to December 14, 2025, and the archive follow.
+
+&+R10/17/26&n &+L-&n &+YPets should not bar the door&n
+&+W----------------------------------------------------------------------&n
+
+&+Y-&n A saved pet with more health, mana or vitality than its current maximum
+  no longer prevents you from logging in. Its resources settle to the
+  restored maximum when it returns.
+&+Y-&n Pets with invalid saved vital stats are held for staff review while
+  you enter the game. Their saved equipment is retained.
+
+&+R10/16/26&n &+L-&n &+YErrands, travel, traps and saves&n
+&+W----------------------------------------------------------------------&n
+
+&+CEpic errands recover safely&n
+&+Y-&n New characters can receive earned epic tasks during their first
+  session. A task waiting for its destination can be assigned once its
+  zone choices and your history are ready, without earning it again.
+&+Y-&n A failed refresh keeps the last usable list of task zones. Restarting
+  during a refresh no longer leaves you with only part of that list.
+
+&+CTravel that follows your instructions&n
+&+Y-&n Teleport, Depart and Etheric Gust can now work in limited-teleport
+  zones when the destination is within the allowed five-room range.
+  Other travel restrictions still apply.
+&+Y-&n If you have Plane Shift, &+C'innate plane shift Air'&n now passes your
+  chosen plane correctly. A missing or invalid plane name no longer
+  spends that innate's use. Gate staves also keep your typed destination.
+&+Y-&n Full innate names choose the power you asked for: &+C'innate summon warg'&n
+  no longer selects Summon Horde when you have both powers.
+
+&+CTraps still bite, but looting knows when to stop&n
+&+Y-&n Bulk looting stops if a trap kills, moves, puts you to sleep or
+  immobilizes you, or takes away the container you were looting.
+  Rejected pickups no longer continue with success messages or follow-up
+  actions. These cases also avoid crashes from handling vanished targets.
+&+Y-&n Spent trap charges on items in player corpses now stay spent after
+  a restart. Saved carried items and pets' items also retain trap state.
+  This preserves newly saved state; it cannot recover old missing records.
+
+&+CCharacter saves and the high seas&n
+&+Y-&n Staff stat edits write the complete base stat value and reject numbers
+  that do not fit; gameplay stat caps still apply.
+&+Y-&n After a failed final save, logging in again can load your last saved
+  state once the old session's save attempts finish. This does not recover
+  changes that never saved.
+&+Y-&n Sinking or removing an NPC ship no longer stalls ship activity or
+  leaves other ships following a vanished escort or boarding target.
+&+Y-&n The &+MTotem of Mastery&n and &+MCirclet of Light&n now name the item properly
+  in their whisper activation messages.
+
+&+R10/15/26&n &+L-&n &+YIcerazor and client panels&n
+&+W----------------------------------------------------------------------&n
+
+&+Y-&n Reavers using &+MThrym's Icerazor&n now receive its intended extra cold
+  damage while Coldshield is active. Slow no longer grants that bonus.
+
+&+CYour client keeps up with you&n
+&+Y-&n Supported client panels fill in your status, effects, group, room,
+  quest and combat target when you log in, reconnect or re-enable them.
+  Purchased quest maps return too, including while you are morphed.
+&+Y-&n Group panels update when members leave and when their health changes,
+  even if those members do not use panels. The displayed group limit now
+  follows your side's actual limit. Combat panels track starts, ends and
+  damage more accurately.
+&+Y-&n Ship panels refresh when you step onto a bridge and clear when you
+  leave it. Room and item names no longer show stray escape backslashes.
+
+&+R10/14/26&n &+L-&n &+YHealing, area listings and hometown alarms&n
+&+W----------------------------------------------------------------------&n
+
+&+CRecovery and area listings&n
+&+Y-&n Healing correctly clears an incapacitated or stunned posture once
+  you recover. Combat stops processing a strike when either fighter dies.
+&+Y-&n Area listings stay within their output limit.
+
+&+CHometown warnings&n
+&+Y-&n Evil hometown invasion alarms are enabled, using the same alarm
+  chances and timing as before. Good hometown alarms remain enabled.
+
+&+R10/12/26 - 10/13/26&n &+L-&n &+YEarthen Grasp and recovery&n
+&+W----------------------------------------------------------------------&n
+
+&+CEarthen fists and recovery&n
+&+Y-&n Greater Earthen Grasp gives victims a better chance to resist
+  paralysis: the caster's Strength advantage has a smaller, capped
+  influence on the save. Ordinary Earthen Grasp, including the Earth
+  Reaver version, keeps its existing saves. Hold durations are unchanged.
+&+Y-&n Positive character regeneration returns to its normal baseline,
+  removing the reduced recovery setting.
+
+&+R10/12/26&n &+L-&n &+YPrime shifting&n
+&+W----------------------------------------------------------------------&n
+
+&+CShifting home&n
+&+Y-&n Githyanki, Illithid and Pillithid prime shifting now includes Clavikord,
+  Bugentolen, Storm Port and Quietus Quay in place of Killing Fields,
+  Drustl, Crescent Chasm and Kelek. Each picks an eligible room in that
+  area, avoiding private, protected, hometown, ocean and groundless rooms.
+  &+C'innate shift_prime'&n requires the Astral Plane, no combat and no PvP
+  adrenaline. Missing destinations now fail cleanly.
+
+&+R10/11/26&n &+L-&n &+YTrue names and monster resistance&n
+&+W----------------------------------------------------------------------&n
+
+&+CNames and commands&n
+&+Y-&n &+CReveal True Name&n handles random weapons with unfamiliar spell effects
+  without risking a crash.
+
+&+CMonster spell resistance&n
+&+Y-&n Several monster races have their stronger spell resistance restored:
+  Illithids, monster Vampires, Demons, Devils, Dragons, Beholders and
+  Shadows. &+WPlayable Vampires keep their existing resistance.&n The &+CRrakkma&n
+  group bonus now follows its configured resistance increase correctly.
+
+&+R10/05/26 - 10/10/26&n &+L-&n &+YBoards, falls and steadier play&n
+&+W----------------------------------------------------------------------&n
+
+&+CWatch that first step&n
+&+Y-&n Broken downward loops no longer leave you falling forever.
+
+&+CQuests and boards&n
+&+Y-&n World-quest reward messages show the XP you actually receive, rather
+  than an amount that ignores your modifiers or limits.
+&+Y-&n Boards now answer only where they stand. Empty or aborted posts cannot
+  borrow another board's text after a restart, and blank headlines no longer
+  exhaust the shared message supply. Long headlines are safely limited to
+  &+Y70 characters&n. A failed board save preserves its previous file; a damaged
+  board no longer stops the whole game from starting.
+
+&+CGear and everyday play&n
+&+Y-&n Firbolgs, Tieflings, Wood Elves, Kuo-toa and Pillithids are no longer
+  mistaken for other races by equipment restrictions. They can use gear with
+  a deny list that does not name them, but do not qualify for gear
+  restricted to a list of other races.
+&+Y-&n An invalid item in a shop's stock no longer hides all the items after
+  it.
+&+Y-&n A damaged character save is refused as damaged instead of being mistaken
+  for an empty character.
+&+Y-&n Busy moments no longer add every delayed casting segment onto the next
+  one. Casts aim for their intended completion time, although a busy server
+  can still delay the final segment.
+&+Y-&n Connection handling now avoids a server crash on a banned connection and
+  releases the resources of refused secure connections.
+&+Y-&n Finishing or abandoning a text edit no longer wastes memory with every use
+  or risks a crash when closing an edit.
+&+Y-&n Kick messages now match insect, aquatic and beholder victims correctly.
+
+&+R09/28/26 - 10/04/26&n &+L-&n &+YYour belongings, your boat, your next adventure&n
+&+W----------------------------------------------------------------------&n
+
+&+CSaving without the long wait&n
+&+Y-&n Ordinary item moves, crafting, coins, epic points and frags now change in
+  play immediately, with saves following afterward. Death, corpse raising
+  and resurrection no longer wait on the old recovery holds. Quit, rent and
+  camp return you to the account menu without waiting for the save to
+  finish.
+&+Y-&n Use 'save' when you want a checkpoint: "Save complete" now means the
+  save has actually been written.
+&+Y-&n Spellbooks keep every recorded spell instead of only the last entry.
+&+Y-&n Carrying an item with a very long world description no longer prevents
+  your whole character from saving.
+&+Y-&n The idle-connection timeout that could leave all later saves and loads
+  waiting forever has been fixed.
+
+&+CLockers, corpses and raised companions&n
+&+Y-&n Shopkeepers keep the right stock with the right shop through saves and
+  recovery, including shops that share a keeper type. Quest and tradeskill
+  shopkeepers now save their stock too.
+&+Y-&n A save while you are inside a locker now saves its contents too and
+  remembers the room outside its door for your next login.
+&+Y-&n Raised undead, golems, titans, avatars and dracoliches now carry the items
+  from their corpse again instead of handing the gear to the caster. Your
+  owned pet's save includes that gear. Hidden monster-only pieces remain
+  unequippable, even when ordered by keyword.
+&+Y-&n Corpses containing older coin piles can be raised again.
+
+&+CAuctions, rewards and progress&n
+&+Y-&n Removing an auction now returns the winning bidder's money through
+  'auction pickup'.
+&+Y-&n Very large item values no longer wrap around to a zero price, including
+  the Dark Sun's cargo hold.
+&+Y-&n Map updates no longer risk a crash because another character has quit or
+  rented and is sitting at the account menu.
+&+Y-&n Quest tag changes, achievement checks, missing polls and artifact repairs
+  have guards against missing data that could crash the game.
+&+Y-&n Embrace Death once more adjusts its bonus as your wounds change and
+  removes that bonus when you heal.
+
+&+CCharacters&n
+&+Y-&n Characters can be deleted when zone-story tracking is disabled and they
+  have no stored story progress.
+
+&+CCaptains&n
+&+Y-&n Ship Damage Control now reduces hull and sail hits while the owner is
+  aboard.
+&+Y-&n 'look sight' and firing messages show the actual hit percentage from the
+  ship combat roll. The displayed odds changed, not the hit roll itself.
+&+Y-&n Speed now affects your chance of crashing into the coast, so slow down
+  before docking. Disembarking checks your actual position on the ship
+  instead of sometimes rejecting an edge room as the middle.
+
+&+CTrade, ownership and a berth to come home to&n
+&+Y-&n Contraband bought repeatedly at the same port stacks with that port's
+  contraband already aboard. A shipwright's summons quote now matches the
+  amount charged, rather than quoting twice the price.
+&+Y-&n The game saves the ship you own even when you are aboard someone else's.
+  Old summons are cleared when a ship returns.
+&+Y-&n A full ship-room pool no longer silently loses a stored ship. Failed
+  saves no longer turn an existing vessel into a second new ship.
+&+Y-&n Boarding pirates now appear inside the ship they attacked, rather than
+  another vessel's rooms.
+
+&+R09/21/26 - 09/27/26&n &+L-&n &+YFerry fares and the earth beneath your feet&n
+&+W----------------------------------------------------------------------&n
+
+&+CAll aboard&n
+&+Y-&n &+MThe Stromvok&n now runs its route from Storm Port to Torrhan to Strathor and
+  back around. Passage costs &+Y10 platinum&n; it waits &+Y3 minutes&n at each stop
+  and advances every &+Y2 seconds&n while underway.
+&+Y-&n &+C'look out'&n works throughout the ferries without moving you out of your
+  room or disturbing a wand you are using. WaveDancer's hold and cabins now
+  enforce tickets and support announcements, looking out and disembarking
+  like its other rooms.
+&+Y-&n Ferry removal during a full reset no longer leaves the route pointing at a
+  missing vessel. If a ferry must be removed, its passengers are returned
+  safely to the first stop instead of being stranded in the Void.
+&+Y-&n Numbered nexus entries such as &+C'enter 1.portal'&n now take you to the
+  nexus's intended random surface-map destination, rather than an unrelated
+  fixed room.
+
+&+CGrumbar's Domain has teeth&n
+&+Y-&n Grumbar gains &+CDragon Acid Breath&n and &+CGreater Spirit Ward&n. The huge geode
+  dragon is aggressive toward everyone, and dao and efreeti high guards can
+  wander. Five passages have lost their tunnel restriction; creatures can
+  also leave the earth-plane dispersal room properly.
+&+Y-&n The Staff of Truth gains underdark vision and now grants &+Y30 hit points&n
+  instead of 20. The huge blazing white flame key can be reused, but is
+  &+Wno-rent&n. Dust mephits now appear with the earth pillars, and lead dao
+  guardians receive their earthen bracers.
+
+&+CSmall repairs with a long reach&n
+&+Y-&n Negative-weight items no longer subtract from your carrying burden.
+  Putting them in bags, equipping them or reloading them follows the same
+  rule, so nested containers cannot leave your encumbrance inconsistent.
+&+Y-&n Revoking a divine-claim container now preserves its contents. Fixed
+  shopkeepers no longer multiply after recovery, and the local herb dealers
+  avoid a repeating interaction that could crash the game.
+&+Y-&n &+CFrost Beam&n no longer forces an extra combat engagement before dealing its
+  damage. This removes the unwanted opening behavior; it does not make an
+  attack harmless.
+&+Y-&n Broken keys stay broken after saving, and item descriptions survive
+  copyover.
+&+Y-&n The login banner identifies enabled STAGING, CHAOS, ALL-RACES and
+  ALL-CLASSES modes. Names reserved for gods are refused during character
+  creation and renaming, including website entry paths.
+
+&+R09/15/26 - 09/21/26&n &+L-&n &+YA few more things worth knowing&n
+&+W----------------------------------------------------------------------&n
+
+&+CRecovery, books and rewards&n
+&+Y-&n Positive natural hit-point, mana and movement recovery for players is now
+  &+Ytwice the neutral rate&n on the shipped settings. Existing posture, race and
+  spell effects still shape the amount you recover.
+&+Y-&n Missing group or combat-list members and lost links during command
+  confirmations no longer trigger the corresponding crashes.
+&+Y-&n Restoring your position during copyover no longer spills coins as though
+  you had walked there.
+&+Y-&n Liches who lose a level on death now keep the proper proportion of their
+  remaining XP, instead of an arithmetic mistake reducing it to a single
+  point.
+&+Y-&n Scribing recognizes a scroll as its source before work begins. It consumes
+  or updates the scroll properly and stops if that source disappears before
+  the scribing finishes.
+&+Y-&n Paying a world-quest giver and immediately asking for your map now follows
+  the right order. A failed or no-longer-valid map request returns its
+  payment; rereading a map you have already bought is free.
+&+Y-&n Encrusted and enhanced items now draw generated names from their intended
+  name set, instead of switching naming styles at random.
+&+Y-&n &+C'divineclaim list'&n now presents rewards, expiry, remaining copies and
+  current holders in a clearer table.
+&+Y-&n Staff can choose the effects in a community spell-up and repeat it at
+  intervals from &+Y10 seconds to 1 hour&n, for connected players up to level 60
+  on either side or both. Regeneration can be added. These are staff-run
+  sessions; the repeat ends at reboot or copyover.
+&+Y-&n Terminal choice 3 is now labeled for its &+CMSP presentation markup&n. Use
+  &+C'toggle terminal [ansi|gen|msp]'&n to select a mode. MSP here supports
+  presentation such as prompts, maps and group displays; it does not send
+  sound or music triggers.
 
 &+R09/15/26 - 09/21/26&n &+L-&n &+YKingdom works, quest records, practice targets & more!&n
 &+W----------------------------------------------------------------------&n

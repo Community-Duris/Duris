@@ -16,6 +16,7 @@
 ;
 
 #include "core/prototypes.h"
+#include "item/objmisc.h"
 #include "item/forced_weapon_drop.h"
 #include "item/native_artifact_actions.h"
 #include "core/structs.h"
@@ -2387,8 +2388,8 @@ void event_revenant_crown(P_char ch, P_char /*victim*/, P_obj obj, void * /*data
 			if (temp_obj)
 			{
 				if (obj_index[temp_obj->R_num].func.obj != NULL)
-					(*obj_index[temp_obj->R_num].func.obj)(
-						temp_obj, ch, CMD_REMOVE, (char *)"all");
+					invoke_object_special(temp_obj, ch, CMD_REMOVE,
+							      (char *)"all");
 				obj_to_char(unequip_char(ch, k), ch);
 			}
 		}
@@ -2431,8 +2432,7 @@ int revenant_helm(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 			if (obj_index[temp_obj->R_num].func.obj != NULL)
 			{
 				// Call the objects remove proc if there might be one.
-				(*obj_index[temp_obj->R_num].func.obj)(temp_obj, ch, CMD_REMOVE,
-								       (char *)"all");
+				invoke_object_special(temp_obj, ch, CMD_REMOVE, (char *)"all");
 			}
 			obj_to_char(unequip_char(ch, k), ch);
 			if (!IS_ALIVE(ch))
@@ -2549,8 +2549,8 @@ void event_dragonlord_check(P_char ch, P_char /*victim*/, P_obj obj, void * /*da
 			if (temp_obj)
 			{
 				if (obj_index[temp_obj->R_num].func.obj != NULL)
-					(*obj_index[temp_obj->R_num].func.obj)(
-						temp_obj, ch, CMD_REMOVE, (char *)"all");
+					invoke_object_special(temp_obj, ch, CMD_REMOVE,
+							      (char *)"all");
 				obj_to_char(unequip_char(ch, k), ch);
 			}
 		}
@@ -2603,9 +2603,8 @@ int dragonlord_plate_old(P_obj obj, P_char /*ch*/, int cmd, char * /*arg*/)
 				if (temp_obj && (obj != temp_obj))
 				{
 					if (obj_index[temp_obj->R_num].func.obj != NULL)
-						(*obj_index[temp_obj->R_num].func.obj)(
-							temp_obj, temp_ch, CMD_REMOVE,
-							(char *)"all");
+						invoke_object_special(temp_obj, temp_ch, CMD_REMOVE,
+								      (char *)"all");
 					obj_to_char(unequip_char(temp_ch, k), temp_ch);
 				}
 			}
@@ -10106,7 +10105,7 @@ int totem_of_mastery(P_obj obj, P_char ch, int cmd, char *arg)
 	{
 		if (isname(arg, "spirit"))
 		{
-			act("You whisper 'spirit' to your $q", FALSE, ch, 0, 0, TO_CHAR);
+			act("You whisper 'spirit' to your $q", FALSE, ch, obj, 0, TO_CHAR);
 			act("&+mA spirit fog streams out of your $q &+mand surrounds you.&N", FALSE,
 			    ch, obj, obj, TO_CHAR);
 			act("$n whispers 'spirit' to $q", TRUE, ch, obj, NULL, TO_ROOM);
@@ -10125,7 +10124,7 @@ int totem_of_mastery(P_obj obj, P_char ch, int cmd, char *arg)
 		}
 		else if (isname(arg, "hawk"))
 		{
-			act("You whisper 'hawk' to your $q", FALSE, ch, 0, vict, TO_CHAR);
+			act("You whisper 'hawk' to your $q", FALSE, ch, obj, vict, TO_CHAR);
 			act("&+wA vaporous &+Whawk&+w appears briefly from your&N $q.&N", FALSE, ch,
 			    obj, obj, TO_CHAR);
 			act("$n whispers 'hawk' to $q.", FALSE, ch, obj, obj, TO_ROOM);
@@ -10143,7 +10142,7 @@ int totem_of_mastery(P_obj obj, P_char ch, int cmd, char *arg)
 		}
 		else if (isname(arg, "panther"))
 		{
-			act("You whisper 'panther' to your $q", FALSE, ch, 0, vict, TO_CHAR);
+			act("You whisper 'panther' to your $q", FALSE, ch, obj, vict, TO_CHAR);
 			act("&+LThe spirit of a jet black &+wpanther&+L flows from your &N$q&+w.&N",
 			    FALSE, ch, obj, obj, TO_CHAR);
 			act("$n whispers 'panther' to $q.", FALSE, ch, obj, obj, TO_ROOM);
@@ -10161,7 +10160,7 @@ int totem_of_mastery(P_obj obj, P_char ch, int cmd, char *arg)
 		}
 		else if (isname(arg, "sense"))
 		{
-			act("You whisper 'sense' to your $q", FALSE, ch, 0, vict, TO_CHAR);
+			act("You whisper 'sense' to your $q", FALSE, ch, obj, vict, TO_CHAR);
 			act("&+cA rush of air from your &N $q&+w.&N&+c engulfs you.", FALSE, ch,
 			    obj, obj, TO_CHAR);
 			act("$n whispers 'sense' to $q.", FALSE, ch, obj, obj, TO_ROOM);
@@ -10179,7 +10178,7 @@ int totem_of_mastery(P_obj obj, P_char ch, int cmd, char *arg)
 		}
 		else if (isname(arg, "raven"))
 		{
-			act("You whisper 'raven' to your $q", FALSE, ch, 0, vict, TO_CHAR);
+			act("You whisper 'raven' to your $q", FALSE, ch, obj, vict, TO_CHAR);
 			act("&+ySmoke billows from your&N $q &+yin the form of a &+WRaven&+y.&N",
 			    FALSE, ch, obj, obj, TO_CHAR);
 			act("$n whispers 'raven' to $p.", FALSE, ch, obj, obj, TO_ROOM);
@@ -10197,7 +10196,7 @@ int totem_of_mastery(P_obj obj, P_char ch, int cmd, char *arg)
 		}
 		else if (isname(arg, "ward"))
 		{
-			act("You whisper 'ward' to your $q", FALSE, ch, 0, vict, TO_CHAR);
+			act("You whisper 'ward' to your $q", FALSE, ch, obj, vict, TO_CHAR);
 			act("&+wA &+Wspirit &+wappears from your &N$q &+wand engulfs you.&N", FALSE,
 			    ch, obj, obj, TO_CHAR);
 			act("$n whispers 'ward' to $q.", FALSE, ch, obj, obj, TO_ROOM);
@@ -10232,7 +10231,7 @@ int totem_of_mastery(P_obj obj, P_char ch, int cmd, char *arg)
 		}
 		else if (isname(arg, "elephant"))
 		{
-			act("You whisper 'elephant' to your $q", FALSE, ch, 0, vict, TO_CHAR);
+			act("You whisper 'elephant' to your $q", FALSE, ch, obj, vict, TO_CHAR);
 			act("&+LThe sounds of &+welephants &+Ltrumpeting erupt from your&N $q&+L.&N",
 			    FALSE, ch, obj, obj, TO_CHAR);
 			act("$n whispers 'elephant' to $q.", FALSE, ch, obj, obj, TO_ROOM);
@@ -10251,7 +10250,7 @@ int totem_of_mastery(P_obj obj, P_char ch, int cmd, char *arg)
 		/* EVERYTHING HERE IS JUST FUNNY SILLY STUFF */
 		else if (isname(arg, "mystra"))
 		{
-			act("You whisper 'mystra' to your $q", FALSE, ch, 0, vict, TO_CHAR);
+			act("You whisper 'mystra' to your $q", FALSE, ch, obj, vict, TO_CHAR);
 			act("&+LThe sky darkens and fills with clouds.  You hear a deep rumbling&N",
 			    FALSE, ch, obj, obj, TO_CHAR);
 			act("&+Lin the distance.  The rumbling gets louder and louder.  God himself&N",
@@ -10336,7 +10335,7 @@ int circlet_of_light(P_obj obj, P_char ch, int cmd, char *arg)
 		}
 		else if (isname(arg, "mystra"))
 		{
-			act("You whisper 'mystra' to your $q", FALSE, ch, 0, vict, TO_CHAR);
+			act("You whisper 'mystra' to your $q", FALSE, ch, obj, vict, TO_CHAR);
 			act("&+LThe sky darkens and fills with clouds.  You hear a deep rumbling&N",
 			    FALSE, ch, obj, obj, TO_CHAR);
 			act("&+Lin the distance.  The rumbling gets louder and louder.  God himself&N",

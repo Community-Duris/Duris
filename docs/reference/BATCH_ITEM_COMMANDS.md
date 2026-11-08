@@ -118,8 +118,24 @@ Other wallet batch operations do not pass through item ownership:
   eligibility rules. `junk all` currently returns immediately for untrusted
   characters and does not accept `all.<keyword>`; `bury all` without a keyword
   is rejected.
-- Producing shops can create a bounded quantity with
-  `buy <item> <container> <quantity>`; the quantity range is 1 through 50.
+- Producing shops mark unlimited stock with `[quantity 1-50]` in `list`.
+  Use `buy <item> quantity <1-50>` for inventory delivery or
+  `buy <item> quantity <1-50> into <container>` for a carried, open container.
+  The historical `buy <item> <container> [quantity]` form remains supported.
+  Examples: `buy ration quantity 10`, `buy #3 quantity 10 into backpack`,
+  and `buy arrow quiver 50`. Quantity purchases are excluded from epic shops.
+  Both persistence modes reject invalid quantities, destinations, and trailing
+  arguments before charging or purchasing anything. A quantity is a complete
+  unsigned decimal integer from 1 through 50.
+  Accepted orders show quantity, destination, unit price, and total. Copies
+  complete sequentially with the existing per-copy capacity checks and atomic
+  payment/delivery rules; an entire order is not an all-or-nothing transaction.
+  Full or stopped results give the delivered count and actual charge, with an
+  uncharged remainder and stop reason. A rejected SQL delivery after payment
+  identifies the charged copy and its pending refund. A durable purchase awaiting live delivery
+  is charged and pending, not an uncharged failure: wait or reconnect and do not
+  repeat the purchase. Batch output has one acceptance, one final summary, and
+  at most one room event, with a separate delay notice if publication must wait.
 - `auction offer` supports 1 through 9 adjacent same-VNUM items, and
   `auction pickup` can return a listing's item batch. These use the auction
   transaction domain rather than the general movement adapter.

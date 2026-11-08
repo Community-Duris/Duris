@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Real-server recovery of generated pets and held equipment in a private fixture.
 
-Usage: python3 tests/async/test_pet_restart_journey.py /absolute/flatfile/server
+Usage: python3 tests/async/test_pet_restart_journey.py /absolute/flatfile/server [--hidden]
 The server is built separately so this test never invokes a CI pipeline.
 """
 import os
 from pathlib import Path
 import re
+import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -16,7 +18,7 @@ import test_flatfile_combat_journey as journey
 ROOT = journey.ROOT
 
 
-def run(binary):
+def run(binary, hidden=False):
     with tempfile.TemporaryDirectory(prefix="duris-pet-restart-") as temporary:
         root = Path(temporary)
         state, runtime = root / "state", root / "runtime"
@@ -43,6 +45,12 @@ def run(binary):
                    LISTEN_ADDRESS="127.0.0.1", DURIS_TLS_PORT=str(tls),
                    DURIS_WEBSOCKET_LISTEN_ADDRESS="127.0.0.1", DURIS_WEBSOCKET_PORT=str(websocket),
                    REDIS="FALSE", CHAOS_MUD="FALSE")
+        if hidden:
+            (runtime / "bin/server").mkdir(parents=True)
+            shutil.copy2(binary, runtime / "bin/server/dms")
+            shutil.copy2(binary, runtime / "bin/server/dms_new")
+            binary = runtime / "bin/server/dms"
+            env["COPYOVER_STATE_FILE"] = str(root / "copyover.dat")
         if os.environ.get("LD_LIBRARY_PATH"):
             env["LD_LIBRARY_PATH"] = os.environ["LD_LIBRARY_PATH"]
         subprocess.run([str(journey.INSPECTOR), str(state), "seed-combat"], check=True)
@@ -97,10 +105,11 @@ def run(binary):
             client.send("save")
             client.expect(f"Save complete for {journey.CHARACTER}.", timeout=30)
             stop()
-            seeded = rows("seed")
+            seeded = rows("seed-hidden" if hidden else "seed")
             expected_states = {row[1] for row in seeded if row[1]}
             expected_uids = {row[3] for row in seeded}
             assert len(expected_states) == 2 and len(expected_uids) == 3
+            current = []
             for cycle in range(2):
                 boot()
                 client = journey.reconnect_character(port)
@@ -116,10 +125,46 @@ def run(binary):
                 assert {row[3] for row in current} == expected_uids, "equipment lost or duplicated"
                 assert sum(row[0] == "1" for row in current) == 1, "legacy pet not held"
                 # Gear contributes once to derived HP; the serialized base stays 1234.
-                assert sorted(int(row[2]) for row in current) == [1234, 1234, 1253], current
+                expected_hit = [1234, 1234, 1234] if hidden else [1234, 1234, 1253]
+                assert sorted(int(row[2]) for row in current) == expected_hit, current
+                if hidden:
+                    restricted = [row for row in current if len(row) > 4]
+                    assert len(restricted) == 1 and restricted[0][4] == "hidden:0", current
                 print(f"restart cycle {cycle + 1}: identity, base stats, gear, deadlines, held UID passed", flush=True)
                 if cycle == 0:
                     stop()
+            if hidden:
+                assert process is not None and client is not None and current
+                client.close()
+                client = journey.MudClient(port)
+                entry, _ = client.expect_any(("term type", "account name"))
+                if entry == "term type":
+                    client.send("9")
+                    client.expect("account name")
+                client.send(journey.ACCOUNT)
+                client.expect("enter your password")
+                client.send(journey.PASSWORD)
+                client.expect("PRESS RETURN")
+                client.send("")
+                client.expect("Please select an option")
+                client.send("1")
+                client.expect(journey.CHARACTER)
+                client.send("1")
+                # A link-dead character resumes directly, unlike cold login.
+                client.expect("Reconnecting...")
+                client.send("save")
+                client.expect(f"Save complete for {journey.CHARACTER}.", timeout=30)
+                assert sorted(rows()) == sorted(current), "disconnect/reconnect changed hidden custody"
+                process.send_signal(signal.SIGUSR1)
+                client.expect("Copyover complete!", timeout=90)
+                client.send("look")
+                client.expect("Pos: standing >", timeout=15)
+                client.send("save")
+                client.expect(f"Save complete for {journey.CHARACTER}.", timeout=30)
+                assert sorted(rows()) == sorted(current), "copyover changed hidden custody or equipment"
+                assert (runtime / "server.out").read_text().count("Entering game loop.") == 2
+                print("hidden pet item stays carried with the same UID and flag across restart, reconnect and real exec copyover", flush=True)
+                return
             stop()
             rows("arm-expiry")
             boot()
@@ -161,5 +206,6 @@ def run(binary):
 
 
 if __name__ == "__main__":
-    assert len(sys.argv) == 2, __doc__
-    run(Path(sys.argv[1]).resolve())
+    assert len(sys.argv) in (2, 3), __doc__
+    assert len(sys.argv) == 2 or sys.argv[2] == "--hidden", __doc__
+    run(Path(sys.argv[1]).resolve(), hidden=len(sys.argv) == 3)

@@ -99,6 +99,7 @@ bool currency_transaction_submit_bank_payment(P_char character, int64_t value,
 					      const void *context, size_t context_size);
 void currency_transaction_handle_completions(const critical_completion *completions, size_t count);
 void currency_transaction_player_ready(P_char character);
+void currency_transaction_save_first(P_char character);
 currency_transaction_health currency_transaction_health_copy(void);
 void currency_transaction_reset_for_tests(void);
 

@@ -211,7 +211,10 @@ void do_randobj(P_char ch, char *strn, int /*val*/)
 			extract_obj(o);
 			return;
 		}
-		create_recipe(ch, o);
+		if (!create_recipe(ch, o))
+		{
+			send_to_char("Item is not eligible for a recipe.\r\n", ch);
+		}
 		extract_obj(o);
 
 		return;

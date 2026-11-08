@@ -293,7 +293,14 @@ int main() {
     assert(falling_step(&person, 1) == falling_step_result::landed);
     assert(person.in_room == 2 && applied_damage > 0 && schedule_attempts == 0);
 
-    puts("falling executor skill, lifetime, relocation and scheduling regressions passed");
+    reset(); ledge(); downward.to_room = 0;
+    assert(falling_step(&person, 1) == falling_step_result::landed);
+    assert(person.in_room == 0 && schedule_attempts == 0 && applied_damage > 0);
+    reset(); falling_chain(); next_downward.to_room = 0;
+    assert(falling_step(&person, 1) == falling_step_result::landed);
+    assert(person.in_room == 1 && schedule_attempts == 0 && applied_damage > 0);
+
+    puts("falling executor skill, lifetime, relocation, exit loops and scheduling regressions passed");
 }
 '''
 

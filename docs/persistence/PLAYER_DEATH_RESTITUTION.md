@@ -9,6 +9,12 @@ canonical row or the separately approved exact-evidence reconciliation path.
 
 ## Supported boundary
 
+For a missing payload whose UID **already has active player custody**, use the
+[exact-UID payload repair workflow](ITEM_PAYLOAD_REPAIR.md). That workflow retains
+the current owner and topology and records a distinct `payload_repair` receipt.
+It creates no restitution delivery and does not invoke the transfer/staff grant
+path described below.
+
 - Backend: MySQL 8 or MariaDB 10 with the ownership/death schema and immutable
   migration `0020_player_death_restitution` applied. File/flat-file authority
   is refused. The native bridge exposes the raw wire version separately from

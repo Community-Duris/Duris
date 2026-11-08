@@ -96,6 +96,11 @@ flatfile_item_repository_result flatfile_item_repository_load_owner_locked(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const item_owner_identity &owner, uint64_t *owner_revision,
 	std::vector<flatfile_item_ownership_record> *items, std::string *error);
+// Protected recovery inspection needs inactive rows and unmatched descendants.
+// This is a read of existing authority, never a repair or a new custody store.
+flatfile_item_repository_result flatfile_item_repository_recovery_catalog_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	std::vector<flatfile_item_ownership_record> *items, std::string *error);
 flatfile_item_repository_result flatfile_item_repository_load_coins_locked(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const std::vector<uint64_t> &uids, std::vector<flatfile_item_ownership_record> *coins,

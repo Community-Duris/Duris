@@ -1,6 +1,7 @@
 #include "item/item_ownership_runtime.h"
 
 #include "economy/collector_command.h"
+#include "player/player_snapshot_codec.h"
 
 #include <algorithm>
 #include <limits>
@@ -481,6 +482,18 @@ bool item_ownership_runtime_lookup(uint64_t item_uid, item_ownership_runtime_ent
 	return true;
 }
 
+bool item_ownership_runtime_peek_owner_revision(const item_owner_identity &owner,
+						uint64_t *revision) noexcept
+{
+	if (!revision || !item_owner_identity_valid(owner))
+		return false;
+	const auto found = owner_revisions.find(owner);
+	if (found == owner_revisions.end())
+		return false;
+	*revision = found->second;
+	return true;
+}
+
 bool item_ownership_runtime_owner_revision(const item_owner_identity &owner, uint64_t *revision)
 {
 	if (!revision)
@@ -498,9 +511,110 @@ bool item_ownership_runtime_owner_revision(const item_owner_identity &owner, uin
 	return true;
 }
 
+bool item_ownership_runtime_apply_craft(const item_transfer_payload &payload,
+					const item_transfer_result &result)
+{
+	if (payload.reason != item_transfer_reason::craft || !payload.item_count ||
+	    result.item_count != payload.item_count ||
+	    result.root_item_uid != payload.selected_item_uid ||
+	    result.from_owner_revision != result.to_owner_revision ||
+	    !item_owner_identity_equal(payload.from_owner, payload.to_owner))
+		return false;
+	std::vector<player_item_snapshot> outputs;
+	if (payload.item_blob_size &&
+	    player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
+					     &outputs) != player_snapshot_codec_result::ok)
+		return false;
+	if (!outputs.empty() && outputs[0].object_uid != payload.selected_item_uid)
+		return false;
+	std::vector<item_ownership_runtime_entry> changes;
+	try
+	{
+		changes.reserve(payload.item_count + outputs.size());
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			const item_transfer_entry &expected = payload.items[index];
+			auto found = entries.find(expected.item_uid);
+			uint64_t target_root = 0, target_parent = 0;
+			if (!item_transfer_target_topology(payload, expected.item_uid, &target_root,
+							   &target_parent) ||
+			    expected.expected_item_revision == UINT64_MAX)
+				return false;
+			if (found != entries.end() &&
+			    (found->second.vnum != expected.vnum ||
+			     found->second.root_item_uid != expected.root_item_uid ||
+			     found->second.parent_item_uid != expected.parent_item_uid ||
+			     !((found->second.item_revision == expected.expected_item_revision &&
+				item_owner_identity_equal(found->second.owner, payload.from_owner) &&
+				found->second.state == item_custody_state::active) ||
+			       (found->second.item_revision == expected.expected_item_revision + 1 &&
+				found->second.owner.type == item_owner_type::destruction &&
+				found->second.state == item_custody_state::destroyed))))
+				return false;
+			changes.push_back({ expected.item_uid,
+					    target_root,
+					    target_parent,
+					    { item_owner_type::destruction, 0, 0 },
+					    expected.expected_item_revision + 1,
+					    result.from_owner_revision,
+					    expected.vnum,
+					    item_custody_state::destroyed });
+		}
+		std::unordered_set<uint64_t> output_uids;
+		output_uids.reserve(outputs.size());
+		for (size_t index = 0; index < outputs.size(); ++index)
+		{
+			const player_item_snapshot &output = outputs[index];
+			if (!output.object_uid || output.vnum <= 0 ||
+			    !output_uids.insert(output.object_uid).second)
+				return false;
+			uint64_t root = output.object_uid;
+			int32_t parent = output.parent_index;
+			for (size_t depth = 0;
+			     parent != PLAYER_SNAPSHOT_NO_PARENT && depth < outputs.size(); ++depth)
+			{
+				if (parent < 0 || static_cast<size_t>(parent) >= outputs.size())
+					return false;
+				root = outputs[static_cast<size_t>(parent)].object_uid;
+				parent = outputs[static_cast<size_t>(parent)].parent_index;
+			}
+			if (parent != PLAYER_SNAPSHOT_NO_PARENT)
+				return false;
+			const uint64_t parent_uid =
+				output.parent_index == PLAYER_SNAPSHOT_NO_PARENT ?
+					0 :
+					outputs[static_cast<size_t>(output.parent_index)].object_uid;
+			auto existing = entries.find(output.object_uid);
+			if (existing != entries.end() &&
+			    (existing->second.item_revision != 1 ||
+			     existing->second.root_item_uid != root ||
+			     existing->second.parent_item_uid != parent_uid ||
+			     existing->second.vnum != output.vnum ||
+			     existing->second.state != item_custody_state::active ||
+			     !item_owner_identity_equal(existing->second.owner, payload.to_owner)))
+				return false;
+			changes.push_back({ output.object_uid, root, parent_uid, payload.to_owner,
+					    1, result.to_owner_revision, output.vnum,
+					    item_custody_state::active });
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	if (!item_ownership_runtime_hydrate_many_atomic(changes.data(), changes.size()))
+		return false;
+	return item_ownership_runtime_hydrate_owner(payload.from_owner,
+						    result.from_owner_revision) &&
+	       item_ownership_runtime_hydrate_owner({ item_owner_type::destruction, 0, 0 },
+						    result.from_owner_revision);
+}
+
 bool item_ownership_runtime_apply(const item_transfer_payload &payload,
 				  const item_transfer_result &result)
 {
+	if (payload.reason == item_transfer_reason::craft)
+		return item_ownership_runtime_apply_craft(payload, result);
 	if (!payload.item_count || payload.item_count > ITEM_TRANSFER_MAX_ITEMS ||
 	    result.item_count != payload.item_count ||
 	    result.root_item_uid != item_transfer_result_root(payload))
@@ -554,37 +668,101 @@ bool item_ownership_runtime_apply(const item_transfer_payload &payload,
 		owner_revisions[payload.from_owner] = result.from_owner_revision;
 		return true;
 	}
-	for (size_t index = 0; index < payload.item_count; ++index)
+	// Prepare every AFTER value and all potentially allocating owner nodes
+	// before changing any live row or clock. Existing row references remain
+	// stable: this branch never inserts into or rehashes the item table.
+	if (!item_owner_identity_valid(payload.from_owner) ||
+	    !item_owner_identity_valid(payload.to_owner) || !result.from_owner_revision ||
+	    !result.to_owner_revision)
+		return false;
+	const auto source_clock = owner_revisions.find(payload.from_owner);
+	const auto destination_clock = owner_revisions.find(payload.to_owner);
+	if ((source_clock != owner_revisions.end() &&
+	     (source_clock->second == std::numeric_limits<uint64_t>::max() ||
+	      result.from_owner_revision < source_clock->second ||
+	      (payload.expected_from_revision &&
+	       payload.expected_from_revision != source_clock->second))) ||
+	    (destination_clock != owner_revisions.end() &&
+	     (destination_clock->second == std::numeric_limits<uint64_t>::max() ||
+	      result.to_owner_revision < destination_clock->second ||
+	      (payload.expected_to_revision &&
+	       payload.expected_to_revision != destination_clock->second))) ||
+	    (source_clock == owner_revisions.end() && payload.expected_from_revision) ||
+	    (destination_clock == owner_revisions.end() && payload.expected_to_revision) ||
+	    (item_owner_identity_equal(payload.from_owner, payload.to_owner) &&
+	     result.from_owner_revision != result.to_owner_revision))
+		return false;
+	struct staged_item
 	{
-		auto found = entries.find(payload.items[index].item_uid);
-		uint64_t target_root = 0, target_parent = 0;
-		if (found == entries.end() ||
-		    found->second.item_revision != payload.items[index].expected_item_revision ||
-		    !item_owner_identity_equal(found->second.owner, payload.from_owner) ||
-		    found->second.item_revision == std::numeric_limits<uint64_t>::max() ||
-		    !item_transfer_target_topology(payload, payload.items[index].item_uid,
-						   &target_root, &target_parent))
-			return false;
-	}
-	for (size_t index = 0; index < payload.item_count; ++index)
+		item_ownership_runtime_entry *current;
+		item_ownership_runtime_entry after;
+	};
+	std::vector<staged_item> staged;
+	bool inserted_source = false, inserted_destination = false;
+	try
 	{
-		item_ownership_runtime_entry &entry = entries[payload.items[index].item_uid];
-		uint64_t target_root = 0, target_parent = 0;
-		if (!item_transfer_target_topology(payload, payload.items[index].item_uid,
-						   &target_root, &target_parent))
+		staged.reserve(payload.item_count);
+		uint64_t maximum_revision = 0;
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			const item_transfer_entry &item = payload.items[index];
+			const auto found = entries.find(item.item_uid);
+			uint64_t target_root = 0, target_parent = 0;
+			if (!item.item_uid || found == entries.end() ||
+			    found->second.item_revision != item.expected_item_revision ||
+			    found->second.root_item_uid != item.root_item_uid ||
+			    found->second.parent_item_uid != item.parent_item_uid ||
+			    found->second.vnum != item.vnum ||
+			    found->second.state != item.expected_state ||
+			    item.expected_state == item_custody_state::absent ||
+			    !item_owner_identity_equal(found->second.owner, payload.from_owner) ||
+			    found->second.item_revision == std::numeric_limits<uint64_t>::max() ||
+			    !item_transfer_target_topology(payload, item.item_uid, &target_root,
+							   &target_parent))
+				return false;
+			for (const auto &prior : staged)
+				if (prior.current == &found->second)
+					return false;
+			item_ownership_runtime_entry after = found->second;
+			++after.item_revision;
+			after.root_item_uid = target_root;
+			after.parent_item_uid = target_parent;
+			after.owner = payload.to_owner;
+			after.owner_revision = result.to_owner_revision;
+			after.state = payload.to_owner.type == item_owner_type::destruction ?
+					      item_custody_state::destroyed :
+					      item_custody_state::active;
+			maximum_revision = std::max(maximum_revision, after.item_revision);
+			staged.push_back({ &found->second, after });
+		}
+		if (result.max_item_revision != maximum_revision)
 			return false;
-		++entry.item_revision;
-		entry.root_item_uid = target_root;
-		entry.parent_item_uid = target_parent;
-		entry.owner = payload.to_owner;
-		entry.owner_revision = result.to_owner_revision;
-		entry.state = payload.to_owner.type == item_owner_type::destruction ?
-				      item_custody_state::destroyed :
-				      item_custody_state::active;
+		const auto source = owner_revisions.try_emplace(payload.from_owner, 0);
+		inserted_source = source.second;
+		// Mapped references survive the destination insertion's possible rehash.
+		// Do not retain unordered_map iterators across that insertion.
+		uint64_t *source_revision = &source.first->second;
+		const auto destination = owner_revisions.try_emplace(payload.to_owner, 0);
+		inserted_destination = destination.second;
+		uint64_t *destination_revision = &destination.first->second;
+		// All semantic checks and allocations are complete. This commit contains
+		// only POD assignments, including the genuine same-owner final clock.
+		for (const auto &item : staged)
+			*item.current = item.after;
+		*source_revision = result.from_owner_revision;
+		*destination_revision = result.to_owner_revision;
+		return true;
 	}
-	owner_revisions[payload.from_owner] = result.from_owner_revision;
-	owner_revisions[payload.to_owner] = result.to_owner_revision;
-	return true;
+	catch (...)
+	{
+		// A failed insertion may retain bucket capacity, but never an added
+		// owner value. Existing owner clocks and every original item stay exact.
+		if (inserted_destination)
+			owner_revisions.erase(payload.to_owner);
+		if (inserted_source)
+			owner_revisions.erase(payload.from_owner);
+		return false;
+	}
 }
 
 namespace

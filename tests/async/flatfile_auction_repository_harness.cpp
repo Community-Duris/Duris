@@ -411,6 +411,17 @@ int main(int argc, char **argv)
 			flatfile_auction_repository_apply(root.string(), unaffordable_command)
 					.error_code == ENOSPC,
 		"insufficient auction bid was not rolled back and durably rejected");
+	auto removable_bid = unaffordable;
+	removable_bid.value = 1000;
+	applied = flatfile_auction_repository_apply(root.string(), command(removable_bid, 15));
+	require(applied.outcome == critical_apply_outcome::applied,
+		"bid on removable auction did not apply");
+	expect_event(root.string(), auction_event_type::bid_placed, removable_result.auction_id,
+		     &error);
+	flatfile_auction_pickup_projection refund_before;
+	require(flatfile_auction_find_pickup(root.string(), 44, &refund_before, &error) ==
+			flatfile_auction_query_result::ok,
+		"could not read prior buyer pickup");
 	auction_command_payload remove = {};
 	remove.action = auction_action::remove;
 	remove.auction_id = removable_result.auction_id;
@@ -418,8 +429,20 @@ int main(int argc, char **argv)
 	applied = flatfile_auction_repository_apply(root.string(), command(remove, 13));
 	require(applied.outcome == critical_apply_outcome::applied &&
 			result_of(applied).event_type == auction_event_type::removed &&
-			result_of(applied).winner_pid == 0,
+			result_of(applied).winner_pid == 44,
 		"open auction removal did not stage seller custody");
+	flatfile_auction_pickup_projection refunded;
+	require(flatfile_auction_find_pickup(root.string(), 44, &refunded, &error) ==
+				flatfile_auction_query_result::ok &&
+			refunded.money == refund_before.money + 1000,
+		"removal lost the winning bidder's escrow");
+	require(flatfile_auction_repository_apply(root.string(), command(remove, 13)).outcome ==
+			critical_apply_outcome::already_applied,
+		"removal replay did not return its receipt");
+	require(flatfile_auction_find_pickup(root.string(), 44, &refunded, &error) ==
+				flatfile_auction_query_result::ok &&
+			refunded.money == refund_before.money + 1000,
+		"removal replay refunded the winning bidder twice");
 	expect_event(root.string(), auction_event_type::removed, removable_result.auction_id,
 		     &error);
 	auction_command_payload removed_claim = {};

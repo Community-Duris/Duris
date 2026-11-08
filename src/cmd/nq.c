@@ -747,7 +747,9 @@ int nq_test_single_action(struct nq_action *action, struct nq_instance *instance
 					if (!strcmp(t_tag->next->string, act_tag->string))
 						break;
 				pc_tag = t_tag->next;
-				t_tag->next = t_tag->next->next;
+				if (!pc_tag)
+					continue;
+				t_tag->next = pc_tag->next;
 			}
 			FREE(pc_tag->string);
 			FREE(pc_tag);

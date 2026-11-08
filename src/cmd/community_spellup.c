@@ -26,6 +26,7 @@
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
+#include "world/rested.h"
 
 extern P_desc descriptor_list;
 
@@ -168,9 +169,9 @@ static void cast_accelerated_healing(int level, P_char caster, P_char target)
 	spell_accel_healing(level, caster, nullptr, SPELL_TYPE_SPELL, target, nullptr);
 }
 
-static void cast_rest(int level, P_char caster, P_char target)
+static void cast_rest(int /*level*/, P_char caster, P_char target)
 {
-	spell_rest(level, caster, nullptr, SPELL_TYPE_SPELL, target, nullptr);
+	grant_staff_rested_bonus(caster, target);
 }
 
 static void cast_regeneration(int level, P_char caster, P_char target)

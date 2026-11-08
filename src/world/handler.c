@@ -9,6 +9,7 @@
  */
 
 #include "core/prototypes.h"
+#include "item/objmisc.h"
 #include "telemetry/telemetry_runtime.h"
 #include "item/item_actions.h"
 #include "core/structs.h"
@@ -50,6 +51,7 @@
 #include "persistence/persistence_checkpoint.h"
 #include "persistence/persistence_mode.h"
 #include "world/world_recovery_pipeline.h"
+#include "world/world_activity.h"
 #include "ships/ships.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
@@ -233,8 +235,7 @@ void recalc_container_weight(P_obj cont)
  * the figure in either direction -- but between the move and the next capacity
  * check the number a player is carrying is simply wrong. Calling it here makes
  * "wrong until something asks" into "right immediately", and
- * propagate_weight_delta() inside add_weight() carries the correction up to
- * whoever is holding the bag.
+ * add_weight() carries the correction up to whoever is holding the bag.
  *
  * Gated on the reduction, not on being a container: this reads the prototype,
  * and every container that reduces nothing keeps the cheap incremental path it
@@ -950,7 +951,7 @@ void poison_slowness(int /*level*/, P_char /*ch*/, char * /*arg*/, [[maybe_unuse
 		if (!(af = poison_common(victim, POISON_SLOWNESS)))
 			return;
 		af->duration = 1;
-		af->bitvector2 = AFF2_SLOW;
+		af->bitvector2 |= AFF2_SLOW;
 
 		send_to_char("&+cYe feel a wave of strange weakness running through yer body.&n\n",
 			     victim);
@@ -1178,6 +1179,7 @@ void char_from_room(P_char ch)
 		}
 		i->next_in_room = ch->next_in_room;
 	}
+	world_activity_character_leave(ch);
 
 	ch->specials.was_in_room = world[ch->in_room].number;
 	ch->in_room = NOWHERE;
@@ -1329,7 +1331,8 @@ bool char_to_room(P_char ch, int room, int dir)
 		for (d = descriptor_list; d; d = d->next)
 		{
 			who = d->character;
-			if (!who || !who->desc)
+			// A character at the account menu after a rent or a quit is in no room.
+			if (!who || !who->desc || who->in_room < 0 || who->in_room > top_of_world)
 				continue;
 
 			// Determine observer's effective map room
@@ -1424,6 +1427,7 @@ bool char_to_room(P_char ch, int room, int dir)
 	}
 
 	AddCharToZone(ch);
+	world_activity_character_enter(ch);
 
 	if ((t_ch = get_linked_char(ch, LNK_RIDING)) && t_ch->in_room != ch->in_room)
 	{
@@ -1625,7 +1629,7 @@ bool char_to_room(P_char ch, int room, int dir)
 	/*
 	 * justice hook
 	 */
-	if (!training_dummy_is(ch) && IS_INVADER(ch))
+	if (!training_dummy_is(ch))
 	{
 		justice_action_invader(ch);
 		if (!IS_ALIVE(ch))
@@ -1827,7 +1831,7 @@ static void mark_char_or_owner_dirty(P_char ch)
 }
 
 // Give an object to a char
-void obj_to_char(P_obj object, P_char ch)
+obj_to_char_result obj_to_char_checked(P_obj object, P_char ch)
 {
 	P_obj o;
 	char Gbuf[MAX_STRING_LENGTH];
@@ -1836,7 +1840,7 @@ void obj_to_char(P_obj object, P_char ch)
 	{
 		logit(LOG_MOB, "obj_to_char: no ch, obj vnum %d", object ? OBJ_VNUM(object) : -1);
 		logit(LOG_OBJ, "obj_to_char: no ch, obj vnum %d", object ? OBJ_VNUM(object) : -1);
-		return;
+		return obj_to_char_result::rejected;
 	}
 
 	if (!object)
@@ -1849,7 +1853,7 @@ void obj_to_char(P_obj object, P_char ch)
 		{
 			logit(LOG_OBJ, "obj_to_char: no obj: player (%s).", GET_NAME(ch));
 		}
-		return;
+		return obj_to_char_result::rejected;
 	}
 
 	if (training_dummy_is(ch))
@@ -1858,14 +1862,14 @@ void obj_to_char(P_obj object, P_char ch)
 		      J_NAME(ch), OBJ_VNUM(object));
 		if (OBJ_NOWHERE(object) && ch->in_room != NOWHERE)
 			obj_to_room(object, ch->in_room);
-		return;
+		return obj_to_char_result::rejected;
 	}
 
 	if (!OBJ_NOWHERE(object))
 	{
 		logit(LOG_DEBUG, "obj_to_char: wonders never cease, obj vnum %d not in NOWHERE",
 		      OBJ_VNUM(object));
-		return;
+		return obj_to_char_result::rejected;
 		/*
 		    act("&+gWith a scurry, bugs appear from nowhere, engulfing $p.", TRUE, ch, object, 0, TO_ROOM);
 		    extract_obj(object, TRUE); // A bug -> eating an arti.. ouch.
@@ -1875,11 +1879,7 @@ void obj_to_char(P_obj object, P_char ch)
 
 	if (IS_OBJ_STAT2(object, ITEM2_CRUMBLELOOT) && IS_PC(ch) && !IS_TRUSTED(ch))
 	{
-		// DEFERRED: use-after-free — extract_obj frees object, but callers in
-		// do_get/give/remove (actobj.c) still dereference the stale pointer.
-		// Setting object=NULL here only clears our local copy; the caller's
-		// pointer is passed by value. Fix requires returning a freed-status
-		// from obj_to_char/obj_to_room, touching hundreds of call sites.
+		// Callers using the checked entry point must not access object after this.
 		if (ch->in_room)
 		{
 			snprintf(
@@ -1889,8 +1889,7 @@ void obj_to_char(P_obj object, P_char ch)
 			send_to_room(Gbuf, ch->in_room);
 		}
 		extract_obj(object, TRUE); // Crumbleloot arti?
-		object = NULL;
-		return;
+		return obj_to_char_result::destroyed;
 	}
 
 	// A persisted generic item may only reach a player after its active ownership row names
@@ -1916,7 +1915,7 @@ void obj_to_char(P_obj object, P_char ch)
 		{
 			if (!has_authoritative_ownership && creation_candidate &&
 			    item_creation_grant_submit_to_player(ch, object, ch))
-				return;
+				return obj_to_char_result::deferred;
 			logit(LOG_FILE,
 			      "obj_to_char refused unowned player publication (uid=%llu vnum=%d pid=%d)",
 			      (unsigned long long)object->obj_uid, OBJ_VNUM(object), GET_PID(ch));
@@ -1930,7 +1929,10 @@ void obj_to_char(P_obj object, P_char ch)
 			 * loaded graph must remain available for recovery.
 			 */
 			if (!has_authoritative_ownership && creation_candidate)
+			{
 				extract_obj(object, FALSE);
+				return obj_to_char_result::destroyed;
+			}
 			else
 				logit(LOG_FILE,
 				      "obj_to_char preserved non-candidate object after publication refusal "
@@ -1940,7 +1942,7 @@ void obj_to_char(P_obj object, P_char ch)
 				      (unsigned int)ownership.owner.type,
 				      (unsigned long long)ownership.owner.id,
 				      (unsigned int)ownership.state);
-			return;
+			return obj_to_char_result::rejected;
 		}
 	}
 
@@ -1979,6 +1981,7 @@ void obj_to_char(P_obj object, P_char ch)
 	object->loc_p = LOC_CARRIED;
 	object->loc.carrying = ch;
 	object->z_cord = 0;
+	world_activity_object_enter(object);
 	GET_CARRYING_W(ch) += encumbrance_weight(GET_OBJ_WEIGHT(object));
 	IS_CARRYING_N(ch)++;
 
@@ -1994,6 +1997,12 @@ void obj_to_char(P_obj object, P_char ch)
 
 	mark_char_or_owner_dirty(ch);
 	SET_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
+	return obj_to_char_result::placed;
+}
+
+void obj_to_char(P_obj object, P_char ch)
+{
+	(void)obj_to_char_checked(object, ch);
 }
 
 /*
@@ -2047,6 +2056,7 @@ void obj_from_char(P_obj object)
 	mark_char_or_owner_dirty(ch);
 	SET_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
 
+	world_activity_object_leave(object);
 	object->loc_p = LOC_NOWHERE;
 	object->loc.carrying = NULL; // must clear full pointer, not just int-sized loc.room
 	object->next_content = NULL;
@@ -2216,9 +2226,16 @@ void equip_char(P_char ch, P_obj obj, int pos, int nodrop)
 		return;
 	}
 
+	if (item_restricted_for_player_pet(ch, obj))
+	{
+		obj_to_char(obj, ch);
+		return;
+	}
+
 	ch->equipment[pos] = obj;
 	obj->loc.wearing = ch;
 	obj->loc_p = LOC_WORN;
+	world_activity_object_enter(obj);
 
 	if (IS_ARTIFACT(obj))
 	{
@@ -2275,6 +2292,7 @@ P_obj unequip_char(P_char ch, int pos, bool saving)
 		clear_links(ch, obj, LNKFLG_BREAK_REMOVE);
 	all_affects(ch, FALSE);
 	ch->equipment[pos] = NULL;
+	world_activity_object_leave(obj);
 
 	obj->loc_p = LOC_NOWHERE;
 	obj->loc.wearing = NULL; // must clear full pointer, not just int-sized loc.room
@@ -2854,6 +2872,7 @@ void obj_to_room(P_obj object, int room)
 
 	if (object && (object->type == ITEM_CORPSE) && IS_SET(object->value[1], PC_CORPSE))
 		writeCorpse(object);
+	world_activity_object_enter(object);
 
 	if (OBJ_FALLING(object))
 	{
@@ -2914,6 +2933,7 @@ void obj_from_room(P_obj object)
 	    ((object->type == ITEM_LIGHT) && (object->value[2] == -1)))
 		room_light(object->loc.room, REAL);
 
+	world_activity_object_leave(object);
 	object->loc_p = LOC_NOWHERE;
 	object->loc.room = NOWHERE;
 	object->next_content = NULL;
@@ -3069,8 +3089,9 @@ void obj_to_obj(P_obj obj, P_obj obj_to)
 		}
 	}
 
-	add_weight(obj_to, obj->weight);
+	add_weight(obj_to, GET_OBJ_WEIGHT(obj));
 	resync_reducing_container(obj_to);
+	world_activity_object_enter(obj);
 	/* Broken out into a recursive function; neater and more correct for handling negative weights properly.
 	  wgt = GET_OBJ_WEIGHT(obj);
 	  for (tmp_obj = obj->loc.inside; wgt && tmp_obj;
@@ -3149,8 +3170,9 @@ void obj_to_obj_at_end(P_obj obj, P_obj obj_to)
 	obj->loc.inside = obj_to;
 	append_obj_to_list(&obj_to->contains, obj);
 
-	add_weight(obj_to, obj->weight);
+	add_weight(obj_to, GET_OBJ_WEIGHT(obj));
 	resync_reducing_container(obj_to);
+	world_activity_object_enter(obj);
 
 	mark_container_dirty(obj_to);
 }
@@ -3202,6 +3224,7 @@ void obj_to_char_at_end(P_obj object, P_char ch)
 	object->loc_p = LOC_CARRIED;
 	object->loc.carrying = ch;
 	object->z_cord = 0;
+	world_activity_object_enter(object);
 	GET_CARRYING_W(ch) += encumbrance_weight(GET_OBJ_WEIGHT(object));
 	IS_CARRYING_N(ch)++;
 
@@ -3263,7 +3286,7 @@ void obj_from_obj(P_obj obj)
 		tmp->next_content = obj->next_content;
 	}
 
-	add_weight(obj_from, -(obj->weight));
+	add_weight(obj_from, -(GET_OBJ_WEIGHT(obj)));
 
 	/* Safe here and nowhere earlier: `obj` has already been unlinked above,
 	 * so the fresh sum is of what actually remains inside. */
@@ -3287,6 +3310,7 @@ void obj_from_obj(P_obj obj)
 
 	mark_container_dirty(obj_from);
 
+	world_activity_object_leave(obj);
 	obj->loc_p = LOC_NOWHERE;
 	obj->loc.inside = NULL; // must clear full pointer, not just int-sized loc.room
 	obj->next_content = NULL;
@@ -3698,8 +3722,12 @@ void collect_corpse_discarded_uids(P_obj container, bool preserve_coins,
 	for (P_obj item = container ? container->contains : nullptr; item;
 	     item = item->next_content)
 	{
+		// A legacy coin pile has no custody record: the wallet took its coins, and the
+		// transaction discarded nothing for it.
+		item_ownership_runtime_entry custody = {};
 		if ((IS_SET(item->extra_flags, ITEM_TRANSIENT) ||
-		     (!preserve_coins && OBJ_VNUM(item) == VOBJ_COINS)) &&
+		     (!preserve_coins && OBJ_VNUM(item) == VOBJ_COINS &&
+		      item_ownership_runtime_lookup(item->obj_uid, &custody))) &&
 		    item->obj_uid)
 			uids->push_back(item->obj_uid);
 		collect_corpse_discarded_uids(item, preserve_coins, uids);
@@ -4617,16 +4645,13 @@ bool submit_corpse_destruction(P_obj corpse)
 
 bool durable_corpse_lifecycle_enabled()
 {
-	const persistence_mode mode = persistence_mode_get();
-	return mode == PERSISTENCE_MODE_MARIADB_PRIMARY ||
-	       mode == PERSISTENCE_MODE_FLATFILE_PRIMARY;
+	return false;
 }
 } // namespace
 
-bool corpse_raise_player_save_fenced(P_char character)
+bool corpse_raise_player_save_fenced(P_char)
 {
-	return character && !IS_NPC(character) && GET_PID(character) > 0 &&
-	       IS_SET(character->runtime_flags, CHAR_RFLAG_CORPSE_RAISE_SAVE_FENCE);
+	return false;
 }
 
 void corpse_raise_player_ready(P_char character, bool inventory_reloaded)
@@ -5144,8 +5169,7 @@ void Decay(P_obj obj)
 		//                 so genericdecay = false -- no need to do a default decay
 		if (obj_index[obj->R_num].func.obj)
 		{
-			genericdecay =
-				!(*obj_index[obj->R_num].func.obj)(obj, NULL, CMD_DECAY, NULL);
+			genericdecay = !invoke_object_special(obj, NULL, CMD_DECAY, NULL);
 		}
 		// Corpse
 		else if (obj->R_num == real_object(VOBJ_CORPSE))
@@ -5605,22 +5629,21 @@ void extract_char(P_char ch)
 
 		if (ch->desc->snoop.snooping)
 		{
-			/*
-			 * if !d->character, or they aren't playing, I can't get their
-			 * level.. so I'll assume its better then 58 to be safe
-			 */
-			if (GET_LEVEL(ch) < 58)
-				// send_to_char("&+CYou are no longer being snooped.&N\r\n",
-				//            ch->desc->snoop.snooping);
+			if (ch->desc->snoop.snooping->desc)
 				rem_char_from_snoopby_list(
 					&ch->desc->snoop.snooping->desc->snoop.snoop_by_list, ch);
+			ch->desc->snoop.snooping = 0;
 		}
 		snoop_by_ptr = ch->desc->snoop.snoop_by_list;
 		while (snoop_by_ptr)
 		{
-			send_to_char("Your victim is no longer among us.\r\n",
-				     snoop_by_ptr->snoop_by);
-			snoop_by_ptr->snoop_by->desc->snoop.snooping = 0;
+			if (snoop_by_ptr->snoop_by)
+			{
+				send_to_char("Your victim is no longer among us.\r\n",
+					     snoop_by_ptr->snoop_by);
+				if (snoop_by_ptr->snoop_by->desc)
+					snoop_by_ptr->snoop_by->desc->snoop.snooping = 0;
+			}
 
 			snoop_by_ptr = snoop_by_ptr->next;
 		}
@@ -6654,6 +6677,13 @@ void ac_stopAllFromIgnoring(P_char ch)
 	}
 }
 
+// anti2_flags holds one bit for each of races 1-32. Other races have none: no
+// deny list names them, and every allow list leaves them out.
+static bool obj_race_bit_set(P_obj obj, int race)
+{
+	return race >= 1 && race <= 32 && IS_SET(obj->anti2_flags, 1U << (race - 1));
+}
+
 int can_char_use_item(P_char ch, P_obj obj)
 {
 	if (!ch || !obj)
@@ -6674,16 +6704,14 @@ int can_char_use_item(P_char ch, P_obj obj)
 
 	if (!IS_SET(obj->extra_flags, ITEM_ALLOWED_RACES))
 	{
-		if (GET_RACE(ch) <= RACE_PLAYER_MAX &&
-		    IS_SET(obj->anti2_flags, 1 << (GET_RACE(ch) - 1)))
+		if (obj_race_bit_set(obj, GET_RACE(ch)))
 		{
 			return FALSE;
 		}
 	}
 	else
 	{
-		if (GET_RACE(ch) > RACE_PLAYER_MAX ||
-		    !IS_SET(obj->anti2_flags, 1 << (GET_RACE(ch) - 1)))
+		if (!obj_race_bit_set(obj, GET_RACE(ch)))
 		{
 			return FALSE;
 		}
@@ -6821,12 +6849,10 @@ int can_prime_class_use_item(P_char ch, P_obj obj)
 
 	if (!IS_SET(obj->extra_flags, ITEM_ALLOWED_RACES))
 	{
-		if (GET_RACE(ch) <= RACE_PLAYER_MAX &&
-		    IS_SET(obj->anti2_flags, 1 << (GET_RACE(ch) - 1)))
+		if (obj_race_bit_set(obj, GET_RACE(ch)))
 			return FALSE;
 	}
-	else if (GET_RACE(ch) > RACE_PLAYER_MAX ||
-		 !IS_SET(obj->anti2_flags, 1 << (GET_RACE(ch) - 1)))
+	else if (!obj_race_bit_set(obj, GET_RACE(ch)))
 		return FALSE;
 
 	if (!IS_SET(obj->extra_flags, ITEM_ALLOWED_CLASSES))
@@ -6888,62 +6914,34 @@ bool leave_safe_room(P_char ch)
 // This function adds weight to the object, then adds weight to its container/holder/wearer,
 //   but only the amount of weight above the magical weightlessness of said object.
 // This function handles adding a negative weight properly as well.
-// Worn objects apply half the propagated delta to carry_weight (matches equip_char / unequip_char).
-static void propagate_weight_delta(P_obj obj, int weight)
+// Worn objects contribute half their effective weight (matches equip_char / unequip_char).
+void add_weight(P_obj obj, int weight)
 {
 	if (!obj || !weight)
 	{
 		return;
 	}
 
+	const int old_weight = GET_OBJ_WEIGHT(obj);
+	obj->weight += weight;
+	const int new_weight = GET_OBJ_WEIGHT(obj);
+	const int carry_delta = new_weight - old_weight;
+
 	switch (obj->loc_p)
 	{
 	case LOC_WORN:
-		encumbrance_adjust(obj->loc.wearing, weight / 2);
+		// Round the old and new contributions, so odd-pound changes cannot drift.
+		encumbrance_adjust(obj->loc.wearing, new_weight / 2 - old_weight / 2);
 		break;
 	case LOC_CARRIED:
-		encumbrance_adjust(obj->loc.carrying, weight);
+		encumbrance_adjust(obj->loc.carrying, carry_delta);
 		break;
 	case LOC_INSIDE:
-		add_weight(obj->loc.inside, weight);
+		add_weight(obj->loc.inside, carry_delta);
 		break;
 	case LOC_ROOM:
 	case LOC_NOWHERE:
 	default:
 		break;
-	}
-}
-
-void add_weight(P_obj obj, int weight)
-{
-	int carry_delta;
-
-	if (!obj || !weight)
-	{
-		return;
-	}
-
-	// If we start with a negative weight.
-	if (obj->weight < 0)
-	{
-		obj->weight += weight;
-		if (obj->weight > 0)
-		{
-			carry_delta = obj->weight;
-			propagate_weight_delta(obj, carry_delta);
-		}
-	}
-	else
-	{
-		obj->weight += weight;
-		if (obj->weight > 0)
-		{
-			propagate_weight_delta(obj, weight);
-		}
-		else
-		{
-			carry_delta = weight - obj->weight;
-			propagate_weight_delta(obj, carry_delta);
-		}
 	}
 }

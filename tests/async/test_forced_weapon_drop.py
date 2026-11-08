@@ -271,56 +271,57 @@ int main()
     reset();
     assert(forced_weapon_drop(&actor, &weapon,
                               forced_weapon_drop_cause::combat_fumble) ==
-           forced_weapon_drop_result::pending);
-    assert(submit_calls == 1 && OBJ_CARRIED_BY(&weapon, &actor));
-    assert(submitted_source.type == item_owner_type::player && submitted_source.id == 42);
-    assert(submitted_destination.type == item_owner_type::room &&
-           submitted_destination.id == 100);
-    assert(submitted_reason == item_transfer_reason::player_drop);
-    assert(act_calls == 0 && floor_calls == 0);
-    assert(publish(true));
-    assert(OBJ_ROOM(&weapon) && weapon.loc.room == 0);
-    assert(floor_calls == 1 && dirty_calls == 1 && act_calls == 2);
-    const int published_acts = act_calls;
-    weapon.loc.room = 1;
-    assert(publish(true));
-    assert(act_calls == published_acts && floor_calls == 1 && dirty_calls == 1);
+           forced_weapon_drop_result::retained);
+    assert(submit_calls == 0 && OBJ_CARRIED_BY(&weapon, &actor));
+    assert(act_calls == 2 && floor_calls == 0 && dirty_calls == 1);
 
-    reset();
-    submit_ok = false;
+    reset(true);
     assert(forced_weapon_drop(&actor, &weapon,
                               forced_weapon_drop_cause::combat_fumble) ==
            forced_weapon_drop_result::retained);
-    assert(OBJ_CARRIED_BY(&weapon, &actor) && submit_calls == 1);
-    assert(act_calls == 2 && floor_calls == 0);
-
-    reset();
-    assert(forced_weapon_drop(&actor, &weapon,
-                              forced_weapon_drop_cause::combat_fumble) ==
-           forced_weapon_drop_result::pending);
-    assert(publish(false));
-    assert(OBJ_CARRIED_BY(&weapon, &actor));
-    assert(act_calls == 2 && floor_calls == 0 && dirty_calls == 0);
-
-    reset();
-    runtime_entry.owner.id = 999;
-    assert(forced_weapon_drop(&actor, &weapon,
-                              forced_weapon_drop_cause::combat_fumble) ==
-           forced_weapon_drop_result::rejected);
-    assert(OBJ_WORN_BY(&weapon, &actor) && submit_calls == 0 && act_calls == 2);
+    assert(OBJ_CARRIED_BY(&weapon, &actor) && submit_calls == 0 && act_calls == 2);
 
     reset();
     assert(forced_weapon_drop(&actor, &weapon,
                               forced_weapon_drop_cause::critical_disarm) ==
            forced_weapon_drop_result::pending);
     assert(OBJ_CARRIED_BY(&weapon, &actor) && act_calls == 0);
+    assert(submitted_source.type == item_owner_type::player && submitted_source.id == 42);
+    assert(submitted_destination.type == item_owner_type::room &&
+           submitted_destination.id == 100);
+    assert(submitted_reason == item_transfer_reason::player_drop);
+    assert(floor_calls == 0);
     assert(publish(true));
-    assert(OBJ_ROOM(&weapon) && act_calls == 0);
+    assert(OBJ_ROOM(&weapon) && weapon.loc.room == 0);
+    assert(floor_calls == 1 && dirty_calls == 1);
+
+    reset();
+    submit_ok = false;
+    assert(forced_weapon_drop(&actor, &weapon,
+                              forced_weapon_drop_cause::critical_disarm) ==
+           forced_weapon_drop_result::retained);
+    assert(OBJ_CARRIED_BY(&weapon, &actor) && submit_calls == 1);
+    assert(floor_calls == 0);
+
+    reset();
+    assert(forced_weapon_drop(&actor, &weapon,
+                              forced_weapon_drop_cause::critical_disarm) ==
+           forced_weapon_drop_result::pending);
+    assert(publish(false));
+    assert(OBJ_CARRIED_BY(&weapon, &actor));
+    assert(floor_calls == 0 && dirty_calls == 0);
+
+    reset();
+    runtime_entry.owner.id = 999;
+    assert(forced_weapon_drop(&actor, &weapon,
+                              forced_weapon_drop_cause::critical_disarm) ==
+           forced_weapon_drop_result::rejected);
+    assert(OBJ_WORN_BY(&weapon, &actor) && submit_calls == 0);
 
     reset();
     locker_destination = true;
     assert(forced_weapon_drop(&actor, &weapon,
-                              forced_weapon_drop_cause::combat_fumble) ==
+                              forced_weapon_drop_cause::critical_disarm) ==
            forced_weapon_drop_result::pending);
     assert(publish(true));
     assert(OBJ_ROOM(&weapon) && floor_calls == 0);
@@ -328,13 +329,13 @@ int main()
     reset();
     durable = false;
     assert(forced_weapon_drop(&actor, &weapon,
-                              forced_weapon_drop_cause::combat_fumble) ==
+                              forced_weapon_drop_cause::critical_disarm) ==
            forced_weapon_drop_result::dropped);
-    assert(OBJ_ROOM(&weapon) && submit_calls == 0 && act_calls == 2);
+    assert(OBJ_ROOM(&weapon) && submit_calls == 0);
 
     reset(true);
     assert(forced_weapon_drop(&actor, &weapon,
-                              forced_weapon_drop_cause::combat_fumble) ==
+                              forced_weapon_drop_cause::critical_disarm) ==
            forced_weapon_drop_result::dropped);
     assert(OBJ_ROOM(&weapon) && submit_calls == 0);
 

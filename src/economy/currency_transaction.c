@@ -1,10 +1,16 @@
 #include "economy/currency_transaction.h"
 #include "economy/currency_publication.h"
+#include "economy/economic_event_outbox.h"
 
+#include "core/files.h"
 #include "net/gmcp.h"
+#include "player/player_save_pipeline.h"
 #include "core/prototypes.h"
 #include "sql/sql_player.h"
 #include "core/utils.h"
+
+extern P_room world;
+extern const int top_of_world;
 
 #include <algorithm>
 #include <array>
@@ -18,8 +24,25 @@
 #include <unordered_map>
 #include <utility>
 
+extern P_char character_list;
+
 namespace
 {
+P_char coin_wallet_by_pid(uint32_t pid)
+{
+	if (P_char character = find_player_by_pid(static_cast<int>(pid)))
+		return character;
+	// Linkdead characters are retained and reused on reconnect. Their wallet
+	// must receive the receipt even after their descriptor has disappeared.
+	for (P_char character = character_list; character; character = character->next)
+	{
+		P_char wallet = GET_PLYR(character);
+		if (wallet && IS_PC(wallet) && GET_PID(wallet) == static_cast<int>(pid))
+			return wallet;
+	}
+	return nullptr;
+}
+
 struct pending_currency
 {
 	uint32_t pid;
@@ -75,6 +98,31 @@ bool retain_unresolved_publication(pending_currency &entry, const char *reason, 
 	return false;
 }
 
+bool publish_bank(P_char character, const char *account_name, uint8_t racewar,
+		  const currency_vector &bank, uint64_t bank_revision)
+{
+	for (int64_t amount : bank.amount)
+		if (amount < 0 || amount > INT_MAX)
+			return false;
+	const AccountBankBalances balances = { static_cast<int>(bank.amount[0]),
+					       static_cast<int>(bank.amount[1]),
+					       static_cast<int>(bank.amount[2]),
+					       static_cast<int>(bank.amount[3]) };
+	// The endpoint is identified by the immutable command, so it can be updated
+	// without a playing descriptor or an account name on the retained body.
+	if (character && bank_revision >= character->only.pc->bank_revision)
+	{
+		GET_BALANCE_COPPER(character) = balances.copper;
+		GET_BALANCE_SILVER(character) = balances.silver;
+		GET_BALANCE_GOLD(character) = balances.gold;
+		GET_BALANCE_PLATINUM(character) = balances.platinum;
+		character->only.pc->bank_revision = bank_revision;
+		gmcp_char_vitals(character);
+	}
+	publish_account_bank_balances_revision(account_name, racewar, &balances, bank_revision);
+	return true;
+}
+
 bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator found, P_char actor)
 {
 	auto &entry = found->second;
@@ -88,6 +136,42 @@ bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator fo
 	{
 		return retain_unresolved_publication(entry, "invalid_coin_result", true);
 	}
+	coin_transfer_stale_result stale = {};
+	const bool stale_receipt_expected =
+		!committed && completed.error_code == ESTALE &&
+		coin_transfer_command_stale_result_expected(*entry.coin, completed.failure_stage);
+	const bool stale_authority =
+		stale_receipt_expected && completed.result_size &&
+		coin_transfer_command_decode_stale_result(*entry.coin, completed.failure_stage,
+							  completed.result_payload.data(),
+							  completed.result_size, &stale);
+	if (stale_receipt_expected && !stale_authority)
+		return retain_unresolved_publication(entry, "invalid_coin_stale_result", true);
+	if (!committed && completed.result_size && !stale_authority)
+		return retain_unresolved_publication(entry, "unexpected_coin_terminal_result",
+						     true);
+	if (stale_authority && !entry.coin_wallets_published)
+	{
+		const coin_transfer_endpoint &endpoint =
+			stale.endpoint_index ? entry.coin->destination : entry.coin->source;
+		currency_command_payload wallet;
+		if (!currency_command_decode_payload(endpoint.change, &wallet))
+			return retain_unresolved_publication(entry, "invalid_stale_coin_endpoint",
+							     true);
+		P_char character = coin_wallet_by_pid(wallet.pid);
+		if ((stale.wallet_stale && character &&
+		     !currency_transaction_publish_wallet(character, stale.current.wallet,
+							  stale.current.wallet_revision)) ||
+		    (stale.bank_stale &&
+		     !publish_bank(character, wallet.account_name.data(), wallet.racewar,
+				   stale.current.bank, stale.current.bank_revision)))
+			return retain_unresolved_publication(entry, "invalid_stale_coin_authority",
+							     true);
+		// The original transfer remains rejected. Only the live projection read
+		// under the failed endpoint's row locks is repaired, including a retained
+		// body that reconnect will reuse. An unloaded player loads it on re-entry.
+		entry.coin_wallets_published = true;
+	}
 	if (committed && !entry.coin_wallets_published)
 	{
 		const coin_transfer_endpoint *endpoints[] = { &entry.coin->source,
@@ -100,19 +184,27 @@ bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator fo
 			if (!currency_command_decode_payload(endpoints[index]->change, &wallet))
 				return retain_unresolved_publication(entry, "invalid_coin_endpoint",
 								     true);
-			P_char character = find_player_by_pid(wallet.pid);
+			P_char character = coin_wallet_by_pid(wallet.pid);
 			const auto &balances = result.wallets[index];
-			// Offline endpoints load the same committed state on re-entry. They must
-			// not hold up publication to the other endpoint or require a refund.
+			// Only unloaded endpoints need a fresh load. Publish retained bodies
+			// now, and publish shared bank authority even if the body is unloaded.
 			if (character && !currency_transaction_publish_balances(
 						 character, wallet.account_name.data(),
 						 wallet.racewar, balances.wallet, balances.bank,
 						 balances.wallet_revision, balances.bank_revision))
 				return retain_unresolved_publication(
 					entry, "invalid_coin_live_balances", true);
+			if (!character &&
+			    !publish_bank(nullptr, wallet.account_name.data(), wallet.racewar,
+					  balances.bank, balances.bank_revision))
+				return retain_unresolved_publication(
+					entry, "invalid_coin_live_bank", true);
 		}
 		entry.coin_wallets_published = true;
 	}
+	// Descriptor loss can leave a retained death body. Its physical pile must
+	// publish to the same character that received the wallet receipt above.
+	actor = coin_wallet_by_pid(entry.pid);
 	// Extract the node so a successful callback can advance a bulk command. A
 	// temporarily unavailable live destination keeps this same operation for retry.
 	auto node = pending.extract(found);
@@ -326,12 +418,7 @@ bool currency_transaction_publish_balances(P_char character, const char *account
 			return false;
 	if (!currency_transaction_publish_wallet(character, wallet, wallet_revision))
 		return false;
-	const AccountBankBalances balances = { static_cast<int>(bank.amount[0]),
-					       static_cast<int>(bank.amount[1]),
-					       static_cast<int>(bank.amount[2]),
-					       static_cast<int>(bank.amount[3]) };
-	publish_account_bank_balances_revision(account_name, racewar, &balances, bank_revision);
-	return true;
+	return publish_bank(character, account_name, racewar, bank, bank_revision);
 }
 
 bool currency_transaction_publish_wallet(P_char character, const currency_vector &wallet,
@@ -346,11 +433,27 @@ bool currency_transaction_publish_wallet(P_char character, const currency_vector
 	// offline. Finish its callback without rolling the authoritative wallet back.
 	if (wallet_revision < character->only.pc->wallet_revision)
 		return true;
+	const int64_t previous_value = static_cast<int64_t>(GET_COPPER(character)) +
+				       10LL * GET_SILVER(character) + 100LL * GET_GOLD(character) +
+				       1000LL * GET_PLATINUM(character);
+	const int64_t next_value = wallet.amount[0] + 10 * wallet.amount[1] +
+				   100 * wallet.amount[2] + 1000 * wallet.amount[3];
 	GET_COPPER(character) = static_cast<int>(wallet.amount[0]);
 	GET_SILVER(character) = static_cast<int>(wallet.amount[1]);
 	GET_GOLD(character) = static_cast<int>(wallet.amount[2]);
 	GET_PLATINUM(character) = static_cast<int>(wallet.amount[3]);
 	character->only.pc->wallet_revision = wallet_revision;
+	// Audit the committed change once, when its receipt reaches the live wallet.
+	// Replayed receipts with the same balance contribute no additional event.
+	if (const int64_t delta = next_value - previous_value; delta != 0)
+		economic_event_record(
+			GET_PID(character),
+			delta > 0 ? EconomicAction::WALLET_ADD : EconomicAction::WALLET_SUB, delta,
+			0,
+			character->in_room >= 0 && character->in_room <= top_of_world ?
+				world[character->in_room].number :
+				0,
+			"wallet_commit");
 	gmcp_char_vitals(character);
 	return true;
 }
@@ -895,4 +998,12 @@ void currency_transaction_reset_for_tests(void)
 {
 	pending.clear();
 	health = {};
+}
+
+void currency_transaction_save_first(P_char character)
+{
+	if (!character || IS_NPC(character) || GET_PID(character) <= 0)
+		return;
+	const int room = character->in_room == NOWHERE ? NOWHERE : world[character->in_room].number;
+	player_save_pipeline_request(character, PLAYER_CHECKPOINT_COMPONENT_ALL, RENT_CRASH, room);
 }

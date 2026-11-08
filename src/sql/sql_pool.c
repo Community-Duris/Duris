@@ -37,6 +37,7 @@ typedef struct
 {
 	MYSQL *conn;
 	int in_use; /* boolean: 1 = borrowed, 0 = free */
+	int needs_replacement; /* never lend a handle whose explicit repair failed */
 } sql_pool_slot_t;
 
 static sql_pool_slot_t *pool = NULL;
@@ -44,6 +45,8 @@ static int pool_size = 0;
 static pthread_mutex_t pool_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t pool_cond = PTHREAD_COND_INITIALIZER;
 static int pool_closing = 0;
+/* A confirmed lost runtime lock prevents further persistence until restart. */
+static int pool_lock_lost = 0;
 
 static MYSQL *sql_pool_create_connection(const char *site, int slot)
 {
@@ -82,6 +85,7 @@ int sql_pool_init(int size)
 
 	pool_size = size;
 	pool_closing = 0;
+	pool_lock_lost = 0;
 
 	for (int i = 0; i < size; i++)
 	{
@@ -201,13 +205,24 @@ MYSQL *sql_pool_acquire_with_status(int *pool_was_active)
 			{
 				pool[i].in_use = 1;
 				conn = pool[i].conn;
+				const bool retry_replacement = pool[i].needs_replacement != 0;
 				pthread_mutex_unlock(&pool_mutex);
-				if (!duris_sql_exclusion_guard_allows(conn))
+				if (!retry_replacement && duris_sql_exclusion_guard_allows(conn))
+					return conn;
+				// A failed probe on an idle connection does not prove loss of the lock.
+				if (duris_sql_exclusion_guard_state_ref().lost)
 				{
 					sql_pool_release(conn);
+					pthread_mutex_lock(&pool_mutex);
+					const int first = !pool_lock_lost;
+					pool_lock_lost = 1;
+					pthread_mutex_unlock(&pool_mutex);
+					if (first)
+						logit(LOG_STATUS,
+						      "SQL pool: the runtime database lock is lost; nothing more is written until the server restarts.");
 					return NULL;
 				}
-				return conn;
+				return sql_pool_replace_connection(conn);
 			}
 		}
 
@@ -278,60 +293,41 @@ void sql_pool_release(MYSQL *conn)
 MYSQL *sql_pool_replace_connection(MYSQL *conn)
 {
 	MYSQL *replacement = NULL;
-	MYSQL *old_conn = NULL;
 	int slot = -1;
 
 	if (!conn)
 		return NULL;
 
 	pthread_mutex_lock(&pool_mutex);
-	if (!pool || pool_closing)
-	{
-		pthread_mutex_unlock(&pool_mutex);
-		return NULL;
-	}
-
-	for (int i = 0; i < pool_size; i++)
+	for (int i = 0; pool && !pool_closing && i < pool_size; i++)
 	{
 		if (pool[i].conn == conn)
 		{
 			slot = i;
-			old_conn = pool[i].conn;
+			pool[i].needs_replacement = 1;
 			break;
 		}
 	}
 	pthread_mutex_unlock(&pool_mutex);
 
-	if (slot < 0)
-		return NULL;
-
-	replacement = sql_pool_create_connection("sql_pool_replace_connection", slot);
-	if (!replacement)
-	{
-		pthread_mutex_lock(&pool_mutex);
-		if (pool && slot < pool_size && pool[slot].conn == old_conn)
-		{
-			mysql_close(pool[slot].conn);
-			pool[slot].conn = NULL;
-			pool[slot].in_use = 0;
-			pthread_cond_signal(&pool_cond);
-		}
-		pthread_mutex_unlock(&pool_mutex);
-		return NULL;
-	}
+	if (slot >= 0)
+		replacement = sql_pool_create_connection("sql_pool_replace_connection", slot);
 
 	pthread_mutex_lock(&pool_mutex);
-	if (!pool || pool_closing || slot >= pool_size || pool[slot].conn != old_conn)
+	if (replacement && pool && !pool_closing && slot < pool_size && pool[slot].conn == conn)
 	{
+		mysql_close(conn);
+		pool[slot].conn = replacement;
+		pool[slot].needs_replacement = 0;
 		pthread_mutex_unlock(&pool_mutex);
-		mysql_close(replacement);
-		return NULL;
+		return replacement;
 	}
-
-	mysql_close(pool[slot].conn);
-	pool[slot].conn = replacement;
 	pthread_mutex_unlock(&pool_mutex);
-	return replacement;
+	if (replacement)
+		mysql_close(replacement);
+	/* The slot keeps the old connection, so its next borrower tries again. */
+	sql_pool_release(conn);
+	return NULL;
 }
 
 /* ---- Stats (debug / monitoring) ---- */
@@ -340,7 +336,7 @@ int sql_pool_is_active(void)
 {
 	int active;
 	pthread_mutex_lock(&pool_mutex);
-	active = pool != NULL;
+	active = pool != NULL && !pool_lock_lost && !duris_sql_exclusion_guard_state_ref().lost;
 	pthread_mutex_unlock(&pool_mutex);
 	return active;
 }

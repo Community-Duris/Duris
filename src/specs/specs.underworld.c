@@ -490,8 +490,12 @@ int lightning(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 
 	// 500 sec timer.
-	if ((cmd == CMD_RUB) && OBJ_WORN(obj) && (obj->timer[0] + 500 <= current_time))
+	if (cmd == CMD_RUB && IS_ALIVE(ch) && OBJ_WORN_BY(obj, ch) && isname(arg, obj->name) &&
+	    (obj->timer[0] + 500 <= current_time))
 	{
+		if (is_in_safe(ch))
+			return TRUE;
+
 		obj->timer[0] = current_time;
 		act("You rub your $q and begin to whirl around.", FALSE, obj->loc.wearing, obj, 0,
 		    TO_CHAR);
@@ -504,7 +508,7 @@ int lightning(P_obj obj, P_char ch, int cmd, char *arg)
 			{
 				continue;
 			}
-			if (IS_TRUSTED(ch) || (ch == vict))
+			if (IS_TRUSTED(ch) || (ch == vict) || !native_artifact_hostile(ch, vict))
 			{
 				continue;
 			}
@@ -521,8 +525,8 @@ int lightning(P_obj obj, P_char ch, int cmd, char *arg)
 				CharWait(vict, (int)(PULSE_VIOLENCE * 0.7));
 			}
 		}
+		return TRUE;
 	}
-	return FALSE;
 
 	vict = legacy_proc_arg<P_char>(arg);
 	if (cmd != CMD_MELEE_HIT || !IS_ALIVE(ch) || !OBJ_WORN_POS(obj, WIELD) ||
@@ -4463,6 +4467,11 @@ int dagger_of_wind(P_obj /*obj*/, P_char ch, int cmd, char *arg)
 		return FALSE;
 	}
 
+	if (IS_NPC(ch) && (IS_PC_PET(ch) || IS_AFFECTED(ch, AFF_CHARM)))
+	{
+		return FALSE;
+	}
+
 	vict = legacy_proc_arg<P_char>(arg);
 	room = ch->in_room;
 
@@ -4471,9 +4480,9 @@ int dagger_of_wind(P_obj /*obj*/, P_char ch, int cmd, char *arg)
 		return FALSE;
 	}
 
-	// 1/15 chance.
-	/* if(CheckMultiProcTiming(ch) && */
-	if (!number(0, 14))
+	// 1/15 chance for player characters; 4x lower (1/60 chance) for non-pet NPCs.
+	const int chance = IS_NPC(ch) ? 59 : 14;
+	if (!number(0, chance))
 	{
 		if (IS_FIGHTING(ch))
 		{

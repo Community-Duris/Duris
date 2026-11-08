@@ -52,7 +52,7 @@ class AtomicImport(unittest.TestCase):
                 self.assertEqual(query('SELECT GROUP_CONCAT(title ORDER BY title) FROM pages'), 'help,sentinel')
                 self.assertEqual(query("SELECT content FROM mud_info WHERE name='news'"), 'original news')
 
-                index.write_text('#\n"Alias"\na new alias entry\n')
+                index.write_text('#\n"Alias"\nRedirect: Fresh\n')
                 query('CREATE TRIGGER slow_import BEFORE INSERT ON pages FOR EACH ROW SET @delay=SLEEP(0.4)')
                 process = subprocess.Popen(['bash', str(script), '--clean'], stdin=subprocess.PIPE,
                                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env)
@@ -71,6 +71,7 @@ class AtomicImport(unittest.TestCase):
                     self.assertIn('help,sentinel', snapshots)
                     self.assertTrue(set(snapshots) <= {'help,sentinel', final}, snapshots)
                     self.assertEqual(query("SELECT content FROM mud_info WHERE name='news'"), 'new news')
+                    self.assertEqual(query("SELECT category_id FROM pages WHERE title='Alias'"), '1')
                     for name in ('credits', 'faq', 'wizlist'):
                         self.assertEqual(query(f"SELECT content FROM mud_info WHERE name='{name}'"), 'new ' + name)
                 finally:

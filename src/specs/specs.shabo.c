@@ -8,6 +8,7 @@
  */
 
 #include "core/prototypes.h"
+#include "item/objmisc.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -846,8 +847,8 @@ void event_shabo_racechange(P_char ch, P_char /*victim*/, [[maybe_unused]] P_obj
 			if (temp_obj)
 			{
 				if (obj_index[temp_obj->R_num].func.obj != NULL)
-					(*obj_index[temp_obj->R_num].func.obj)(
-						temp_obj, ch, CMD_REMOVE, (char *)"all");
+					invoke_object_special(temp_obj, ch, CMD_REMOVE,
+							      (char *)"all");
 				obj_to_char(unequip_char(ch, k), ch);
 			}
 		}

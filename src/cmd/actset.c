@@ -16,6 +16,8 @@
 #include "cmd/interp.h"
 #include "core/utils.h"
 #include <ctype.h>
+#include <cerrno>
+#include <climits>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -153,6 +155,7 @@ static void ac_savthrCopy(void *, int, char *, int, int);
 static void ac_sbyteCopy(void *, int, char *, int, int);
 static void ac_sh_intCopy(void *, int, char *, int, int);
 static void ac_shortCopy(void *, int, char *, int, int);
+static void ac_ush_intCopy(void *, int, char *, int, int);
 static void ac_skillCopy(void *, int, char *, int, int);
 static void ac_tongueCopy(void *, int, char *, int, int);
 static void ac_ubyteCopy(void *, int, char *, int, int);
@@ -169,7 +172,8 @@ static void ac_timerCopy(void *, int, char *, int, int);
 
 void do_setbit(P_char ch, char *arg, int cmd)
 {
-	int type, on_off;
+	// setbit_parse() leaves on_off alone when it is not given as a number.
+	int type, on_off = 0;
 	char name[MAX_INPUT_LENGTH];
 	char flag[MAX_INPUT_LENGTH];
 	char value[MAX_INPUT_LENGTH];
@@ -355,14 +359,14 @@ static void setbit_room(P_char ch, char *name, char *flag, char *val, int on_off
 #define OFFSET(Field) OFFSET_OF(P_room, Field)
 
 	/* Table */
-	SetBitTable table[] = { { "zone", OFFSET(zone), NULL, ac_shintCopy },
+	SetBitTable table[] = { { "zone", OFFSET(zone), NULL, ac_ush_intCopy },
 				{ "sect", OFFSET(sector_type), sector_types, ac_byteCopy,
 				  sizeof(char *) },
 				{ "flag", OFFSET(room_flags), (const char **)room_bits, ac_bitCopy,
 				  sizeof(flagDef) },
-				{ "light", OFFSET(light), NULL, ac_shortCopy },
-				{ "fall", OFFSET(chance_fall), NULL, ac_shortCopy },
-				{ "speed_current", OFFSET(current_speed), NULL, ac_shortCopy },
+				{ "light", OFFSET(light), NULL, ac_byteCopy },
+				{ "fall", OFFSET(chance_fall), NULL, ac_byteCopy },
+				{ "speed_current", OFFSET(current_speed), NULL, ac_byteCopy },
 				{ "direction_current", OFFSET(current_direction), dirs,
 				  ac_sbyteCopy, sizeof(char *) } };
 
@@ -409,7 +413,7 @@ static void setbit_zone(P_char ch, char *name, char *flag, char *val, int on_off
 #define OFFSET(Field) OFFSET_OF(struct zone_data *, Field)
 
 	/* Table */
-	SetBitTable table[] = { { "difficulty", OFFSET(difficulty), NULL, ac_shintCopy },
+	SetBitTable table[] = { { "difficulty", OFFSET(difficulty), NULL, ac_intCopy },
 				{ "age", OFFSET(age), NULL, ac_intCopy } };
 
 	/* Local Variables */
@@ -471,8 +475,8 @@ static void setbit_char(P_char ch, char *name, char *flag, char *val, int on_off
 		{ "orighome", PLOFFSET(birthplace), NULL, ac_intCopy },
 		{ "origbp", PLOFFSET(orig_birthplace), NULL, ac_intCopy },
 		{ "age", 0, NULL, ac_ageCopy },
-		{ "weight", PLOFFSET(weight), NULL, ac_shortCopy },
-		{ "height", PLOFFSET(height), NULL, ac_shortCopy },
+		{ "weight", PLOFFSET(weight), NULL, ac_ush_intCopy },
+		{ "height", PLOFFSET(height), NULL, ac_ush_intCopy },
 		{ "size", PLOFFSET(size), size_types, ac_ubyteCopy, sizeof(char *) },
 		/* stat_data */
 		{ "str", ABOFFSET(Str), NULL, ac_shortCopy },
@@ -518,7 +522,7 @@ static void setbit_char(P_char ch, char *name, char *flag, char *val, int on_off
 		{ "pcact", SPOFFSET(act), player_bits, ac_bitCopy, sizeof(char *) },
 		{ "pcact2", SPOFFSET(act2), player2_bits, ac_bitCopy, sizeof(char *) },
 		{ "carryw", SPOFFSET(carry_weight), NULL, ac_intCopy },
-		{ "carryn", SPOFFSET(carry_items), NULL, ac_shortCopy },
+		{ "carryn", SPOFFSET(carry_items), NULL, ac_ush_intCopy },
 		{ "timer", SPOFFSET(timer), NULL, ac_shortCopy },
 		{ "wasin", SPOFFSET(was_in_room), NULL, ac_intCopy },
 		{ "savthr", 0, NULL, ac_savthrCopy },
@@ -527,7 +531,6 @@ static void setbit_char(P_char ch, char *name, char *flag, char *val, int on_off
 		{ "thirst", SPOFFSET(conditions[2]), NULL, ac_sbyteCopy },
 		{ "zcord", SPOFFSET(z_cord), NULL, ac_sbyteCopy },
 		{ "align", SPOFFSET(alignment), NULL, ac_shintCopy },
-		{ "ascnum", SPOFFSET(guild), NULL, ac_shintCopy },
 		{ "aff", SPOFFSET(affected_by), (const char **)affected1_bits, ac_bitCopy,
 		  sizeof(flagDef) },
 		{ "aff2", SPOFFSET(affected_by2), (const char **)affected2_bits, ac_bitCopy,
@@ -578,7 +581,7 @@ static void setbit_char(P_char ch, char *name, char *flag, char *val, int on_off
 		{ "time_left_guild", PCOFFSET(time_left_guild), NULL, ac_longCopy },
 		{ "nb_left_guild", PCOFFSET(nb_left_guild), NULL, ac_sbyteCopy },
 		{ "echo", PCOFFSET(echo_toggle), NULL, ac_ubyteCopy },
-		{ "prompt", PCOFFSET(prompt), NULL, ac_shortCopy },
+		{ "prompt", PCOFFSET(prompt), NULL, ac_ush_intCopy },
 		{ "screensize", PCOFFSET(screen_length), NULL, ac_ubyteCopy },
 		{ "winvis", PCOFFSET(wiz_invis), NULL, ac_sbyteCopy },
 		{ "wimpy", PCOFFSET(wimpy), NULL, ac_shortCopy },
@@ -637,7 +640,7 @@ static void setbit_char(P_char ch, char *name, char *flag, char *val, int on_off
 					send_to_char(
 						"You can't setbit someone's level above 62.  Changing value to 62.\r\n",
 						ch);
-					snprintf(val, MAX_STRING_LENGTH, "62");
+					snprintf(val, MAX_INPUT_LENGTH, "62");
 				}
 			}
 			if (SAME_STRING(flag, "winvis") && (atoi(val) >= MIN(60, GET_LEVEL(ch))))
@@ -999,16 +1002,16 @@ static void setbit_dir(P_char ch, char *name, char *flag, char *value, int on_of
 		{ "neinfo", DIR(DIR_NORTHEAST, exit_info), exit_bits, ac_bitCopy, sizeof(char *) },
 		{ "swinfo", DIR(DIR_SOUTHWEST, exit_info), exit_bits, ac_bitCopy, sizeof(char *) },
 		{ "seinfo", DIR(DIR_SOUTHEAST, exit_info), exit_bits, ac_bitCopy, sizeof(char *) },
-		{ "nkey", DIR(DIR_NORTH, key), NULL, ac_shintCopy },
-		{ "ekey", DIR(DIR_EAST, key), NULL, ac_shintCopy },
-		{ "skey", DIR(DIR_SOUTH, key), NULL, ac_shintCopy },
-		{ "wkey", DIR(DIR_WEST, key), NULL, ac_shintCopy },
-		{ "ukey", DIR(UP, key), NULL, ac_shintCopy },
-		{ "dkey", DIR(DOWN, key), NULL, ac_shintCopy },
-		{ "nwkey", DIR(DIR_NORTHWEST, key), NULL, ac_shintCopy },
-		{ "nekey", DIR(DIR_NORTHEAST, key), NULL, ac_shintCopy },
-		{ "swkey", DIR(DIR_SOUTHWEST, key), NULL, ac_shintCopy },
-		{ "sekey", DIR(DIR_SOUTHEAST, key), NULL, ac_shintCopy },
+		{ "nkey", DIR(DIR_NORTH, key), NULL, ac_intCopy },
+		{ "ekey", DIR(DIR_EAST, key), NULL, ac_intCopy },
+		{ "skey", DIR(DIR_SOUTH, key), NULL, ac_intCopy },
+		{ "wkey", DIR(DIR_WEST, key), NULL, ac_intCopy },
+		{ "ukey", DIR(UP, key), NULL, ac_intCopy },
+		{ "dkey", DIR(DOWN, key), NULL, ac_intCopy },
+		{ "nwkey", DIR(DIR_NORTHWEST, key), NULL, ac_intCopy },
+		{ "nekey", DIR(DIR_NORTHEAST, key), NULL, ac_intCopy },
+		{ "swkey", DIR(DIR_SOUTHWEST, key), NULL, ac_intCopy },
+		{ "sekey", DIR(DIR_SOUTHEAST, key), NULL, ac_intCopy },
 		{ "nroom", DIR(DIR_NORTH, to_room), NULL, ac_intCopy },
 		{ "eroom", DIR(DIR_EAST, to_room), NULL, ac_intCopy },
 		{ "sroom", DIR(DIR_SOUTH, to_room), NULL, ac_intCopy },
@@ -1183,7 +1186,7 @@ static void setbit_dir(P_char ch, char *name, char *flag, char *value, int on_of
 				return;
 			}
 		}
-		snprintf(value, MAX_STRING_LENGTH, "%d", room_number);
+		snprintf(value, MAX_INPUT_LENGTH, "%d", room_number);
 	}
 
 	setbit_parseTable(ch, (void *)where, table, ARRAY_SIZE(table), flag, value, on_off,
@@ -1344,8 +1347,51 @@ static void setbit_parseTable(P_char ch, void *ptr, SetBitTable *table, int size
 	}
 	else
 	{
-		/* Otherwise, convert value to actual integer. */
-		if (is_number(value))
+		/* Validate each integer destination before narrowing. Effective gameplay
+		 * caps are applied separately by balance_affects(). */
+		if (entry->sb_func == ac_shortCopy || entry->sb_func == ac_sh_intCopy ||
+		    entry->sb_func == ac_ush_intCopy || entry->sb_func == ac_byteCopy ||
+		    entry->sb_func == ac_sbyteCopy || entry->sb_func == ac_ubyteCopy ||
+		    entry->sb_func == ac_intCopy)
+		{
+			long minimum = INT_MIN;
+			long maximum = INT_MAX;
+			if (entry->sb_func == ac_shortCopy || entry->sb_func == ac_sh_intCopy)
+			{
+				minimum = SHRT_MIN;
+				maximum = SHRT_MAX;
+			}
+			else if (entry->sb_func == ac_ush_intCopy)
+			{
+				minimum = 0;
+				maximum = USHRT_MAX;
+			}
+			else if (entry->sb_func == ac_byteCopy || entry->sb_func == ac_sbyteCopy)
+			{
+				minimum = SCHAR_MIN;
+				maximum = SCHAR_MAX;
+			}
+			else if (entry->sb_func == ac_ubyteCopy)
+			{
+				minimum = 0;
+				maximum = UCHAR_MAX;
+			}
+			char *end = nullptr;
+			errno = 0;
+			const long parsed = strtol(value, &end, 10);
+			if (errno == ERANGE || end == value || *end || parsed < minimum ||
+			    parsed > maximum)
+			{
+				char message[96];
+				snprintf(message, sizeof(message),
+					 "Enter a whole number from %ld to %ld.\r\n", minimum,
+					 maximum);
+				send_to_char(message, ch);
+				return;
+			}
+			bit = static_cast<int>(parsed);
+		}
+		else if (is_number(value))
 		{
 			bit = atoi(value);
 		}
@@ -1375,6 +1421,13 @@ static void setbit_parseTable(P_char ch, void *ptr, SetBitTable *table, int size
 			send_to_char(buf, ch);
 			return;
 		}
+	}
+	// ac_bitCopy() sets one bit of a 32-bit field. A larger bit, such as a race
+	// above 32 in an item's race list, would land on another bit.
+	if (entry->sb_func == ac_bitCopy && (bit < 0 || bit > 31))
+	{
+		send_to_char("That field has no bit for that value.\r\n", ch);
+		return;
 	}
 	if ((entry->sb_func == ac_tongueCopy || entry->sb_func == ac_skillCopy) &&
 	    (on_off < 0 || on_off > 100))
@@ -1560,6 +1613,7 @@ MAKE_COPY_FUNCTION(long)
 MAKE_COPY_FUNCTION(short)
 MAKE_COPY_FUNCTION(sbyte)
 MAKE_COPY_FUNCTION(sh_int)
+MAKE_COPY_FUNCTION(ush_int)
 MAKE_COPY_FUNCTION(ubyte)
 /* Specifical copy functions */
 /* For age, we set only the year using by finding the difference
@@ -1626,13 +1680,17 @@ static void ac_tongueCopy(void *where, int /*offset*/, char * /*value*/, int bit
  */
 static void ac_savthrCopy(void *where, int /*offset*/, char *value, int /*bit*/, int /*on_off*/)
 {
-	sh_int sav_thr[5];
 	P_char ch = (P_char)where;
+	int sav_thr[5];
 
-	sscanf(value, "%hd %hd %hd %hd %hd", sav_thr, sav_thr + 1, sav_thr + 2, sav_thr + 3,
+	// A saving throw is a byte: five shorts copied over the five ran on into the
+	// conditions after them. A value that is not given keeps what the character has.
+	for (int i = 0; i < 5; i++)
+		sav_thr[i] = ch->specials.apply_saving_throw[i];
+	sscanf(value, "%d %d %d %d %d", sav_thr, sav_thr + 1, sav_thr + 2, sav_thr + 3,
 	       sav_thr + 4);
-
-	bcopy((char *)&sav_thr, (char *)ch->specials.apply_saving_throw, sizeof(sav_thr));
+	for (int i = 0; i < 5; i++)
+		ch->specials.apply_saving_throw[i] = (::byte)BOUNDED(-128, sav_thr[i], 127);
 }
 
 /*

@@ -558,6 +558,8 @@ struct spellcast_datatype
 	int timeleft;
 	int spell;
 	unsigned char flags;
+	// The tick the scheduled segment is due at; zero until the first one is scheduled.
+	unsigned long long due_tick;
 };
 
 struct scribing_data_type
@@ -1263,6 +1265,11 @@ struct pc_only_data
 	uint64_t bank_revision; /* Transactional shared account-bank domain revision. */
 	uint64_t wallet_revision; /* Transactional carried-wallet domain revision. */
 	bool death_custody_disputed; /* Runtime-only refused corpse handoff. */
+	uint64_t death_recovery_owner; /* Existing corpse owner relationship, diagnostics only. */
+	uint64_t death_recovery_since_usec;
+	uint64_t death_recovery_reports;
+	uint64_t death_recovery_last_alert_usec;
+	bool death_recovery_failure_reported;
 	uint64_t death_retry_corpse_uid; /* Runtime-only event admission fallback. */
 	uint64_t death_retry_due_usec;
 	int death_retry_delay;
@@ -1353,6 +1360,8 @@ struct npc_only_data
 
 	int idnum; /* Given only to pets, used for crashsave */
 	uint32_t summon_kind; // stable summoned_pet_kind; zero for ordinary area mobs
+	bool alchemist_vial_roll_done; // one decision for a finalized fresh world spawn
+	unsigned long long alchemist_action_until_pulse; // both NPC AI entry points
 	bool summoned_instance; // survives loss of charm/ownership until extraction
 	bool transport_recovery_pending;
 	char recovered_transport_rider[50];
@@ -1510,6 +1519,10 @@ struct char_data
 
 	P_nevent nevents;
 	P_nevent nevents_tail;
+	/* Runtime-only fast path for the ordinary mobile event.  The sequence
+	 * makes the pointer safe to validate after scheduler-pool reuse. */
+	P_nevent world_activity_mundane_event;
+	unsigned long long world_activity_mundane_event_sequence;
 
 	struct char_player_data player; /* Normal data               */
 	struct player_disguise_data disguise;
@@ -1761,6 +1774,7 @@ struct descriptor_data
 
 	/* WebSocket support */
 	int websocket;
+	int proxy_named_client; /* a PROXY header gave host; X-Forwarded-For may not change it */
 	int ws_state;
 	int ws_handshake_done;
 	int ws_error_code;
@@ -1777,6 +1791,7 @@ struct descriptor_data
 	size_t ws_control_output_len;
 	size_t ws_control_output_offset;
 	int gmcp_enabled;
+	bool gmcp_initial_state_pending;
 	int sga_disabled;
 	int write_failed;
 	unsigned char *telnet_output_buffer;
@@ -1784,6 +1799,9 @@ struct descriptor_data
 	size_t telnet_output_offset;
 	int telnet_tls_retry;
 	int gmcp_quest_map_sent;
+	int gmcp_ship_bridge; /* room index + 1; zero means no bridge subscription */
+	unsigned long gmcp_ship_contacts_hash;
+	unsigned long gmcp_ship_info_hash;
 	char client_name[64];
 	char client_version[32];
 	int durisweb_verified;

@@ -42,7 +42,10 @@ P_char find_character_by_runtime_id(uint64_t id) {
 void nevent_periodic_retry_after(unsigned long long, const char *) { std::abort(); }
 void nevent_periodic_continue_after(unsigned long long) { ++continuations; }
 bool redis_floor_runtime_enabled() { return false; }
+int locker_hooks = 0;
+void locker_post_save_hook(P_char) { ++locker_hooks; }
 void redis_flush_floor_drops() { std::abort(); }
+void economic_event_flush_outbox() {}
 
 int main() {
     rooms[0].number = 22800;
@@ -64,6 +67,8 @@ int main() {
     assert(captured == 20 && continuations == 2);
     flush_dirty_players();
     assert(captured == 30);
+    // Each checkpoint also saves the locker a character is in (the hook checks).
+    assert(locker_hooks == 30);
     std::cout << "[PASS] clean players checkpoint status without unrelated mutations; eight-player slicing preserved\n";
 }
 '''

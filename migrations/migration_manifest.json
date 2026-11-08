@@ -478,6 +478,16 @@
       "verify": "immutable/0030_telemetry_quarantine.sh",
       "verify_checksum": "5c85232132f1e1e0d05e469f5d752454e07361e50360b387635d200cc060e1cf",
       "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0031_player_item_runtime_state",
+      "sequence": 31,
+      "description": "Preserve complete crafted item runtime state through SQL save and load",
+      "apply": "immutable/0031_player_item_runtime_state.sql",
+      "apply_checksum": "ab0e11959207cca0579dcc5635f9c124c655d07635a14c62334a8a2d02c3c7d8",
+      "verify": "immutable/0031_player_item_runtime_state.sh",
+      "verify_checksum": "c523d56f74862735f6aef0c831cbe662bed49c64fa6cbdf05bac82f81c1225e5",
+      "compatibility": "mysql8-mariadb10"
     }
   ]
 }

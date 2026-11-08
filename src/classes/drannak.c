@@ -28,6 +28,7 @@
 #include "world/map.h"
 #include "core/mm.h"
 #include "item/objmisc.h"
+#include "item/item_movement_transaction.h"
 #include "ships/ships.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
@@ -364,6 +365,25 @@ int vnum_in_inv(P_char ch, int vnum)
 }
 
 #define SHARDS_FOR_ORB 3
+
+namespace
+{
+void pvp_craft_completed(P_char pl, bool committed, const item_transfer_result &, unsigned int,
+			 const uint8_t *, size_t)
+{
+	if (committed)
+	{
+		send_to_char(
+			"The Harvester accepts the soul shards and gives you a greater orb.\r\n",
+			pl);
+		return;
+	}
+	send_to_char(
+		"The Harvester's craft could not be committed; your soul shards were preserved.\r\n",
+		pl);
+}
+}
+
 int pvp_store(P_char /*ch*/, P_char pl, int cmd, char *arg)
 {
 	char buffer[MAX_STRING_LENGTH];
@@ -415,18 +435,32 @@ int pvp_store(P_char /*ch*/, P_char pl, int cmd, char *arg)
 					pl);
 				return TRUE;
 			}
-			// Subtract SHARDS_FOR_ORB soul shards
+			std::vector<P_obj> shards;
+			for (P_obj object = pl->carrying; object && shards.size() < SHARDS_FOR_ORB;
+			     object = object->next_content)
+				if (OBJ_VNUM(object) == VOBJ_SOUL_SHARD)
+					shards.push_back(object);
+			if (shards.size() != SHARDS_FOR_ORB)
+				return TRUE;
+
 			orb = read_object(VOBJ_GREATER_ORB_MAGIC, VIRTUAL);
-			vnum_from_inv(pl, VOBJ_SOUL_SHARD, SHARDS_FOR_ORB);
-			send_to_char("&+LThe Harvester&+L &+wsays '&nExcellent, mortal.'\n", pl);
-			send_to_char(
-				"&+LThe Harvester &ntakes the &+rshards&n from you and tightly grasps them with his hands. After a moment, a large grin appears across it's face.\r\n&n",
-				pl);
-			send_to_char(
-				"Moments later, &+LThe Harvester &nmakes a strange gesture about your body.\r\n&n",
-				pl);
-			act("You now have $p!\r\n", FALSE, pl, orb, 0, TO_CHAR);
-			obj_to_char(orb, pl);
+			if (!orb)
+			{
+				send_to_char("The Harvester cannot produce that orb right now.\r\n",
+					     pl);
+				return TRUE;
+			}
+			item_movement_reject reject = item_movement_reject::none;
+			if (!item_movement_transaction_submit_craft(
+				    pl, shards.data(), shards.size(), &orb, 1,
+				    VOBJ_GREATER_ORB_MAGIC, pvp_craft_completed, nullptr, 0,
+				    &reject))
+			{
+				extract_obj(orb);
+				send_to_char(
+					"The Harvester's craft service is busy; your soul shards were preserved.\r\n",
+					pl);
+			}
 			return TRUE;
 		}
 	}
@@ -764,16 +798,16 @@ int equipped_value(P_char ch)
 	return total;
 }
 
-void create_recipe(P_char ch, P_obj temp)
+bool create_recipe(P_char ch, P_obj temp)
 {
 	/***RECIPE CREATE***/
 	P_obj objrecipe;
-	char buffer[256], old_name[256];
+	char buffer[256];
 	int recipenumber = obj_index[temp->R_num].virtual_number;
 
 	if ((temp->type == ITEM_CONTAINER || temp->type == ITEM_STORAGE) && temp->contains)
 	{
-		return;
+		return false;
 	}
 
 	// No recipes for high end equipment.
@@ -786,24 +820,29 @@ void create_recipe(P_char ch, P_obj temp)
 		   (AFF4_VAMPIRE_FORM | AFF4_HOLY_SACRIFICE | AFF4_BATTLE_ECSTASY | AFF4_SANCTUARY |
 		    AFF4_HELLFIRE | AFF4_ICE_AURA | AFF4_WILDMAGIC)))
 	{
-		return;
+		return false;
 	}
 	for (int i = 0; i < MAX_OBJ_AFFECT; i++)
 	{
 		if ((temp->affected[i].location == APPLY_COMBAT_PULSE) ||
 		    (temp->affected[i].location == APPLY_SPELL_PULSE))
 		{
-			return;
+			return false;
 		}
 	}
 
 	if (!crafting_recipe_target_is_available(temp))
-		return;
+		return false;
 
 	objrecipe = read_object(400210, VIRTUAL);
+	if (!objrecipe)
+		return false;
+
 	SET_BIT(objrecipe->value[6], recipenumber);
-	strcpy(old_name, objrecipe->short_description);
-	checked_snprintf(buffer, 256, "%s %s&n", old_name, temp->short_description);
+	const char *old_desc = objrecipe->short_description ? objrecipe->short_description :
+							      "a recipe for";
+	const char *target_desc = temp->short_description ? temp->short_description : "an item";
+	checked_snprintf(buffer, sizeof(buffer), "%s %s&n", old_desc, target_desc);
 
 	if ((objrecipe->str_mask & STRUNG_DESC2) && objrecipe->short_description)
 		FREE(objrecipe->short_description);
@@ -815,6 +854,7 @@ void create_recipe(P_char ch, P_obj temp)
 	debug("create_recipe: %s reward was: %s ival: %d.", J_NAME(ch),
 	      objrecipe->short_description, itemvalue(temp));
 	obj_to_char(objrecipe, ch);
+	return true;
 }
 
 void random_recipe(P_char ch, P_char victim)

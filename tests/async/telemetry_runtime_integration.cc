@@ -161,6 +161,7 @@ struct reload_property_values
 	float payout_factor;
 	float alignment_mod;
 	float minimum_alignment;
+	float rested_enabled;
 };
 
 struct reload_property_catalog
@@ -183,6 +184,8 @@ bool reload_property_read(void *context, const char *key, float *value) noexcept
 	auto *properties = static_cast<reload_property_values *>(context);
 	if (std::strcmp(key, "exp.zoneTrophy.observe") == 0)
 		*value = properties->observe;
+	else if (std::strcmp(key, "exp.rested.enabled") == 0)
+		*value = properties->rested_enabled;
 	else if (std::strcmp(key, "epic.touch.maxPayoutFactor") == 0)
 		*value = properties->max_payout_factor;
 	else if (std::strcmp(key, "epic.touch.PayoutFactor") == 0)
@@ -405,7 +408,7 @@ void check_environment_options()
 	setenv("TELEMETRY_PULSE_SLOT_COUNT", "2", 1);
 	setenv("TELEMETRY_PROPERTY_VERSION", "4294967295", 1);
 
-	reload_property_values environment_values{ 0.0F, 10.0F, 1.0F, 0.2F, 0.15F };
+	reload_property_values environment_values{ 0.0F, 10.0F, 1.0F, 0.2F, 0.15F, 1.0F };
 	telemetry_config_property_capture probe_capture{};
 	probe_capture.reader = { reload_property_read, &environment_values };
 	probe_capture.mode = telemetry_config_property_capture_mode::require_reader;
@@ -927,7 +930,7 @@ void check_effective_property_reload()
 	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
 	       telemetry_transport_outcome::started);
 
-	reload_property_values values{ 0.0F, 10.0F, 1.0F, 0.2F, 0.15F };
+	reload_property_values values{ 0.0F, 10.0F, 1.0F, 0.2F, 0.15F, 1.0F };
 	reload_property_catalog catalog{};
 	const telemetry_runtime_options options = make_property_reload_options(values, catalog);
 	assert(telemetry_runtime_init(options) == telemetry_runtime_outcome::accepted);

@@ -205,7 +205,7 @@ int main()
 		       "SELECT GROUP_CONCAT(CONCAT_WS(':',item_uid,root_item_uid,item_revision,"
 		       "vnum,state,owner_type,owner_id,owner_revision) ORDER BY item_uid) FROM "
 		       "player_death_custody WHERE pid=1 AND save_revision=5") ==
-			"201:201:3:501:1:1:1:5,202:202:18446744073709551615:3:0:0:0:0,203:201:1:501:1:1:1:5",
+			"201:201:3:501:1:1:1:5,202:202:18446744073709551615:3:0:0:0:0,203:201:1:501:1:1:1:5,207:201:1:501:1:1:1:5",
 		"the death disposition lost its disputed custody evidence");
 
 	// The record decodes back to the same corpse topology, UIDs and wallet.
@@ -284,6 +284,41 @@ int main()
 		"a death record without its corpse was accepted");
 	require(scalar(connection, "SELECT save_revision FROM player_data WHERE pid=1") == "6",
 		"a refused death record still advanced the durable player revision");
+
+	// A second, item-only case permits complete reconciliation without silently
+	// certifying the first case's currency obligation as resolved.
+	execute(connection,
+		"INSERT INTO player_data(pid,name,account_name) VALUES (2,'ItemProbe','death_probe')");
+	execute(connection,
+		"INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,item_revision,vnum,state) VALUES (401,401,NULL,1,2,3,501,1),(403,401,401,1,2,1,501,1),(407,401,401,1,2,1,501,1)");
+	auto item_death = make_death(1);
+	item_death.pid = 2;
+	item_death.death->operation_id.bytes[0] = 0xa6;
+	item_death.death->corpse.resize(3);
+	item_death.death->corpse[0].object_uid = 400;
+	item_death.death->corpse[0].values[CORPSE_PID] = 2;
+	item_death.death->corpse[0].values[CORPSE_SAVEID] = 9002;
+	item_death.death->corpse[1].object_uid = 401;
+	item_death.death->corpse[2].object_uid = 403;
+	item_death.death->wallet_before = {};
+	item_death.death->wallet_pile_uid = 0;
+	item_death.death->custody.resize(2);
+	for (auto &row : item_death.death->custody)
+	{
+		row.item.item_uid += 200;
+		row.item.root_item_uid += 200;
+		if (row.item.parent_item_uid)
+			row.item.parent_item_uid += 200;
+		row.owner.id = 2;
+		row.owner_revision = 7;
+	}
+	require(player_snapshot_repository_apply(connection, item_death).outcome ==
+			player_save_apply_outcome::applied,
+		"item-only recovery fixture death failed");
+	require(scalar(connection,
+		       "SELECT COUNT(*) FROM player_death_custody WHERE pid=2 AND save_revision=1") ==
+			"3",
+		"item-only fixture omitted the durable descendant");
 
 	mysql_close(connection);
 	mysql_library_end();

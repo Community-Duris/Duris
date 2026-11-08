@@ -9,6 +9,7 @@
  */
 
 #include "core/prototypes.h"
+#include "world/rested.h"
 #include "core/profile.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -2231,8 +2232,24 @@ void affect_join(P_char ch, struct affected_type *af, int avg_dur, int avg_mod)
 }
 
 //---------------------------------------------------------------------------------
+bool rested_bonus_effect_active(const affected_type *affect)
+{
+	return affect && (rested_bonus_enabled() || (affect->flags & AFFTYPE_CUSTOM1));
+}
+
+bool has_active_rested_bonus(P_char ch, int tag)
+{
+	if (rested_bonus_enabled())
+		return affected_by_spell(ch, tag);
+	return get_spell_from_char(ch, tag, nullptr, AFFTYPE_CUSTOM1) != nullptr;
+}
+
 void wear_off_message(P_char ch, struct affected_type *af)
 {
+	if ((af->type == TAG_RESTED || af->type == TAG_WELLRESTED) &&
+	    !rested_bonus_effect_active(af))
+		return;
+
 	if ((af->flags & AFFTYPE_NOMSG)) //|| (af->flags & AFFTYPE_SUBAFFECT))
 		return;
 
@@ -3604,14 +3621,6 @@ int camp(P_char ch)
 						update_ingame_racewar(-GET_RACEWAR(ch));
 					}
 					extract_char_after_terminal_save(ch);
-
-					/*
-					 ok, to make the new nanny work correctly, we need to assign
-					 their in_room to where they just camped, so if they come right
-					 back in from the menu, they come in where they are supposed to.
-					 -JAB
-					 */
-					ch->in_room = real_room(GET_HOME(ch));
 					return 1;
 				}
 			}
@@ -3855,9 +3864,8 @@ void affect_update(void)
 			if (GET_VITALITY(i) < GET_MAX_VITALITY(i))
 				StartRegen(i, regen_resource::vitality);
 
-			if (GET_CLASS(i, CLASS_PSIONICIST) || GET_CLASS(i, CLASS_MINDFLAYER))
-				if (GET_MANA(i) < GET_MAX_MANA(i))
-					StartRegen(i, regen_resource::mana);
+			if (USES_MANA(i))
+				StartRegen(i, regen_resource::mana);
 
 			if (GET_WARD(i) < GET_MAX_WARD(i))
 				StartRegen(i, regen_resource::ward);

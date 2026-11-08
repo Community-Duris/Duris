@@ -1448,8 +1448,10 @@ NPCShipSetup *find_ship_setup(int level, int m_class, int speed)
 	int i = 0, ii = 0;
 	while (true)
 	{
+		/* "Any hull" never means the zone ship: it is placed only by name. */
 		if ((npcShipSetup[i].level == level || level == -1) &&
-		    (npcShipSetup[i].m_class == m_class || m_class == -1) &&
+		    (npcShipSetup[i].m_class == m_class ||
+		     (m_class == -1 && npcShipSetup[i].m_class != SH_ZONE_SHIP)) &&
 		    (SHIPTYPE_SPEED(npcShipSetup[i].m_class) >= speed || speed == -1))
 		{
 			if (ii == num)
@@ -1536,6 +1538,8 @@ P_ship load_npc_ship(int level, NPC_AI_Type type, int min_speed, int m_class, in
 	{
 		if (ch)
 			send_to_char("Couldnt load npc ship!\r\n", ch);
+		shipObjHash.erase(ship);
+		delete_ship(ship, true);
 		return NULL;
 	}
 
@@ -1558,7 +1562,6 @@ P_ship load_npc_ship(int level, NPC_AI_Type type, int min_speed, int m_class, in
  */
 bool try_unload_npc_ship(P_ship ship)
 {
-	clear_ship_content(ship);
 	shipObjHash.erase(ship);
 	delete_ship(ship, true);
 	return TRUE;
@@ -1942,7 +1945,12 @@ bool load_cyrics_revenge()
 
 	name_ship(CYRICS_REVENGE_NAME, cyrics_revenge);
 	if (!load_ship(cyrics_revenge, room))
+	{
+		/* delete_ship() also clears cyrics_revenge. */
+		shipObjHash.erase(cyrics_revenge);
+		delete_ship(cyrics_revenge, true);
 		return false;
+	}
 
 	setup->setup(cyrics_revenge);
 	cyrics_revenge->npc_ai->type = NPC_AI_HUNTER;
@@ -2011,6 +2019,8 @@ bool load_cyrics_revenge_crew(P_ship ship)
 	up_ex->keyword = str_dup("hatch heavy");
 
 	P_obj chest = load_treasure_chest(ship, captain, crew_data);
+	if (!chest)
+		return false;
 
 	int r_num = real_object(AUTOMATONS_MOONSTONE_CORE);
 	if (r_num < 0)

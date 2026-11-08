@@ -13,16 +13,16 @@ for token in (
     "shop_trade_find_object(payload.selected_item_uid)",
     "shop_trade_find_keeper(payload.shop_id)",
     "shop_trade_runtime_object_matches_payload(object, payload)",
-    "object->loc.carrying == keeper",
-    "object->loc.carrying == ch",
+    "OBJ_CARRIED_BY(object, keeper)",
+    "OBJ_CARRIED_BY(object, ch)",
     "shop_trade_action::buy_existing",
     "shop_trade_action::buy_produced",
     "shop_trade_action::sell_store",
     "shop_trade_action::sell_destroy",
     "shop_trade_action::discard_invalid",
-    "shop_trade_transaction_submit(ch, payload, shop_trade_completion)",
+    "shop_trade_transaction_submit_with_publication(",
     "committed shop trade could not publish live object",
-    "produced && keeper && OBJ_NOWHERE(object)",
+    "produced && OBJ_NOWHERE(object)",
     "extract_obj(selected, FALSE)",
     "produced_purchase_sequences",
     "shop_trade_container_accepts",
@@ -51,7 +51,7 @@ if "const int64_t transaction_price = IS_TRUSTED(ch) ? 0 : sale;" not in buy:
 if buy.count("transaction_price") < 3:
     raise SystemExit("flat buy does not carry trusted pricing through produced continuations")
 
-buy_submit = buy.index("shop_trade_transaction_submit(ch, payload, shop_trade_completion)")
+buy_submit = buy.index("shop_trade_transaction_submit_with_publication(")
 # Match the call by name only: writeShopKeeper grew a shop_nr argument, and
 # pinning the whole argument list made this an ordering check that fails on a
 # rename rather than on the ordering it is here to protect.
@@ -62,11 +62,11 @@ flat_branch = buy.index("if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE
 clone = buy.index("selected = read_object(temp1->R_num, REAL)", flat_branch)
 if not flat_branch < clone < buy_submit:
     raise SystemExit("produced clone is not staged inside the flat branch before submission")
-sell_submit = sell.index("shop_trade_transaction_submit(ch, payload, shop_trade_completion)")
+sell_submit = sell.index("shop_trade_transaction_submit_with_publication(")
 if not sell_submit < sell.index("sql_shop_sell(ch, temp1, sale)") < sell.index("ADD_MONEY(ch, sale)"):
     raise SystemExit("flat sale does not submit before legacy SQL/money mutation")
 
-callback = SOURCE[SOURCE.index("static void shop_trade_completion"):SOURCE.index("void push(")]
+callback = SOURCE[SOURCE.index("static bool shop_trade_publish_physical"):SOURCE.index("static void shop_trade_completion")]
 if not callback.index("shop_trade_runtime_object_matches_payload") < callback.index(
     "obj_from_char(object)"
 ):
@@ -77,7 +77,7 @@ if not callback.index("shop_trade_runtime_object_matches_payload") < cleanup_bra
 ):
     raise SystemExit("invalid shop stock is extracted before committed snapshot revalidation")
 if not TRANSACTION.index("currency_transaction_publish_balances(") < TRANSACTION.index(
-    "completion(character, committed && published"
+    "finished.completion(character, committed"
 ):
     raise SystemExit("shop callback can run before authoritative runtime publication")
 for token in (

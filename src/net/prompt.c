@@ -412,15 +412,18 @@ void make_prompt(P_desc point)
 	snoop_by_ptr = point->snoop.snoop_by_list;
 	while (snoop_by_ptr)
 	{
-		write_to_q("&+B%&n ", &snoop_by_ptr->snoop_by->desc->output, 1);
-		write_to_q(promptbuf, &snoop_by_ptr->snoop_by->desc->output, 1);
-		if (IS_SET(t_ch_p, PROMPT_TWOLINE))
+		if (snoop_by_ptr->snoop_by && snoop_by_ptr->snoop_by->desc)
 		{
 			write_to_q("&+B%&n ", &snoop_by_ptr->snoop_by->desc->output, 1);
-			write_to_q(promptbuf2, &snoop_by_ptr->snoop_by->desc->output, 1);
+			write_to_q(promptbuf, &snoop_by_ptr->snoop_by->desc->output, 1);
+			if (IS_SET(t_ch_p, PROMPT_TWOLINE))
+			{
+				write_to_q("&+B%&n ", &snoop_by_ptr->snoop_by->desc->output, 1);
+				write_to_q(promptbuf2, &snoop_by_ptr->snoop_by->desc->output, 1);
+			}
+			write_to_q("\n", &snoop_by_ptr->snoop_by->desc->output, 1);
+			process_output(snoop_by_ptr->snoop_by->desc);
 		}
-		write_to_q("\n", &snoop_by_ptr->snoop_by->desc->output, 1);
-		process_output(snoop_by_ptr->snoop_by->desc);
 
 		snoop_by_ptr = snoop_by_ptr->next;
 	}

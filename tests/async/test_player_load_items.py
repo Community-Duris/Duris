@@ -20,6 +20,7 @@ HARNESS = r'''
 #include "player/player_snapshot_codec.h"
 #include "player/player_load_pets.h"
 #include "player/pet_restore_runtime.h"
+#include "sql/item_extra_descr_codec.h"
 #include <ctime>
 #include "core/prototypes.h"
 #include "magic/spells.h"
@@ -654,10 +655,48 @@ int main()
 
     {
         reset_test_state();
+        test_character owner(42);
+        player_load_result result = base_result();
+        add_item(result, 1, 10, 101, PLAYER_SNAPSHOT_NO_PARENT, 0);
+        result.item_identities[0].override_mask |= PLAYER_LOAD_ITEM_OVERRIDE_RUNTIME;
+        result.snapshot.items[0].timers[1] = 44;
+        result.snapshot.items[0].anti_flags = 5;
+        result.snapshot.items[0].anti2_flags = 6;
+        result.snapshot.items[0].extra2_flags = 7;
+        result.snapshot.items[0].craftsmanship = 8;
+        player_load_item_materialize_metrics metrics = {};
+        result.snapshot.items[0].dynamic_affects.push_back({1, 2, 3});
+        assert(player_load_items_materialize(&owner.character, result, &metrics));
+        assert(owner.character.carrying->timer[1] == 44);
+        assert(owner.character.carrying->anti_flags == 5);
+        assert(owner.character.carrying->anti2_flags == 6);
+        assert(owner.character.carrying->extra2_flags == 7);
+        assert(owner.character.carrying->craftsmanship == 8);
+        assert(owner.character.carrying->affects &&
+               owner.character.carrying->affects->type == 1 &&
+               owner.character.carrying->affects->data == 2 &&
+               owner.character.carrying->affects->extra2 == 3);
+        item_ownership_runtime_entry entry = {};
+        assert(item_ownership_runtime_lookup(10, &entry));
+        assert(item_owner_identity_equal(entry.owner, {item_owner_type::player, 42, 0}));
+        assert(metrics.outcome == player_load_item_materialize_outcome::applied);
+        release_tree(owner.character.carrying);
+    }
+
+    {
+        reset_test_state();
         player_load_result result = base_result();
         add_item(result, 1, 30, 100, PLAYER_SNAPSHOT_NO_PARENT, -1);
         add_item(result, 2, 31, 101, 0, -1);
         result.snapshot.items[1].dynamic_affects.push_back({17, 8, 32});
+        char trap_state[64];
+        assert(sql_encode_item_trap_state(6, 2, 0, 100, trap_state,
+                                          sizeof(trap_state)));
+        result.snapshot.items[1].extra_descriptions.push_back(
+            {SQL_ITEM_TRAP_STATE_KEYWORD, trap_state, false, {}});
+        for (size_t index = 0; index < PLAYER_LOAD_ITEM_DESCRIPTION_MAX; ++index)
+            result.snapshot.items[1].extra_descriptions.push_back(
+                {"detail" + std::to_string(index), "fixture", false, {}});
         const item_owner_identity corpse = {
             item_owner_type::corpse, (static_cast<uint64_t>(42) << 32) | 20, 0
         };
@@ -672,7 +711,20 @@ int main()
                roots[0]->loc_p == LOC_NOWHERE && roots[0]->contains &&
                roots[0]->contains->obj_uid == 31 && roots[0]->contains->affects &&
                roots[0]->contains->affects->type == 17 &&
-               roots[0]->contains->affects->extra2 == 32);
+               roots[0]->contains->affects->extra2 == 32 &&
+               roots[0]->contains->trap_eff == 6 &&
+               roots[0]->contains->trap_dam == 2 &&
+               roots[0]->contains->trap_charge == 0 &&
+               roots[0]->contains->trap_level == 100);
+        size_t description_count = 0;
+        for (auto *description = roots[0]->contains->ex_description;
+             description; description = description->next, ++description_count)
+        {
+            assert(std::string(description->keyword) ==
+                   "detail" + std::to_string(description_count));
+            assert(std::string(description->description) == "fixture");
+        }
+        assert(description_count == PLAYER_LOAD_ITEM_DESCRIPTION_MAX);
         item_ownership_runtime_entry entry = {};
         assert(item_ownership_runtime_lookup(31, &entry));
         assert(item_owner_identity_equal(entry.owner, corpse));
@@ -686,6 +738,43 @@ int main()
             result.item_owner_revision, true, true, &roots, &metrics));
         assert(roots.empty() && metrics.outcome ==
                player_load_item_materialize_outcome::invalid_snapshot);
+    }
+
+    // #590: pet restore happens before its PC-owner link exists. Legacy hidden
+    // worn roots become carried, while UID, children, binding flags and custody
+    // remain intact; ordinary visible equipment still activates normally.
+    {
+        reset_test_state();
+        test_character restored(42);
+        npc_only_data npc = {};
+        restored.character.specials.act = ACT_ISNPC;
+        restored.character.only.npc = &npc;
+        player_load_result result = base_result();
+        add_item(result, 1, 59001, 100, PLAYER_SNAPSHOT_NO_PARENT, PRIMARY_WEAPON + 1);
+        add_item(result, 2, 59002, 101, 0, 0);
+        add_item(result, 3, 59003, 101, PLAYER_SNAPSHOT_NO_PARENT, HOLD + 1);
+        result.snapshot.items[0].extra_flags |= ITEM_NOSHOW;
+        const item_owner_identity custody = { item_owner_type::pet, 42, 590 };
+        for (auto &identity : result.item_identities)
+            identity.owner = custody;
+        player_load_item_materialize_metrics metrics = {};
+        assert(player_load_item_graph_materialize_for_owner(
+            &restored.character, result.snapshot.items, result.item_identities,
+            custody, result.item_owner_revision, true, true, &metrics));
+        P_obj hidden = restored.character.carrying;
+        assert(hidden && hidden->obj_uid == 59001 && hidden->contains &&
+               hidden->contains->obj_uid == 59002 && IS_NOSHOW(hidden));
+        assert(!restored.character.equipment[PRIMARY_WEAPON]);
+        assert(restored.character.equipment[HOLD] &&
+               restored.character.equipment[HOLD]->obj_uid == 59003);
+        for (uint64_t uid : {59001, 59002, 59003}) {
+            item_ownership_runtime_entry entry = {};
+            assert(item_ownership_runtime_lookup(uid, &entry));
+            assert(item_owner_identity_equal(entry.owner, custody));
+        }
+        assert(item_ownership_runtime_size() == 3);
+        release_tree(hidden);
+        release_tree(restored.character.equipment[HOLD]);
     }
 
     // Distinct native books coexist; reordered copies are duplicate metadata.
@@ -732,6 +821,7 @@ int main()
              {"SPELLBOOK", "[]", true, {1}},
              {"SPELLBOOK", "[1]", true, {1}},
              {"ordinary", "text", false, {1}},
+             {SQL_ITEM_TRAP_STATE_KEYWORD, "6,2,bad,100", false, {}},
              {"SPELLBOOK", "[1,1]", true, {}},
              {"SPELLBOOK", "[-1]", true, {}},
              {"SPELLBOOK", "[" + std::to_string(MAX_SKILLS) + "]", true, {}}}) {
@@ -946,13 +1036,51 @@ int main()
         player_load_result result = base_result();
         result.snapshot.room_vnum = 123;
         add_pet(result, 3001, 200);
-        result.snapshot.pets[0].hit = result.snapshot.pets[0].max_hit + 1;
+        // Reproduce saved HP above its maximum, plus the mana/vitality cases.
+        auto &saved = result.snapshot.pets[0];
+        saved.hit = 2664; saved.max_hit = 2526;
+        saved.mana = saved.max_mana + 1;
+        saved.vitality = saved.max_vitality + 1;
+        add_pet_item(result, 0, 3101, 20, 101, PLAYER_SNAPSHOT_NO_PARENT, 0);
         std::vector<P_char> pets;
         player_load_pet_materialize_metrics metrics = {};
-        assert(!player_load_pets_stage(&owner.character, result, &pets, &metrics));
-        result.snapshot.pets[0].hit = result.snapshot.pets[0].max_hit;
         assert(player_load_pets_stage(&owner.character, result, &pets, &metrics));
+        assert(pets.size() == 1 && pets[0] && !owner.pc.held_pets);
+        assert(GET_HIT(pets[0]) == 2526);
+        assert(GET_MANA(pets[0]) == saved.max_mana);
+        assert(GET_VITALITY(pets[0]) == saved.max_vitality);
+        assert(pets[0]->carrying && pets[0]->carrying->obj_uid == 20);
         player_load_pets_discard(&pets);
+    }
+    for (int malformed = 0; malformed < 8; ++malformed) {
+        reset_test_state();
+        test_character owner(42);
+        player_load_result result = base_result();
+        add_pet(result, 3001, 200);
+        auto &saved = result.snapshot.pets[0];
+        switch (malformed) {
+        case 0: saved.hit = -1; break;
+        case 1: saved.max_hit = 0; break;
+        case 2: saved.mana = -1; break;
+        case 3: saved.max_mana = -1; break;
+        case 4: saved.vitality = -1; break;
+        case 5: saved.max_vitality = -1; break;
+        case 6: saved.charm_duration = -2; break;
+        case 7: saved.hold_reason = pet_hold_reason::custody_pending;
+                saved.hit = -1; break;
+        }
+        add_pet_item(result, 0, 3101, 20, 101, PLAYER_SNAPSHOT_NO_PARENT, 0);
+        std::vector<P_char> pets;
+        player_load_pet_materialize_metrics metrics = {};
+        assert(player_load_pets_stage(&owner.character, result, &pets, &metrics));
+        assert(pets.size() == 1 && !pets[0]);
+        const auto &held = owner.pc.held_pets->pets[0];
+        assert(held.hold_reason == (malformed == 7 ? pet_hold_reason::custody_pending :
+                                                    pet_hold_reason::invalid_state));
+        assert(held.hit == saved.hit && held.max_hit == saved.max_hit);
+        assert(held.items[0].object_uid == 20);
+        player_load_pets_commit(&owner.character, &pets, result);
+        assert(pets.empty() && !owner.character.followers);
     }
     {
         reset_test_state();

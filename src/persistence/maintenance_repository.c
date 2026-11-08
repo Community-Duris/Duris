@@ -74,6 +74,7 @@ bool query_values(MYSQL *connection, const maintenance_request &request, const s
 		if (result->value_count >= request.row_budget ||
 		    result->value_count >= result->values.size() || !parse_positive(row[0], &value))
 		{
+			result->error_code = EINVAL;
 			mysql_free_result(rows);
 			return false;
 		}
@@ -783,31 +784,71 @@ bool statistics_marker_matches(MYSQL *connection, int32_t high, int32_t low, boo
 	return true;
 }
 
-bool statistics_file_has_work(const char *path, uint64_t work_id)
+// One statistics request remains pending until both outputs succeed. Its complete
+// row (or interrupted prefix) is therefore in the bounded tail of the daily file.
+int statistics_file_append(const char *path, uint64_t work_id, const char *line, size_t size)
 {
-	const int descriptor = open(path, O_RDONLY | O_CLOEXEC | O_NOFOLLOW);
+	const int descriptor =
+		open(path, O_RDWR | O_CREAT | O_APPEND | O_CLOEXEC | O_NOFOLLOW, 0640);
 	if (descriptor < 0)
-		return false;
-	const off_t end = lseek(descriptor, 0, SEEK_END);
-	if (end < 0)
+		return errno;
+	const auto append = [&]() -> int
 	{
-		close(descriptor);
-		return false;
-	}
-	const off_t start = end > 8192 ? end - 8192 : 0;
-	if (lseek(descriptor, start, SEEK_SET) < 0)
-	{
-		close(descriptor);
-		return false;
-	}
-	char tail[8193] = {};
-	const ssize_t count = read(descriptor, tail, sizeof(tail) - 1);
-	close(descriptor);
-	if (count < 0)
-		return false;
-	char marker[64] = {};
-	snprintf(marker, sizeof(marker), " %llu\r\n", (unsigned long long)work_id);
-	return strstr(tail, marker) != nullptr;
+		const off_t end = lseek(descriptor, 0, SEEK_END);
+		if (end < 0)
+			return errno;
+		const off_t start = end > 8192 ? end - 8192 : 0;
+		std::string tail(static_cast<size_t>(end - start), '\0');
+		size_t offset = 0;
+		while (offset < tail.size())
+		{
+			const ssize_t count = pread(descriptor, tail.data() + offset,
+						    tail.size() - offset, start + offset);
+			if (count < 0 && errno == EINTR)
+				continue;
+			if (count <= 0)
+				return count < 0 ? errno : EIO;
+			offset += static_cast<size_t>(count);
+		}
+		if (!tail.empty() && tail.back() != '\n')
+		{
+			const size_t newline = tail.rfind('\n');
+			if (newline == std::string::npos && start != 0)
+				return EILSEQ;
+			const size_t begin = newline == std::string::npos ? 0 : newline + 1;
+			const size_t partial = tail.size() - begin;
+			// Never erase an unrelated/corrupt row in the guise of recovery.
+			if (partial >= size || memcmp(tail.data() + begin, line, partial))
+				return EILSEQ;
+			if (ftruncate(descriptor, start + begin) != 0)
+				return errno;
+			tail.resize(begin);
+		}
+		const std::string marker = " " + std::to_string(work_id) + "\r\n";
+		const size_t match = tail.find(marker);
+		if (match != std::string::npos)
+		{
+			const size_t newline = tail.rfind('\n', match);
+			const size_t begin = newline == std::string::npos ? 0 : newline + 1;
+			if (tail.compare(begin, match + marker.size() - begin, line, size) != 0)
+				return EILSEQ;
+		}
+		else if (!write_all(descriptor, line, size))
+			return errno ? errno : EIO;
+		// A previous write may have reached the file but failed its fsync.
+		return fsync(descriptor) == 0 ? 0 : errno;
+	};
+	const int error = append();
+	const bool closed = close(descriptor) == 0;
+	if (error || !closed)
+		return error ? error : errno;
+	// A new daily file's directory entry must survive before acknowledging it.
+	const int directory = open("lib/statistics", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+	if (directory < 0)
+		return errno;
+	const int sync_error = fsync(directory) == 0 ? 0 : errno;
+	const bool directory_closed = close(directory) == 0;
+	return sync_error ? sync_error : (directory_closed ? 0 : errno);
 }
 
 maintenance_result execute_statistics(MYSQL *connection, const maintenance_request &request)
@@ -886,22 +927,14 @@ maintenance_result execute_statistics(MYSQL *connection, const maintenance_reque
 		return failure(request, maintenance_outcome::permanent_failure, EOVERFLOW);
 	if (!before_deadline(request))
 		return failure(request, maintenance_outcome::retryable_failure, ETIMEDOUT);
-	if (!statistics_file_has_work(path, request.work_id))
-	{
-		const int descriptor =
-			open(path, O_WRONLY | O_CREAT | O_APPEND | O_CLOEXEC | O_NOFOLLOW, 0640);
-		if (descriptor < 0)
-			return failure(request, maintenance_outcome::retryable_failure,
-				       errno ? errno : EIO);
-		const bool written = write_all(descriptor, line, static_cast<size_t>(line_size));
-		const bool synced = written && fsync(descriptor) == 0;
-		const bool closed = close(descriptor) == 0;
-		if (!synced || !closed)
-		{
-			return failure(request, maintenance_outcome::retryable_failure,
-				       errno ? errno : EIO);
-		}
-	}
+	const int file_error =
+		statistics_file_append(path, request.work_id, line, static_cast<size_t>(line_size));
+	if (file_error)
+		return failure(request,
+			       file_error == EILSEQ ? maintenance_outcome::permanent_failure :
+						      maintenance_outcome::retryable_failure,
+			       file_error);
+
 	maintenance_result result = failure(request, maintenance_outcome::complete, 0);
 	result.rows = already_applied ? 0 : 1;
 	return result;
@@ -923,12 +956,19 @@ maintenance_result execute_auction(MYSQL *connection, const maintenance_request 
 maintenance_result execute_catalog(MYSQL *connection, const maintenance_request &request)
 {
 	maintenance_result result = failure(request, maintenance_outcome::permanent_failure, 0);
-	const std::string sql = "SELECT number FROM zones WHERE task_zone=1 AND number>" +
-				std::to_string(request.cursor) + " ORDER BY number LIMIT " +
-				limit_sql(request);
+	// Group before paging so a duplicate straddling the cursor boundary cannot be
+	// silently skipped. Include nonpositive/NULL IDs on page one so they fail validation.
+	std::string sql = "SELECT IF(COUNT(*)=1,number,NULL) FROM zones WHERE task_zone=1";
+	if (request.cursor)
+		sql += " AND number>" + std::to_string(request.cursor);
+	sql += " GROUP BY number ORDER BY number LIMIT " + limit_sql(request);
 	if (!query_values(connection, request, sql, &result))
-		return failure(request, maintenance_outcome::retryable_failure,
-			       mysql_errno(connection));
+		return failure(request,
+			       result.error_code ? maintenance_outcome::permanent_failure :
+						   maintenance_outcome::retryable_failure,
+			       result.error_code       ? result.error_code :
+			       mysql_errno(connection) ? mysql_errno(connection) :
+							 ETIMEDOUT);
 	return result;
 }
 

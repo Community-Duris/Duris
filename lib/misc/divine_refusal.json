@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "revision": 1,
+  "entries": {
+    "66026": {
+      "patron": "Garl",
+      "message": "{patron} has forbidden it. I will not act against that warning."
+    },
+    "66031": {
+      "patron": "Garl",
+      "message": "{patron} has forbidden it. I will not act against that warning."
+    }
+  }
+}

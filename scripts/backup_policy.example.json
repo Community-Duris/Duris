@@ -4,6 +4,8 @@
   "custodian": "SET_BY_OPERATOR",
   "schedule_seconds": 3600,
   "rpo_seconds": 7200,
+  "resume_published": false,
+  "blocked_retry_seconds": 3600,
   "hourly": 48,
   "daily": 14,
   "weekly": 8,

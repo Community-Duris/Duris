@@ -20,6 +20,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC_ROOT = ROOT / "src"
+# Weak stubs every native harness may link; see the file.
+HARNESS_STUBS = ROOT / "tests/async/harness_stubs.cpp"
 
 _index: dict[str, Path] | None = None
 

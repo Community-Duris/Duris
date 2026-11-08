@@ -43,6 +43,8 @@ fixture = fixture.replace('void act(const char *, int, P_char, P_obj, void *, in
 fixture = fixture.replace("// INSERT_PRODUCTION_ABORT",
                           function(ROOT / "src/net/sparser.c", "void do_abort(P_char ch,"))
 callbacks = "\n".join([
+    function(ROOT / "src/item/objmisc.c", "bool item_restricted_for_player_pet("),
+    function(ROOT / "src/item/objmisc.c", "int invoke_object_special("),
     function(ROOT / "src/specs/specs.underworld.c", "void resolve_avernus_drain("),
     function(ROOT / "src/specs/specs.underworld.c", "int avernus("),
     function(ROOT / "src/combat/fight.c", "bool weapon_proc("),

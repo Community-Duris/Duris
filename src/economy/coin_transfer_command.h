@@ -6,11 +6,14 @@
 #include "item/item_transfer_command.h"
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 
 constexpr uint16_t COIN_TRANSFER_PAYLOAD_VERSION = 1;
 constexpr size_t COIN_TRANSFER_RESULT_BYTES =
 	2 * (CURRENCY_RESULT_PAYLOAD_BYTES + ITEM_TRANSFER_RESULT_BYTES);
+constexpr uint8_t COIN_TRANSFER_STALE_RESULT_VERSION = 1;
+constexpr size_t COIN_TRANSFER_STALE_RESULT_BYTES = 3 + CURRENCY_RESULT_PAYLOAD_BYTES;
 
 // Exactly two endpoints: a wallet or a single physical pile. The existing
 // currency/item commands carry their revision fences and the pile's full payload.
@@ -34,6 +37,18 @@ struct coin_transfer_result
 	std::array<item_transfer_result, 2> piles = {};
 };
 
+// A rejected wallet endpoint did not mutate either side of the transfer. Keep
+// only the current authority read while its row locks were held so the game
+// thread can repair that live wallet/bank before a player retries. Item/custody
+// conflicts remain diagnostic-only and carry no result payload.
+struct coin_transfer_stale_result
+{
+	size_t endpoint_index = 0;
+	bool wallet_stale = false;
+	bool bank_stale = false;
+	currency_command_result current = {};
+};
+
 bool coin_transfer_command_build(critical_command *command,
 				 const critical_operation_id &operation_id,
 				 const coin_transfer_payload &payload,
@@ -48,6 +63,16 @@ bool coin_transfer_command_encode_result(const coin_transfer_payload &payload,
 bool coin_transfer_command_decode_result(const coin_transfer_payload &payload,
 					 const uint8_t *encoded, size_t size,
 					 coin_transfer_result *result);
+bool coin_transfer_command_stale_result_expected(const coin_transfer_payload &payload,
+						 critical_failure_stage failure_stage);
+bool coin_transfer_command_encode_stale_result(
+	const coin_transfer_payload &payload, const coin_transfer_result &result,
+	critical_failure_stage failure_stage,
+	std::array<uint8_t, COIN_TRANSFER_STALE_RESULT_BYTES> *encoded);
+bool coin_transfer_command_decode_stale_result(const coin_transfer_payload &payload,
+					       critical_failure_stage failure_stage,
+					       const uint8_t *encoded, size_t size,
+					       coin_transfer_stale_result *result);
 // Adjust only a revision advanced by the source in this same transaction.
 bool coin_transfer_command_destination_after_source(const coin_transfer_payload &payload,
 						    const coin_transfer_result &result,

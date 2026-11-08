@@ -1039,7 +1039,7 @@ bool thryms_icerazor(P_char ch, P_char victim, P_obj wpn)
 
 	dam = number(8, 6);
 
-	if (IS_AFFECTED2(ch, AFF3_COLDSHIELD))
+	if (IS_AFFECTED3(ch, AFF3_COLDSHIELD))
 		dam += number(4, 3);
 
 	if (IS_AFFECTED2(ch, AFF2_FIRESHIELD))

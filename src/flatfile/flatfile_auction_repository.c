@@ -1103,6 +1103,9 @@ critical_apply_result flatfile_auction_repository_apply(const std::string &root,
 			for (auto &item : listing->items)
 				if (!item.claimed && !item.claim_pid)
 					item.claim_pid = claimant;
+			if (listing->winner_pid && payload.action == auction_action::remove &&
+			    !stage_money(&catalog, listing->winner_pid, listing->current_price))
+				return { critical_apply_outcome::retryable_failure, 0, ENOMEM };
 			if (listing->winner_pid && payload.action != auction_action::remove)
 			{
 				int64_t proceeds = 0;

@@ -23,8 +23,9 @@ using namespace std;
 #define GH_START_VNUM 48020
 #define GH_END_VNUM 48999
 
-#define IN_GH_ZONE(r_room) \
-	(world[r_room].number >= GH_START_VNUM && world[r_room].number <= GH_END_VNUM)
+#define IN_GH_ZONE(r_room)                                         \
+	((r_room) >= 0 && world[r_room].number >= GH_START_VNUM && \
+	 world[r_room].number <= GH_END_VNUM)
 
 #define WH_MAP_VNUM 545733
 #define TH_MAP_VNUM 570424

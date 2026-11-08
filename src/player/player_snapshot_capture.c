@@ -3,6 +3,7 @@
 #include "player/player_playtime.h"
 #include "player/player_snapshot_codec.h"
 #include "player/pet_restore_runtime.h"
+#include "sql/item_extra_descr_codec.h"
 #include "classes/necromancy.h"
 
 #include "core/prototypes.h"
@@ -10,6 +11,7 @@
 #include "core/utils.h"
 
 #include <algorithm>
+#include <array>
 #include <new>
 #include <type_traits>
 #include <unordered_set>
@@ -410,37 +412,74 @@ capture_item_tree(const obj_data *object, int parent_index, int equipment_slot,
 		row.dynamic_affects.push_back({ affect->type, affect->data, affect->extra2 });
 	}
 	std::unordered_set<const extra_descr_data *> description_seen;
+	// An item keeps one spellbook marker holding every spell its markers hold, as the
+	// legacy writers saved it: the game reads only the first marker.
+	std::array<bool, MAX_SKILLS> spells = {};
+	int spellbook_index = -1;
 	for (const extra_descr_data *description = object->ex_description; description;
 	     description = description->next)
 	{
 		if (!description_seen.insert(description).second)
 			return player_snapshot_capture_result::object_cycle;
-		if (!budget.add(sizeof(player_item_extra_description_snapshot), 1))
-			return player_snapshot_capture_result::limit_exceeded;
-		player_item_extra_description_snapshot extra = {};
+		if (description->keyword &&
+		    !strcmp(description->keyword, SQL_ITEM_TRAP_STATE_KEYWORD))
+			continue;
 		const bool spellbook = description->keyword && strlen(description->keyword) == 3 &&
 				       description->keyword[0] == 3 &&
 				       description->keyword[1] == 1 && description->keyword[2] == 3;
 		if (spellbook)
 		{
-			extra.spellbook = true;
-			if (!copy_string("SPELLBOOK", extra.keyword, budget) ||
-			    !description->description)
+			if (!description->description)
 				return player_snapshot_capture_result::malformed_source;
+			if (spellbook_index < 0)
+			{
+				if (!budget.add(sizeof(player_item_extra_description_snapshot), 1))
+					return player_snapshot_capture_result::limit_exceeded;
+				player_item_extra_description_snapshot extra = {};
+				extra.spellbook = true;
+				if (!copy_string("SPELLBOOK", extra.keyword, budget))
+					return player_snapshot_capture_result::malformed_source;
+				spellbook_index = static_cast<int>(row.extra_descriptions.size());
+				row.extra_descriptions.push_back(std::move(extra));
+			}
 			for (int skill_id = 0; skill_id < MAX_SKILLS; ++skill_id)
 				if ((static_cast<unsigned char>(
 					     description->description[skill_id / 8]) &
 				     (1U << (skill_id % 8))) != 0)
-				{
-					if (!budget.add(sizeof(int32_t)))
-						return player_snapshot_capture_result::limit_exceeded;
-					extra.spell_ids.push_back(skill_id);
-				}
+					spells[skill_id] = true;
+			continue;
 		}
-		else if (!copy_string(description->keyword, extra.keyword, budget) ||
-			 !copy_string(description->description, extra.description, budget))
+		if (!budget.add(sizeof(player_item_extra_description_snapshot), 1))
+			return player_snapshot_capture_result::limit_exceeded;
+		player_item_extra_description_snapshot extra = {};
+		if (!copy_string(description->keyword, extra.keyword, budget) ||
+		    !copy_string(description->description, extra.description, budget))
 			return player_snapshot_capture_result::limit_exceeded;
 		row.extra_descriptions.push_back(std::move(extra));
+	}
+	if (spellbook_index >= 0)
+		for (int skill_id = 0; skill_id < MAX_SKILLS; ++skill_id)
+			if (spells[skill_id])
+			{
+				if (!budget.add(sizeof(int32_t)))
+					return player_snapshot_capture_result::limit_exceeded;
+				row.extra_descriptions[spellbook_index].spell_ids.push_back(
+					skill_id);
+			}
+	if (object->trap_eff || object->trap_dam || object->trap_charge || object->trap_level)
+	{
+		if (!budget.add(sizeof(player_item_extra_description_snapshot), 1))
+			return player_snapshot_capture_result::limit_exceeded;
+		std::array<char, 64> encoded = {};
+		if (!sql_encode_item_trap_state(object->trap_eff, object->trap_dam,
+						object->trap_charge, object->trap_level,
+						encoded.data(), encoded.size()))
+			return player_snapshot_capture_result::malformed_source;
+		player_item_extra_description_snapshot trap = {};
+		if (!copy_string(SQL_ITEM_TRAP_STATE_KEYWORD, trap.keyword, budget) ||
+		    !copy_string(encoded.data(), trap.description, budget))
+			return player_snapshot_capture_result::limit_exceeded;
+		row.extra_descriptions.push_back(std::move(trap));
 	}
 
 	const int row_index = static_cast<int>(target.size());
@@ -597,6 +636,20 @@ player_snapshot_capture_result capture_shapes_and_trophies(P_char ch,
 		}
 	return player_snapshot_capture_result::ok;
 }
+
+// A character inside a locker is saved in the room outside its door. Locker rooms are
+// made for one visit and nothing restores one after a restart; the locker's pre-save
+// hook rewrote the room for a direct save, but a queued save does not run it.
+int save_room_vnum(P_char ch, int room_vnum)
+{
+	if (ch->in_room < 0 || ch->in_room > top_of_world ||
+	    world[ch->in_room].number != room_vnum || !IS_ROOM(ch->in_room, ROOM_LOCKER))
+		return room_vnum;
+	const room_direction_data *door = world[ch->in_room].dir_option[0];
+	if (door && door->to_room >= 0 && door->to_room <= top_of_world)
+		return world[door->to_room].number;
+	return room_vnum;
+}
 } // namespace
 
 player_snapshot_capture_result
@@ -668,7 +721,7 @@ player_snapshot_capture_result player_snapshot_capture(P_char ch, player_revisio
 		snapshot.revision = revision;
 		snapshot.components = components;
 		snapshot.save_intent = save_intent;
-		snapshot.room_vnum = room_vnum;
+		snapshot.room_vnum = save_room_vnum(ch, room_vnum);
 		snapshot.recipes_are_external = true;
 		capture_budget budget;
 		if ((components & PLAYER_COMPONENT_STATUS) &&

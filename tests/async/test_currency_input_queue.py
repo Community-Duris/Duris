@@ -105,6 +105,7 @@ PRELUDE = r'''
 #include "core/utils.h"
 #include "account/account.h"
 #include "economy/currency_transaction.h"
+#include "economy/economic_event_outbox.h"
 #include "sql/sql_player.h"
 #include "item/item_ownership_runtime.h"
 #include "item/item_movement_transaction.h"
@@ -112,6 +113,7 @@ PRELUDE = r'''
 #include "player/player_snapshot_codec.h"
 #include "player/player_load_items.h"
 #include "world/vnum.obj.h"
+#include "magic/spells.h"
 #include "classes/necromancy.h"
 #include "net/comm.h"
 
@@ -179,12 +181,15 @@ P_char character_list = NULL;
 P_desc descriptor_list = NULL;
 static room_data test_rooms[2] = {};
 P_room world = test_rooms;
+extern const int top_of_world = 1;
+void economic_event_record(uint32_t, EconomicAction, int64_t, uint32_t, uint32_t, const char *) {}
 static critical_command submitted_command = {};
 static bool coordinator_fenced = false;
 static bool item_pending = false;
 static int submission_count = 0;
 
 void logit(const char *, const char *, ...) {}
+void CharWait(P_char, int) {}
 // money_to_inventory() reports a wallet conversion it could not even submit.
 void persistence_alert(int, const char *, const char *, const char *, const char *, const char *,
 		       const char *, ...)
@@ -192,6 +197,7 @@ void persistence_alert(int, const char *, const char *, const char *, const char
 }
 void __free(void *memory, const char *, int) { free(memory); }
 void gmcp_char_vitals(P_char) {}
+bool affected_by_spell(P_char, int) { return false; }
 
 [[noreturn]] int panic_corruption_int(const char *, const char *, ...)
 {
@@ -203,10 +209,12 @@ const char *get_account_name_safe(P_char character)
 	return character && GET_PID(character) == 45 ? "recipient_account" : "queue_account";
 }
 
-P_char find_player_by_pid(int pid)
+''' + extract(SRC / "utility.c", "P_char find_player_by_pid(int pid)") + r'''
+
+P_char find_character_by_runtime_id(uint64_t runtime_id)
 {
 	for (P_char character = character_list; character; character = character->next)
-		if (character->only.pc && GET_PID(character) == pid)
+		if (character->runtime_id == runtime_id)
 			return character;
 	return nullptr;
 }
@@ -411,6 +419,7 @@ void finish_bulk_get(P_char, uint32_t pid)
     bulk_gets.erase(pid);
 }
 '''
+            + extract(SRC / "actobj.c", "static bool get_can_continue(")
             + extract(SRC / "actobj.c", "static bool bulk_get_source_available(")
             + extract(SRC / "actobj.c", "static bool bulk_get_corpse_source_available(")
             + extract(SRC / "actobj.c", "static bool finish_bulk_get_after_commit(")
@@ -600,6 +609,8 @@ int main()
 	player.bank_revision = 1;
 	char_data actor = {};
 	actor.only.pc = &player;
+	actor.runtime_id = 42;
+	actor.specials.position = STAT_NORMAL | POS_STANDING;
 	actor.player.racewar = 1;
 	char account_name[] = "queue_account";
 	acct_entry account = {};
@@ -810,6 +821,7 @@ int main()
 	assert(currency_command_encode_result(result, &encoded));
 	completion.operation_id = submitted_command.operation_id;
 	std::copy(encoded.begin(), encoded.end(), completion.result_payload.begin());
+	descriptor.character = nullptr;
 	character_list = nullptr;
 	coordinator_fenced = false;
 	currency_transaction_handle_completions(&completion, 1);
@@ -819,6 +831,7 @@ int main()
 	player.wallet_revision = 4;
 	GET_BALANCE_GOLD(&actor) = 5;
 	player.bank_revision = 4;
+	descriptor.character = &actor;
 	character_list = &actor;
 	currency_transaction_player_ready(&actor);
 	assert(GET_COPPER(&actor) == 7 && GET_PLATINUM(&actor) == 2);
@@ -833,17 +846,24 @@ int main()
 	char_data recipient = {};
 	recipient.only.pc = &recipient_player;
 	recipient.player.racewar = 1;
-	for (int scenario = 0; scenario < 4; ++scenario)
+	descriptor_data recipient_descriptor = {};
+	recipient_descriptor.connected = CON_PLAYING;
+	descriptor.next = &recipient_descriptor;
+	for (int scenario = 0; scenario < 5; ++scenario)
 	{
 		currency_transaction_reset_for_tests();
 		coordinator_fenced = false;
 		actor.next = &recipient;
+		descriptor.character = &actor;
+		recipient_descriptor.character = &recipient;
 		character_list = &actor;
 		GET_PLATINUM(&actor) = 100;
 		GET_COPPER(&actor) = GET_SILVER(&actor) = GET_GOLD(&actor) = 0;
 		GET_PLATINUM(&recipient) = 10;
 		player.wallet_revision = player.bank_revision = 1;
 		recipient_player.wallet_revision = recipient_player.bank_revision = 1;
+		GET_BALANCE_COPPER(&actor) = GET_BALANCE_SILVER(&actor) =
+			GET_BALANCE_GOLD(&actor) = GET_BALANCE_PLATINUM(&actor) = 0;
 		coin_transfer_payload transfer;
 		assert(currency_transaction_coin_wallet(&actor, -40000, &transfer.source));
 		assert(currency_transaction_coin_wallet(&recipient, 40000, &transfer.destination));
@@ -864,33 +884,140 @@ int main()
 			wallet.wallet_revision = wallet.bank_revision = 2;
 		std::array<uint8_t, COIN_TRANSFER_RESULT_BYTES> coin_bytes;
 		assert(coin_transfer_command_encode_result(admitted, coin_result, &coin_bytes));
+		coin_transfer_result stale_result = coin_result;
+		stale_result.wallets[0].wallet.amount[3] = 125;
+		stale_result.wallets[0].bank.amount[2] = 7;
+		stale_result.wallets[0].wallet_revision = 2;
+		stale_result.wallets[0].bank_revision = 2;
+		const critical_failure_stage stale_stage = static_cast<critical_failure_stage>(
+			static_cast<uint16_t>(critical_failure_stage::coin_source_wallet_revision) |
+			static_cast<uint16_t>(critical_failure_stage::coin_source_bank_revision));
+		std::array<uint8_t, COIN_TRANSFER_STALE_RESULT_BYTES> stale_bytes;
+		assert(coin_transfer_command_encode_stale_result(admitted, stale_result, stale_stage,
+							 &stale_bytes));
+		coin_transfer_stale_result decoded_stale;
+		assert(coin_transfer_command_decode_stale_result(
+			admitted, stale_stage, stale_bytes.data(), stale_bytes.size(), &decoded_stale) &&
+		       decoded_stale.endpoint_index == 0 && decoded_stale.wallet_stale &&
+		       decoded_stale.bank_stale);
+		auto mismatched_stale_bytes = stale_bytes;
+		mismatched_stale_bytes[1] = 1;
+		assert(!coin_transfer_command_decode_stale_result(
+			admitted, stale_stage, mismatched_stale_bytes.data(),
+			mismatched_stale_bytes.size(), &decoded_stale));
+		auto wrong_version_stale_bytes = stale_bytes;
+		wrong_version_stale_bytes[0] = 0;
+		assert(!coin_transfer_command_decode_stale_result(
+			admitted, stale_stage, wrong_version_stale_bytes.data(),
+			wrong_version_stale_bytes.size(), &decoded_stale));
+		assert(!coin_transfer_command_decode_stale_result(
+			admitted, stale_stage, stale_bytes.data(), stale_bytes.size() - 1,
+			&decoded_stale));
 		critical_completion ack = {};
 		ack.operation_id = submitted_command.operation_id;
-		ack.outcome = scenario == 0 ? critical_apply_outcome::terminal_failure : critical_apply_outcome::applied;
-		ack.error_code = scenario == 0 ? ESTALE : 0;
-		ack.result_size = scenario == 0 ? 0 : coin_bytes.size();
-		std::copy(coin_bytes.begin(), coin_bytes.end(), ack.result_payload.begin());
+		const bool stale_completion = scenario == 0 || scenario == 4;
+		ack.outcome = stale_completion ? critical_apply_outcome::terminal_failure : critical_apply_outcome::applied;
+		ack.error_code = stale_completion ? ESTALE : 0;
+		ack.failure_stage = stale_completion ? stale_stage : critical_failure_stage::none;
+		ack.result_size = stale_completion ? stale_bytes.size() : coin_bytes.size();
+		if (stale_completion)
+			std::copy(stale_bytes.begin(), stale_bytes.end(), ack.result_payload.begin());
+		else
+			std::copy(coin_bytes.begin(), coin_bytes.end(), ack.result_payload.begin());
 		if (scenario == 1)
+		{
+			descriptor.character = nullptr;
 			character_list = &recipient; // Sender detached before acknowledgement.
+		}
 		if (scenario == 2)
+		{
+			recipient_descriptor.character = nullptr;
 			actor.next = nullptr; // Recipient detached before acknowledgement.
+		}
 		if (scenario == 3)
 		{
 			// Re-entry already loaded a later wallet before this completion arrived.
 			GET_PLATINUM(&recipient) = 80;
 			recipient_player.wallet_revision = 3;
 		}
+		if (scenario == 4)
+		{
+			// A later source reload also wins over an older stale-authority repair.
+			GET_PLATINUM(&actor) = 140;
+			player.wallet_revision = 3;
+			GET_BALANCE_GOLD(&actor) = 9;
+			player.bank_revision = 3;
+		}
 		coordinator_fenced = false;
 		const int callbacks_before = coin_callbacks;
 		currency_transaction_handle_completions(&ack, 1);
-		assert(coin_callbacks == callbacks_before + 1 && coin_committed == (scenario != 0));
+		assert(coin_callbacks == callbacks_before + 1 &&
+		       coin_committed == !stale_completion);
 		assert(currency_transaction_health_copy().pending == 0);
-		assert(GET_PLATINUM(&actor) == (scenario == 0 || scenario == 1 ? 100 : 60));
-		assert(GET_PLATINUM(&recipient) == (scenario == 0 || scenario == 2 ? 10 : scenario == 3 ? 80 : 50));
+		assert(GET_PLATINUM(&actor) ==
+		       (scenario == 0 ? 125 : scenario == 4 ? 140 : scenario == 1 ? 100 : 60));
+		assert(GET_PLATINUM(&recipient) ==
+		       (scenario == 0 || scenario == 2 || scenario == 4 ? 10 :
+			scenario == 3 ? 80 : 50));
+		if (scenario == 0)
+		{
+			assert(player.wallet_revision == 2 && player.bank_revision == 2 &&
+			       GET_BALANCE_GOLD(&actor) == 7);
+			coin_transfer_payload retry;
+			assert(currency_transaction_coin_wallet(&actor, -1000, &retry.source));
+			assert(retry.source.change.expected_revisions[0].revision == 2 &&
+			       retry.source.change.expected_revisions[1].revision == 2 &&
+			       retry.source.before[3] == 125 && retry.source.after[3] == 124);
+		}
+		if (scenario == 4)
+			assert(player.wallet_revision == 3 && player.bank_revision == 3 &&
+			       GET_BALANCE_GOLD(&actor) == 9);
 		currency_transaction_handle_completions(&ack, 1);
 		assert(coin_callbacks == callbacks_before + 1);
 		assert(submission_count == submitted_before + 1); // No second credit or refund.
 	}
+	// Destination authority is repaired independently; the rejected source is
+	// neither debited nor retried.
+	currency_transaction_reset_for_tests();
+	coordinator_fenced = false;
+	actor.next = &recipient;
+	character_list = &actor;
+	GET_PLATINUM(&actor) = 100;
+	GET_PLATINUM(&recipient) = 10;
+	player.wallet_revision = player.bank_revision = 1;
+	recipient_player.wallet_revision = recipient_player.bank_revision = 1;
+	coin_transfer_payload destination_transfer;
+	assert(currency_transaction_coin_wallet(&actor, -40000, &destination_transfer.source));
+	assert(currency_transaction_coin_wallet(&recipient, 40000,
+						&destination_transfer.destination));
+	const int destination_submitted_before = submission_count;
+	assert(currency_transaction_submit_coin(&actor, destination_transfer, coin_completed,
+						 nullptr, 0));
+	coin_transfer_payload destination_admitted;
+	assert(coin_transfer_command_decode_payload(submitted_command, &destination_admitted));
+	coin_transfer_result destination_current;
+	destination_current.wallets[1].wallet.amount[3] = 20;
+	destination_current.wallets[1].wallet_revision = 4;
+	destination_current.wallets[1].bank_revision = 1;
+	std::array<uint8_t, COIN_TRANSFER_STALE_RESULT_BYTES> destination_stale_bytes;
+	assert(coin_transfer_command_encode_stale_result(
+		destination_admitted, destination_current,
+		critical_failure_stage::coin_destination_wallet_revision,
+		&destination_stale_bytes));
+	critical_completion destination_stale = {};
+	destination_stale.operation_id = submitted_command.operation_id;
+	destination_stale.outcome = critical_apply_outcome::terminal_failure;
+	destination_stale.error_code = ESTALE;
+	destination_stale.failure_stage =
+		critical_failure_stage::coin_destination_wallet_revision;
+	destination_stale.result_size = destination_stale_bytes.size();
+	std::copy(destination_stale_bytes.begin(), destination_stale_bytes.end(),
+		  destination_stale.result_payload.begin());
+	coordinator_fenced = false;
+	currency_transaction_handle_completions(&destination_stale, 1);
+	assert(GET_PLATINUM(&actor) == 100 && player.wallet_revision == 1);
+	assert(GET_PLATINUM(&recipient) == 20 && recipient_player.wallet_revision == 4);
+	assert(submission_count == destination_submitted_before + 1);
 	// The actual gameplay helper shares admission and preserves existing change-making.
 	currency_transaction_reset_for_tests();
 	coordinator_fenced = false;
@@ -935,6 +1062,7 @@ int main()
 	assert(GET_SILVER(&actor) == 6 && GET_COPPER(&actor) == 0);
 	assert(GET_SILVER(&recipient) == 4 && GET_COPPER(&recipient) == 10);
 	assert(submission_count == admitted_before + 1);
+	descriptor.next = nullptr;
 	actor.next = nullptr;
 	character_list = &actor;
 	currency_transaction_reset_for_tests();
@@ -1040,8 +1168,18 @@ int main()
 	pile_ack(false);
 	assert(bag.contains->value[0] == 350 && GET_GOLD(&actor) == gold_before && put_announcements == 3);
 	const int before_pickup = submission_count;
+	const std::array<int, 4> wallet_before_pickup = {GET_COPPER(&actor), GET_SILVER(&actor),
+		GET_GOLD(&actor), GET_PLATINUM(&actor)};
 	assert(submit_coin_get(&actor, bag.contains, &bag, 1));
 	assert(bag.contains->value[0] == 350 && submission_count == before_pickup + 1);
+	// Delayed completion must reserve both the pile and the wallet. Repeated get
+	// attempts cannot enqueue additional rewards against the same untouched pile.
+	for (int retry = 0; retry < 5; ++retry)
+	{
+		assert(!submit_coin_get(&actor, bag.contains, &bag, 1));
+		assert(submission_count == before_pickup + 1 && bag.contains->value[0] == 350);
+		assert(std::equal(wallet_before_pickup.begin(), wallet_before_pickup.end(), actor.points.cash));
+	}
 	pile_ack(true);
 	assert(bag.contains == nullptr);
 	assert(GET_COPPER(&actor) + 10 * GET_SILVER(&actor) + 100 * GET_GOLD(&actor) + 1000 * GET_PLATINUM(&actor) == 1000);
@@ -1331,6 +1469,64 @@ int main()
     actor.carrying = nullptr;
     converted->loc_p = LOC_NOWHERE;
     extract_obj(converted, false);
+	// A retained body remains the physical destination after descriptor loss.
+	// In death recovery it is also dead and held outside every room; descriptor
+	// lookup must stay authentic so this cannot pass through a connected actor.
+	for (bool pending_death : {false, true})
+	{
+		const int room_before = actor.in_room;
+		const auto position_before = actor.specials.position;
+		const std::array<int32_t, 4> retained_cash = {37, 5, 2, 1};
+		std::copy(retained_cash.begin(), retained_cash.end(), actor.points.cash);
+		const auto retained_wallet_revision = player.wallet_revision;
+		assert(money_to_inventory(&actor));
+		assert(coin_transfer_command_decode_payload(submitted_command, &death_money));
+		assert(item_transfer_command_decode_payload(death_money.destination.change, &death_pile));
+		const uint64_t retained_uid = death_pile.selected_item_uid;
+		P_obj retained_pile = find_live_item_uid(retained_uid);
+		assert(retained_pile && OBJ_NOWHERE(retained_pile));
+		assert(actor.carrying == nullptr && currency_transaction_player_busy(&actor));
+		for (size_t i = 0; i < retained_cash.size(); ++i)
+			assert(actor.points.cash[i] == retained_cash[i]);
+		descriptor.character = nullptr;
+		if (pending_death)
+		{
+			descriptor.connected = CON_ACCT_SELECT_CHAR;
+			actor.in_room = NOWHERE;
+			SET_POS(&actor, STAT_DEAD);
+		}
+		assert(character_list == &actor);
+		assert(find_player_by_pid(GET_PID(&actor)) == nullptr);
+		const size_t live_before_publication = live_items.size();
+		pile_ack(true);
+		assert(!currency_transaction_player_busy(&actor));
+		assert(actor.carrying == retained_pile && OBJ_CARRIED_BY(retained_pile, &actor));
+		assert(find_live_item_uid(retained_uid) == retained_pile);
+		assert(live_items.size() == live_before_publication);
+		assert(player.wallet_revision == retained_wallet_revision + 1);
+		assert(item_ownership_runtime_lookup(retained_uid, &death_custody));
+		assert(death_custody.owner.type == item_owner_type::player &&
+		       death_custody.owner.id == 42 && death_custody.root_item_uid == retained_uid &&
+		       death_custody.parent_item_uid == 0 && death_custody.item_revision == 1 &&
+		       death_custody.state == item_custody_state::active);
+		for (size_t i = 0; i < retained_cash.size(); ++i)
+			assert(actor.points.cash[i] == 0 && retained_pile->value[i] == retained_cash[i]);
+		// The exact duplicate receipt cannot create, credit, or attach another pile.
+		pile_ack(true);
+		assert(actor.carrying == retained_pile && retained_pile->next_content == nullptr);
+		assert(find_live_item_uid(retained_uid) == retained_pile &&
+		       live_items.size() == live_before_publication);
+		assert(player.wallet_revision == retained_wallet_revision + 1);
+		for (size_t i = 0; i < retained_cash.size(); ++i)
+			assert(actor.points.cash[i] == 0 && retained_pile->value[i] == retained_cash[i]);
+		actor.carrying = nullptr;
+		retained_pile->loc_p = LOC_NOWHERE;
+		extract_obj(retained_pile, false);
+		actor.in_room = room_before;
+		actor.specials.position = position_before;
+		descriptor.connected = CON_PLAYING;
+		descriptor.character = &actor;
+	}
 	// Held item admission neither credits coins nor starts a coin transaction.
 	actor.in_room = bag.loc.room = 0;
 	GET_COPPER(&actor) = GET_SILVER(&actor) = GET_GOLD(&actor) = GET_PLATINUM(&actor) = 0;
@@ -1394,6 +1590,24 @@ int main()
 	actor.next = nullptr;
 	character_list = &actor;
 	currency_transaction_reset_for_tests();
+	// Shared bank publication follows a morphed descriptor to the original PC.
+	npc_only_data morphed_player = {};
+	char_data morphed = {};
+	SET_BIT(morphed.specials.act, ACT_ISNPC);
+	morphed.only.npc = &morphed_player;
+	morphed_player.orig_char = &actor;
+	descriptor.character = &morphed;
+	descriptor.original = nullptr;
+	player.bank_revision = 10;
+	const AccountBankBalances morph_bank = {1, 2, 3, 4};
+	publish_account_bank_balances_revision(account_name, 1, &morph_bank, 11);
+	assert(GET_BALANCE_COPPER(&actor) == 1 && GET_BALANCE_SILVER(&actor) == 2 &&
+	       GET_BALANCE_GOLD(&actor) == 3 && GET_BALANCE_PLATINUM(&actor) == 4 &&
+	       player.bank_revision == 11);
+	const AccountBankBalances old_bank = {5, 6, 7, 8};
+	publish_account_bank_balances_revision(account_name, 1, &old_bank, 10);
+	assert(GET_BALANCE_COPPER(&actor) == 1 && player.bank_revision == 11);
+	descriptor.character = &actor;
 	printf("currency input queue runtime: ok\n");
 	return 0;
 }
@@ -1404,6 +1618,7 @@ def main(flatfile: bool = False) -> int:
     """Compile and execute the held-currency queue regression."""
     harness = "\n".join([
         PRELUDE,
+        extract(SRC / "utility.c", "int IS_MORPH(P_char ch)"),
         BANK_PUBLICATION,
         COIN_GIVE,
         COIN_PILES,

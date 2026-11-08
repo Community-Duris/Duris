@@ -41,6 +41,7 @@ from player_death_restitution_reconciliation import (  # noqa: E402
     reconcile_artifact_authority,
 )
 from player_death_restitution_backup import create_backup  # noqa: E402
+import player_death_recovery_visibility as recovery_visibility  # noqa: E402
 from player_death_restitution_target import (  # noqa: E402
     BACKUP_RECEIPT_FORMAT,
     TARGET_INFO_FORMAT,
@@ -1425,11 +1426,13 @@ def fetch_related_deaths(db: Mysql, source_pid: int, revision: int, uids: Iterab
 
 def ensure_codec() -> Path:
     CODEC_BINARY.parent.mkdir(mode=0o755, parents=True, exist_ok=True)
-    if CODEC_BINARY.exists() and CODEC_BINARY.stat().st_mtime_ns >= CODEC_SOURCE.stat().st_mtime_ns:
+    sources = [CODEC_SOURCE, ROOT / "src/player/player_snapshot_codec.c", ROOT / "src/player/player_load_items.c"]
+    if CODEC_BINARY.exists() and CODEC_BINARY.stat().st_mtime_ns >= max(path.stat().st_mtime_ns for path in sources):
         return CODEC_BINARY
     command = [
         "g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror", "-Isrc",
-        str(CODEC_SOURCE), str(ROOT / "src/player/player_snapshot_codec.c"),
+        "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections", "-I/usr/include/libxml2",
+        *map(str, sources),
         "-o", str(CODEC_BINARY),
     ]
     try:
@@ -1703,6 +1706,8 @@ def build_inspection(
     body: dict[str, Any] = {
         "artifact_version": TOOL_VERSION,
         "kind": "death_restitution_inspection",
+        "recovery_correlation": recovery_visibility.correlation(
+            pid, decoded["death"]["corpse"][0]["values"][6]),
         "backend": "sql",
         "source": {
             "pid": pid,
@@ -2429,6 +2434,8 @@ def plan_from_inspection(
         "related_deaths": inspection.get("related_deaths", []),
         "item_loss_epochs": inspection.get("item_loss_epochs", {}),
     }
+    if inspection.get("recovery_correlation"):
+        body["recovery_correlation"] = inspection["recovery_correlation"]
     if locker_delivery is not None:
         body["locker_delivery"] = locker_delivery
     if target is not None:
@@ -5733,12 +5740,37 @@ def parser() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(description="Audited disputed-death item restitution: offline SQL or read-only native preparation")
     root.add_argument("--env-file", help="explicit database environment file")
     sub = root.add_subparsers(dest="command", required=True)
+    repair_prepare = sub.add_parser("repair-prepare", help="read-only exact-UID missing payload repair preparation")
+    repair_prepare.add_argument("--item-uid", required=True, type=int)
+    repair_prepare.add_argument("--evidence", type=Path)
+    repair_prepare.add_argument("--backup-receipt", type=Path)
+    repair_prepare.add_argument("--artifact", required=True, type=Path)
+    repair_prepare.add_argument("--overwrite", action="store_true")
+    add_policy_arguments(repair_prepare, target_info=True)
+    for name in ("repair-apply", "repair-verify"):
+        repair = sub.add_parser(name, help="guarded exact-UID payload repair " + name.split("-")[1])
+        repair.add_argument("--plan", required=True, type=Path)
+        repair.add_argument("--evidence", required=True, type=Path)
+        repair.add_argument("--offline-proof", required=True, type=Path)
+        repair.add_argument("--approve", action="store_true")
+        repair.add_argument("--actor", required=True)
+        repair.add_argument("--reason", required=True)
+        add_policy_arguments(repair, target_info=True, maintenance=True)
     target_info = sub.add_parser(
         "target-info", help="read the actual database identity and optional maintenance boundary"
     )
     target_info.add_argument("--artifact", type=Path)
     target_info.add_argument("--overwrite", action="store_true")
     add_policy_arguments(target_info, maintenance=True)
+    status = sub.add_parser("status", help="protected read-only terminal custody and unresolved recovery cases")
+    status.add_argument("--artifact", required=True, type=Path)
+    status.add_argument("--overwrite", action="store_true")
+    status.add_argument("--flatfile-root", type=Path)
+    status.add_argument("--limit", type=int, default=50)
+    status.add_argument("--after-pid", type=int, default=0)
+    status.add_argument("--after-revision", type=int, default=0)
+    status.add_argument("--include-resolved", action="store_true")
+    add_policy_arguments(status, target_info=True)
     inspect = sub.add_parser("inspect")
     inspect.add_argument("--pid", required=True, type=int)
     inspect.add_argument("--death-revision", required=True, type=int)
@@ -5829,6 +5861,9 @@ def parser() -> argparse.ArgumentParser:
 def main(argv: list[str]) -> int:
     args = parser().parse_args(argv)
     load_env_file(args.env_file)
+    if args.command.startswith("repair-"):
+        from player_item_payload_repair import run
+        return run(sys.modules[__name__], args)
     if args.command == "target-info":
         policy, _ = policy_for_command(args)
         db = Mysql(policy)
@@ -5846,6 +5881,13 @@ def main(argv: list[str]) -> int:
             )
         else:
             print(json.dumps(artifact, sort_keys=True))
+        return 0
+    if args.command == "status":
+        from player_death_recovery_visibility import status
+        artifact = status(sys.modules[__name__], args)
+        atomic_write_json(args.artifact, artifact, args.overwrite)
+        print("recovery status written: scanned=%d unresolved_cases=%d more=%s" % (
+            artifact["scanned"], artifact["unresolved_cases"], bool(artifact["next_cursor"])))
         return 0
     if args.command == "inspect":
         target_info = load_target_info(args.target_info) if args.target_info is not None else None

@@ -5582,14 +5582,10 @@ void spell_teleport(int level, P_char ch, char * /*arg*/, int /*type*/, P_char v
 			to_room = vict->in_room;
 	}
 
-	if (LIMITED_TELEPORT_ZONE(vict->in_room))
+	if (LIMITED_TELEPORT_ZONE(vict->in_room) && how_close(vict->in_room, to_room, 5) < 0)
 	{
-		if (how_close(vict->in_room, to_room, 5))
-		{
-			send_to_char(
-				"The magic gathers, but somehow fades away before taking effect.\n",
-				vict);
-		}
+		send_to_char("The magic gathers, but somehow fades away before taking effect.\n",
+			     vict);
 		return;
 	}
 	act("$n slowly fades out of existence.", FALSE, vict, 0, 0, TO_ROOM);
@@ -15569,8 +15565,7 @@ void spell_dispel_magic(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 	}
 	/* okay.. must be an object target! */
 
-	if (obj_index[obj->R_num].func.obj &&
-	    (*obj_index[obj->R_num].func.obj)(obj, ch, CMD_DISPEL, NULL))
+	if (obj_index[obj->R_num].func.obj && invoke_object_special(obj, ch, CMD_DISPEL, NULL))
 		return;
 
 	/* second deal with "special" objects (conjurerer wall spells) */

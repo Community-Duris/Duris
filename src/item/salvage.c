@@ -14,6 +14,8 @@
 #include "economy/crafting.h"
 #include "world/vnum.obj.h"
 #include "combat/chaos_materials.h"
+#include <climits>
+#include <cmath>
 #include <stdio.h>
 #include <string.h>
 extern P_room world;
@@ -199,8 +201,17 @@ void do_salvage(P_char ch, char *argument, int /*cmd*/)
 			return;
 		}
 
-		grant_salvage_item(ch, read_object(--itemvnum, VIRTUAL));
-		grant_salvage_item(ch, read_object(itemvnum, VIRTUAL));
+		const int target_vnum = itemvnum - 1;
+		if (target_vnum < LOWEST_MAT_VNUM || real_object(target_vnum) < 0)
+		{
+			send_to_char(
+				"The lesser material template is unavailable; your material was preserved.\r\n",
+				ch);
+			return;
+		}
+
+		grant_salvage_item(ch, read_object(target_vnum, VIRTUAL));
+		grant_salvage_item(ch, read_object(target_vnum, VIRTUAL));
 		act("$n breaks down their $p into its &+ylesser&n material...", TRUE, ch, item, 0,
 		    TO_ROOM);
 		act("You break down your $p into its &+ylesser &+Ymaterial&n...", FALSE, ch, item,
@@ -215,6 +226,25 @@ void do_salvage(P_char ch, char *argument, int /*cmd*/)
 		act("That item cannot be &+ysalvaged&n.", FALSE, ch, 0, 0, TO_CHAR);
 		return;
 	}
+
+	const double luck_multiplier = crafting_salvage_essence_luck_multiplier();
+	const double chance_multiplier = crafting_salvage_essence_chance_multiplier();
+	const int recipe_divisor = crafting_scientific_tools_recipe_roll_divisor();
+	const int recipe_multiplier = crafting_scientific_tools_recipe_player_multiplier();
+	if (!std::isfinite(luck_multiplier) || luck_multiplier <= 0 ||
+	    !std::isfinite(chance_multiplier) || chance_multiplier < 0 || recipe_divisor < 1 ||
+	    recipe_multiplier < 1)
+	{
+		send_to_char(
+			"The salvage roll settings are invalid; your item and tools were preserved.\r\n",
+			ch);
+		return;
+	}
+	const int luck = GET_C_LUK(ch);
+	essence_luck = luck <= 0 ? 0 : static_cast<int>(std::fmin(501.0, luck * luck_multiplier));
+	const int essence_threshold = chance_multiplier >= 1.0 ?
+					      1000000 :
+					      static_cast<int>(1000000.0 * chance_multiplier);
 
 	if (scitools < 1)
 	{
@@ -439,11 +469,20 @@ void do_salvage(P_char ch, char *argument, int /*cmd*/)
 		    FALSE, ch, 0, 0, TO_CHAR);
 	}
 
+	// Resolve templates before any reward grant or tool/source retirement. The
+	// material and an eligible recipe are dereferenced by the legacy reward path.
+	if (real_object(matvnum) < 0 ||
+	    (crafting_recipe_target_is_available(item) && real_object(SALVAGE_RECIPE_VNUM) < 0))
+	{
+		send_to_char(
+			"The salvage output templates are unavailable; your item and tools were preserved.\r\n",
+			ch);
+		return;
+	}
+
 	// A rare Luck-based essence; default multipliers preserve the historical rolls.
-	essence_luck = (int)(GET_C_LUK(ch) * crafting_salvage_essence_luck_multiplier());
 	if (number(60, 400) < essence_luck && number(70, 400) < essence_luck &&
-	    number(80, 500) < essence_luck &&
-	    number(1, 1000000) <= (int)(1000000.0 * crafting_salvage_essence_chance_multiplier()))
+	    number(80, 500) < essence_luck && number(1, 1000000) <= essence_threshold)
 	{
 		grant_salvage_item(ch, read_object(MAG_ESSENCE_VNUM, VIRTUAL));
 		send_to_char(
@@ -578,7 +617,12 @@ void do_salvage(P_char ch, char *argument, int /*cmd*/)
 		reciperoll = 100000;
 	}
 
-	playerroll = GET_C_LUK(ch) + GET_LEVEL(ch) * 2 + GET_CHAR_SKILL(ch, SKILL_SALVAGE);
+	const int64_t player_score = static_cast<int64_t>(GET_C_LUK(ch)) +
+				     static_cast<int64_t>(GET_LEVEL(ch)) * 2 +
+				     GET_CHAR_SKILL(ch, SKILL_SALVAGE);
+	playerroll = player_score > INT_MAX ? INT_MAX :
+		     player_score < INT_MIN ? INT_MIN :
+					      static_cast<int>(player_score);
 	if (scitools > 0)
 	{
 		if (crafting_scientific_tools_prevent_breakage())
@@ -589,8 +633,11 @@ void do_salvage(P_char ch, char *argument, int /*cmd*/)
 			send_to_char(
 				"&+yYou consume a set of &+cLantan Scientific Tools&+y to improve your recipe discovery chance.\r\n",
 				ch);
-		reciperoll /= crafting_scientific_tools_recipe_roll_divisor();
-		playerroll *= crafting_scientific_tools_recipe_player_multiplier();
+		reciperoll /= recipe_divisor;
+		const int64_t assisted_score = static_cast<int64_t>(playerroll) * recipe_multiplier;
+		playerroll = assisted_score > INT_MAX ? INT_MAX :
+			     assisted_score < INT_MIN ? INT_MIN :
+							static_cast<int>(assisted_score);
 		vnum_from_inv(ch, crafting_scientific_tools_vnum(), 1);
 	}
 

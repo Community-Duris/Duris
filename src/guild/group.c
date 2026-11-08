@@ -404,14 +404,15 @@ void do_group(P_char ch, char *argument, int /*cmd*/)
 
 	if (!*name)
 	{
+		if (GMCP_ENABLED(ch))
+		{
+			gmcp_send_group_status(ch);
+			if (ch->desc->websocket)
+				return;
+		}
 		if (!ch->group)
 		{
-			/* WebSocket/GMCP clients: send empty group status */
-			if (ch && ch->desc && ch->desc->websocket && ch->desc->gmcp_enabled)
-			{
-				gmcp_send_group_status(ch);
-			}
-			else if (ch && ch->desc && ch->desc->term_type == TERM_MSP)
+			if (ch && ch->desc && ch->desc->term_type == TERM_MSP)
 			{
 				send_to_char("<group>\n</group>\n", ch);
 			}
@@ -428,13 +429,6 @@ void do_group(P_char ch, char *argument, int /*cmd*/)
 			   send_to_char("You feel like being alone right now.\n", ch);
 			   return;
 			 }*/
-
-			/* WebSocket/GMCP clients: send structured data, skip text output */
-			if (ch && ch->desc && ch->desc->websocket && ch->desc->gmcp_enabled)
-			{
-				gmcp_send_group_status(ch);
-				return;
-			}
 
 			if (ch && ch->desc && ch->desc->term_type == TERM_MSP)
 			{
@@ -1086,6 +1080,8 @@ bool group_remove_member(P_char ch)
 		if (in_command_aura(gl->ch))
 			remove_aura_message(gl->ch, gl->ch);
 		gl->ch->group = NULL;
+		if (gl->ch->desc)
+			gl->ch->desc->last_group_update = 1;
 		(void)telemetry_runtime_game_context(gl->ch, gl->ch->desc);
 		send_to_char("Your group has been disbanded.\n", gl->ch);
 		mm_release(dead_group_pool, gl);
@@ -1105,12 +1101,15 @@ bool group_remove_member(P_char ch)
 		send_to_char(buf, gl->ch);
 	}
 	ch->group = NULL;
+	if (ch->desc)
+		ch->desc->last_group_update = 1;
 	REMOVE_BIT(ch->specials.act2, PLR2_BACK_RANK);
 
 	/* check for rank balance, move the first poor sap in the back rank up to front */
 	if (gl && free_back_slots(gl->ch) < 0)
 		fix_group_ranks(gl->ch);
-	update_groupies(ch);
+	if (gl)
+		update_groupies(gl->ch);
 	(void)telemetry_runtime_game_context(ch, ch->desc);
 	telemetry_group_context_changed(gl);
 	return TRUE;

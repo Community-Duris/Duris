@@ -1,37 +1,19 @@
 #!/usr/bin/env python3
-"""Exercise the production rest/stand state transitions in isolation.
+"""Exercise production healing, rest and stand state transitions in isolation.
 
 The command bodies are extracted from ``actmove.c`` so this harness tests the
 compiled production implementation without starting a server or touching a
-database.  The source assertions also pin the wake transition that originally
-created ``POS_STANDING + STAT_RESTING`` by preserving the standing posture.
+live database.
 """
 
 from __future__ import annotations
 
+import re
 import subprocess
 import tempfile
 from pathlib import Path
 
 from _paths import ROOT, extract_function
-
-
-ACTMOVE = ROOT / "src/cmd/actmove.c"
-
-
-def assert_wake_producer_is_normalized() -> None:
-    source = ACTMOVE.read_text(encoding="utf-8", errors="replace")
-    wake = extract_function("actmove.c", "void do_wake(")
-    sleep = extract_function("actmove.c", "void do_sleep(")
-
-    # do_sleep may preserve a chosen posture while the character is asleep;
-    # do_wake must convert standing sleep into the canonical resting posture.
-    assert "SET_POS(ch, GET_POS(ch) + STAT_SLEEPING);" in sleep
-    assert "resting_posture(tmp_char) + STAT_RESTING" in wake
-    assert "resting_posture(ch) + STAT_RESTING" in wake
-    assert "SET_POS(tmp_char, GET_POS(tmp_char) + STAT_RESTING);" not in wake
-    assert "SET_POS(ch, GET_POS(ch) + STAT_RESTING);" not in wake
-    assert "static int resting_posture(P_char ch)" in source
 
 
 PRELUDE = r'''
@@ -40,17 +22,19 @@ PRELUDE = r'''
 #include "core/prototypes.h"
 #include "core/utils.h"
 #include "net/comm.h"
+#include "combat/damage.h"
+#include "magic/spells.h"
 
 #include <cassert>
 #include <cstdio>
 #include <string>
 
 static std::string output;
-static int attackers;
-static int gmcp_calls;
-static int recovery_logs;
-static int regen_calls;
-static int stop_memorizing_calls;
+static int attackers = 0;
+static int gmcp_calls = 0;
+static int recovery_logs = 0;
+static int regen_calls = 0;
+static int stop_memorizing_calls = 0;
 
 void send_to_char(const char *text, P_char)
 {
@@ -61,6 +45,11 @@ void act(const char *text, int, P_char, P_obj, void *, int target)
 {
     if (target == TO_CHAR)
         output += text ? text : "";
+}
+
+void add_event(event_func, int, P_char, void *, void *, int, void *, int)
+{
+    ++regen_calls;
 }
 
 void gmcp_char_vitals(P_char)
@@ -83,6 +72,11 @@ int NumAttackers(P_char)
     return attackers;
 }
 
+bool has_attackers(P_char)
+{
+    return attackers > 0;
+}
+
 void StartRegen(P_char, regen_resource)
 {
     ++regen_calls;
@@ -97,10 +91,24 @@ void logit(const char *, const char *, ...)
     ++recovery_logs;
 }
 
-int number(int from, int)
+int number(int, int to)
 {
-    return from;
+    return to; // Keep an incapacitated standing character from randomly falling.
 }
+
+P_char get_linked_char(P_char, ush_int) { return nullptr; }
+void stop_riding(P_char) {}
+void stop_fighting(P_char ch) { ch->specials.fighting = nullptr; }
+void StopAllAttackers(P_char) {}
+void StopMercifulAttackers(P_char) {}
+void clear_links(P_char, ush_int) {}
+void Stun(P_char, P_char, int, bool) {}
+int dice(int, int) { return 1; }
+int raw_damage(P_char, P_char, double, uint, damage_messages *, int *) { return DAM_NONEDEAD; }
+bool affected_by_spell(P_char, int) { return false; }
+void affect_from_char(P_char, int) {}
+void do_wake(P_char, char *, int) {}
+void do_alert(P_char, char *, int) {}
 '''
 
 
@@ -117,12 +125,58 @@ static void clear_observations()
 
 static void assert_state(P_char ch, int posture, int status)
 {
+    if (GET_POS(ch) != posture || static_cast<int>(GET_STAT(ch)) != status)
+        std::fprintf(stderr, "posture/status: got %d/%u, expected %d/%d\n",
+                     GET_POS(ch), GET_STAT(ch), posture, status);
     assert(GET_POS(ch) == posture);
     assert(static_cast<int>(GET_STAT(ch)) == status);
 }
 
 int main()
 {
+    // A standing character can remain upright while incapacitated. Healing
+    // above -3 changes INCAP to RESTING through the real update_pos producer.
+    {
+        char_data ch{};
+        pc_only_data pc{};
+        ch.only.pc = &pc;
+        ch.player.race = RACE_HUMAN;
+        GET_HIT(&ch) = -3;
+        SET_POS(&ch, POS_STANDING + STAT_INCAP);
+        clear_observations();
+        update_pos(&ch);
+        assert_state(&ch, POS_STANDING, STAT_INCAP);
+        GET_HIT(&ch) = -2;
+        update_pos(&ch);
+        assert_state(&ch, POS_SITTING, STAT_RESTING);
+        do_stand(&ch, nullptr, 0);
+        assert_state(&ch, POS_STANDING, STAT_NORMAL);
+        do_rest(&ch, nullptr, 0);
+        assert_state(&ch, POS_SITTING, STAT_RESTING);
+        assert(regen_calls == 4 && recovery_logs == 0);
+    }
+    for (int posture : {POS_PRONE, POS_KNEELING, POS_SITTING})
+    {
+        char_data ch{};
+        pc_only_data pc{};
+        ch.only.pc = &pc;
+        ch.player.race = RACE_HUMAN;
+        GET_HIT(&ch) = -2;
+        SET_POS(&ch, posture + STAT_INCAP);
+        update_pos(&ch);
+        assert_state(&ch, posture, STAT_RESTING);
+    }
+    for (int status : {STAT_NORMAL, STAT_SLEEPING})
+    {
+        char_data ch{};
+        pc_only_data pc{};
+        ch.only.pc = &pc;
+        ch.player.race = RACE_HUMAN;
+        GET_HIT(&ch) = 100;
+        SET_POS(&ch, POS_STANDING + status);
+        update_pos(&ch);
+        assert_state(&ch, POS_STANDING, status);
+    }
     // The reported state is recoverable through rest and starts regeneration.
     {
         char_data ch{};
@@ -235,9 +289,22 @@ int main()
         assert(output.empty() && recovery_logs == 0);
     }
 
-    std::puts("posture state regression passed: wake producer, mixed rest/stand recovery, idempotence, workaround, and guards");
+    std::puts("posture state regression passed: healing producer, wake contract, mixed rest/stand recovery, idempotence, workaround, and guards");
 }
 '''
+
+
+def assert_wake_producer_is_normalized() -> None:
+    actmove_source = (ROOT / "src/cmd/actmove.c").read_text(encoding="utf-8", errors="replace")
+    wake = extract_function("actmove.c", "void do_wake(")
+    sleep = extract_function("actmove.c", "void do_sleep(")
+
+    assert "SET_POS(ch, GET_POS(ch) + STAT_SLEEPING);" in sleep
+    assert "resting_posture(tmp_char) + STAT_RESTING" in wake
+    assert "resting_posture(ch) + STAT_RESTING" in wake
+    assert "SET_POS(tmp_char, GET_POS(tmp_char) + STAT_RESTING);" not in wake
+    assert "SET_POS(ch, GET_POS(ch) + STAT_RESTING);" not in wake
+    assert "static int resting_posture(P_char ch)" in actmove_source
 
 
 def main() -> None:
@@ -256,12 +323,16 @@ def main() -> None:
         extract_function("actmove.c", signature)
         for signature in ("void do_stand(", "void do_rest(")
     )
+    update_bodies = "\n".join(
+        extract_function("fight.c", signature)
+        for signature in ("unsigned int calculate_ch_state(", "void update_pos(")
+    )
 
     with tempfile.TemporaryDirectory(prefix="posture-state-", dir=build_root) as directory:
         harness = Path(directory) / "harness.cpp"
         binary = Path(directory) / "harness"
         harness.write_text(
-            "\n".join((PRELUDE, helpers, command_bodies, DRIVER)),
+            "\n".join((PRELUDE, helpers, command_bodies, update_bodies, DRIVER)),
             encoding="utf-8",
         )
         subprocess.run(

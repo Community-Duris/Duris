@@ -1461,7 +1461,9 @@ void spell_earthen_rain(int level, P_char ch, char * /*arg*/, int /*type*/, P_ch
 	}
 }
 
-void earthen_grasp(int level, P_char ch, P_char victim)
+// greater is true only for Greater Earthen Grasp. Single Earthen Grasp, including the
+// Earth Reaver version, keeps its original saves; see the save modifier below.
+void earthen_grasp(int level, P_char ch, P_char victim, bool greater)
 {
 	struct affected_type af;
 	enum
@@ -1470,7 +1472,7 @@ void earthen_grasp(int level, P_char ch, P_char victim)
 		EG_SHORT,
 		EG_LONG
 	} effect;
-	int dam_result, attdiff;
+	int dam_result, attdiff, save_mod, fallback_mod;
 	struct damage_messages messages = {
 		"$N&n&+y gasps for air as your earthen fist squeezes $M tightly.",
 		"$n&n&+y's earthen fist tightens around your chest, causing you to gasp for air.",
@@ -1497,6 +1499,22 @@ void earthen_grasp(int level, P_char ch, P_char victim)
 	// Bind it to +/- 40 -> 10 sec.
 	attdiff = BOUNDED(-40, attdiff, 40);
 
+	// attdiff is a hold duration in pulses. NewSaves() multiplies its mod by 5, so as a
+	// save mod it lets a STR edge decide the hold almost alone. Greater Earthen Grasp
+	// therefore saves on its own scale, capped at +/-30 points, less a tunable bonus.
+	if (greater)
+	{
+		int bonus = (int)get_property("spell.gEarthGrasp.paraSaveBonus", 2.000);
+
+		save_mod = BOUNDED(-6, (GET_C_STR(ch) - GET_C_STR(victim)) / 15, 6) - bonus;
+		fallback_mod = -bonus;
+	}
+	else
+	{
+		save_mod = attdiff;
+		fallback_mod = 0;
+	}
+
 	if (IS_NPC(victim) && IS_SET(victim->specials.act, ACT_IMMUNE_TO_PARA))
 	{
 		effect = EG_FAIL;
@@ -1508,12 +1526,15 @@ void earthen_grasp(int level, P_char ch, P_char victim)
 		effect = EG_FAIL;
 	}
 	// If they fail their str bonus save..
-	else if (!NewSaves(victim, SAVING_PARA, attdiff))
+	else if (!NewSaves(victim, SAVING_PARA, save_mod))
 	{
-		// If they fail an easier save.
-		if (!NewSaves(victim, SAVING_PARA, attdiff / 3))
+		// Dividing a negative mod makes the save harder. Keep GEG follow-ups at
+		// least as easy as its initial save; single Earthen Grasp is unchanged.
+		if (!NewSaves(victim, SAVING_PARA,
+			      greater ? MIN(save_mod, save_mod / 3) : save_mod / 3))
 			effect = EG_LONG;
-		else if (!NewSaves(victim, SAVING_PARA, attdiff / 2))
+		else if (!NewSaves(victim, SAVING_PARA,
+				   greater ? MIN(save_mod, save_mod / 2) : save_mod / 2))
 			effect = EG_SHORT;
 		else
 			effect = EG_FAIL;
@@ -1521,7 +1542,7 @@ void earthen_grasp(int level, P_char ch, P_char victim)
 	else
 	{
 		// If they made str bonus and fail regular..
-		if (!NewSaves(victim, SAVING_PARA, 0))
+		if (!NewSaves(victim, SAVING_PARA, fallback_mod))
 			effect = EG_SHORT;
 		else
 			effect = EG_FAIL;
@@ -1602,9 +1623,10 @@ void spell_earthen_grasp(int level, P_char ch, char * /*arg*/, int /*type*/, P_c
 		return;
 	}
 
-	earthen_grasp(level, ch, victim);
+	earthen_grasp(level, ch, victim, false);
 }
 
+// Greater Earthen Grasp's per-target callback.
 void spell_single_earthen_grasp(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
 				P_obj /*obj*/)
 {
@@ -1613,7 +1635,7 @@ void spell_single_earthen_grasp(int level, P_char ch, char * /*arg*/, int /*type
 		return;
 	}
 
-	earthen_grasp(level, ch, victim);
+	earthen_grasp(level, ch, victim, true);
 }
 
 void spell_greater_earthen_grasp(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,

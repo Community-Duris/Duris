@@ -435,7 +435,7 @@ void do_awareness(P_char ch, char * /*argument*/, int /*cmd*/)
 	act("You feel aligned with your surroundings.", TRUE, ch, 0, 0, TO_CHAR);
 
 	lev_aware = STAT_INDEX(GET_C_INT(ch)) + STAT_INDEX(GET_C_DEX(ch)) + (GET_LEVEL(ch) >> 3);
-	lev_aware *= (skl_lvl / 75);
+	lev_aware = lev_aware * skl_lvl / 75;
 	if (lev_aware > 0)
 	{
 		lev_aware = number((lev_aware >> 1), lev_aware);

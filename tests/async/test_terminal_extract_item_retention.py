@@ -14,6 +14,7 @@ actoth = (SRC / "actoth.c").read_text()
 rooms = (SRC / "specs.room.c").read_text()
 actwiz = (SRC / "actwiz.c").read_text()
 fight = (SRC / "fight.c").read_text()
+comm = (SRC / "comm.c").read_text()
 
 
 def body(text, signature):
@@ -89,5 +90,14 @@ assert death_retry.index("persistence_save_character_terminal(ch, RENT_DEATH)") 
 )
 release = body(fight, "static void release_after_terminal_death(P_char ch, const char *outcome)")
 assert "extract_char_after_terminal_save(ch);" in release
+
+shutdown_save = comm.index("persistence_save_all_characters_terminal(RENT_CRASH)")
+shutdown_extract = comm.index("extract_char_after_terminal_save(point->character)", shutdown_save)
+assert shutdown_extract > shutdown_save
+assert "extract_char(point->character)" not in comm[shutdown_save:shutdown_extract]
+purge = body(actwiz, "void do_purge(P_char ch")
+assert purge.index("persistence_save_character_terminal(vict, RENT_QUIT)") < purge.index(
+    "extract_char_after_terminal_save(vict)"
+)
 
 print("terminal saved-item extraction contracts passed")

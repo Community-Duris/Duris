@@ -188,6 +188,8 @@ void ship_hull_purchase_committed(P_char ch, bool committed, const epic_command_
 		name_ship(context.name, ship);
 		if (!load_ship(ship, context.room))
 		{
+			shipObjHash.erase(ship);
+			delete_ship(ship, true);
 			send_to_char(
 				"The shipyard could not load your ship; your epics are being refunded.\n",
 				ch);
@@ -304,7 +306,7 @@ int list_cargo(P_char ch, P_ship ship, bool owned)
 	send_to_char("\n&+gTo buy cargo, type '&+Gbuy cargo <number of crates>&+g'&n\n", ch);
 	send_to_char("&+gTo sell cargo, type '&+Gsell cargo&+g'&n\n", ch);
 
-	if (GET_ALIGNMENT(ch) <= MINCONTRAALIGN)
+	if (GET_ALIGNMENT(ch) < MINCONTRAALIGN)
 	{
 		if (can_buy_contraband(ship, portnum))
 		{
@@ -718,6 +720,12 @@ int list_hulls(P_char ch, P_ship ship, int owned)
 	return TRUE;
 }
 
+/* What a summons costs, in copper: the one charged, and the one quoted. */
+static int summon_ship_cost(P_ship ship)
+{
+	return SHIPTYPE_HULL_WEIGHT(ship->m_class) * 50;
+}
+
 /*
  * "summon" at a shipwright -- have your ship sail itself to this port.
  *
@@ -793,7 +801,7 @@ int summon_ship(P_char ch, P_ship ship, bool time_only)
 
 	if (!time_only)
 	{
-		int summon_cost = SHIPTYPE_HULL_WEIGHT(ship->m_class) * 50;
+		int summon_cost = summon_ship_cost(ship);
 		if (GET_MONEY(ch) < summon_cost)
 		{
 			send_to_char_f(ch, "&+gIt will cost &n%s &+gto summon your ship!&n\n",
@@ -2160,7 +2168,7 @@ int buy_contra(P_char ch, P_ship ship, char *arg)
 		send_to_char("&+gWhat contraband?  We don't sell any contraband!&n\n", ch);
 		return TRUE;
 	}
-	if (!IS_TRUSTED(ch) && GET_ALIGNMENT(ch) > MINCONTRAALIGN)
+	if (!IS_TRUSTED(ch) && GET_ALIGNMENT(ch) >= MINCONTRAALIGN)
 	{
 		send_to_char(
 			"&+gGoodie goodie two shoes like you shouldn't think of contraband.&n\n",
@@ -2254,11 +2262,23 @@ int buy_contra(P_char ch, P_ship ship, char *arg)
 	}
 	*/
 
+	/* Stack onto this port's contraband already aboard, as cargo does, and
+	 * only then take an empty slot. */
 	for (slot = 0; slot < MAXSLOTS; ++slot)
 	{
-		if (ship->slot[slot].type == SLOT_EMPTY)
+		if (ship->slot[slot].type == SLOT_CONTRABAND && ship->slot[slot].index == rroom)
 		{
 			break;
+		}
+	}
+	if (slot == MAXSLOTS)
+	{
+		for (slot = 0; slot < MAXSLOTS; ++slot)
+		{
+			if (ship->slot[slot].type == SLOT_EMPTY)
+			{
+				break;
+			}
 		}
 	}
 	if (slot == MAXSLOTS)
@@ -2876,6 +2896,8 @@ int buy_hull(P_char ch, P_ship ship, int owned, char *arg1, char *arg2)
 		if (!load_ship(ship, ch->in_room))
 		{
 			logit(LOG_FILE, "Error in load_ship(): %d\n", shiperror);
+			shipObjHash.erase(ship);
+			delete_ship(ship, true);
 			send_to_char_f(ch, "&=LrError loading ship (%d), please notify a god.&n\n",
 				       shiperror);
 			return TRUE;
@@ -3011,7 +3033,7 @@ int ship_shop_proc(int /*room*/, P_char ch, int cmd, char *arg)
 				send_to_char_f(
 					ch,
 					"&+gFor a small fee of &n%s&+g, I can have my men tell your crew to sail here.&n\n",
-					coin_stringv(SHIPTYPE_HULL_WEIGHT(ship->m_class) * 100));
+					coin_stringv(summon_ship_cost(ship)));
 				send_to_char(
 					"&+gJust type '&+Gsummon ship&+g' to have your ship sail here.&n\n",
 					ch);

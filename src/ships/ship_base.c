@@ -624,6 +624,9 @@ void shutdown_ships()
 		P_ship ship = svs;
 		for (i = 0; i < ship->room_count; i++)
 		{
+			/* A ship that failed to load has no rooms to empty. */
+			if (real_room(SHIP_ROOM_NUM(ship, i)) == NOWHERE)
+				continue;
 			for (ch = world[real_room(SHIP_ROOM_NUM(ship, i))].people; ch; ch = ch_next)
 			{
 				if (ch)
@@ -1055,6 +1058,11 @@ bool rename_ship_owner(char *old_name, char *new_name)
  */
 int load_ship(P_ship ship, int to_room)
 {
+	/* LOADED is saved with the other flags, so a ship read from storage
+	 * arrives with it set.  It becomes true below, once the ship has rooms;
+	 * a failed load must not leave it claiming rooms it does not have. */
+	REMOVE_BIT(ship->flags, LOADED);
+
 	if (ship->shipobj == NULL)
 	{
 		shiperror = 2;
@@ -1114,6 +1122,11 @@ int load_ship(P_ship ship, int to_room)
 		REMOVE_BIT(ship->flags, ATTACKBYNPC);
 	if (IS_SET(ship->flags, RAMMING))
 		REMOVE_BIT(ship->flags, RAMMING);
+	/* The summon's arrival event is not saved, so a ship loaded after a
+	 * reboot or copyover with SUMMONED still set would refuse every later
+	 * summon.  It comes back at its anchor instead. */
+	if (IS_SET(ship->flags, SUMMONED))
+		REMOVE_BIT(ship->flags, SUMMONED);
 	SET_BIT(ship->flags, DOCKED);
 	SET_BIT(ship->flags, LOADED);
 
@@ -1151,12 +1164,14 @@ int load_ship(P_ship ship, int to_room)
  *
  * CALLER CONTRACT: the ship must already have been removed from
  * shipObjHash -- this routine does not do it, and re-adds the ship on the
- * error paths below on the assumption that it is currently out.  After this
- * returns, every P_ship pointing at it dangles; anything that needed to
- * outlive the ship should have been holding a ShipRuntimeRef instead (see
- * ship_identity.c).
+ * error paths below on the assumption that it is currently out.  After a
+ * successful removal, every P_ship pointing at it dangles; anything that
+ * needed to outlive the ship should have been holding a ShipRuntimeRef
+ * instead (see ship_identity.c).
  *
- * `npc` true skips the persistent delete, since NPC ships are never saved.
+ * NPC ships are never persisted, regardless of the caller's `npc` flag.
+ * Explicit `npc` true also skips persistence for failed loads and runtime
+ * cleanup after an owning transaction has already deleted the durable row.
  * For a player ship, a failed database delete ABORTS the removal -- the ship
  * is put back in the hash and left alive, rather than being destroyed in
  * memory while its row survives on disk.
@@ -1167,6 +1182,18 @@ int load_ship(P_ship ship, int to_room)
  */
 void delete_ship(P_ship ship, bool npc)
 {
+	if (IS_NPC_SHIP(ship))
+		npc = true;
+
+	if (!npc && !ship->ownername)
+	{
+		logit(LOG_FILE,
+		      "Refusing to delete ownerless non-NPC ship (db_id=%d); preserving runtime state.",
+		      ship->db_id);
+		shipObjHash.add(ship);
+		return;
+	}
+
 	if (!npc)
 	{
 #ifndef __NO_MYSQL__
@@ -1200,9 +1227,12 @@ void delete_ship(P_ship ship, bool npc)
 #endif
 	}
 
+	// Failed loads have an abstract layout without assigned world rooms.
+	if (SHIP_LOADED(ship))
+		clear_ship_content(ship);
 	unregister_ship_runtime(ship);
 	clear_ship_layout(ship);
-	clear_references_to_ship(ship);
+	clear_references_to_ship(ship, true);
 	/*
 	 * The autopilot block is a separate allocation hanging off the ship, so
 	 * it has to be released before the ship itself goes; nothing else holds
@@ -1232,11 +1262,11 @@ void delete_ship(P_ship ship, bool npc)
  * target is lost.
  *
  * Must be called before a ship is deleted or docked -- ShipData::target is a
- * raw pointer, and this is what stops it dangling.  See also
- * ship_identity.c, which solves the same problem for state that has to
- * survive a delay.
+ * raw pointer.  Deletion also forgets NPC escort and boarding history pointers;
+ * docking preserves those relationships with the still-live ship.  See also
+ * ship_identity.c for state that has to survive a delay.
  */
-void clear_references_to_ship(P_ship ship)
+void clear_references_to_ship(P_ship ship, bool deleting)
 {
 	ShipVisitor svs;
 	for (bool fn = shipObjHash.get_first(svs); fn; fn = shipObjHash.get_next(svs))
@@ -1245,6 +1275,13 @@ void clear_references_to_ship(P_ship ship)
 		{
 			svs->target = NULL;
 			act_to_all_in_ship(svs, "&+RTarget lost.\r\n");
+		}
+		if (deleting && svs->npc_ai)
+		{
+			if (svs->npc_ai->escort == ship)
+				svs->npc_ai->escort = NULL;
+			if (svs->npc_ai->did_board == ship)
+				svs->npc_ai->did_board = NULL;
 		}
 	}
 }
@@ -1598,6 +1635,30 @@ int find_free_ship_room()
 }
 
 /*
+ * Give back every room set_ship_physical_layout() has claimed for `ship`,
+ * freeing the exits it made, but keep the abstract room graph.
+ */
+static void release_ship_rooms(P_ship ship)
+{
+	for (int j = 0; j < MAX_SHIP_ROOM; j++)
+	{
+		if (SHIP_ROOM_NUM(ship, j) == -1)
+			continue;
+		int rroom = real_room0(SHIP_ROOM_NUM(ship, j));
+		if (rroom)
+		{
+			for (int dir = 0; dir < NUM_EXITS; dir++)
+			{
+				if (world[rroom].dir_option[dir])
+					FREE(world[rroom].dir_option[dir]);
+			}
+			world[rroom].funct = NULL;
+		}
+		SHIP_ROOM_NUM(ship, j) = -1;
+	}
+}
+
+/*
  * Turn the ship's abstract room graph into real world rooms.
  *
  * Two passes: claim a free room for each of the ship's rooms, then wire up
@@ -1606,10 +1667,8 @@ int find_free_ship_room()
  * entrance room vnums and titles every room.
  *
  * Returns FALSE if the room pool is exhausted or a vnum fails to resolve.
- *
- * CAVEAT: a mid-way failure leaves the rooms already claimed still marked
- * with ship_room_proc.  The caller is expected to treat this as fatal for the
- * ship (load_ship() does) rather than retrying.
+ * A failure gives back every room already claimed, so the pool is left as
+ * it was and a smaller ship can still use the rooms that are free.
  */
 bool set_ship_physical_layout(P_ship ship)
 {
@@ -1618,10 +1677,12 @@ bool set_ship_physical_layout(P_ship ship)
 	for (int j = 0; j < ship->room_count; j++)
 	{
 		vroom = find_free_ship_room();
-		if ((vroom < VROOM_SHIPS_START) || (vroom > VROOM_SHIPS_END))
+		if ((vroom < VROOM_SHIPS_START) || (vroom > VROOM_SHIPS_END) ||
+		    (rroom = real_room0(vroom)) == 0)
+		{
+			release_ship_rooms(ship);
 			return FALSE;
-		if ((rroom = real_room0(vroom)) == 0)
-			return FALSE;
+		}
 
 		SHIP_ROOM_NUM(ship, j) = vroom;
 		world[rroom].funct = ship_room_proc;
@@ -1630,6 +1691,7 @@ bool set_ship_physical_layout(P_ship ship)
 	{
 		if ((rroom = real_room0(SHIP_ROOM_NUM(ship, j))) == 0)
 		{
+			release_ship_rooms(ship);
 			return FALSE;
 		}
 
@@ -1639,7 +1701,10 @@ bool set_ship_physical_layout(P_ship ship)
 			{
 				if ((to_room = real_room0(SHIP_ROOM_NUM(
 					     ship, SHIP_ROOM_EXIT(ship, j, dir)))) == 0)
+				{
+					release_ship_rooms(ship);
 					return FALSE;
+				}
 
 				if (!world[rroom].dir_option[dir])
 					CREATE(world[rroom].dir_option[dir], room_direction_data, 1,
@@ -1885,13 +1950,17 @@ int ship_room_proc([[maybe_unused]] int room, P_char ch, int cmd, char *arg)
 			//      }
 		}
 
+		/* An outer-edge room is one missing an exit in some direction.  Find
+		 * the character's room slot by its vnum: rooms come first-free from
+		 * the pool, so the vnum's last digit says nothing about the slot. */
 		i = world[ch->in_room].number;
-		j = i - ((int)(i / 10) * 10);
+		for (j = 0; j < ship->room_count && SHIP_ROOM_NUM(ship, j) != i; j++)
+			;
 		k = 0;
-		if (SHIP_ROOM_EXIT(ship, j, DIR_NORTH) == -1 ||
-		    SHIP_ROOM_EXIT(ship, j, DIR_SOUTH) == -1 ||
-		    SHIP_ROOM_EXIT(ship, j, DIR_EAST) == -1 ||
-		    SHIP_ROOM_EXIT(ship, j, DIR_WEST) == -1)
+		if (j < ship->room_count && (SHIP_ROOM_EXIT(ship, j, DIR_NORTH) == -1 ||
+					     SHIP_ROOM_EXIT(ship, j, DIR_SOUTH) == -1 ||
+					     SHIP_ROOM_EXIT(ship, j, DIR_EAST) == -1 ||
+					     SHIP_ROOM_EXIT(ship, j, DIR_WEST) == -1))
 		{
 			k = 1;
 		}
@@ -2737,6 +2806,9 @@ void ship_activity()
 						}
 						else
 						{
+							/* The crash chance grows with the speed the ship
+							 * hits the coast at, so keep it before stopping. */
+							const int impact_speed = ship->speed;
 							ship->setspeed = 0;
 							ship->speed = 0;
 							ship->x = 50.500;
@@ -2748,7 +2820,7 @@ void ship_activity()
 							int crash_chance =
 								(ship->timer[T_BSTATION] == 0) ?
 									0 :
-									(int)((float)(ship->speed +
+									(int)((float)(impact_speed +
 										      50) /
 									      ((1.0 +
 										ship->crew.sail_mod_applied *
@@ -2913,7 +2985,7 @@ void dock_ship(P_ship ship, int to_room)
 	if (ship->target != NULL)
 		ship->target = NULL;
 
-	clear_references_to_ship(ship);
+	clear_references_to_ship(ship, false);
 
 	ship->location = to_room;
 	ship->repair = SHIPTYPE_HULL_WEIGHT(ship->m_class);
@@ -3098,7 +3170,7 @@ void finish_sinking(P_ship ship)
 	else
 	{
 		shipObjHash.erase(ship);
-		delete_ship(ship);
+		delete_ship(ship, true);
 	}
 }
 

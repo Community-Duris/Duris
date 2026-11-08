@@ -10,6 +10,7 @@
  */
 
 #include "core/prototypes.h"
+#include "player/player_save_pipeline.h"
 #include "world/world_singletons.h"
 #include "world/difficulty.h"
 #include "core/structs.h"
@@ -17,6 +18,7 @@
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
+#include "world/world_activity.h"
 #include "cmd/interp.h"
 #include "core/utils.h"
 #include <ctype.h>
@@ -47,6 +49,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include "world/object_template.h"
+#include "classes/npc_alchemist.h"
 #include "account/newbie_kit_plan.h"
 
 /*
@@ -644,6 +647,8 @@ void boot_db(int mini_mode)
 	logit(LOG_STATUS, "   Spells.");
 	assign_spell_pointers();
 
+	npc_alchemist_cache_templates();
+
 	// Parse starter prototypes before any descriptors can request a kit.
 	for (int vnum : newbie_kit_template_vnums())
 		if (!cache_object_template(vnum))
@@ -1041,16 +1046,22 @@ P_index generate_indices(FILE *fl, int *top)
 			break; /* tolerate EOF-terminated legacy files */
 		if (*buf == '$')
 			break;
-		if (*buf == '#')
+		if (*buf == '#' && sscanf(buf, "#%d", &i) == 1 && i != 9999999)
 			num++;
 	}
 
 	logit(LOG_STATUS, "\t\t%d entries allocated", num);
+	if (num == 0)
+	{
+		*top = -1;
+		return nullptr;
+	}
 
 	/* allocate array of index_data */
 	CREATE(t_idx, index_data, (unsigned)num, MEM_TAG_IDXDATA);
 
 	rewind(fl);
+	i = 0;
 
 	for (;;)
 	{
@@ -1058,14 +1069,23 @@ P_index generate_indices(FILE *fl, int *top)
 		{
 			if (*buf == '#')
 			{
-				sscanf(buf, "#%d", &t_idx[i].virtual_number);
+				int vnum;
+				if (sscanf(buf, "#%d", &vnum) != 1)
+					continue;
+				if (vnum == 9999999)
+					break;
+				t_idx[i].virtual_number = vnum;
 				t_idx[i].pos = ftell(fl);
 				t_idx[i].number = 0;
 				t_idx[i].func.mob = NULL;
 				t_idx[i].qst_func = NULL;
 				t_idx[i].keys = NULL;
 				t_idx[i].desc1 = NULL;
-				t_idx[i].desc2 = NULL;
+				// Both formats start with keywords followed by the short description.
+				// Keep the record position for ordinary loading, and share this text
+				// through the existing index ownership/cleanup path.
+				skip_fread(fl);
+				t_idx[i].desc2 = fread_string(fl);
 				t_idx[i].desc3 = NULL;
 				if (i && (t_idx[i - 1].virtual_number >= t_idx[i].virtual_number))
 					logit(LOG_DEBUG, "Warning: index (%d, %d) out of order.",
@@ -1080,8 +1100,7 @@ P_index generate_indices(FILE *fl, int *top)
 			break; /* EOF-terminated legacy files */
 		}
 	}
-	const bool has_sentinel = i > 0 && t_idx[i - 1].virtual_number == 9999999;
-	*top = i - (has_sentinel ? 2 : 1);
+	*top = i - 1;
 	return (t_idx);
 }
 
@@ -1341,11 +1360,11 @@ void boot_world(int mini_mode)
 		}
 		if (world[room_nr].room_flags & ROOM_INN)
 			world[room_nr].funct = inn;
-		if ((room_nr >= 65201) && (room_nr <= 65300))
-		{
+		// The locker rooms (vnums 65201-65300) are flagged, so a character saved in
+		// one is moved out on login. Their proc is set only while a locker is in use:
+		// finding a free locker room looks for a room without it.
+		if (world[room_nr].number >= 65201 && world[room_nr].number <= 65300)
 			world[room_nr].room_flags |= ROOM_LOCKER;
-			world[room_nr].funct = storage_locker;
-		}
 
 		room_light(room_nr, REAL);
 		room_nr++;
@@ -2750,7 +2769,7 @@ P_char read_mobile(int nr, int type, bool apply_mob_gold)
 	if (!mobile_probe_mode)
 	{
 		// All mobs do mundane things.
-		add_event(event_mob_mundane, PULSE_MOBILE + number(-4, 4), mob, 0, 0, 0, 0, 0);
+		world_activity_schedule_mundane(mob, false, true);
 		// ACT_SPEC mobs with specials proc check CMD_SET_PERIODIC.
 		if (IS_SET(mob->specials.act, ACT_SPEC))
 		{
@@ -2796,7 +2815,7 @@ P_char read_mobile_probe(int nr, int type)
 void event_object_proc(P_char /*ch*/, P_char /*victim*/, P_obj obj, void * /*data*/)
 {
 	if (obj_index[obj->R_num].func.obj)
-		(*obj_index[obj->R_num].func.obj)(obj, 0, CMD_PERIODIC, 0);
+		invoke_object_special(obj, 0, CMD_PERIODIC, 0);
 
 	/* Object procs may extract their owner, which detaches this event before freeing it. */
 	if (!current_nevent || current_nevent->obj != obj)
@@ -3140,7 +3159,7 @@ P_obj instantiate_object_template(const object_template &prototype)
 
 	if (obj_index[nr].func.obj)
 	{
-		if ((*obj_index[nr].func.obj)(obj, 0, CMD_SET_PERIODIC, 0))
+		if (invoke_object_special(obj, 0, CMD_SET_PERIODIC, 0))
 			add_event(event_object_proc, PULSE_MOBILE + number(-4, 4), 0, 0, obj, 0, 0,
 				  0);
 	}
@@ -3324,6 +3343,7 @@ void reset_zone(int zone, int force_item_repop)
 					GET_BIRTHPLACE(mob) = world[ZCMD.arg3].number;
 					apply_zone_modifier(mob);
 					char_to_room(mob, ZCMD.arg3, -2);
+					npc_alchemist_world_spawn(mob);
 					last_cmd = 1;
 				}
 				else
@@ -3555,8 +3575,13 @@ void reset_zone(int zone, int force_item_repop)
 				{
 					mob = 0;
 					last_mob = 0;
-					logit(LOG_MOB, "M cmd not executed %d %d %d %d", ZCMD.arg1,
-					      ZCMD.arg2, ZCMD.arg3, ZCMD.arg4);
+					logit(LOG_MOB,
+					      "M cmd not executed: mob %d in room %d, limit %d, chance %d%%",
+					      mob_index[ZCMD.arg1].virtual_number,
+					      ZCMD.arg3 >= 0 && ZCMD.arg3 <= top_of_world ?
+						      world[ZCMD.arg3].number :
+						      NOWHERE,
+					      ZCMD.arg2, ZCMD.arg4);
 				}
 				if (!mob)
 				{
@@ -3582,6 +3607,7 @@ void reset_zone(int zone, int force_item_repop)
 				if (configured_shop >= 0)
 					bind_shopkeeper(mob, configured_shop);
 				char_to_room(mob, ZCMD.arg3, -2);
+				npc_alchemist_world_spawn(mob);
 				last_cmd = last_mob_load = 1;
 				break;
 
@@ -3915,8 +3941,13 @@ void reset_zone(int zone, int force_item_repop)
 					{
 						last_mob_load = 0;
 						mob = last_mob = 0;
-						logit(LOG_MOB, "F cmd not executed %d %d %d %d",
-						      ZCMD.arg1, ZCMD.arg2, ZCMD.arg3, ZCMD.arg4);
+						logit(LOG_MOB,
+						      "F cmd not executed: mob %d in room %d, limit %d, chance %d%%",
+						      mob_index[ZCMD.arg1].virtual_number,
+						      ZCMD.arg3 >= 0 && ZCMD.arg3 <= top_of_world ?
+							      world[ZCMD.arg3].number :
+							      NOWHERE,
+						      ZCMD.arg2, ZCMD.arg4);
 					}
 					if (!last_mob)
 					{
@@ -3928,6 +3959,7 @@ void reset_zone(int zone, int force_item_repop)
 					GET_BIRTHPLACE(mob) = world[ZCMD.arg3].number;
 					apply_zone_modifier(mob);
 					char_to_room(mob, ZCMD.arg3, -2);
+					npc_alchemist_world_spawn(mob);
 					add_follower(mob, last_mob_followable);
 					strcpy(buf, "group all");
 					command_interpreter(last_mob, buf);
@@ -3965,10 +3997,16 @@ void reset_zone(int zone, int force_item_repop)
 					{
 						mob = 0;
 						last_mob_load = 0;
-						logit(LOG_MOB, "R cmd not executed %d %d %d %d",
-						      ZCMD.arg1, ZCMD.arg2, ZCMD.arg3, ZCMD.arg4);
+						logit(LOG_MOB,
+						      "R cmd not executed: mob %d in room %d, limit %d, chance %d%%",
+						      mob_index[ZCMD.arg1].virtual_number,
+						      ZCMD.arg3 >= 0 && ZCMD.arg3 <= top_of_world ?
+							      world[ZCMD.arg3].number :
+							      NOWHERE,
+						      ZCMD.arg2, ZCMD.arg4);
 					}
-					if (!last_mob)
+					// A missed roll leaves no mount, with the rider still in last_mob.
+					if (!mob || !last_mob)
 					{
 						last_cmd = last_mob_load = 0;
 						break;
@@ -3976,6 +4014,7 @@ void reset_zone(int zone, int force_item_repop)
 					GET_BIRTHPLACE(mob) = world[ZCMD.arg3].number;
 					apply_zone_modifier(mob);
 					char_to_room(mob, ZCMD.arg3, -2);
+					npc_alchemist_world_spawn(mob);
 					snprintf(buf, MAX_STRING_LENGTH, "%s",
 						 FirstWord(GET_NAME(mob)));
 					if (!IS_SET(mob->specials.act, ACT_SENTINEL))
@@ -4257,6 +4296,8 @@ void free_char(P_char ch)
 
 	if (IS_PC(ch) && ch->only.pc)
 	{
+		// Covers extraction and temporary offline loads, after their last save.
+		player_save_pipeline_end_session(GET_PID(ch));
 		delete_knownShapes(ch);
 		delete ch->only.pc->held_pets;
 		ch->only.pc->held_pets = nullptr;

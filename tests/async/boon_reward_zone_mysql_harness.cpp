@@ -2,6 +2,7 @@
 #include "persistence/critical_command_repository.h"
 #include "world/zone_touch_command.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
@@ -78,13 +79,17 @@ int main()
 	const char *port_text = getenv("DB_PORT");
 	const unsigned int port = port_text ? static_cast<unsigned int>(atoi(port_text)) : 3306;
 	assert(mysql_real_connect(db, getenv("DB_HOST"), getenv("DB_USER"), getenv("DB_PASSWD"),
-				  getenv("DB_NAME"), port, nullptr, 0));
+				  getenv("DB_NAME"), port, getenv("DB_SOCKET"), 0));
 	execute(db, "SET @boon_zone_started=CURRENT_TIMESTAMP(6)");
 	cleanup(db);
-	execute(db,
-		"INSERT INTO boons(time,duration,racewar,type,opt,criteria,bonus,author,active) "
-		"VALUES(0,0,0,10,2,55,7,'transaction-harness',1)");
-	const uint64_t boon_id = mysql_insert_id(db);
+	uint64_t boon_id = 0;
+	for (size_t index = 0; index < BOON_REWARD_MAX_RESULTS; ++index)
+	{
+		execute(db,
+			"INSERT INTO boons(time,duration,racewar,type,opt,criteria,bonus,author,active) "
+			"VALUES(0,0,0,10,2,55,7,'transaction-harness',1)");
+		boon_id = mysql_insert_id(db);
+	}
 	boon_reward_payload boon = { PID, 1, 55, ZONE, 2, 55, 0, 0, 0 };
 	critical_operation_id boon_operation = {};
 	assert(critical_operation_id_generate(&boon_operation));
@@ -96,10 +101,28 @@ int main()
 	assert(boon_applied.outcome == critical_apply_outcome::applied);
 	assert(scalar(db, "SELECT counter=-1 FROM boons_progress WHERE pid=" + std::to_string(PID) +
 				  " AND boonid=" + std::to_string(boon_id)) == 1);
-	assert(scalar(db, "SELECT points FROM boons_shop WHERE pid=" + std::to_string(PID)) == 7);
-	assert(critical_command_repository_apply(db, boon_command).outcome ==
-	       critical_apply_outcome::already_applied);
-	assert(scalar(db, "SELECT points FROM boons_shop WHERE pid=" + std::to_string(PID)) == 7);
+	assert(scalar(db, "SELECT points FROM boons_shop WHERE pid=" + std::to_string(PID)) ==
+	       7 * BOON_REWARD_MAX_RESULTS);
+	const auto boon_replayed = critical_command_repository_apply(db, boon_command);
+	assert(boon_replayed.outcome == critical_apply_outcome::already_applied);
+	assert(boon_applied.result_size == BOON_REWARD_RESULT_BYTES);
+	assert(boon_replayed.result_size == boon_applied.result_size);
+	assert(std::equal(boon_applied.result_payload.begin(),
+			  boon_applied.result_payload.begin() + boon_applied.result_size,
+			  boon_replayed.result_payload.begin()));
+	boon_reward_result decoded_boon = {};
+	assert(boon_reward_command_decode_result(boon_replayed.result_payload.data(),
+						 boon_replayed.result_size, &decoded_boon));
+	assert(decoded_boon.pid == PID && decoded_boon.entry_count == BOON_REWARD_MAX_RESULTS);
+	const auto &last_entry = decoded_boon.entries.back();
+	assert(last_entry.boon_id == boon_id && last_entry.counter == -1 && last_entry.bonus == 7 &&
+	       (last_entry.flags & BOON_RESULT_COMPLETED));
+	assert(scalar(db,
+		      "SELECT OCTET_LENGTH(result_payload) FROM critical_operation_inbox "
+		      "WHERE operation_id IN (SELECT operation_id FROM boon_reward_outcome WHERE pid=" +
+			      std::to_string(PID) + ")") == BOON_REWARD_RESULT_BYTES);
+	assert(scalar(db, "SELECT points FROM boons_shop WHERE pid=" + std::to_string(PID)) ==
+	       7 * BOON_REWARD_MAX_RESULTS);
 
 	execute(db, "INSERT INTO zones(number,name,epic_type,alignment) VALUES(" +
 			    std::to_string(ZONE) + ",'transaction harness',1,0)");
