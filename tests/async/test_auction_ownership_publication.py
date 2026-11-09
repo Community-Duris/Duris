@@ -37,7 +37,15 @@ harness = r'''
 
 bool currency_transaction_publish_balances(P_char, const char *, uint8_t,
     const currency_vector &, const currency_vector &, uint64_t, uint64_t) { return true; }
+bool economic_state_active() { return true; }
+unsigned acknowledgements = 0;
+bool critical_command_coordinator_acknowledge_publication(const critical_operation_id &) { ++acknowledgements; return true; }
 ''' + declarations + publication + r'''
+
+bool fail_live_publication = false;
+void live_callback(P_char, bool, const auction_command_result &, unsigned int, const auction_command_payload &) {
+    if (fail_live_publication) publication_failed = true;
+}
 
 static uint64_t revision(item_owner_identity owner) {
     uint64_t value;
@@ -69,6 +77,14 @@ static void acknowledge(auction_action action, uint32_t actor, uint64_t player_r
     std::copy(bytes.begin(), bytes.end(), entry.completed.result_payload.begin());
     pending.emplace("test", entry);
     char_data character = {};
+    if (committed) {
+        pending.at("test").completion = live_callback;
+        fail_live_publication = true;
+        const auto before = acknowledgements;
+        assert(!publish(pending.find("test"), &character));
+        assert(!pending.empty() && acknowledgements == before);
+        fail_live_publication = false;
+    }
     assert(publish(pending.find("test"), &character) == committed);
     assert(pending.empty());
 }

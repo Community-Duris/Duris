@@ -52,6 +52,9 @@ bool corpse_lifecycle_transaction_forget(uint32_t owner_pid, uint32_t save_id);
 void corpse_lifecycle_transaction_pulse(void);
 void corpse_lifecycle_transaction_handle_completions(const critical_completion *completions,
 						     size_t count);
+// Called by a live publication callback after a durable outcome cannot be
+// represented safely. Its fences remain held until startup recovery.
+void corpse_lifecycle_transaction_publication_failed();
 critical_outbox_delivery_result
 corpse_lifecycle_transaction_outbox_delivery(const critical_outbox_record &record, void *context);
 void corpse_lifecycle_transaction_publish_outbox(void);

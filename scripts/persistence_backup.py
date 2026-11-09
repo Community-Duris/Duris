@@ -245,10 +245,18 @@ def journal_capture(stage, p, capacity_base=None):
         allowed = {JOURNAL_FILES[name]}
         if name == "players":
             allowed.add("player-save.journal.quarantine")
+        if name == "critical":
+            allowed.add("critical-command.lock")
         for relative, metadata in snapshots[name].items():
             receipt = re.fullmatch(r"locker-identification/([1-9][0-9]{0,9})\.receipt", relative)
-            service_lock = name == "critical" and relative == "locker-identification/.service-lock"
-            if name == "critical" and receipt:
+            operation_receipt = name == "critical" and re.fullmatch(r"receipts/[0-9a-f]{32}", relative)
+            service_lock = name == "critical" and relative in {
+                "locker-identification/.service-lock", "critical-command.lock"}
+            if operation_receipt:
+                # DOR1 success / DOR2 rejection: identity, hash and bounded result.
+                # Native restore qualification also verifies the filename identity.
+                require(94 < metadata["bytes"] <= 98 + 4096, "journal_operation_receipt_size")
+            elif name == "critical" and receipt:
                 require(int(receipt[1]) <= 2147483647, "journal_receipt_pid")
                 # Match the native format's bound before copying. The restore
                 # qualifier validates the checksum, payment and filename identity.

@@ -11,6 +11,7 @@
 #include "economy/collector_presence.h"
 #include "economy/collector_purchase_preparation.h"
 #include "economy/collector_runtime.h"
+#include "economy/economic_state.h"
 #include "economy/collector_transaction.h"
 #include "economy/currency_transaction.h"
 #include "item/item_movement_transaction.h"
@@ -431,7 +432,8 @@ bool materialize_purchase(P_char character, const collector_command_result &resu
 	    items[0].vnum != payload.items[0].vnum)
 		return false;
 	const item_owner_identity owner = { item_owner_type::player, payload.actor_pid, 0 };
-	const bool flatfile_primary = persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY;
+	const bool flatfile_primary = economic_state_active() ||
+				      persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY;
 	// Flat-file materialization allocates its own snapshot identity.  The
 	// temporary graph identity is deliberately non-SQL, while a SQL result must
 	// carry the actual auto-increment id returned by the repository.  Select by

@@ -48,6 +48,82 @@ int hex_value(char value)
 }
 } // namespace
 
+bool critical_operation_receipt_encode(const critical_operation_receipt &receipt,
+				       std::vector<uint8_t> *encoded)
+{
+	if (!encoded || critical_operation_id_is_zero(receipt.operation_id) ||
+	    (receipt.outcome_payload.empty() && !receipt.error_code) ||
+	    receipt.outcome_payload.size() > CRITICAL_COMMAND_MAX_OUTCOME_BYTES)
+		return false;
+	try
+	{
+		std::vector<uint8_t> bytes{ 'D', 'O', 'R', '1' };
+		if (receipt.error_code)
+			bytes[3] = '2';
+		bytes.insert(bytes.end(), receipt.operation_id.bytes.begin(),
+			     receipt.operation_id.bytes.end());
+		bytes.insert(bytes.end(), receipt.request_digest.begin(),
+			     receipt.request_digest.end());
+		append_le<uint64_t>(bytes, receipt.outcome_revision);
+		if (receipt.error_code)
+			append_le<uint32_t>(bytes, receipt.error_code);
+		append_le<uint16_t>(bytes, receipt.outcome_payload.size());
+		bytes.insert(bytes.end(), receipt.outcome_payload.begin(),
+			     receipt.outcome_payload.end());
+		std::array<uint8_t, SHA256_DIGEST_LENGTH> digest{};
+		SHA256(bytes.data(), bytes.size(), digest.data());
+		bytes.insert(bytes.end(), digest.begin(), digest.end());
+		*encoded = std::move(bytes);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+bool critical_operation_receipt_decode(const uint8_t *encoded, size_t size,
+				       critical_operation_receipt *receipt)
+{
+	if (!encoded || !receipt || size < 4 ||
+	    (memcmp(encoded, "DOR1", 4) && memcmp(encoded, "DOR2", 4)))
+		return false;
+	const bool rejected = encoded[3] == '2';
+	const size_t prefix =
+		4 + CRITICAL_COMMAND_ID_BYTES + SHA256_DIGEST_LENGTH + 8 + 2 + (rejected ? 4 : 0);
+	const size_t overhead = prefix + SHA256_DIGEST_LENGTH;
+	if (size < overhead || size > CRITICAL_RECEIPT_MAX_BYTES)
+		return false;
+	critical_operation_receipt decoded{};
+	std::copy_n(encoded + 4, decoded.operation_id.bytes.size(),
+		    decoded.operation_id.bytes.begin());
+	std::copy_n(encoded + 4 + CRITICAL_COMMAND_ID_BYTES, decoded.request_digest.size(),
+		    decoded.request_digest.begin());
+	size_t cursor = 4 + CRITICAL_COMMAND_ID_BYTES + SHA256_DIGEST_LENGTH;
+	uint16_t payload_size = 0;
+	if (critical_operation_id_is_zero(decoded.operation_id) ||
+	    !read_le(encoded, size, &cursor, &decoded.outcome_revision) ||
+	    (rejected &&
+	     (!read_le(encoded, size, &cursor, &decoded.error_code) || !decoded.error_code)) ||
+	    !read_le(encoded, size, &cursor, &payload_size) || (!payload_size && !rejected) ||
+	    payload_size > CRITICAL_COMMAND_MAX_OUTCOME_BYTES || size != overhead + payload_size)
+		return false;
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest{};
+	SHA256(encoded, prefix + payload_size, digest.data());
+	if (!std::equal(digest.begin(), digest.end(), encoded + prefix + payload_size))
+		return false;
+	try
+	{
+		decoded.outcome_payload.assign(encoded + prefix, encoded + prefix + payload_size);
+		*receipt = std::move(decoded);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
 bool critical_operation_id_generate(critical_operation_id *operation_id)
 {
 	if (!operation_id)
@@ -159,18 +235,33 @@ bool critical_command_normalize(critical_command *command)
 
 bool critical_command_valid(const critical_command &command)
 {
-	if (command.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION ||
+	if ((command.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION &&
+	     command.schema_version != CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION) ||
+	    (command.schema_version == CRITICAL_COMMAND_SCHEMA_VERSION &&
+	     (command.outcome_revision || !command.outcome_payload.empty())) ||
+	    (command.schema_version == CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION &&
+	     command.outcome_payload.empty()) ||
+	    command.outcome_payload.size() > CRITICAL_COMMAND_MAX_OUTCOME_BYTES ||
 	    critical_operation_id_is_zero(command.operation_id) || !command.payload_version ||
 	    command.type < critical_command_type::test ||
-	    command.type > critical_command_type::player_death_restitution ||
+	    command.type > critical_command_type::player_checkpoint ||
 	    command.source_site < critical_source_site::command ||
-	    command.source_site > critical_source_site::operator_repair ||
+	    command.source_site > critical_source_site::website ||
 	    command.deadline_class < critical_deadline_class::interactive ||
 	    command.deadline_class > critical_deadline_class::recovery ||
 	    !command.accepted_at_usec || command.keys.empty() ||
 	    command.keys.size() > CRITICAL_COMMAND_MAX_KEYS ||
 	    command.expected_revisions.size() > CRITICAL_COMMAND_MAX_KEYS ||
-	    command.payload.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
+	    command.payload.size() > (command.type == critical_command_type::player_checkpoint ?
+					      CRITICAL_CHECKPOINT_MAX_PAYLOAD_BYTES :
+					      CRITICAL_COMMAND_MAX_PAYLOAD_BYTES))
+		return false;
+	if (command.type == critical_command_type::player_checkpoint &&
+	    (command.schema_version != CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION ||
+	     command.payload_version != 1 || command.keys.size() != 1 ||
+	     command.keys[0].type != critical_entity_type::player ||
+	     !command.expected_revisions.empty() || !command.outcome_revision ||
+	     command.outcome_payload.size() != 12))
 		return false;
 	for (size_t index = 0; index < command.keys.size(); ++index)
 	{
@@ -190,6 +281,17 @@ bool critical_command_valid(const critical_command &command)
 			return false;
 	}
 	return true;
+}
+
+bool critical_command_outcome_matches(const critical_command &command, uint64_t revision,
+				      unsigned int error_code, const uint8_t *payload, size_t size)
+{
+	return command.schema_version == CRITICAL_COMMAND_SCHEMA_VERSION ||
+	       (command.schema_version == CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION && !error_code &&
+		command.outcome_revision == revision && payload &&
+		size == command.outcome_payload.size() &&
+		std::equal(command.outcome_payload.begin(), command.outcome_payload.end(),
+			   payload));
 }
 
 bool critical_command_equal(const critical_command &left, const critical_command &right)
@@ -281,13 +383,23 @@ critical_command_codec_result critical_command_encode(const critical_command &co
 			append_le<uint64_t>(*encoded, revision.revision);
 		}
 		encoded->insert(encoded->end(), command.payload.begin(), command.payload.end());
+		if (command.schema_version == CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION)
+		{
+			append_le<uint64_t>(*encoded, command.outcome_revision);
+			append_le<uint32_t>(*encoded,
+					    static_cast<uint32_t>(command.outcome_payload.size()));
+			encoded->insert(encoded->end(), command.outcome_payload.begin(),
+					command.outcome_payload.end());
+		}
 	}
 	catch (const std::bad_alloc &)
 	{
 		encoded->clear();
 		return critical_command_codec_result::overflow;
 	}
-	return encoded->size() <= CRITICAL_COMMAND_MAX_ENCODED_BYTES ?
+	return encoded->size() <= (command.type == critical_command_type::player_checkpoint ?
+					   CRITICAL_CHECKPOINT_MAX_ENCODED_BYTES :
+					   CRITICAL_COMMAND_MAX_ENCODED_BYTES) ?
 		       critical_command_codec_result::ok :
 		       critical_command_codec_result::overflow;
 }
@@ -297,7 +409,7 @@ critical_command_codec_result critical_command_decode(const uint8_t *encoded, si
 {
 	if (!encoded || !command || size < 52)
 		return critical_command_codec_result::truncated;
-	if (size > CRITICAL_COMMAND_MAX_ENCODED_BYTES || memcmp(encoded, COMMAND_MAGIC, 4) != 0)
+	if (size > CRITICAL_CHECKPOINT_MAX_ENCODED_BYTES || memcmp(encoded, COMMAND_MAGIC, 4) != 0)
 		return critical_command_codec_result::invalid;
 	size_t offset = 4;
 	critical_command decoded = {};
@@ -305,7 +417,8 @@ critical_command_codec_result critical_command_decode(const uint8_t *encoded, si
 	uint32_t key_count = 0, revision_count = 0, payload_size = 0;
 	if (!read_le(encoded, size, &offset, &decoded.schema_version))
 		return critical_command_codec_result::truncated;
-	if (decoded.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION)
+	if (decoded.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION &&
+	    decoded.schema_version != CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION)
 		return critical_command_codec_result::unsupported_version;
 	memcpy(decoded.operation_id.bytes.data(), encoded + offset,
 	       decoded.operation_id.bytes.size());
@@ -327,11 +440,17 @@ critical_command_codec_result critical_command_decode(const uint8_t *encoded, si
 		return critical_command_codec_result::truncated;
 	if (!key_count || key_count > CRITICAL_COMMAND_MAX_KEYS ||
 	    revision_count > CRITICAL_COMMAND_MAX_KEYS ||
-	    payload_size > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
+	    payload_size > (decoded.type == critical_command_type::player_checkpoint ?
+				    CRITICAL_CHECKPOINT_MAX_PAYLOAD_BYTES :
+				    CRITICAL_COMMAND_MAX_PAYLOAD_BYTES) ||
+	    (decoded.type != critical_command_type::player_checkpoint &&
+	     size > CRITICAL_COMMAND_MAX_ENCODED_BYTES))
 		return critical_command_codec_result::overflow;
 	const uint64_t required = static_cast<uint64_t>(key_count) * 16 +
 				  static_cast<uint64_t>(revision_count) * 24 + payload_size;
-	if (required != size - offset)
+	if (required > size - offset ||
+	    (decoded.schema_version == CRITICAL_COMMAND_SCHEMA_VERSION &&
+	     required != size - offset))
 		return required > size - offset ? critical_command_codec_result::truncated :
 						  critical_command_codec_result::invalid;
 	try
@@ -364,7 +483,19 @@ critical_command_codec_result critical_command_decode(const uint8_t *encoded, si
 				return critical_command_codec_result::truncated;
 			decoded.expected_revisions.push_back(revision);
 		}
-		decoded.payload.assign(encoded + offset, encoded + size);
+		decoded.payload.assign(encoded + offset, encoded + offset + payload_size);
+		offset += payload_size;
+		if (decoded.schema_version == CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION)
+		{
+			uint32_t outcome_size = 0;
+			if (!read_le(encoded, size, &offset, &decoded.outcome_revision) ||
+			    !read_le(encoded, size, &offset, &outcome_size))
+				return critical_command_codec_result::truncated;
+			if (!outcome_size || outcome_size > CRITICAL_COMMAND_MAX_OUTCOME_BYTES ||
+			    outcome_size != size - offset)
+				return critical_command_codec_result::invalid;
+			decoded.outcome_payload.assign(encoded + offset, encoded + size);
+		}
 	}
 	catch (const std::bad_alloc &)
 	{

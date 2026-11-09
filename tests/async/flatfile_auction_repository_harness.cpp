@@ -1,4 +1,7 @@
 #include "flatfile/flatfile_auction_repository.h"
+#include "player/player_snapshot_codec.h"
+#include "economy/auction_ram.h"
+#include "flatfile/flatfile_shop_trade_materialization.h"
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_player_domain_repository.h"
 
@@ -202,11 +205,57 @@ int main(int argc, char **argv)
 	listing.item_count = 1;
 	listing.items[0] = { 700, 1, 1700 };
 	listing.object_blob[0] = 0x5a;
-	listing.object_blob_size = 1;
+	listing.object_blob_size = 2;
+	player_item_snapshot snapshot{};
+	snapshot.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	snapshot.equipment_slot = -1;
+	snapshot.object_uid = 700;
+	snapshot.vnum = 1700;
+	snapshot.condition = 77;
+	std::vector<uint8_t> runtime;
+	require(player_item_snapshot_list_encode({ snapshot }, &runtime) ==
+				player_snapshot_codec_result::ok &&
+			auction_blob_pack(&listing, runtime),
+		"could not capture auction item");
+	const std::vector<uint8_t> listing_blob(listing.object_blob.begin(),
+						listing.object_blob.begin() +
+							listing.object_blob_size);
 	strcpy(listing.object_short.data(), "an auction test item");
 	strcpy(listing.id_keywords.data(), "auction test item");
 	strcpy(listing.object_info.data(), "durable test object");
-	const critical_command list_command = command(listing, 1);
+	critical_command list_command = command(listing, 1);
+	const auto preview_root = root.string() + "-sealed-preview";
+	fs::copy(root, preview_root, fs::copy_options::recursive);
+	fs::permissions(preview_root, fs::perms::owner_all, fs::perm_options::replace);
+	auto preview = flatfile_auction_repository_apply(preview_root, list_command);
+	require(preview.outcome == critical_apply_outcome::applied && preview.result_size,
+		"could not prepare isolated sealed auction result");
+	auto frozen = result_of(preview);
+	std::vector<auction_ram_listing> ram_listings;
+	std::vector<std::pair<uint32_t, auction_ram_pickup>> ram_pickups;
+	require(flatfile_auction_load_ram(preview_root, &ram_listings, &ram_pickups,
+					  &frozen.catalog_revision, &error) &&
+			ram_listings.size() == 1,
+		"could not read frozen listing clock");
+	frozen.end_time = ram_listings[0].end_time;
+	frozen.auction_id = auction_command_listing_id(list_command.operation_id);
+	std::array<uint8_t, AUCTION_RESULT_PAYLOAD_BYTES> encoded;
+	require(auction_command_encode_result(frozen, &encoded), "could not seal listing");
+	std::copy(encoded.begin(), encoded.end(), preview.result_payload.begin());
+	list_command.schema_version = CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION;
+	list_command.outcome_revision = preview.durable_revision;
+	list_command.outcome_payload.assign(preview.result_payload.begin(),
+					    preview.result_payload.begin() + preview.result_size);
+	auto divergent = list_command;
+	++divergent.outcome_revision;
+	require(flatfile_auction_repository_apply(root.string(), divergent).error_code == EILSEQ,
+		"auction committed a divergent sealed revision");
+	divergent = list_command;
+	++divergent.outcome_payload[0];
+	require(flatfile_auction_repository_apply(root.string(), divergent).error_code == EILSEQ,
+		"auction committed a divergent sealed result");
+	require(!fs::exists(domains / ".critical-authority-transaction"),
+		"divergent auction left a durable transaction intent");
 	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
 	critical_apply_result applied = flatfile_critical_command_repository_apply_selected(
 		list_command, const_cast<char *>(root_path.c_str()));
@@ -240,7 +289,7 @@ int main(int argc, char **argv)
 			open_listings[0].items.size() == 1 &&
 			flatfile_auction_find_open(root.string(), listed.auction_id, &listing_view,
 						   &error) == flatfile_auction_query_result::ok &&
-			listing_view.object_blob == std::vector<uint8_t>{ 0x5a },
+			listing_view.object_blob == listing_blob,
 		"open listing query did not project the durable catalog");
 	auction_command_payload conflicting_listing = listing;
 	conflicting_listing.listing_fee = 101;
@@ -315,7 +364,7 @@ int main(int argc, char **argv)
 			buyer_pickup.item_claim.items.size() == 1 &&
 			buyer_pickup.item_claim.items[0].item_uid == 700 &&
 			buyer_pickup.item_claim.items[0].item_revision == 2 &&
-			buyer_pickup.item_claim.object_blob == std::vector<uint8_t>{ 0x5a },
+			buyer_pickup.item_claim.object_blob == listing_blob,
 		"settled auction projections did not expose refunds, proceeds, and custody");
 
 	auction_command_payload bidder_money = {};
@@ -339,7 +388,26 @@ int main(int argc, char **argv)
 	actor(&claim, 44, "buyer-account", "Buyer", 1, 2);
 	claim.item_count = 1;
 	claim.items[0] = { 700, 2, 1700 };
-	const critical_command claim_command = command(claim, 7);
+	claim.object_blob = listing.object_blob;
+	claim.object_blob_size = listing.object_blob_size;
+	critical_command claim_command = command(claim, 7);
+	const auto claim_preview_root = root.string() + "-claim-preview";
+	fs::copy(root, claim_preview_root, fs::copy_options::recursive);
+	const auto claim_preview =
+		flatfile_auction_repository_apply(claim_preview_root, claim_command);
+	require(claim_preview.outcome == critical_apply_outcome::applied, "claim preview failed");
+	auto claim_frozen = result_of(claim_preview);
+	require(flatfile_auction_load_ram(claim_preview_root, &ram_listings, &ram_pickups,
+					  &claim_frozen.catalog_revision, &error),
+		"could not read claim clock");
+	for (const auto &view : ram_listings)
+		if (view.id == claim.auction_id)
+			claim_frozen.end_time = view.end_time;
+	require(auction_command_encode_result(claim_frozen, &encoded),
+		"could not encode claim outcome");
+	claim_command.schema_version = CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION;
+	claim_command.outcome_revision = claim_preview.durable_revision;
+	claim_command.outcome_payload.assign(encoded.begin(), encoded.end());
 	applied = flatfile_auction_repository_apply(root.string(), claim_command);
 	auction_command_result claim_result = result_of(applied);
 	require(applied.outcome == critical_apply_outcome::applied &&
@@ -353,6 +421,19 @@ int main(int argc, char **argv)
 			owner_revision == 1 && owned.size() == 1 && owned[0].item_uid == 700 &&
 			owned[0].item_revision == 3,
 		"claimed item did not return to player custody");
+	{
+		flatfile_authority_lock lock;
+		player_snapshot restored{};
+		restored.pid = 44;
+		require(lock.acquire(root.string(), &error) &&
+				flatfile_shop_trade_materialization_reconcile(
+					root.string(), lock, 44, owned, &restored, &error) ==
+					flatfile_shop_trade_materialization_result::ok &&
+				restored.items.size() == 1 && restored.items[0].object_uid == 700 &&
+				restored.items[0].condition == 77 &&
+				restored.items[0].equipment_slot == 0,
+			"auction claim did not recover its complete player item: " + error);
+	}
 	require(flatfile_auction_repository_apply(root.string(), claim_command).outcome ==
 			critical_apply_outcome::already_applied,
 		"item claim did not replay idempotently");

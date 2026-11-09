@@ -89,6 +89,11 @@ struct flatfile_item_collector_mutation
 	uint64_t item_revision = 0;
 };
 
+// Cold boot only: retain every owner clock, including empty owners and offline players.
+bool flatfile_item_repository_ram_bootstrap(
+	const std::string &root, std::vector<std::pair<item_owner_identity, uint64_t>> *owners,
+	std::vector<item_ownership_runtime_entry> *items, std::string *error);
+
 flatfile_item_repository_result flatfile_item_repository_load_owner(
 	const std::string &root, const item_owner_identity &owner, uint64_t *owner_revision,
 	std::vector<flatfile_item_ownership_record> *items, std::string *error);

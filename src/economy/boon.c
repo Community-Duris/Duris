@@ -40,6 +40,9 @@ using namespace std;
 #include "guild/assocs.h"
 #include "economy/auction_houses.h"
 #include "economy/boon.h"
+#include "economy/boon_ram.h"
+#include "economy/economic_state.h"
+#include "persistence/operation_log.h"
 #include "economy/boon_reward_transaction.h"
 #include "economy/boon_shop_transaction.h"
 #include "world/buildings.h"
@@ -507,6 +510,12 @@ void zero_boon_data(BoonData *bdata)
 
 bool get_boon_data(int id, BoonData *bdata)
 {
+	if (economic_state_active())
+	{
+		flatfile_boon_definition definition;
+		return id > 0 && bdata && boon_ram_definition(id, &definition) &&
+		       copy_flat_boon_definition(definition, bdata);
+	}
 	if (!bdata)
 		return FALSE;
 	if (const char *root = flat_boon_root())
@@ -574,6 +583,14 @@ bool get_boon_data(int id, BoonData *bdata)
 
 bool get_boon_progress_data(int id, int pid, BoonProgress *bpg)
 {
+	if (economic_state_active())
+	{
+		double counter = 0;
+		if (!bpg || id <= 0 || pid <= 0 || !boon_ram_progress(id, pid, &counter))
+			return false;
+		*bpg = { 0, id, pid, counter };
+		return true;
+	}
 	if (!bpg)
 		return FALSE;
 	if (const char *root = flat_boon_root())
@@ -627,6 +644,17 @@ bool get_boon_progress_data(int id, int pid, BoonProgress *bpg)
 
 bool get_boon_shop_data(int pid, BoonShop *bshop)
 {
+	if (economic_state_active())
+	{
+		flatfile_boon_player_projection player;
+		if (!bshop || pid <= 0 || !boon_ram_player(pid, &player) ||
+		    player.points < INT_MIN || player.points > INT_MAX || player.stats < INT_MIN ||
+		    player.stats > INT_MAX)
+			return false;
+		*bshop = { 0, pid, static_cast<int>(player.points), static_cast<int>(player.stats),
+			   0 };
+		return true;
+	}
 	if (!bshop)
 		return FALSE;
 	if (const char *root = flat_boon_root())
@@ -2014,7 +2042,8 @@ void boon_shop(P_char ch, char *argument)
 				ch);
 			return;
 		}
-		if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		if (economic_state_active() ||
+		    persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
 		{
 			if (!boon_shop_transaction_submit(ch, static_cast<uint8_t>(stat - 1)))
 				send_to_char("The boon shop is temporarily unavailable.\r\n", ch);
@@ -2852,6 +2881,8 @@ int boon_display(P_char ch, char *argument)
 
 int create_boon(BoonData *bdata)
 {
+	if (economic_state_active() && !operation_log_projection_caught_up())
+		return FALSE;
 	if (!bdata)
 	{
 		debug("create_boon(): NULL bdata passed to function");
@@ -2876,6 +2907,8 @@ int create_boon(BoonData *bdata)
 		    definition.id > static_cast<uint32_t>(std::numeric_limits<int>::max()))
 			return FALSE;
 		bdata->id = static_cast<int>(definition.id);
+		if (economic_state_active() && !boon_ram_configure(definition))
+			return FALSE;
 		boon_notify(bdata->id, nullptr, BN_CREATE);
 		return TRUE;
 	}
@@ -2894,6 +2927,9 @@ int create_boon(BoonData *bdata)
 			return FALSE;
 		}
 
+		if (economic_state_active() &&
+		    !boon_ram_configure(copy_boon_definition_to_flat(*bdata, time(nullptr))))
+			return FALSE;
 		boon_notify(bdata->id, NULL, BN_CREATE);
 
 		return TRUE;
@@ -2939,13 +2975,25 @@ int create_boon_shop_entry(BoonShop *bshop)
 
 int remove_boon(int id)
 {
+	if (economic_state_active() && !operation_log_projection_caught_up())
+		return FALSE;
 	if (const char *root = flat_boon_root())
 	{
 		if (id <= 0)
 			return 0;
 		std::string error;
-		return flatfile_boon_deactivate(root, static_cast<uint32_t>(id), &error) ==
-		       flatfile_boon_result::ok;
+		if (flatfile_boon_deactivate(root, static_cast<uint32_t>(id), &error) !=
+		    flatfile_boon_result::ok)
+			return FALSE;
+		flatfile_boon_definition definition;
+		if (economic_state_active() && boon_ram_definition(id, &definition))
+		{
+			definition.active = false;
+			definition.duration = 0;
+			if (!boon_ram_configure(definition))
+				return FALSE;
+		}
+		return TRUE;
 	}
 	// if (!qry("DELETE FROM boons WHERE id = %d", id))
 	//  Gona leave boons on the DB for history lookup purposes
@@ -2953,11 +3001,21 @@ int remove_boon(int id)
 	{
 		return 0;
 	}
+	flatfile_boon_definition definition;
+	if (economic_state_active() && boon_ram_definition(id, &definition))
+	{
+		definition.active = false;
+		definition.duration = 0;
+		if (!boon_ram_configure(definition))
+			return FALSE;
+	}
 	return 1;
 }
 
 int extend_boon(int id, int extend, const char *name)
 {
+	if (economic_state_active() && !operation_log_projection_caught_up())
+		return FALSE;
 	if (const char *root = flat_boon_root())
 	{
 		if (id <= 0 || extend < 0 || !name || !*name)
@@ -2967,6 +3025,17 @@ int extend_boon(int id, int extend, const char *name)
 		if (flatfile_boon_extend(root, static_cast<uint32_t>(id), extend, time(nullptr),
 					 name, &was_active, &error) != flatfile_boon_result::ok)
 			return FALSE;
+		if (economic_state_active())
+		{
+			std::vector<flatfile_boon_definition> definitions;
+			if (flatfile_boon_load_definitions(root, &definitions, &error) !=
+			    flatfile_boon_result::ok)
+				return FALSE;
+			for (const auto &definition : definitions)
+				if (definition.id == static_cast<uint32_t>(id) &&
+				    !boon_ram_configure(definition))
+					return FALSE;
+		}
 		boon_notify(id, nullptr, was_active ? BN_EXTEND : BN_REACTIVATE);
 		return TRUE;
 	}
@@ -3018,6 +3087,16 @@ int extend_boon(int id, int extend, const char *name)
 		return FALSE;
 	}
 
+	flatfile_boon_definition definition;
+	if (economic_state_active() && boon_ram_definition(id, &definition))
+	{
+		definition.start_time = ct;
+		definition.duration = duration;
+		definition.active = true;
+		definition.author = std::string("*") + name;
+		if (!boon_ram_configure(definition))
+			return FALSE;
+	}
 	if (active)
 		boon_notify(id, NULL, BN_EXTEND);
 	else

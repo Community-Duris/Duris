@@ -70,7 +70,7 @@ assert "critical_outbox_retry_dead_letter" in OUTBOX
 assert "sql_pool_replace_connection" in OUTBOX
 assert "sql_worker_thread_init()" in OUTBOX and "mysql_thread_end()" in OUTBOX
 assert "critical_command_repository_apply_from_pool" in COMM
-assert '"integrity_failure"' in COMM and '"operation metadata redacted"' in COMM
+assert '"integrity_failure"' in COMM and '"correlation=%s error=%u refusal=%s attempts=%u"' in COMM
 assert 'getenv("CRITICAL_COMMAND_JOURNAL_DIR")' in COMM
 assert COMM.index("critical_command_coordinator_drain(3000)") < COMM.index(
     "critical_outbox_drain(3000)"
@@ -83,12 +83,31 @@ assert "committed_without_outbox" in DIAGNOSTICS
 
 HARNESS = r'''
 #include "persistence/critical_outbox.h"
+#include "persistence/critical_command_repository.h"
 #include <cassert>
+#include <cerrno>
 extern "C" struct st_mysql *sql_pool_acquire(void) { return nullptr; }
 extern "C" void sql_pool_release(struct st_mysql *) {}
 extern "C" struct st_mysql *sql_pool_replace_connection(struct st_mysql *) { return nullptr; }
 int main()
 {
+    // The frozen revision is checked before touching SQL, even when the
+    // materializer produced exactly the promised bytes. Passing a null
+    // connection makes an accidental attempt to prepare SQL observable.
+    critical_command sealed{};
+    sealed.schema_version = CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION;
+    sealed.outcome_revision = 9;
+    sealed.outcome_payload = {1, 2};
+    for (uint64_t revision : {8, 10})
+    {
+        errno = 0;
+        assert(!critical_command_repository_finish_inbox(
+            nullptr, sealed, revision, 0, sealed.outcome_payload.data(), 2));
+        assert(errno == EILSEQ);
+    }
+    uint8_t divergent[] = {1, 3};
+    assert(!critical_command_repository_finish_inbox(nullptr, sealed, 9, 0, divergent, 2));
+    assert(errno == EILSEQ);
     critical_outbox_record valid = {};
     valid.outbox_id = 1;
     valid.operation_id.bytes[0] = 1;
@@ -114,7 +133,9 @@ with tempfile.TemporaryDirectory(prefix="duris-critical-outbox-") as temporary:
     subprocess.run(
         [
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
-            "-pthread", "-Isrc", str(source), rel("critical_outbox.c"),
+            "-pthread", "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections",
+            "-Isrc", str(source), rel("critical_outbox.c"),
+            rel("critical_command_repository.c"),
             rel("corpse_lifecycle_command.c"), rel("item_transfer_command.c"),
             rel("player_snapshot_codec.c"),
             rel("critical_command.c"), "-lcrypto",

@@ -10,6 +10,9 @@
 #include <string>
 #include <vector>
 
+struct boon_ram_state;
+bool flatfile_boon_load_ram(const std::string &root, boon_ram_state *state, std::string *error);
+
 struct flatfile_boon_definition
 {
 	uint32_t id = 0;

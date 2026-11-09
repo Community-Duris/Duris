@@ -125,6 +125,10 @@ enum class flatfile_world_item_result
 	io_error
 };
 
+bool flatfile_world_item_ram_bootstrap(const std::string &root, uint64_t *revision,
+				       std::vector<flatfile_corpse_record> *corpses,
+				       std::string *error);
+
 flatfile_world_item_result flatfile_world_item_establish(
 	const std::string &root, const std::vector<flatfile_corpse_record> &corpses,
 	const std::vector<flatfile_saved_world_item_record> &saved_items, std::string *error);

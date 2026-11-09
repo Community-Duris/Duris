@@ -259,6 +259,23 @@ int main(int argc, char **argv)
 		"account mismatch was accepted during domain load");
 
 	critical_command epic_gain = epic(5, 0, 1);
+	std::array<uint8_t, EPIC_RESULT_PAYLOAD_BYTES> epic_bytes{};
+	require(epic_command_encode_result({ 14, 1, 5 }, &epic_bytes), "seal epic result");
+	epic_gain.schema_version = CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION;
+	epic_gain.outcome_revision = 1;
+	epic_gain.outcome_payload.assign(epic_bytes.begin(), epic_bytes.end());
+	auto wrong_epic = epic_gain;
+	wrong_epic.outcome_revision = 2;
+	require(flatfile_player_domain_apply(root.string(), wrong_epic).error_code == EILSEQ,
+		"divergent sealed epic revision committed");
+	wrong_epic = epic_gain;
+	++wrong_epic.outcome_payload[0];
+	require(flatfile_player_domain_apply(root.string(), wrong_epic).error_code == EILSEQ,
+		"divergent sealed epic payload committed");
+	require(flatfile_player_domain_load(root.string(), 42, "account-one", 1, &loaded, &error) ==
+				flatfile_player_domain_result::ok &&
+			loaded.domains.epics == 9 && loaded.domains.epic_revision == 0,
+		"sealed epic refusal changed authority");
 	critical_apply_result applied = flatfile_player_domain_apply(root.string(), epic_gain);
 	epic_command_result epic_result = {};
 	require(applied.outcome == critical_apply_outcome::applied && applied.error_code == 0 &&
@@ -293,6 +310,26 @@ int main(int argc, char **argv)
 
 	critical_command currency_move =
 		currency({ { 10, 0, 0, 0 } }, { { -2, 0, 0, 0 } }, 0, 1, 10);
+	std::array<uint8_t, CURRENCY_RESULT_PAYLOAD_BYTES> currency_bytes{};
+	require(currency_command_encode_result({ { { 11, 2, 3, 4 } }, { { 3, 6, 7, 8 } }, 1, 2 },
+					       &currency_bytes),
+		"seal currency result");
+	currency_move.schema_version = CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION;
+	currency_move.outcome_revision = 2;
+	currency_move.outcome_payload.assign(currency_bytes.begin(), currency_bytes.end());
+	auto wrong_currency = currency_move;
+	wrong_currency.outcome_revision = 3;
+	require(flatfile_player_domain_apply(root.string(), wrong_currency).error_code == EILSEQ,
+		"divergent sealed wallet revision committed");
+	wrong_currency = currency_move;
+	++wrong_currency.outcome_payload[0];
+	require(flatfile_player_domain_apply(root.string(), wrong_currency).error_code == EILSEQ,
+		"divergent sealed wallet payload committed");
+	require(flatfile_player_domain_load(root.string(), 42, "account-one", 1, &loaded, &error) ==
+				flatfile_player_domain_result::ok &&
+			loaded.domains.wallet[0] == 1 && loaded.domains.bank[0] == 5 &&
+			loaded.domains.wallet_revision == 0 && loaded.domains.bank_revision == 1,
+		"sealed wallet refusal changed either side");
 	applied = flatfile_player_domain_apply(root.string(), currency_move);
 	currency_command_result currency_result = {};
 	require(applied.outcome == critical_apply_outcome::applied &&

@@ -1,6 +1,7 @@
 #include "economy/boon_shop_transaction.h"
 
 #include "persistence/persistence_mode.h"
+#include "economy/economic_state.h"
 #include "core/prototypes.h"
 #include "core/utils.h"
 
@@ -43,7 +44,8 @@ bool boon_shop_transaction_submit(P_char character, uint8_t stat_index)
 {
 	if (!character || IS_NPC(character) || GET_PID(character) <= 0 ||
 	    stat_index >= BOON_SHOP_BASE_STAT_COUNT ||
-	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
+	    (persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY &&
+	     !economic_state_active()))
 		return false;
 	critical_operation_id operation_id = {};
 	critical_command command = {};

@@ -79,12 +79,14 @@ bool critical_command_coordinator_is_fenced(const critical_entity_key &, critica
     // A final coordinator notification can release its fence before domain publication.
     return false;
 }
-critical_submit_result critical_command_coordinator_submit(critical_command command)
+critical_submit_result critical_command_coordinator_submit_for_publication(critical_command command)
 {
     submitted = std::move(command);
     ++submissions;
     return admission;
 }
+bool critical_command_coordinator_acknowledge_publication(const critical_operation_id &)
+{ return true; }
 bool critical_command_coordinator_get_completed(const critical_operation_id &, critical_completion *)
 {
     return false;
@@ -182,6 +184,15 @@ int main(int argc, char **argv)
     GET_COPPER(&actor) = 5;
     online = &actor;
     currency_transaction_reset_for_tests();
+    if (scenario == "offline_shared_bank")
+    {
+        currency_vector wallet{}, bank{};
+        bank.amount[3] = 7;
+        assert(currency_transaction_publish_balances(nullptr, "retention_account", 1,
+                                                    wallet, bank, 2, 3));
+        assert(bank_publications == 1 && GET_COPPER(&actor) == 5 && vitals == 0);
+        return 0;
+    }
     if (scenario.starts_with("platinum_"))
     {
         platinum_scenario(scenario, &actor);
@@ -689,6 +700,7 @@ def main():
     failures = []
     cflags = shlex.split(subprocess.check_output(["mysql_config", "--cflags"], text=True))
     scenarios = (
+        "offline_shared_bank",
         "platinum_refused_pickup", "platinum_refused_review", "platinum_success",
         "platinum_failure", "platinum_stale", "platinum_replay", "platinum_offline",
         "platinum_awaiting_durability", "platinum_uncertain_admission",

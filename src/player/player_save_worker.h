@@ -179,6 +179,10 @@ bool player_save_worker_set_journal_hooks(player_save_journal_append_fn append,
 
 void player_save_worker_shutdown(void (*interrupt)(void) = nullptr);
 player_save_submit_result player_save_worker_submit(player_snapshot snapshot);
+// Reserve an uncoalesced snapshot job whose write callback owns the ordered WAL
+// boundary. Normal player completion and login fences retain its exact metadata.
+player_save_submit_result player_save_worker_submit_logged(player_snapshot snapshot,
+							   persistence_job_write_fn write);
 // Refused admission preserves every snapshot field for retry by the pipeline.
 // Returns worker_unavailable or capacity_exceeded for retryable refusal.
 player_save_submit_result player_save_worker_submit_retained(player_snapshot *snapshot);

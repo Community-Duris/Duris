@@ -7,8 +7,51 @@ logged out. Both website and in-game bids must go through the MUD's sole economi
 decision maker. Durable storage retains recovery evidence and read projections;
 it must not independently decide or mutate live auction and wallet state.
 
-This document specifies the integration contract. It does not mean that the RAM
-cutover or the website bid command has been implemented or enabled.
+PR #718 implements the server runtime and bridge command described below. The
+separate website repositories must wire their bid/buy routes to this command;
+their direct database mutation gates must remain closed.
+
+## Implemented bridge command
+
+Send this message over the existing authenticated DurisWeb bridge connection:
+
+```json
+{
+  "type": "cmd",
+  "cmd": "durisweb_auction_bid",
+  "data": {
+    "requestId": "a-stable-id-for-this-bid",
+    "accountName": "authenticated-account",
+    "characterId": 42,
+    "auctionId": 123,
+    "amountCopper": 10000
+  }
+}
+```
+
+The bridge service must derive `accountName` from its authenticated user, not
+trust a browser-supplied account name. The MUD verifies that the PID belongs to
+that account using its recovered economic identity. Characters may be logged out.
+Account spelling is case-insensitive. `requestId` must be nonempty and at most
+128 bytes; IDs and amounts must be positive integral values within 32-bit bounds.
+The amount is total copper value, including all denominations in the wallet.
+A bid at or above the buyout price uses the same atomic buyout path.
+
+The response echoes `requestId` and has one of these `status` values:
+
+| Status | Meaning | Website action |
+| --- | --- | --- |
+| `pending` | Admitted or attached; a durable outcome is not yet available | Retry the identical message after a bounded delay |
+| `committed` | The complete accepted outcome is durable and published | Display success and its authoritative revision |
+| `rejected` | Invalid identity/input, a refused bid, or conflicting ID reuse | Show the error; a deliberate new bid gets a new request ID |
+| `unavailable` | The MUD is recovering, fenced, or temporarily unable to admit work | Retain the original ID and retry when ready |
+
+Only `committed` sets `success: true`. Its response also includes `auctionId`,
+`amountCopper`, and decimal-string `auctionRevision` and `walletRevision` fields.
+Polling uses the same message; a separate status endpoint is not required.
+Receipt identity is account-scoped and includes the original PID, auction and
+amount. Reusing an ID with altered intent fails even after a restart. The website
+must retain the ID through reconnects and response loss.
 
 ## One operation, one acknowledgement
 

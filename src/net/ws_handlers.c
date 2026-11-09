@@ -1,3 +1,6 @@
+#include "economy/economic_state.h"
+#include "economy/auction_website.h"
+#include "persistence/operation_log.h"
 #include "account/password_async.h"
 #include <string>
 #include <memory>
@@ -436,6 +439,107 @@ static void ws_send_durisweb_auction_remove_response(struct descriptor_data *d,
 		free(json);
 	}
 	cJSON_Delete(result);
+}
+
+void ws_cmd_durisweb_auction_bid(struct descriptor_data *d, cJSON *data)
+{
+	if (!d || !d->durisweb_verified)
+	{
+		if (d)
+			websocket_close(d, WS_CLOSE_POLICY_VIOLATION, "Not authorized");
+		return;
+	}
+	const char *error = nullptr;
+	const char *state = "rejected";
+	const char *request_id = nullptr;
+	auction_command_result result{};
+	cJSON *request = cJSON_GetObjectItem(data, "requestId");
+	cJSON *account = cJSON_GetObjectItem(data, "accountName");
+	cJSON *pid = cJSON_GetObjectItem(data, "characterId");
+	cJSON *auction = cJSON_GetObjectItem(data, "auctionId");
+	cJSON *amount = cJSON_GetObjectItem(data, "amountCopper");
+	auto valid_integer = [](const cJSON *value)
+	{
+		return cJSON_IsNumber(value) && value->valuedouble >= 1 &&
+		       value->valuedouble <= UINT32_MAX &&
+		       value->valuedouble == floor(value->valuedouble);
+	};
+	if (cJSON_IsString(request) && request->valuestring && strlen(request->valuestring) <= 128)
+		request_id = request->valuestring;
+	critical_command command{};
+	if (!cJSON_IsObject(data) || !request_id || !*request_id || !cJSON_IsString(account) ||
+	    !account->valuestring || !valid_integer(pid) || !valid_integer(auction) ||
+	    !valid_integer(amount))
+		error = "Invalid bid request";
+	else if (!economic_state_active() || !operation_log_ready())
+	{
+		state = "unavailable";
+		error = "MUD economic recovery is not ready";
+	}
+	else if (!auction_website_build_bid(
+			 account->valuestring, static_cast<uint32_t>(pid->valuedouble),
+			 static_cast<uint32_t>(auction->valuedouble),
+			 static_cast<int64_t>(amount->valuedouble), request_id, &command))
+		error = "Character is not available to this account";
+	else
+	{
+		const auto submitted = auction_transaction_submit_website(command);
+		if (critical_submit_result_keeps_operation(submitted))
+		{
+			state = "pending";
+			critical_completion completion{};
+			if (critical_command_coordinator_get_completed(command.operation_id,
+								       &completion))
+			{
+				if ((completion.outcome == critical_apply_outcome::applied ||
+				     completion.outcome ==
+					     critical_apply_outcome::already_applied) &&
+				    auction_command_decode_result(completion.result_payload.data(),
+								  completion.result_size, &result))
+					state = "committed";
+				else
+				{
+					state = "rejected";
+					error = completion.error_code == ENOSPC ?
+							"Insufficient funds" :
+							"Bid was rejected";
+				}
+			}
+		}
+		else if (submitted == critical_submit_result::identity_conflict)
+			error = "Request id was already used for a different bid";
+		else
+		{
+			state = "unavailable";
+			error = "Bid admission is unavailable; retry the same request id";
+		}
+	}
+	cJSON *response = cJSON_CreateObject();
+	if (!response)
+		return;
+	cJSON_AddStringToObject(response, "type", "durisweb_auction_bid");
+	cJSON_AddStringToObject(response, "status", state);
+	cJSON_AddBoolToObject(response, "success", !strcmp(state, "committed"));
+	if (request_id)
+		cJSON_AddStringToObject(response, "requestId", request_id);
+	if (error)
+		cJSON_AddStringToObject(response, "error", error);
+	if (!strcmp(state, "committed"))
+	{
+		cJSON_AddNumberToObject(response, "auctionId", result.auction_id);
+		cJSON_AddNumberToObject(response, "amountCopper", result.final_price);
+		cJSON_AddStringToObject(response, "auctionRevision",
+					std::to_string(result.auction_revision).c_str());
+		cJSON_AddStringToObject(response, "walletRevision",
+					std::to_string(result.wallet_revision).c_str());
+	}
+	char *json = cJSON_PrintUnformatted(response);
+	if (json)
+	{
+		websocket_send_text(d, json);
+		free(json);
+	}
+	cJSON_Delete(response);
 }
 
 /*
@@ -4046,6 +4150,7 @@ void ws_handle_command(struct descriptor_data *d, const char *cmd, cJSON *data)
 		{ "durisweb_hook_state", ws_cmd_durisweb_hook_state },
 		{ "durisweb_hook_set", ws_cmd_durisweb_hook_set },
 		{ "durisweb_auction_remove", ws_cmd_durisweb_auction_remove },
+		{ "durisweb_auction_bid", ws_cmd_durisweb_auction_bid },
 	};
 
 	if (!cmd)

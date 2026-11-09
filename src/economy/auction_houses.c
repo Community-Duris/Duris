@@ -11,10 +11,15 @@
 #include "economy/auction_houses.h"
 #include "economy/auction_room_registry.h"
 #include "economy/auction_transaction.h"
+#include "economy/auction_ram.h"
+#include "economy/economic_state.h"
 #include "economy/currency_transaction.h"
 #include "flatfile/flatfile_auction_repository.h"
 #include "flatfile/flatfile_offline_message_repository.h"
 #include "item/item_ownership_runtime.h"
+#include "player/player_load_items.h"
+#include "player/player_snapshot_capture.h"
+#include "player/player_snapshot_codec.h"
 #include "persistence/persistence_checkpoint.h"
 #include "persistence/persistence_mode.h"
 #include <algorithm>
@@ -37,6 +42,105 @@ extern P_room world;
 
 namespace
 {
+// Capture every stack member independently; the old text blob represented only
+// the first object and could discard distinct condition, affects, or runtime state.
+bool capture_auction_items(auction_command_payload *payload, P_obj first)
+{
+	std::vector<player_item_snapshot> items;
+	for (size_t index = 0; index < payload->item_count; ++index)
+	{
+		std::vector<player_item_snapshot> captured;
+		if (!first || first->obj_uid != payload->items[index].item_uid ||
+		    player_item_snapshot_tree_capture(first, &captured, nullptr) !=
+			    player_snapshot_capture_result::ok ||
+		    captured.size() != 1)
+			return false;
+		captured[0].equipment_slot = -1;
+		items.push_back(std::move(captured[0]));
+		first = first->next_content;
+	}
+	std::vector<uint8_t> encoded;
+	return player_item_snapshot_list_encode(items, &encoded) ==
+		       player_snapshot_codec_result::ok &&
+	       auction_blob_pack(payload, encoded);
+}
+
+// Upgrade old listings at admission, so the durable command always contains a
+// complete, UID-bound image even when the original listing predates this format.
+bool prepare_auction_claim(auction_command_payload *payload)
+{
+	const uint8_t *legacy = nullptr, *runtime = nullptr;
+	size_t legacy_size = 0, runtime_size = 0;
+	if (!auction_blob_parts(*payload, &legacy, &legacy_size, &runtime, &runtime_size))
+		return false;
+	if (runtime_size)
+		return true;
+	std::vector<player_item_snapshot> items;
+	for (size_t index = 0; index < payload->item_count; ++index)
+	{
+		P_obj object =
+			read_one_object(const_cast<char *>(reinterpret_cast<const char *>(legacy)));
+		if (!object)
+			return false;
+		object->obj_uid = payload->items[index].item_uid;
+		std::vector<player_item_snapshot> captured;
+		const bool valid = player_item_snapshot_tree_capture(object, &captured, nullptr) ==
+					   player_snapshot_capture_result::ok &&
+				   captured.size() == 1 &&
+				   captured[0].vnum == payload->items[index].vnum;
+		extract_obj(object);
+		if (!valid)
+			return false;
+		captured[0].equipment_slot = -1;
+		items.push_back(std::move(captured[0]));
+	}
+	std::vector<uint8_t> encoded;
+	return player_item_snapshot_list_encode(items, &encoded) ==
+		       player_snapshot_codec_result::ok &&
+	       auction_blob_pack(payload, encoded);
+}
+
+bool publish_auction_claim(P_char ch, const auction_command_payload &payload,
+			   const auction_command_result &result)
+{
+	item_transfer_payload transfer{};
+	std::vector<player_item_snapshot> items;
+	std::vector<player_load_item_identity> identities;
+	std::vector<P_obj> roots;
+	if (!auction_item_payload(payload, result.auction_id, &transfer) ||
+	    player_item_snapshot_list_decode(transfer.item_blob.data(), transfer.item_blob_size,
+					     &items) != player_snapshot_codec_result::ok ||
+	    items.size() != result.item_count)
+		return false;
+	const item_owner_identity owner{ item_owner_type::player,
+					 static_cast<uint64_t>(GET_PID(ch)), 0 };
+	for (size_t index = 0; index < items.size(); ++index)
+	{
+		items[index].equipment_slot = -1;
+		player_load_item_identity identity{};
+		identity.database_id = index + 1;
+		identity.override_mask = PLAYER_LOAD_ITEM_OVERRIDE_ALL;
+		identity.quantity = 1;
+		identity.item_uid = identity.root_item_uid = items[index].object_uid;
+		identity.owner = owner;
+		identity.item_revision = result.item_revisions[index];
+		identity.owner_revision = result.player_owner_revision;
+		identity.state = item_custody_state::active;
+		identities.push_back(identity);
+	}
+	if (!player_load_item_graph_materialize_detached(items, identities, owner,
+							 result.player_owner_revision, false, true,
+							 &roots, nullptr))
+		return false;
+	for (P_obj object : roots)
+	{
+		object->db_item_id = 0;
+		obj_to_char(object, ch);
+		send_to_char_f(ch, "&+WYou pick up &n%s&+W.&n\r\n", object->short_description);
+	}
+	return true;
+}
+
 void install_auction_house_room_procedures()
 {
 	for (size_t index = 0; index < AUCTION_HOUSE_REGISTERED_ROOM_COUNT; ++index)
@@ -187,8 +291,13 @@ void flat_list_completed(P_char ch, bool committed, const auction_command_result
 				"stale_live_topology", "auction_id=%u item_uid=%llu",
 				result.auction_id,
 				static_cast<unsigned long long>(payload.items[index].item_uid));
-			continue;
+			auction_transaction_publication_failed();
+			return;
 		}
+	}
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		P_obj object = find_live_auction_item(payload.items[index].item_uid);
 		obj_from_char(object);
 		extract_obj(object);
 	}
@@ -242,21 +351,10 @@ void flat_item_claim_completed(P_char ch, bool committed, const auction_command_
 		send_to_char("Your auction items remain available for pickup.\r\n", ch);
 		return;
 	}
-	for (size_t index = 0; index < result.item_count; ++index)
+	if (!publish_auction_claim(ch, payload, result))
 	{
-		P_obj object = read_one_object(const_cast<char *>(
-			reinterpret_cast<const char *>(payload.object_blob.data())));
-		if (!object)
-		{
-			persistence_alert(AVATAR, "auction", "player", "unknown", "claim_publish",
-					  "deserialize_failed", "auction_id=%u item_uid=%llu",
-					  result.auction_id,
-					  static_cast<unsigned long long>(result.item_uids[index]));
-			continue;
-		}
-		object->obj_uid = result.item_uids[index];
-		obj_to_char(object, ch);
-		send_to_char_f(ch, "&+WYou pick up &n%s&+W.&n\r\n", object->short_description);
+		auction_transaction_publication_failed();
+		return;
 	}
 	mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS |
 							  PLAYER_COMPONENT_EQUIPMENT |
@@ -402,6 +500,9 @@ void init_auction_houses()
 	flat_listing_fee = get_property("auctions.listingFee", 1000);
 	flat_start_price_fee = get_property("auctions.startPricePctFee", 0.02);
 	flat_closing_fee = get_property("auctions.closingPctFee", 0.03);
+	auction_ram_set_policy(
+		static_cast<uint32_t>(std::clamp(flat_closing_fee, 0.0f, 1.0f) * 10000),
+		static_cast<uint32_t>(std::max(0, flat_bid_time_extension)));
 }
 void shutdown_auction_houses() {}
 void auction_houses_activity()
@@ -411,8 +512,19 @@ void auction_houses_activity()
 		return;
 	std::vector<flatfile_auction_listing_projection> listings;
 	std::string error;
-	if (flatfile_auction_list_open(root, &listings, &error) !=
-	    flatfile_auction_query_result::ok)
+	if (economic_state_active())
+	{
+		uint32_t ids[64]{};
+		const size_t count = auction_ram_expired(time(nullptr), ids, 64);
+		for (size_t i = 0; i < count; ++i)
+		{
+			flatfile_auction_listing_projection listing{};
+			listing.auction_id = ids[i];
+			listings.push_back(std::move(listing));
+		}
+	}
+	else if (flatfile_auction_list_open(root, &listings, &error) !=
+		 flatfile_auction_query_result::ok)
 	{
 		logit(LOG_WIZ, "Flat auction expiry scan failed: %s", error.c_str());
 		return;
@@ -547,6 +659,8 @@ bool auction_offer(P_char ch, char *args)
 		return report_flat_query_failure(ch, "auction item could not be encoded safely");
 	memcpy(payload.object_blob.data(), serialized, serialized_size + 1);
 	payload.object_blob_size = serialized_size + 1;
+	if (!capture_auction_items(&payload, object))
+		return false;
 	if (!auction_transaction_submit(ch, payload, flat_list_completed))
 		send_to_char("The auction house is busy; nothing was changed.\r\n", ch);
 	else
@@ -760,6 +874,30 @@ bool auction_pickup(P_char ch, char *args)
 		send_to_char("Your previous auction request is still being committed.\r\n", ch);
 		return true;
 	}
+	if (economic_state_active())
+	{
+		auction_command_payload claim{};
+		if (!fill_auction_actor(ch, &claim))
+			return false;
+		const auto available = auction_ram_next_claim(GET_PID(ch), &claim);
+		if (available == ENOENT)
+		{
+			send_to_char("&+WYou have no items or money to pickup!&n\r\n", ch);
+			return true;
+		}
+		if (available ||
+		    (claim.action == auction_action::claim_item && !prepare_auction_claim(&claim)))
+			return false;
+		if (!auction_transaction_submit(ch, claim,
+						claim.action == auction_action::claim_money ?
+							flat_money_claim_completed :
+							flat_item_claim_completed))
+			send_to_char("The auction house is busy; your pickup remains staged.\r\n",
+				     ch);
+		else
+			send_to_char("Your auction pickup is being committed.\r\n", ch);
+		return true;
+	}
 	const char *root = flat_auction_root();
 	if (!root)
 		return report_flat_query_failure(ch, "flat-file state root is not configured");
@@ -786,7 +924,7 @@ bool auction_pickup(P_char ch, char *args)
 		send_to_char("&+WYou have no items or money to pickup!&n\r\n", ch);
 		return true;
 	}
-	if (pickup.item_claim.object_blob.empty() || pickup.item_claim.object_blob.back() != 0 ||
+	if (pickup.item_claim.object_blob.empty() ||
 	    pickup.item_claim.object_blob.size() > payload.object_blob.size() ||
 	    pickup.item_claim.items.size() > payload.items.size())
 		return report_flat_query_failure(ch, "pending auction item blob is invalid");
@@ -798,6 +936,8 @@ bool auction_pickup(P_char ch, char *args)
 	for (const auto &item : pickup.item_claim.items)
 		payload.items[payload.item_count++] = { item.item_uid, item.item_revision,
 							item.vnum };
+	if (!prepare_auction_claim(&payload))
+		return false;
 	if (!auction_transaction_submit(ch, payload, flat_item_claim_completed))
 		send_to_char("The auction house is busy; your items remain staged.\r\n", ch);
 	else
@@ -1052,6 +1192,9 @@ void init_auction_houses()
 	AUCTION_LISTING_FEE = get_property("auctions.listingFee", 1000);
 	AUCTION_START_PRICE_PCT_FEE = get_property("auctions.startPricePctFee", 0.02);
 	AUCTION_CLOSING_PCT_FEE = get_property("auctions.closingPctFee", 0.03);
+	auction_ram_set_policy(
+		static_cast<uint32_t>(std::clamp(AUCTION_CLOSING_PCT_FEE, 0.0f, 1.0f) * 10000),
+		static_cast<uint32_t>(std::max(0, BID_TIME_EXTENSION)));
 }
 
 void shutdown_auction_houses()
@@ -1273,6 +1416,14 @@ void auction_error(P_char ch)
 
 void auction_houses_activity()
 {
+	if (economic_state_active())
+	{
+		uint32_t ids[64]{};
+		const size_t count = auction_ram_expired(time(nullptr), ids, 64);
+		for (size_t i = 0; i < count; ++i)
+			finalize_auction(ids[i], nullptr);
+		return;
+	}
 	if (!qry("SELECT id FROM auctions WHERE end_time < NOW() AND status = %d "
 		 "AND custody_state = 1",
 		 AUCTION_STATUS_OPEN))
@@ -1564,8 +1715,13 @@ void auction_list_completed(P_char ch, bool committed, const auction_command_res
 				"stale_live_topology", "auction_id=%u item_uid=%llu",
 				result.auction_id,
 				static_cast<unsigned long long>(payload.items[index].item_uid));
-			continue;
+			auction_transaction_publication_failed();
+			return;
 		}
+	}
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		P_obj object = auction_find_live_item(payload.items[index].item_uid);
 		obj_from_char(object);
 		extract_obj(object);
 	}
@@ -1631,21 +1787,10 @@ void auction_item_claim_completed(P_char ch, bool committed, const auction_comma
 		send_to_char("Your auction items remain available for pickup.\r\n", ch);
 		return;
 	}
-	for (size_t index = 0; index < result.item_count; ++index)
+	if (!publish_auction_claim(ch, payload, result))
 	{
-		P_obj object = read_one_object(const_cast<char *>(
-			reinterpret_cast<const char *>(payload.object_blob.data())));
-		if (!object)
-		{
-			persistence_alert(AVATAR, "auction", "player", "unknown", "claim_publish",
-					  "deserialize_failed", "auction_id=%u item_uid=%llu",
-					  result.auction_id,
-					  static_cast<unsigned long long>(result.item_uids[index]));
-			continue;
-		}
-		object->obj_uid = result.item_uids[index];
-		obj_to_char(object, ch);
-		send_to_char_f(ch, "&+WYou pick up &n%s&+W.&n\r\n", object->short_description);
+		auction_transaction_publication_failed();
+		return;
 	}
 	mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS |
 							  PLAYER_COMPONENT_EQUIPMENT |
@@ -1826,6 +1971,8 @@ bool auction_offer(P_char ch, char *args)
 			       keywords.c_str()))
 		return false;
 	build_obj_info_text(object, payload.object_info.data(), payload.object_info.size());
+	if (!capture_auction_items(&payload, object))
+		return false;
 	if (!auction_transaction_submit(ch, payload, auction_list_completed))
 	{
 		send_to_char("The auction house is busy; nothing was changed.\r\n", ch);
@@ -2800,6 +2947,30 @@ bool auction_pickup(P_char ch, char *args)
 		send_to_char("Your previous auction request is still being committed.\r\n", ch);
 		return true;
 	}
+	if (economic_state_active())
+	{
+		auction_command_payload claim{};
+		if (!auction_fill_actor(ch, &claim))
+			return false;
+		const auto available = auction_ram_next_claim(GET_PID(ch), &claim);
+		if (available == ENOENT)
+		{
+			send_to_char("&+WYou have no items or money to pickup!&n\r\n", ch);
+			return true;
+		}
+		if (available ||
+		    (claim.action == auction_action::claim_item && !prepare_auction_claim(&claim)))
+			return false;
+		if (!auction_transaction_submit(ch, claim,
+						claim.action == auction_action::claim_money ?
+							auction_money_claim_completed :
+							auction_item_claim_completed))
+			send_to_char("The auction house is busy; your pickup remains staged.\r\n",
+				     ch);
+		else
+			send_to_char("Your auction pickup is being committed.\r\n", ch);
+		return true;
+	}
 	if (!qry("SELECT money FROM auction_money_pickups WHERE pid=%d AND money>0 LIMIT 1",
 		 GET_PID(ch)))
 		return false;
@@ -2865,6 +3036,8 @@ bool auction_pickup(P_char ch, char *args)
 		send_to_char("&+WYou have no items or money to pickup!&n\r\n", ch);
 		return true;
 	}
+	if (!prepare_auction_claim(&payload))
+		return false;
 	if (!auction_transaction_submit(ch, payload, auction_item_claim_completed))
 		send_to_char("The auction house is busy; your items remain staged.\r\n", ch);
 	else

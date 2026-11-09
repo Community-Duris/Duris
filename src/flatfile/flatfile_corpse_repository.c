@@ -559,6 +559,20 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 		result.catalog_revision = raises_world		  ? world_raise.catalog_revision :
 					  disposes_legacy_custody ? release.catalog_revision :
 								    mutation.catalog_revision;
+		if (command.schema_version == CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION)
+		{
+			corpse_lifecycle_result frozen{};
+			if (!corpse_lifecycle_command_decode_result(command.outcome_payload.data(),
+								    command.outcome_payload.size(),
+								    &frozen) ||
+			    !frozen.catalog_revision)
+				return { critical_apply_outcome::terminal_failure, 0, EBADMSG };
+			// The world file's envelope revision also advances for unrelated room
+			// snapshots. It is storage bookkeeping, not the RAM corpse decision's
+			// clock. Every custody, wallet and corpse revision is still checked below.
+			result.catalog_revision = frozen.catalog_revision;
+			operation.durable_revision = frozen.catalog_revision;
+		}
 		if (disposes_custody)
 		{
 			result.corpse_owner_revision = release_items.corpse_owner_revision;
@@ -627,6 +641,10 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 	{
 		return { critical_apply_outcome::retryable_failure, catalog.revision, ENOMEM };
 	}
+	if (!critical_command_outcome_matches(
+		    command, operation.durable_revision, operation.result_code,
+		    operation.result_payload.data(), operation.result_size))
+		return { critical_apply_outcome::terminal_failure, 0, EBADMSG };
 	const auto committed =
 		flatfile_authority_transaction_commit(root, authority, images, &error);
 	if (committed != flatfile_authority_transaction_result::ok)

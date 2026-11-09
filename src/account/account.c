@@ -15,6 +15,7 @@
 #include "world/zone_touch_transaction.h"
 #include "cmd/interp.h"
 #include "economy/auction_transaction.h"
+#include "economy/economic_state.h"
 #include "economy/boon_reward_transaction.h"
 #include "economy/collector_service.h"
 #include "economy/collector_transaction.h"
@@ -215,6 +216,7 @@ void remove_deleted_account_runtime(P_desc deleting_session,
 	for (const auto &identity : identities)
 	{
 		item_ownership_runtime_forget_player_domain(identity.pid);
+		economic_state_forget(identity.pid);
 		player_revision_forget(identity.pid);
 		redis_invalidate_ship_snapshot(identity.name.c_str());
 		forget_deleted_guild_member(identity.name.c_str());

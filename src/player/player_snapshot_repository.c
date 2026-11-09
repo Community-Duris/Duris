@@ -3,6 +3,7 @@
 #include "core/defines.h"
 #include "persistence/persistence_observability.h"
 #include "player/player_snapshot_codec.h"
+#include "player/player_checkpoint_command.h"
 #include "sql/item_extra_descr_codec.h"
 #include "sql/sql_pool.h"
 
@@ -439,7 +440,6 @@ query_result insert_item_rows(MYSQL *connection, const std::vector<player_item_s
 		if (!item_id)
 			return { false, EIO };
 		ids.push_back(item_id);
-		if (!pet_items)
 		{
 			player_item_snapshot standalone = row;
 			standalone.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
@@ -449,8 +449,11 @@ query_result insert_item_rows(MYSQL *connection, const std::vector<player_item_s
 				return { false, EINVAL };
 			result = execute(
 				connection,
-				"INSERT INTO player_item_runtime_state(item_id,payload) VALUES(" +
-					std::to_string(item_id) + "," +
+				"INSERT INTO " +
+					std::string(pet_items ? "player_pet_item_runtime_state" :
+								"player_item_runtime_state") +
+					"(item_id,payload) VALUES(" + std::to_string(item_id) +
+					"," +
 					quote(connection,
 					      std::string(reinterpret_cast<const char *>(
 								  runtime.data()),
@@ -1188,14 +1191,19 @@ query_result apply_death(MYSQL *connection, const player_snapshot &snapshot)
 	std::ostringstream sql;
 	sql << "REPLACE INTO player_death_disposition (pid,save_revision,operation_id,"
 	       "corpse_item_uid,corpse_room_vnum,wallet_revision,wallet_copper,wallet_silver,"
-	       "wallet_gold,wallet_platinum,wallet_pile_uid,payload) VALUES ("
+	       "wallet_gold,wallet_platinum,wallet_pile_uid,payload,recorded_at) VALUES ("
 	    << pid << ',' << revision << ",UNHEX('" << hex_operation(death.operation_id) << "'),"
 	    << death.corpse.front().object_uid << ',' << death.corpse_room_vnum << ','
 	    << death.wallet_revision;
 	for (int32_t amount : death.wallet_before)
 		sql << ',' << amount;
 	sql << ',' << death.wallet_pile_uid << ','
-	    << quote(connection, std::string(payload.begin(), payload.end())) << ')';
+	    << quote(connection, std::string(payload.begin(), payload.end())) << ',';
+	if (const auto epoch = player_checkpoint_projection_epoch())
+		sql << "FROM_UNIXTIME(" << epoch << ')';
+	else
+		sql << "CURRENT_TIMESTAMP(6)";
+	sql << ')';
 	query_result result = execute(connection, sql.str());
 	if (!result.ok)
 		return result;

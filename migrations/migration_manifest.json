@@ -488,6 +488,16 @@
       "verify": "immutable/0031_player_item_runtime_state.sh",
       "verify_checksum": "c523d56f74862735f6aef0c831cbe662bed49c64fa6cbdf05bac82f81c1225e5",
       "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0032_ram_authority",
+      "sequence": 32,
+      "description": "Add RAM authority projection clocks and preserve shop corpse room and pet item runtime state",
+      "apply": "immutable/0032_ram_authority.sql",
+      "apply_checksum": "a43af8bfd5eff36be0cdd52827658042626604d7dc4921b1e3a8eab018203c8b",
+      "verify": "immutable/0032_ram_authority.sh",
+      "verify_checksum": "c679b2c852416fc0821ec21cc60da1744b09d7d8b254d379c738b963228a85da",
+      "compatibility": "mysql8-mariadb10"
     }
   ]
 }

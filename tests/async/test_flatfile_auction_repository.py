@@ -14,6 +14,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-auction-") as temporary:
     sources = [
         "tests/async/flatfile_auction_repository_harness.cpp",
         rel("flatfile_auction_repository.c"),
+        rel("flatfile_identity_repository.c"),
         rel("flatfile_boon_repository.c"),
         rel("flatfile_item_repository.c"),
         rel("flatfile_collector_repository.c"),

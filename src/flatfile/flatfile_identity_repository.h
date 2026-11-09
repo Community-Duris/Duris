@@ -83,6 +83,9 @@ flatfile_identity_result flatfile_identity_lookup_pid(const std::string &root, i
 flatfile_identity_result
 flatfile_identity_list_account(const std::string &root, const std::string &account,
 			       std::vector<flatfile_identity_record> *records, std::string *error);
+flatfile_identity_result flatfile_identity_list_all(const std::string &root,
+						    std::vector<flatfile_identity_record> *records,
+						    std::string *error);
 flatfile_identity_result
 flatfile_identity_sync_account(const std::string &root, const std::string &account,
 			       const std::vector<flatfile_identity_record> &records,

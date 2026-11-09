@@ -1,6 +1,7 @@
 #include "flatfile/flatfile_boon_repository.h"
 
 #include "economy/boon.h"
+#include "economy/boon_ram.h"
 #include "economy/boon_shop_command.h"
 #include "flatfile/flatfile_authority_transaction.h"
 #include "flatfile/flatfile_player_domain_repository.h"
@@ -1075,7 +1076,11 @@ critical_apply_result flatfile_boon_repository_apply(const std::string &root,
 					  digest.size()))
 				return { critical_apply_outcome::terminal_failure, catalog.revision,
 					 EEXIST };
-			return make_result(operation, catalog.revision,
+			return make_result(operation,
+					   command.schema_version ==
+							   CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION ?
+						   0 :
+						   catalog.revision,
 					   critical_apply_outcome::already_applied);
 		}
 	for (const auto &operation : catalog.shop_operations)
@@ -1237,10 +1242,19 @@ critical_apply_result flatfile_boon_repository_apply(const std::string &root,
 	std::vector<uint8_t> bytes;
 	if (!encode_catalog(candidate, &bytes))
 		return { critical_apply_outcome::terminal_failure, catalog.revision, ENOSPC };
+	const auto sealed_result =
+		make_result(candidate.operations.back(),
+			    command.schema_version == CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION ?
+				    0 :
+				    candidate.revision,
+			    critical_apply_outcome::applied);
+	if (!critical_command_outcome_matches(
+		    command, sealed_result.durable_revision, sealed_result.error_code,
+		    sealed_result.result_payload.data(), sealed_result.result_size))
+		return { critical_apply_outcome::terminal_failure, 0, EILSEQ };
 	if (!flatfile_atomic_write(domains_directory(root), catalog_filename, bytes, &error))
 		return { critical_apply_outcome::retryable_failure, catalog.revision, EIO };
-	return make_result(candidate.operations.back(), candidate.revision,
-			   critical_apply_outcome::applied);
+	return sealed_result;
 }
 
 critical_apply_result flatfile_boon_shop_repository_apply(const std::string &root,
@@ -1286,7 +1300,11 @@ critical_apply_result flatfile_boon_shop_repository_apply(const std::string &roo
 					  digest.size()))
 				return { critical_apply_outcome::terminal_failure, catalog.revision,
 					 EEXIST };
-			return make_result(operation, catalog.revision,
+			return make_result(operation,
+					   command.schema_version ==
+							   CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION ?
+						   operation.result.stat_revision :
+						   catalog.revision,
 					   critical_apply_outcome::already_applied);
 		}
 	for (const auto &operation : catalog.operations)
@@ -1360,6 +1378,16 @@ critical_apply_result flatfile_boon_shop_repository_apply(const std::string &roo
 	{
 		return { critical_apply_outcome::retryable_failure, catalog.revision - 1, ENOMEM };
 	}
+	const auto sealed_result =
+		make_result(catalog.shop_operations.back(),
+			    command.schema_version == CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION ?
+				    result.stat_revision :
+				    catalog.revision,
+			    critical_apply_outcome::applied);
+	if (!critical_command_outcome_matches(
+		    command, sealed_result.durable_revision, sealed_result.error_code,
+		    sealed_result.result_payload.data(), sealed_result.result_size))
+		return { critical_apply_outcome::terminal_failure, 0, EILSEQ };
 	const auto committed = flatfile_authority_transaction_commit(root, lock, images, &error);
 	if (committed != flatfile_authority_transaction_result::ok)
 		return { committed == flatfile_authority_transaction_result::io_error ?
@@ -1370,6 +1398,26 @@ critical_apply_result flatfile_boon_shop_repository_apply(const std::string &roo
 				 committed == flatfile_authority_transaction_result::io_error ?
 					 EIO :
 					 EILSEQ) };
-	return make_result(catalog.shop_operations.back(), catalog.revision,
-			   critical_apply_outcome::applied);
+	return sealed_result;
+}
+
+bool flatfile_boon_load_ram(const std::string &root, boon_ram_state *state, std::string *error)
+{
+	if (!state)
+		return false;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return false;
+	boon_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_read_result::ok && loaded != flatfile_read_result::not_found)
+		return false;
+	for (const auto &entry : catalog.definitions)
+		state->definitions.emplace(entry.id, entry);
+	for (const auto &entry : catalog.progress)
+		state->progress.emplace(std::pair{ entry.boon_id, entry.pid }, entry.counter);
+	for (const auto &entry : catalog.shops)
+		state->shops.emplace(entry.pid,
+				     flatfile_boon_player_projection{ entry.points, entry.stats });
+	return true;
 }

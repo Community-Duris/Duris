@@ -16,6 +16,7 @@ HARNESS = r'''
 #include "economy/collector_command.h"
 
 #include <cassert>
+#include <cerrno>
 
 int main()
 {
@@ -79,6 +80,31 @@ int main()
 	move.item_count = 1;
 	move.items[0] = { 100, 100, 0, 5, 7, item_custody_state::active };
 	const item_transfer_result committed = { 100, 1, 11, 1, 6, 0 };
+	move.expected_from_revision = 10;
+	item_transfer_result prepared{};
+	assert(item_ownership_runtime_prepare(move, &prepared) == 0);
+	assert(prepared.from_owner_revision == 11 && prepared.to_owner_revision == 1 &&
+	       prepared.max_item_revision == 6);
+	auto sidecar = move;
+	sidecar.corpse.present = true;
+	assert(item_ownership_runtime_prepare(sidecar, &prepared) == 0);
+	sidecar = move;
+	sidecar.collector.present = true;
+	assert(item_ownership_runtime_prepare(sidecar, &prepared) == 0);
+	sidecar = move;
+	sidecar.reason = item_transfer_reason::craft;
+	assert(item_ownership_runtime_prepare(sidecar, &prepared) == EINVAL);
+	sidecar = move;
+	sidecar.from_owner = { item_owner_type::corpse, (uint64_t(42) << 32) | 1, 0 };
+	assert(item_ownership_runtime_prepare(sidecar, &prepared) == ESTALE);
+	assert(prepared.from_owner_revision == 11 && prepared.to_owner_revision == 1 &&
+	       prepared.max_item_revision == 6);
+	item_ownership_runtime_entry before{};
+	assert(item_ownership_runtime_lookup(100, &before) && before.item_revision == 5);
+	auto stale_move = move;
+	stale_move.expected_from_revision = 9;
+	assert(item_ownership_runtime_prepare(stale_move, &prepared) == ESTALE);
+	assert(item_ownership_runtime_lookup(100, &before) && before.item_revision == 5);
 	assert(item_ownership_runtime_apply(move, committed));
 
 	item_ownership_runtime_entry untouched = {};
@@ -106,6 +132,14 @@ int main()
 	assert(item_ownership_runtime_lookup(200, &created));
 	assert(created.root_item_uid == 101 && created.parent_item_uid == 101 &&
 	       created.owner_revision == 12);
+	// A root-only request cannot strand an omitted child in the source inventory.
+	item_transfer_payload incomplete = move;
+	incomplete.expected_from_revision = 12;
+	incomplete.expected_to_revision = 1;
+	incomplete.selected_item_uid = incomplete.target_root_item_uid = 101;
+	incomplete.items[0] = {101, 101, 0, 3, 8, item_custody_state::active};
+	assert(item_ownership_runtime_prepare(incomplete, &prepared) == EINVAL);
+	assert(item_ownership_runtime_lookup(200, &before) && before.owner.id == player.id);
 	creation.selected_item_uid = 201;
 	creation.items[0].item_uid = 201;
 	creation.expected_target_parent_revision = 2;
@@ -471,7 +505,8 @@ int main()
 	corpse_lifecycle_result hostile_world_raised = {};
 	hostile_world_raised.save_id = 1100;
 	hostile_world_raised.action = corpse_lifecycle_action::raise_world_follower;
-	hostile_world_raised.catalog_revision = 7;
+	// Flat-file catalog clocks are independent of the room custody clock.
+	hostile_world_raised.catalog_revision = 97;
 	hostile_world_raised.corpse_owner_revision = 7;
 	hostile_world_raised.destruction_owner_revision = 1;
 	hostile_world_raised.max_item_revision = 6;

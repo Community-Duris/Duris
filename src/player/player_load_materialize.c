@@ -1,5 +1,8 @@
 #include "player/player_load_materialize.h"
+#include <algorithm>
 #include "net/output_preference_codec.h"
+#include "economy/economic_state.h"
+#include "economy/boon_ram.h"
 
 #include "item/item_ownership_runtime.h"
 #include "player/player_load_items.h"
@@ -369,8 +372,71 @@ void apply_integer(P_char ch, const player_snapshot_integer &entry, int *hit_dif
 }
 } // namespace
 
+namespace
+{
+bool ram_load_custody_matches(const player_load_result &result)
+{
+	const item_owner_identity player{ item_owner_type::player,
+					  static_cast<uint64_t>(result.pid), 0 };
+	uint64_t revision = 0;
+	item_ownership_runtime_peek_owner_revision(player, &revision);
+	if (revision != result.item_owner_revision)
+		return false;
+	auto matches = [](const std::vector<player_item_snapshot> &items,
+			  const std::vector<player_load_item_identity> &identities,
+			  const item_owner_identity &owner, uint64_t expected)
+	{
+		std::vector<item_ownership_runtime_entry> current;
+		if (items.size() != identities.size() ||
+		    !item_ownership_runtime_snapshot_owner(owner, SIZE_MAX, &current) ||
+		    static_cast<size_t>(
+			    std::count_if(current.begin(), current.end(), [](const auto &row)
+					  { return row.state == item_custody_state::active; })) !=
+			    identities.size())
+			return false;
+		for (size_t i = 0; i < identities.size(); ++i)
+		{
+			const auto &incoming = identities[i];
+			item_ownership_runtime_entry live;
+			if (!item_ownership_runtime_lookup(incoming.item_uid, &live) ||
+			    !item_owner_identity_equal(live.owner, owner) ||
+			    live.item_revision != incoming.item_revision ||
+			    incoming.owner_revision != expected || live.vnum != items[i].vnum ||
+			    live.root_item_uid != incoming.root_item_uid ||
+			    live.parent_item_uid != incoming.parent_item_uid ||
+			    live.state != incoming.state)
+				return false;
+		}
+		return true;
+	};
+	if (!matches(result.snapshot.items, result.item_identities, player, revision) ||
+	    result.snapshot.pets.size() != result.pet_identities.size())
+		return false;
+	for (size_t i = 0; i < result.pet_identities.size(); ++i)
+	{
+		const auto &pet = result.pet_identities[i];
+		const item_owner_identity owner{ item_owner_type::pet, pet.pet_uid,
+						 static_cast<uint64_t>(result.pid) };
+		uint64_t clock = 0;
+		item_ownership_runtime_peek_owner_revision(owner, &clock);
+		if (clock != pet.owner_revision ||
+		    !matches(result.snapshot.pets[i].items, pet.item_identities, owner, clock))
+			return false;
+	}
+	return true;
+}
+}
+
 bool player_load_materialize(P_char ch, const player_load_result &result)
 {
+	if (economic_state_active() && !ram_load_custody_matches(result))
+	{
+		logit(LOG_DEBUG,
+		      "player_load_materialize: pid=%d projection behind RAM custody; retry required",
+		      result.pid);
+		return false;
+	}
+
 	if (!ch || !ch->only.pc)
 		return false;
 	if (!valid_snapshot(result))
@@ -542,21 +608,48 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 			ch->specials.was_in_room = world[exit_room].number;
 		}
 	}
-	GET_COPPER(ch) = result.domains.wallet[0];
-	GET_SILVER(ch) = result.domains.wallet[1];
-	GET_GOLD(ch) = result.domains.wallet[2];
-	GET_PLATINUM(ch) = result.domains.wallet[3];
-	GET_BALANCE_COPPER(ch) = result.domains.bank[0];
-	GET_BALANCE_SILVER(ch) = result.domains.bank[1];
-	GET_BALANCE_GOLD(ch) = result.domains.bank[2];
-	GET_BALANCE_PLATINUM(ch) = result.domains.bank[3];
-	ch->only.pc->wallet_revision = result.domains.wallet_revision;
-	ch->only.pc->bank_revision = result.domains.bank_revision;
-	ch->only.pc->epics = result.domains.epics;
-	ch->only.pc->epic_revision = result.domains.epic_revision;
-	ch->only.pc->frags = result.domains.frags;
-	ch->only.pc->oldfrags = result.domains.old_frags;
-	ch->only.pc->frag_revision = result.domains.frag_revision;
+	currency_command_result balances{};
+	for (size_t i = 0; i < 4; ++i)
+	{
+		balances.wallet.amount[i] = result.domains.wallet[i];
+		balances.bank.amount[i] = result.domains.bank[i];
+	}
+	balances.wallet_revision = result.domains.wallet_revision;
+	balances.bank_revision = result.domains.bank_revision;
+	economic_progress_state progress{ result.domains.epics, result.domains.epic_revision,
+					  result.domains.frags, result.domains.old_frags,
+					  result.domains.frag_revision };
+	if (economic_state_active())
+	{
+		// A load can have started before an offline bid or a shared-bank transfer.
+		// RAM owns these domains for the entire server lifetime, including logout.
+		economic_player_state owner;
+		if (!economic_state_find(result.pid, &owner) &&
+		    !economic_state_seed({ static_cast<uint32_t>(result.pid), result.account_name,
+					   GET_NAME(ch), static_cast<uint8_t>(GET_RACEWAR(ch)),
+					   balances, progress }))
+			return false;
+		if (!economic_state_balances(result.pid, result.account_name.c_str(),
+					     GET_RACEWAR(ch), &balances))
+			return false;
+		if (!economic_state_progress(result.pid, &progress))
+			return false;
+	}
+	GET_COPPER(ch) = balances.wallet.amount[0];
+	GET_SILVER(ch) = balances.wallet.amount[1];
+	GET_GOLD(ch) = balances.wallet.amount[2];
+	GET_PLATINUM(ch) = balances.wallet.amount[3];
+	GET_BALANCE_COPPER(ch) = balances.bank.amount[0];
+	GET_BALANCE_SILVER(ch) = balances.bank.amount[1];
+	GET_BALANCE_GOLD(ch) = balances.bank.amount[2];
+	GET_BALANCE_PLATINUM(ch) = balances.bank.amount[3];
+	ch->only.pc->wallet_revision = balances.wallet_revision;
+	ch->only.pc->bank_revision = balances.bank_revision;
+	ch->only.pc->epics = progress.epics;
+	ch->only.pc->epic_revision = progress.epic_revision;
+	ch->only.pc->frags = progress.frags;
+	ch->only.pc->oldfrags = progress.old_frags;
+	ch->only.pc->frag_revision = progress.frag_revision;
 	if (result.domains.base_stat_revision)
 	{
 		ch->base_stats.Str = result.domains.base_stats[0];
@@ -569,6 +662,15 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 		ch->base_stats.Cha = result.domains.base_stats[7];
 		ch->base_stats.Kar = result.domains.base_stats[8];
 		ch->base_stats.Luk = result.domains.base_stats[9];
+	}
+	if (economic_state_active())
+	{
+		std::array<int16_t, 10> stats;
+		for (size_t i = 0; i < stats.size(); ++i)
+			stats[i] = ch->base_stats[i];
+		boon_ram_overlay_stats(result.pid, result.domains.base_stat_revision, &stats);
+		for (size_t i = 0; i < stats.size(); ++i)
+			ch->base_stats[i] = stats[i];
 	}
 	for (size_t index = 0; index < result.snapshot.conditions.size(); ++index)
 		ch->specials.conditions[index] = result.snapshot.conditions[index];
@@ -712,7 +814,8 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 				      result.pid, static_cast<unsigned int>(item_metrics.outcome),
 				      item_metrics.item_count, item_metrics.operation_count,
 				      item_metrics.maximum_depth);
-				item_ownership_runtime_forget_player_domain(result.pid);
+				if (!economic_state_active())
+					item_ownership_runtime_forget_player_domain(result.pid);
 				player_load_items_discard(ch);
 				player_load_pets_discard(&pets);
 				mark_degraded(PLAYER_LOAD_DEGRADED_ITEMS |
@@ -761,7 +864,9 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 					      "player_load_materialize: component=ownership pid=%d "
 					      "outcome=allocation_failure",
 					      result.pid);
-					item_ownership_runtime_forget_player_domain(result.pid);
+					if (!economic_state_active())
+						item_ownership_runtime_forget_player_domain(
+							result.pid);
 					player_load_items_discard(ch);
 					player_load_pets_discard(&pets);
 					mark_degraded(PLAYER_LOAD_DEGRADED_ITEMS |
@@ -784,8 +889,9 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 						      result.pid, ownership.size(),
 						      result.authoritative_item_count +
 							      result.authoritative_pet_item_count);
-						item_ownership_runtime_forget_player_domain(
-							result.pid);
+						if (!economic_state_active())
+							item_ownership_runtime_forget_player_domain(
+								result.pid);
 						player_load_items_discard(ch);
 						player_load_pets_discard(&pets);
 						mark_degraded(PLAYER_LOAD_DEGRADED_ITEMS |
@@ -832,8 +938,9 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 							      "player_load_materialize: component=ownership pid=%d "
 							      "outcome=hydrate_failure entries=%zu",
 							      result.pid, ownership.size());
-							item_ownership_runtime_forget_player_domain(
-								result.pid);
+							if (!economic_state_active())
+								item_ownership_runtime_forget_player_domain(
+									result.pid);
 							player_load_items_discard(ch);
 							player_load_pets_discard(&pets);
 							mark_degraded(

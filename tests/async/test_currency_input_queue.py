@@ -219,7 +219,7 @@ P_char find_character_by_runtime_id(uint64_t runtime_id)
 	return nullptr;
 }
 
-critical_submit_result critical_command_coordinator_submit(critical_command command_value)
+critical_submit_result critical_command_coordinator_submit_for_publication(critical_command command_value)
 {
 	assert(!coordinator_fenced);
 	coordinator_fenced = true;
@@ -234,6 +234,8 @@ bool critical_command_coordinator_is_fenced(const critical_entity_key &,
 	return coordinator_fenced;
 }
 
+bool critical_command_coordinator_acknowledge_publication(const critical_operation_id &)
+{ coordinator_fenced = false; return true; }
 bool critical_command_coordinator_get_completed(const critical_operation_id &,
 						 critical_completion *)
 {
@@ -1135,8 +1137,10 @@ int main()
 	hidden_container = 900;
 	pile_ack(true);
 	assert(currency_transaction_health_copy().pending == 1 && put_announcements == 2);
-	assert(!currency_transaction_player_busy(&actor) &&
-	       currency_transaction_can_submit_nonrebasable(&actor));
+	// The wallet and physical pile are one operation. A later spend or save
+	// must not pass the unfinished physical publication.
+	assert(currency_transaction_player_busy(&actor) &&
+	       !currency_transaction_can_submit_nonrebasable(&actor));
 	assert(currency_transaction_coin_item_busy(pile_uid) && currency_transaction_coin_item_busy(900));
 	assert(bag.contains->value[0] == 300);
 	hidden_container = 0;
@@ -1144,23 +1148,25 @@ int main()
 	assert(currency_transaction_health_copy().pending == 0 && put_announcements == 3);
 	assert(bag.contains->value[0] == 350);
 	const std::array<int, 4> before_abandon = { GET_COPPER(&actor), GET_SILVER(&actor), GET_GOLD(&actor), GET_PLATINUM(&actor) };
-	// A permanently missing container retires the bounded retry without refunding
-	// the committed wallet or reporting a rejected transfer.
+	// A permanently missing container stops hot retries and retains recovery
+	// guards without refunding or reporting a rejected transfer.
 	assert(submit_coin_put(&actor, put));
 	hidden_container = 900;
 	pile_ack(true);
 	const int committed_gold = GET_GOLD(&actor);
 	for (unsigned int attempt = 1; attempt < CURRENCY_COIN_PUBLICATION_MAX_ATTEMPTS; ++attempt)
 		currency_transaction_handle_completions(nullptr, 0);
-	assert(currency_transaction_health_copy().pending == 0);
+	assert(currency_transaction_health_copy().pending == 1);
 	assert(currency_transaction_health_copy().publication_abandoned == 1);
-	assert(!currency_transaction_player_busy(&actor));
-	assert(!currency_transaction_coin_item_busy(pile_uid));
+	assert(currency_transaction_player_busy(&actor));
+	assert(currency_transaction_coin_item_busy(pile_uid));
 	assert(GET_GOLD(&actor) == committed_gold && put_announcements == 3);
 	for (int pulse = 0; pulse < 100; ++pulse)
 		currency_transaction_handle_completions(nullptr, 0);
 	assert(currency_transaction_health_copy().publication_abandoned == 1);
 	// Restore the previous synthetic baseline for the remaining independent cases.
+	currency_transaction_reset_for_tests();
+	coordinator_fenced = false;
 	hidden_container = 0;
 	std::copy(before_abandon.begin(), before_abandon.end(), actor.points.cash);
 	assert(submit_coin_put(&actor, put));

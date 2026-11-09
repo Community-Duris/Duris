@@ -28,6 +28,7 @@
 #include "sql/sql.h"
 #include "persistence/persistence_mode.h"
 #include "economy/shop_trade_runtime.h"
+#include "economy/economic_state.h"
 #include "economy/shop_trade_publication.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
@@ -695,7 +696,7 @@ static bool shop_trade_submit_invalid_cleanup(P_char ch, P_char keeper, P_obj ob
 static bool shop_trade_route_invalid_cleanup(P_char ch, P_char keeper, P_obj object,
 					     uint32_t shop_id)
 {
-	if (persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
+	if (!economic_state_active() && persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
 		return false;
 	if (shop_trade_transaction_player_busy(ch))
 		send_to_char("Your previous shop trade is still being processed.\r\n", ch);
@@ -1551,7 +1552,8 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 
 	if ((GET_MONEY(ch) < sale) && !IS_TRUSTED(ch))
 	{
-		if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY ||
+		if ((economic_state_active() ||
+		     persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY) ||
 		    produced_purchase)
 		{
 			if (request.batch)
@@ -1583,7 +1585,8 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 		send_to_char(Gbuf1, ch);
 		return;
 	}
-	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+	if ((economic_state_active() ||
+	     persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY))
 	{
 		const int64_t transaction_price = IS_TRUSTED(ch) ? 0 : sale;
 		const bool produced = produced_purchase;
@@ -1798,7 +1801,8 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 
 	if (!(is_ok(keeper, ch, shop_nr)))
 		return;
-	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY &&
+	if ((economic_state_active() ||
+	     persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY) &&
 	    shop_trade_transaction_player_busy(ch))
 	{
 		send_to_char("Your previous shop trade is still being processed.\r\n", ch);
@@ -1903,7 +1907,8 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 			"The shopkeeper says 'This item is rather common, you won't get as much for it.'\r\n");
 		send_to_char(Gbuf1, ch);
 	}
-	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+	if ((economic_state_active() ||
+	     persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY))
 	{
 		const shop_trade_action action = (get_obj_in_list(argm, keeper->carrying) ||
 						  GET_ITEM_TYPE(temp1) == ITEM_TRASH) ?

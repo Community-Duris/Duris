@@ -1,6 +1,10 @@
 #include "economy/shop_trade_runtime.h"
 
 #include "item/item_ownership_runtime.h"
+#include "item/item_movement_transaction.h"
+#include "economy/economic_state.h"
+#include "persistence/persistence_mode.h"
+#include <cerrno>
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
 #include "core/prototypes.h"
@@ -101,6 +105,23 @@ shop_trade_runtime_build_payload(P_char player, P_obj selected, P_obj stock, P_o
 	if (!shop_trade_runtime_revision(shop_id, &shop_revision))
 		return shop_trade_payload_build_result::unavailable;
 
+	if (economic_state_active() && persistence_mode_requires_mysql())
+	{
+		// Flat-file stock is adopted with its shop catalog. Its generic item
+		// projector does not support creating shopkeeper stock independently.
+		P_obj exemplar = stock ? stock : shop_owned(action) ? selected : nullptr;
+		item_ownership_runtime_entry entry;
+		if (exemplar && !item_ownership_runtime_lookup(exemplar->obj_uid, &entry))
+		{
+			const item_owner_identity owner{ item_owner_type::shopkeeper,
+							 item_shopkeeper_owner_id(shop_id), 0 };
+			(void)item_movement_transaction_submit(player, exemplar, nullptr, owner,
+							       owner,
+							       item_transfer_reason::creation,
+							       shop_id, nullptr, nullptr, 0);
+			return shop_trade_payload_build_result::unavailable;
+		}
+	}
 	std::vector<player_item_snapshot> snapshots;
 	if (player_item_snapshot_tree_capture(selected, &snapshots, nullptr) !=
 		    player_snapshot_capture_result::ok ||
@@ -223,4 +244,101 @@ bool shop_trade_runtime_object_matches_payload(P_obj selected, const shop_trade_
 		       player_snapshot_codec_result::ok &&
 	       encoded.size() == payload.item_blob_size &&
 	       std::equal(encoded.begin(), encoded.end(), payload.item_blob.begin());
+}
+
+bool shop_trade_runtime_seed_revision(uint32_t shop_id, uint64_t revision)
+{
+	return revision && shop_revisions.emplace(shop_id, revision).second;
+}
+
+unsigned int shop_trade_runtime_prepare(const shop_trade_payload &payload,
+					shop_trade_result *result)
+{
+	if (!result)
+		return EINVAL;
+	uint64_t revision = 0;
+	if (!shop_trade_runtime_revision(payload.shop_id, &revision))
+		return ENOENT;
+	if (revision != payload.expected_shop_revision)
+		return ESTALE;
+	if (revision == UINT64_MAX)
+		return ERANGE;
+	currency_command_result wallet;
+	if (!economic_state_balances(payload.player_pid, payload.account_name.data(),
+				     payload.racewar, &wallet))
+		return ENOENT;
+	if (wallet.wallet_revision != payload.expected_wallet_revision ||
+	    wallet.bank_revision != payload.expected_bank_revision)
+		return ESTALE;
+	std::vector<player_item_snapshot> snapshots;
+	if (player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
+					     &snapshots) != player_snapshot_codec_result::ok ||
+	    snapshots.size() != payload.item_count || snapshots.empty() ||
+	    snapshots.front().object_uid != payload.selected_item_uid)
+		return EINVAL;
+	if (payload.action == shop_trade_action::sell_store &&
+	    std::any_of(snapshots.begin(), snapshots.end(),
+			[](const auto &snapshot) { return !snapshot.dynamic_affects.empty(); }))
+		return EOPNOTSUPP;
+	if (payload.action == shop_trade_action::buy_produced)
+	{
+		item_ownership_runtime_entry stock;
+		if (!item_ownership_runtime_lookup(payload.stock_item_uid, &stock) ||
+		    stock.owner.type != item_owner_type::shopkeeper ||
+		    stock.owner.id != item_shopkeeper_owner_id(payload.shop_id) ||
+		    stock.root_item_uid != stock.item_uid || stock.parent_item_uid ||
+		    stock.item_revision != payload.expected_stock_item_revision ||
+		    stock.vnum != payload.stock_vnum || stock.state != item_custody_state::active ||
+		    snapshots.front().vnum != payload.stock_vnum)
+			return ESTALE;
+	}
+	item_transfer_payload transfer;
+	if (!shop_trade_item_payload(payload, &transfer))
+		return EINVAL;
+	item_ownership_runtime_peek_owner_revision(transfer.from_owner,
+						   &transfer.expected_from_revision);
+	item_ownership_runtime_peek_owner_revision(transfer.to_owner,
+						   &transfer.expected_to_revision);
+	item_transfer_result moved;
+	if (auto error = item_ownership_runtime_prepare(transfer, &moved))
+		return error;
+	if (payload.action != shop_trade_action::discard_invalid)
+	{
+		const int64_t delta = is_buy(payload.action) ? -payload.price : payload.price;
+		const auto &amount = wallet.wallet.amount;
+		const int64_t current =
+			amount[0] + 10 * amount[1] + 100 * amount[2] + 1000 * amount[3];
+		if (delta < 0 && current < -delta)
+			return ENOSPC;
+		if (delta > 0 && current > INT64_MAX - delta)
+			return ERANGE;
+		const int64_t value = current + delta;
+		if (value / 1000 > INT_MAX || wallet.wallet_revision == UINT64_MAX ||
+		    wallet.bank_revision == UINT64_MAX)
+			return ERANGE;
+		wallet.wallet = { { value % 10, (value / 10) % 10, (value / 100) % 10,
+				    value / 1000 } };
+		++wallet.wallet_revision;
+		++wallet.bank_revision;
+	}
+	*result = {};
+	result->action = payload.action;
+	result->wallet = wallet.wallet;
+	result->bank = wallet.bank;
+	result->wallet_revision = wallet.wallet_revision;
+	result->bank_revision = wallet.bank_revision;
+	result->shop_revision = revision + 1;
+	result->player_owner_revision = is_buy(payload.action) ? moved.to_owner_revision :
+								 moved.from_owner_revision;
+	result->counterparty_owner_revision = is_buy(payload.action) ? moved.from_owner_revision :
+								       moved.to_owner_revision;
+	result->item_count = payload.item_count;
+	for (size_t i = 0; i < payload.item_count; ++i)
+	{
+		result->item_uids[i] = payload.items[i].item_uid;
+		result->item_revisions[i] = payload.action == shop_trade_action::buy_produced ?
+						    1 :
+						    payload.items[i].expected_item_revision + 1;
+	}
+	return 0;
 }

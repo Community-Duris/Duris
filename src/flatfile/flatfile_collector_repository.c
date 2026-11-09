@@ -1235,8 +1235,17 @@ critical_apply_result flatfile_collector_repository_apply(const std::string &roo
 					  digest.size()))
 				return { critical_apply_outcome::terminal_failure,
 					 catalog.catalog_revision, EEXIST };
-			return make_result(operation, catalog.catalog_revision,
-					   critical_apply_outcome::already_applied);
+			{
+				auto replayed =
+					make_result(operation, catalog.catalog_revision,
+						    critical_apply_outcome::already_applied);
+				// This catalog may contain later commands. The sealed command's
+				// identity includes its original receipt and catalog clock.
+				if (command.schema_version ==
+				    CRITICAL_COMMAND_OUTCOME_SCHEMA_VERSION)
+					replayed.durable_revision = command.outcome_revision;
+				return replayed;
+			}
 		}
 	if (catalog.operations.size() >= catalog_maximum_operations ||
 	    catalog.file_revision == UINT64_MAX)
@@ -1570,6 +1579,11 @@ critical_apply_result flatfile_collector_repository_apply(const std::string &roo
 		return { critical_apply_outcome::retryable_failure, catalog.catalog_revision,
 			 ENOMEM };
 	}
+	const auto frozen = make_result(candidate.operations.back(), candidate.catalog_revision,
+					critical_apply_outcome::applied);
+	if (!critical_command_outcome_matches(command, frozen.durable_revision, frozen.error_code,
+					      frozen.result_payload.data(), frozen.result_size))
+		return { critical_apply_outcome::terminal_failure, 0, EBADMSG };
 	const auto committed = flatfile_authority_transaction_commit(root, lock, images, &error);
 	if (committed != flatfile_authority_transaction_result::ok)
 		return { committed == flatfile_authority_transaction_result::io_error ?

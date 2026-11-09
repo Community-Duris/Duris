@@ -163,6 +163,8 @@ player_save_apply_result write_job(const queued_job &job)
 {
 	try
 	{
+		if (job.write)
+			return job.write();
 		if (job.kind == persistence_job_kind::player)
 		{
 			// Pipeline captures are already journaled. Optional standalone callers
@@ -306,9 +308,12 @@ player_save_submit_result enqueue(queued_job &job)
 	}
 	const persistence_job_owner key = { job.kind, job.owner };
 	const auto found = queued_by_owner.find(key);
-	const bool replace_tail = found != queued_by_owner.end() &&
-				  found->second == std::prev(queue.end()) && !job.snapshot.death &&
-				  !found->second->snapshot.death;
+	const bool replace_tail =
+		job.kind != persistence_job_kind::critical && found != queued_by_owner.end() &&
+		found->second == std::prev(queue.end()) && !job.snapshot.death &&
+		!found->second->snapshot.death &&
+		!(job.kind == persistence_job_kind::player && job.write) &&
+		!(found->second->kind == persistence_job_kind::player && found->second->write);
 	const size_t retained_bytes = queued_bytes + (inflight ? inflight->bytes : 0) -
 				      (replace_tail ? found->second->bytes : 0);
 	const size_t pending_jobs = queue.size() + (inflight ? 1 : 0) + results.size();
@@ -484,6 +489,20 @@ player_save_submit_result player_save_worker_submit(player_snapshot snapshot)
 	job.owner = static_cast<uint64_t>(snapshot.pid);
 	job.bytes = snapshot.encoded_size_bound;
 	job.snapshot = std::move(snapshot);
+	return enqueue(job);
+}
+
+player_save_submit_result player_save_worker_submit_logged(player_snapshot snapshot,
+							   persistence_job_write_fn write)
+{
+	if (!valid_snapshot(snapshot) || !write)
+		return player_save_submit_result::invalid;
+	queued_job job{};
+	job.owner = static_cast<uint64_t>(snapshot.pid);
+	// The callback retains the encoded WAL image in addition to this snapshot.
+	job.bytes = snapshot.encoded_size_bound * 2 + sizeof(job);
+	job.snapshot = std::move(snapshot);
+	job.write = std::move(write);
 	return enqueue(job);
 }
 

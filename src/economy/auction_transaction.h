@@ -21,6 +21,7 @@ bool auction_transaction_submit(
 	critical_deadline_class deadline = critical_deadline_class::interactive);
 bool auction_transaction_submit_background(const auction_command_payload &payload,
 					   auction_completion_fn completion);
+critical_submit_result auction_transaction_submit_website(const critical_command &command);
 void auction_transaction_handle_completions(const critical_completion *completions, size_t count);
 void auction_transaction_player_ready(P_char character);
 bool auction_transaction_player_busy(P_char character);
@@ -28,5 +29,8 @@ critical_outbox_delivery_result
 auction_transaction_outbox_delivery(const critical_outbox_record &record, void *context);
 void auction_transaction_publish_outbox(void);
 void auction_transaction_reset_for_tests(void);
+// A live publication failed before attaching/detaching any objects. Retain its
+// entity fences and retry the same durable outcome on the next pulse.
+void auction_transaction_publication_failed();
 
 #endif

@@ -28,6 +28,11 @@ static bool resurrection_completed = false;
 static bool raise_completed = false;
 static bool world_raise_completed = false;
 static bool nested_completed = false;
+static bool ram_mode = false, quiesced = false;
+static unsigned publication_acks = 0;
+bool economic_state_active() { return ram_mode; }
+void critical_command_coordinator_quiesce() { quiesced = true; }
+bool critical_command_coordinator_acknowledge_publication(const critical_operation_id &) { ++publication_acks; return true; }
 
 bool redis_invalidate_artifact_cache(void)
 {
@@ -40,6 +45,10 @@ critical_submit_result critical_command_coordinator_submit(critical_command comm
 {
 	submitted.push_back(std::move(command));
 	return critical_submit_result::accepted;
+}
+critical_submit_result critical_command_coordinator_submit_for_publication(critical_command command)
+{
+	return critical_command_coordinator_submit(std::move(command));
 }
 
 bool critical_command_coordinator_is_fenced(const critical_entity_key &,
@@ -557,6 +566,21 @@ int main()
 	assert(corpse_lifecycle_transaction_forget(43, 21));
 	assert(corpse_lifecycle_transaction_forget(44, 22));
 	assert(corpse_lifecycle_transaction_forget(49, 27));
+	// A durable RAM outcome whose live callback fails keeps its custody fences.
+	// No subsequent save or economic operation may replace the recovery state.
+	ram_mode = true;
+	assert(corpse_lifecycle_transaction_hydrate(50, 28, 3));
+	assert(corpse_lifecycle_transaction_release(release(50, 28, 910, 0),
+		[](bool committed, const corpse_lifecycle_result &, unsigned int,
+		   const corpse_lifecycle_payload &) {
+			assert(committed);
+			corpse_lifecycle_transaction_publication_failed();
+		}));
+	done = release_completion(19, 50, 28, 25);
+	corpse_lifecycle_transaction_handle_completions(&done, 1);
+	assert(quiesced && publication_acks == 0);
+	assert(corpse_lifecycle_transaction_busy(50, 28));
+	assert(!corpse_lifecycle_transaction_forget(50, 28));
 	return 0;
 }
 '''

@@ -480,3 +480,64 @@ bool shop_trade_command_build(critical_command *command, critical_operation_id o
 		  { return critical_entity_key_less(left.key, right.key); });
 	return true;
 }
+
+bool shop_trade_item_payload(const shop_trade_payload &trade, item_transfer_payload *transfer)
+{
+	if (!transfer || trade.item_count > SHOP_TRADE_MAX_ITEMS)
+		return false;
+	*transfer = {};
+	const item_owner_identity player{ item_owner_type::player, trade.player_pid, 0 };
+	const item_owner_identity shop{ item_owner_type::shopkeeper,
+					item_shopkeeper_owner_id(trade.shop_id), 0 };
+	const item_owner_identity destruction{ item_owner_type::destruction, 0, 0 };
+	switch (trade.action)
+	{
+	case shop_trade_action::buy_existing:
+		transfer->from_owner = shop;
+		transfer->to_owner = player;
+		transfer->reason = item_transfer_reason::shop_buy;
+		break;
+	case shop_trade_action::buy_produced:
+		transfer->from_owner = { item_owner_type::system, 0, 0 };
+		transfer->to_owner = player;
+		transfer->reason = item_transfer_reason::creation;
+		break;
+	case shop_trade_action::sell_store:
+		transfer->from_owner = player;
+		transfer->to_owner = shop;
+		transfer->reason = item_transfer_reason::shop_sell;
+		break;
+	case shop_trade_action::sell_destroy:
+		transfer->from_owner = player;
+		transfer->to_owner = destruction;
+		transfer->reason = item_transfer_reason::destruction;
+		break;
+	case shop_trade_action::discard_invalid:
+		transfer->from_owner = shop;
+		transfer->to_owner = destruction;
+		transfer->reason = item_transfer_reason::destruction;
+		break;
+	default:
+		return false;
+	}
+	transfer->reason_id = trade.shop_id;
+	transfer->selected_item_uid = trade.selected_item_uid;
+	transfer->target_root_item_uid = trade.target_root_item_uid ? trade.target_root_item_uid :
+								      trade.selected_item_uid;
+	transfer->target_parent_item_uid = trade.target_parent_item_uid;
+	transfer->expected_target_parent_revision = trade.expected_target_parent_revision;
+	transfer->item_count = trade.item_count;
+	for (size_t i = 0; i < trade.item_count; ++i)
+	{
+		const auto &entry = trade.items[i];
+		transfer->items[i] = { entry.item_uid,
+				       entry.root_item_uid,
+				       entry.parent_item_uid,
+				       entry.expected_item_revision,
+				       entry.vnum,
+				       entry.expected_state };
+	}
+	transfer->item_blob_size = trade.item_blob_size;
+	std::copy_n(trade.item_blob.begin(), trade.item_blob_size, transfer->item_blob.begin());
+	return true;
+}

@@ -11,6 +11,7 @@
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "guild/artifact_cache_codec.h"
+#include "guild/artifact_guild_state.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "core/utility.h"
@@ -78,6 +79,9 @@ static void arti_cache_invalidate(void)
 
 static void artifact_bind_maintenance_update(int vnum, int owner_pid, long timer)
 {
+	artifact_maintenance_scope maintenance;
+	if (!maintenance)
+		return;
 #ifdef __NO_MYSQL__
 	std::string error;
 	const auto result = flatfile_artifact_bind_update(persistence_mode_flatfile_root(), vnum,
@@ -785,6 +789,9 @@ void list_artifacts_sql(P_char ch, int type, bool Godlist, bool allArtis)
 // This is used for removing an arti from the game (I guess).
 void arti_remove_sql(int vnum, bool mortalToo)
 {
+	artifact_maintenance_scope maintenance;
+	if (!maintenance)
+		return;
 	if (!updateArtis)
 	{
 		return;
@@ -816,6 +823,9 @@ void arti_remove_sql(int vnum, bool mortalToo)
 // This function is called at boot to set the mortals' artifact list table.
 void setupMortArtiList_sql()
 {
+	artifact_maintenance_scope maintenance;
+	if (!maintenance)
+		return;
 #ifdef __NO_MYSQL__
 	std::vector<flatfile_artifact_record> records;
 	std::string error;
@@ -842,6 +852,9 @@ void setupMortArtiList_sql()
 // Loads the artis that were on the ground and owned back into the boot.
 void addOnGroundArtis_sql()
 {
+	artifact_maintenance_scope maintenance;
+	if (!maintenance)
+		return;
 	P_obj arti;
 	int room;
 #ifndef __NO_MYSQL__
@@ -933,6 +946,9 @@ void addOnGroundArtis_sql()
 //   the new time to poof.
 void artifact_feed_to_min_sql(P_obj arti, int min_minutes)
 {
+	artifact_maintenance_scope maintenance;
+	if (!maintenance)
+		return;
 	int vnum = OBJ_VNUM(arti);
 	long unsigned to_time;
 	P_char owner;
@@ -1160,6 +1176,9 @@ void artifact_feed_to_min_sql(P_obj arti, int min_minutes)
 // This function handles the 'soul' of the artifact.
 void artifact_switch_check(P_char ch, P_obj arti)
 {
+	artifact_maintenance_scope maintenance;
+	if (!maintenance)
+		return;
 	int owner_pid, timer, vnum;
 	bool update = FALSE;
 
@@ -1253,6 +1272,9 @@ void artifact_switch_check(P_char ch, P_obj arti)
 //   ascertain the true location of the arti (on a char / in a room / etc).
 void artifact_update_sql(P_obj arti, char owned, time_t timer)
 {
+	artifact_maintenance_scope maintenance;
+	if (!maintenance)
+		return;
 	int type, locType, location, vnum = arti ? OBJ_VNUM(arti) : -1;
 	bool new_owned;
 	P_char owner;
@@ -1541,6 +1563,9 @@ void artifact_update_sql(P_obj arti, char owned, time_t timer)
 // This function just updates/creates a new entry for the arti with vnum vnum.
 void artifact_update_sql(int vnum, bool owned, int locType, int location, time_t timer, int type)
 {
+	artifact_maintenance_scope maintenance;
+	if (!maintenance)
+		return;
 #ifndef __NO_MYSQL__
 	bool update_existing;
 	MYSQL_RES *res;
@@ -1634,6 +1659,9 @@ void artifact_update_sql(int vnum, bool owned, int locType, int location, time_t
 // Returns true if successfully removed.
 bool remove_owned_artifact_sql(P_obj arti, int pid)
 {
+	artifact_maintenance_scope maintenance;
+	if (!maintenance)
+		return false;
 	int vnum = arti ? OBJ_VNUM(arti) : -1;
 #ifndef __NO_MYSQL__
 	bool update_existing = FALSE;
@@ -1740,6 +1768,9 @@ bool remove_owned_artifact_sql(P_obj arti, int pid)
 // This is used for when a character is deleted.
 bool remove_all_artifacts_sql(P_char ch)
 {
+	artifact_maintenance_scope maintenance;
+	if (!maintenance)
+		return false;
 	int pid;
 
 	if (!updateArtis)
@@ -1779,6 +1810,9 @@ bool remove_all_artifacts_sql(P_char ch)
 // It merely calculates the timer and location, then calls the above with appropriate owned/timer info.
 void artifact_update_location_sql(P_obj arti)
 {
+	artifact_maintenance_scope maintenance;
+	if (!maintenance)
+		return;
 	bool timerStarted;
 	arti_data artidata;
 	P_obj cont = arti;
@@ -1903,6 +1937,9 @@ bool get_artifact_data_sql(int vnum, P_arti adata)
 
 void artifact_feed_sql(P_char owner, P_obj arti, int feed_seconds, bool soulCheck)
 {
+	artifact_maintenance_scope maintenance;
+	if (!maintenance)
+		return;
 	int vnum, owner_pid, timer;
 	arti_data artidata;
 	time_t poof_time;
@@ -2084,6 +2121,9 @@ P_obj get_object_from_char(P_char owner, int vnum)
 
 void poof_artifact(P_obj arti)
 {
+	artifact_maintenance_scope maintenance;
+	if (!maintenance)
+		return;
 	P_char owner;
 	P_obj cont;
 
@@ -2476,6 +2516,9 @@ P_obj artifact_find(arti_data artidata)
 // This function transfers the data from the old file-based system into the DB.
 void arti_files_to_sql(P_char ch, char *arg)
 {
+	artifact_maintenance_scope maintenance;
+	if (!maintenance)
+		return;
 	char buf[MAX_STRING_LENGTH];
 	char pname[256], fname[256];
 	int vnum, pid, temp, type;
@@ -2695,6 +2738,9 @@ void arti_files_to_sql(P_char ch, char *arg)
 
 void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void * /*arg*/)
 {
+	artifact_maintenance_scope maintenance;
+	if (!maintenance)
+		return;
 	static int cursor_vnum = 0;
 	P_obj arti, cont, corpse;
 	P_char owner;
@@ -3205,6 +3251,9 @@ void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 
 void event_artifact_wars_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void * /*arg*/)
 {
+	artifact_maintenance_scope maintenance;
+	if (!maintenance)
+		return;
 	struct artifact_wars_owner
 	{
 		int pid;
@@ -3674,6 +3723,9 @@ void arti_hunt_sql(P_char ch, const char *arg)
 
 void arti_clear_sql(P_char ch, char *arg)
 {
+	artifact_maintenance_scope maintenance;
+	if (!maintenance)
+		return;
 	int vnum;
 	P_obj arti;
 
@@ -3756,6 +3808,9 @@ void arti_clear_sql(P_char ch, char *arg)
 // If the timer isn't ticking, this function won't do anything.
 void arti_poof_sql(P_char ch, char *arg)
 {
+	artifact_maintenance_scope maintenance;
+	if (!maintenance)
+		return;
 	char buf[MAX_STRING_LENGTH], artishort[MAX_STRING_LENGTH];
 	int vnum;
 	P_obj arti;
@@ -3854,6 +3909,9 @@ void arti_poof_sql(P_char ch, char *arg)
 // Changes the timer on an artifact.
 void arti_timer_sql(P_char ch, char *arg)
 {
+	artifact_maintenance_scope maintenance;
+	if (!maintenance)
+		return;
 	char buf[MAX_STRING_LENGTH], artishort[256];
 	char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH], arg3[MAX_INPUT_LENGTH];
 	int minutes, cmd, vnum;
@@ -4048,6 +4106,9 @@ void arti_timer_sql(P_char ch, char *arg)
 // This function is designed to swap out one arti for another.
 void arti_swap_sql(P_char ch, char *arg)
 {
+	artifact_maintenance_scope maintenance;
+	if (!maintenance)
+		return;
 	char buf[MAX_STRING_LENGTH];
 	char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH];
 	char artishort1[256];
@@ -4342,6 +4403,9 @@ void arti_swap_sql(P_char ch, char *arg)
 //   the timer is set to switch owners.  If the timer is up, then the soul switches owners.
 void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void * /*arg*/)
 {
+	artifact_maintenance_scope maintenance;
+	if (!maintenance)
+		return;
 	struct artifact_bind_row
 	{
 		int vnum;
@@ -4541,6 +4605,9 @@ void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 // Resets the timers on artifacts that weren't properly bound.
 void arti_fixit_sql(P_char ch)
 {
+	artifact_maintenance_scope maintenance;
+	if (!maintenance)
+		return;
 #ifdef __NO_MYSQL__
 	std::vector<flatfile_artifact_record> records;
 	std::string error;
@@ -4668,6 +4735,9 @@ void arti_fixit_sql(P_char ch)
 // syncs all in-game artifact locations to the database
 void arti_sync_sql(P_char ch)
 {
+	artifact_maintenance_scope maintenance;
+	if (!maintenance)
+		return;
 	P_obj obj;
 	int counter = 0;
 
@@ -4691,6 +4761,9 @@ void arti_sync_sql(P_char ch)
 // syncs artifact ownership from player_items table to artifacts_mortal
 void arti_syncdb_sql(P_char ch)
 {
+	artifact_maintenance_scope maintenance;
+	if (!maintenance)
+		return;
 #ifdef __NO_MYSQL__
 	std::vector<flatfile_item_ownership_record> owned_items;
 	std::string error;
@@ -4811,6 +4884,9 @@ void arti_syncdb_sql(P_char ch)
 // It resets the timer to 0 also, so it will merge asap.
 void arti_reset_sql(P_char ch, char *arg)
 {
+	artifact_maintenance_scope maintenance;
+	if (!maintenance)
+		return;
 	int vnum;
 
 	if (!*arg || !strcmp(arg, "?") || !strcmp(arg, "help"))
@@ -4945,6 +5021,9 @@ P_char find_mob_in_game(int vnum)
 // Loads the artis that were on a random mob and owned back into the boot.
 void addOnMobArtis_sql()
 {
+	artifact_maintenance_scope maintenance;
+	if (!maintenance)
+		return;
 	P_obj arti;
 	P_char mob;
 #ifndef __NO_MYSQL__

@@ -9,6 +9,7 @@
 #include <new>
 #include <string>
 #include <sys/stat.h>
+#include <sys/file.h>
 #include <unistd.h>
 #include <unordered_map>
 #include <utility>
@@ -35,6 +36,17 @@ std::string journal_directory;
 std::string journal_path;
 size_t journal_quota = 0;
 critical_command_journal_health health = {};
+int directory_lock_fd = -1;
+
+struct owned_fd
+{
+	int value = -1;
+	~owned_fd()
+	{
+		if (value >= 0)
+			close(value);
+	}
+};
 
 uint64_t now_msec()
 {
@@ -315,6 +327,19 @@ bool critical_command_journal_init(const char *directory, size_t quota_bytes)
 		health.last_result = critical_command_journal_result::unsafe_permissions;
 		return false;
 	}
+	// Hold a process lease across appends AND atomic checkpoint renames. Locking
+	// the journal inode itself would lose exclusivity after the first rename.
+	owned_fd lease{ open((journal_directory + "/critical-command.lock").c_str(),
+			     O_RDWR | O_CREAT | O_CLOEXEC | O_NOFOLLOW, 0600) };
+	struct stat lease_status = {};
+	if (lease.value < 0 || fstat(lease.value, &lease_status) != 0 ||
+	    !S_ISREG(lease_status.st_mode) || lease_status.st_uid != geteuid() ||
+	    lease_status.st_nlink != 1 || (lease_status.st_mode & 0077) ||
+	    flock(lease.value, LOCK_EX | LOCK_NB) != 0)
+	{
+		health.last_result = critical_command_journal_result::io_failure;
+		return false;
+	}
 	journal_path = journal_directory + "/" + JOURNAL_FILE;
 	journal_quota = quota_bytes;
 	const int fd = open(journal_path.c_str(),
@@ -325,7 +350,24 @@ bool critical_command_journal_init(const char *directory, size_t quota_bytes)
 		++health.io_failures;
 		return false;
 	}
-	close(fd);
+	// A successful append's fsync cannot make a newly created directory entry
+	// durable. Establish both directory levels before allowing the first ACK.
+	const auto slash = journal_directory.find_last_of('/');
+	const std::string parent = slash == std::string::npos ?
+					   "." :
+					   (slash == 0 ? "/" : journal_directory.substr(0, slash));
+	owned_fd parent_fd{ open(parent.c_str(), O_RDONLY | O_DIRECTORY | O_CLOEXEC) };
+	owned_fd directory_fd{ open(journal_directory.c_str(),
+				    O_RDONLY | O_DIRECTORY | O_CLOEXEC) };
+	const bool synced = fsync(fd) == 0 && directory_fd.value >= 0 &&
+			    fsync(directory_fd.value) == 0 && parent_fd.value >= 0 &&
+			    fsync(parent_fd.value) == 0;
+	const bool closed = close(fd) == 0;
+	if (!synced || !closed)
+	{
+		health.last_result = critical_command_journal_result::io_failure;
+		return false;
+	}
 	if (!safe_regular(journal_path, 0600))
 	{
 		health.last_result = critical_command_journal_result::unsafe_permissions;
@@ -342,6 +384,8 @@ bool critical_command_journal_init(const char *directory, size_t quota_bytes)
 	}
 	health.last_result = critical_command_journal_result::ok;
 	update_health(frames);
+	directory_lock_fd = lease.value;
+	lease.value = -1;
 	return true;
 }
 
@@ -349,6 +393,9 @@ void critical_command_journal_shutdown(void)
 {
 	std::lock_guard<std::mutex> lock(journal_mutex);
 	health.initialized = false;
+	if (directory_lock_fd >= 0)
+		close(directory_lock_fd);
+	directory_lock_fd = -1;
 	journal_directory.clear();
 	journal_path.clear();
 	journal_quota = 0;
@@ -547,6 +594,9 @@ const char *critical_command_journal_result_name(critical_command_journal_result
 void critical_command_journal_reset_for_tests(void)
 {
 	std::lock_guard<std::mutex> lock(journal_mutex);
+	if (directory_lock_fd >= 0)
+		close(directory_lock_fd);
+	directory_lock_fd = -1;
 	journal_directory.clear();
 	journal_path.clear();
 	journal_quota = 0;

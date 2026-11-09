@@ -2058,3 +2058,22 @@ flatfile_world_item_result flatfile_world_item_prepare_world_corpse_raise(
 	mutation->catalog_revision = catalog.revision;
 	return flatfile_world_item_result::ok;
 }
+
+bool flatfile_world_item_ram_bootstrap(const std::string &root, uint64_t *revision,
+				       std::vector<flatfile_corpse_record> *corpses,
+				       std::string *error)
+{
+	if (!revision || !corpses)
+		return false;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return false;
+	world_item_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_world_item_result::ok &&
+	    loaded != flatfile_world_item_result::not_found)
+		return false;
+	*revision = catalog.revision;
+	*corpses = std::move(catalog.corpses);
+	return true;
+}

@@ -37,29 +37,32 @@ bool publish(std::unordered_map<std::string, pending_epic>::iterator found, P_ch
 	pending_epic &entry = found->second;
 	const critical_completion &completion = entry.completed;
 	epic_command_result result = {};
-	if (!epic_command_decode_result(completion.result_payload.data(), completion.result_size,
-					&result))
-	{
-		++health.malformed_completions;
-		if (entry.completion)
-			entry.completion(character, false, {}, completion.error_code,
-					 entry.context.data(), entry.context_size);
-		++health.rejected;
-		pending.erase(found);
-		return false;
-	}
 	const bool committed = completion.outcome == critical_apply_outcome::applied ||
 			       completion.outcome == critical_apply_outcome::already_applied;
-	character->only.pc->epics = result.balance;
-	character->only.pc->epic_revision = result.revision;
-	if (entry.completion)
-		entry.completion(character, committed, result, completion.error_code,
-				 entry.context.data(), entry.context_size);
+	const bool decoded = epic_command_decode_result(completion.result_payload.data(),
+							completion.result_size, &result);
+	if (!decoded &&
+	    (committed || completion.outcome != critical_apply_outcome::terminal_failure))
+	{
+		++health.malformed_completions;
+		// The accepted result remains fenced until its exact receipt can publish.
+		return false;
+	}
+	if (decoded &&
+	    !epic_transaction_publish_balance(character, result.balance, result.revision))
+		return false;
+	const auto id = completion.operation_id;
+	const auto error = completion.error_code;
+	auto node = pending.extract(found);
+	critical_command_coordinator_acknowledge_publication(id);
 	if (committed)
 		++health.committed;
 	else
 		++health.rejected;
-	pending.erase(found);
+	const auto &finished = node.mapped();
+	if (finished.completion)
+		finished.completion(character, committed, result, error, finished.context.data(),
+				    finished.context_size);
 	return true;
 }
 
@@ -82,6 +85,10 @@ bool publish_completed_if_available(const std::string &key,
 bool epic_transaction_publish_balance(P_char character, int64_t balance, uint64_t revision)
 {
 	if (!character || IS_NPC(character))
+		return false;
+	if (revision < character->only.pc->epic_revision)
+		return true;
+	if (revision == character->only.pc->epic_revision && balance != character->only.pc->epics)
 		return false;
 	character->only.pc->epics = balance;
 	character->only.pc->epic_revision = revision;
@@ -126,7 +133,7 @@ bool epic_transaction_submit_identified(P_char character, const critical_operati
 		return false;
 	}
 	const critical_submit_result submitted =
-		critical_command_coordinator_submit(std::move(command));
+		critical_command_coordinator_submit_for_publication(std::move(command));
 	if (!critical_submit_result_keeps_operation(submitted))
 	{
 		pending.erase(key);
@@ -181,16 +188,17 @@ void epic_transaction_player_ready(P_char character)
 {
 	if (!character || IS_NPC(character))
 		return;
-	for (auto found = pending.begin(); found != pending.end();)
+	std::array<critical_operation_id, EPIC_PENDING_MAX> ready;
+	size_t count = 0;
+	for (const auto &[key, entry] : pending)
+		if (entry.pid == static_cast<uint32_t>(GET_PID(character)) &&
+		    entry.completion_ready && count < ready.size())
+			memcpy(ready[count++].bytes.data(), key.data(), key.size());
+	for (size_t index = 0; index < count; ++index)
 	{
-		if (found->second.pid == static_cast<uint32_t>(GET_PID(character)) &&
-		    found->second.completion_ready)
-		{
-			auto current = found++;
-			publish(current, character);
-		}
-		else
-			++found;
+		auto found = pending.find(operation_key(ready[index]));
+		if (found != pending.end())
+			publish(found, character);
 	}
 	health.pending = pending.size();
 	health.retained_offline = 0;

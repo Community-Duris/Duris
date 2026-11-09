@@ -63,75 +63,69 @@ enum class critical_completion_channel : uint8_t
 
 class critical_completion_delivery
 {
+	struct ring
+	{
+		std::array<critical_completion, CRITICAL_COORDINATOR_MAX_RESULTS> entries{};
+		size_t head = 0;
+		size_t count = 0;
+	};
+
     public:
 	bool has_capacity() const noexcept { return size() < CRITICAL_COORDINATOR_MAX_RESULTS; }
-
-	size_t size() const noexcept
-	{
-		return execution_results.size() + admission_failures.size();
-	}
-
+	size_t size() const noexcept { return execution_results.count + admission_failures.count; }
 	size_t size(critical_completion_channel channel) const noexcept
 	{
-		return channel == critical_completion_channel::execution ?
-			       execution_results.size() :
-			       admission_failures.size();
+		return queue(channel).count;
 	}
-
 	bool try_enqueue(critical_completion_channel channel,
 			 const critical_completion &completion) noexcept
 	{
 		if (!has_capacity())
 			return false;
-		try
-		{
-			queue(channel).push_back(completion);
-			return true;
-		}
-		catch (const std::bad_alloc &)
-		{
-			return false;
-		}
+		auto &selected = queue(channel);
+		selected.entries[(selected.head + selected.count) % selected.entries.size()] =
+			completion;
+		++selected.count;
+		return true;
 	}
-
-	// The execution worker calls this only after waiting for capacity. Keeping
-	// the non-throwing admission path above separate means a completed command
-	// is never silently discarded if allocation fails at this boundary.
 	void enqueue(critical_completion_channel channel, const critical_completion &completion)
 	{
-		queue(channel).push_back(completion);
+		if (!try_enqueue(channel, completion))
+			throw std::bad_alloc();
 	}
-
 	const critical_completion *front(critical_completion_channel channel) const noexcept
 	{
-		const auto &queue = channel == critical_completion_channel::execution ?
-					    execution_results :
-					    admission_failures;
-		return queue.empty() ? nullptr : &queue.front();
+		const auto &selected = queue(channel);
+		return selected.count ? &selected.entries[selected.head] : nullptr;
 	}
-
 	void pop_front(critical_completion_channel channel) noexcept
 	{
-		auto &queue = this->queue(channel);
-		if (!queue.empty())
-			queue.pop_front();
+		auto &selected = queue(channel);
+		if (selected.count)
+		{
+			selected.head = (selected.head + 1) % selected.entries.size();
+			--selected.count;
+		}
 	}
-
 	void clear() noexcept
 	{
-		execution_results.clear();
-		admission_failures.clear();
+		execution_results.head = execution_results.count = 0;
+		admission_failures.head = admission_failures.count = 0;
 	}
 
     private:
-	std::deque<critical_completion> &queue(critical_completion_channel channel) noexcept
+	ring &queue(critical_completion_channel channel) noexcept
 	{
 		return channel == critical_completion_channel::execution ? execution_results :
 									   admission_failures;
 	}
-
-	std::deque<critical_completion> execution_results;
-	std::deque<critical_completion> admission_failures;
+	const ring &queue(critical_completion_channel channel) const noexcept
+	{
+		return channel == critical_completion_channel::execution ? execution_results :
+									   admission_failures;
+	}
+	ring execution_results;
+	ring admission_failures;
 };
 
 #endif
